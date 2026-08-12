@@ -1,0 +1,63 @@
+# ══════════════════════════════════════════════════════════
+#  SECRETOS — NUNCA SE SUBEN AL REPOSITORIO
+# ══════════════════════════════════════════════════════════
+# Claves privadas de ARCA, certificados, credenciales.
+# Si una clave privada llega a GitHub, se considera comprometida
+# y hay que revocar el certificado y generar uno nuevo.
+secrets/
+*.key
+*.pem
+*.p12
+*.pfx
+*.crt
+*.csr
+
+# Variables de entorno
+.env
+.env.*
+!.env.example
+
+# ══════════════════════════════════════════════════════════
+#  Dependencias y builds
+# ══════════════════════════════════════════════════════════
+node_modules/
+dist/
+build/
+.next/
+out/
+target/
+*.tsbuildinfo
+
+# Tauri
+src-tauri/target/
+src-tauri/gen/
+
+# ══════════════════════════════════════════════════════════
+#  Bases de datos locales
+# ══════════════════════════════════════════════════════════
+*.sqlite
+*.sqlite3
+*.db
+supabase/.temp/
+supabase/.branches/
+
+# ══════════════════════════════════════════════════════════
+#  Datos del cliente — no versionar
+# ══════════════════════════════════════════════════════════
+# Exportaciones de OBTech, padrones, listados con datos reales
+datos-cliente/
+*.xlsx
+*.xls
+!docs/**/*.xlsx
+
+# ══════════════════════════════════════════════════════════
+#  Sistema operativo y editores
+# ══════════════════════════════════════════════════════════
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+!.vscode/extensions.json
+.idea/
+*.swp
+*.log
