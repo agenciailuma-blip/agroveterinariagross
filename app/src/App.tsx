@@ -7,6 +7,7 @@ import Inicio from '@/pages/Inicio'
 import Productos from '@/pages/Productos'
 import Precios from '@/pages/Precios'
 import PuntoDeVenta from '@/pages/PuntoDeVenta'
+import Caja from '@/pages/Caja'
 import EnConstruccion from '@/pages/EnConstruccion'
 
 const queryClient = new QueryClient({
@@ -61,6 +62,7 @@ function Ruteo() {
         <Route path="productos" element={<Productos />} />
         <Route path="precios" element={<Precios />} />
         <Route path="ventas" element={<PuntoDeVenta />} />
+        <Route path="caja" element={<Caja />} />
         <Route path="clientes" element={<EnConstruccion titulo="Clientes" />} />
         <Route path="facturacion" element={<EnConstruccion titulo="Facturación" />} />
       </Route>

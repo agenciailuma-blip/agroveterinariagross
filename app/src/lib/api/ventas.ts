@@ -186,6 +186,10 @@ export async function enviarACaja(datos: EnvioACaja): Promise<{ id: string; codi
       descripcion: l.descripcion,
       cantidad: l.cantidad,
       precio_original: l.precio_original,
+      // El vendedor trabaja a nivel contado: lo que acuerda es el
+      // acordado. El unitario lo va a ajustar la caja al elegir con qué
+      // se paga, siempre partiendo de este valor.
+      precio_acordado: l.precio_unitario,
       precio_unitario: l.precio_unitario,
       motivo_modificacion: l.motivo_modificacion,
       modificado_por: l.precio_unitario !== l.precio_original ? datos.vendedorId : null,

@@ -404,16 +404,24 @@ export default function PuntoDeVenta() {
                 <dd className="tabular-nums">−{moneda.format(totales.descuentoCliente)}</dd>
               </div>
             )}
+            {/*
+              El precio que se le dice al cliente es el de tarjeta, y el
+              efectivo se presenta como descuento. Es como venden, así que
+              el número grande tiene que ser ese: si el vendedor lee el de
+              contado y después la caja cobra más, queda pegado.
+            */}
             <div className="flex items-baseline justify-between border-t border-borde pt-2">
-              <dt className="font-medium text-tinta">Total contado</dt>
+              <dt className="font-medium text-tinta">Total</dt>
               <dd className="text-2xl font-semibold tabular-nums text-tinta">
-                {moneda.format(totales.total)}
+                {moneda.format(totales.conTarjeta)}
               </dd>
             </div>
             {listaTarjeta && listaTarjeta.ajuste_porcentaje !== 0 && totales.total > 0 && (
-              <div className="flex justify-between text-xs text-piedra-500">
-                <dt>Con tarjeta ({numero.format(listaTarjeta.ajuste_porcentaje)}%)</dt>
-                <dd className="tabular-nums">{moneda.format(totales.conTarjeta)}</dd>
+              <div className="flex items-baseline justify-between rounded-lg bg-verde-50 px-2.5 py-1.5 ring-1 ring-verde-200">
+                <dt className="text-sm font-medium text-verde-800">Pagando en efectivo</dt>
+                <dd className="text-base font-semibold tabular-nums text-verde-800">
+                  {moneda.format(totales.total)}
+                </dd>
               </div>
             )}
           </dl>
