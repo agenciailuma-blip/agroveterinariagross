@@ -1,0 +1,41 @@
+@import 'tailwindcss';
+
+/*
+  Paleta del sistema.
+
+  Pensada para mostrador: contraste alto y estados de stock que se
+  distingan de un vistazo desde parado, no mirando la pantalla de cerca.
+*/
+@theme {
+  --color-marca-50: #f0f9f4;
+  --color-marca-100: #dbf0e3;
+  --color-marca-200: #b9e1ca;
+  --color-marca-300: #8bcaa8;
+  --color-marca-400: #57ac81;
+  --color-marca-500: #348f64;
+  --color-marca-600: #24724f;
+  --color-marca-700: #1d5b41;
+  --color-marca-800: #1a4936;
+  --color-marca-900: #163c2d;
+
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-slate-100 text-slate-900 antialiased;
+}
+
+/*
+  El lector de codigos de barra se comporta como un teclado: escribe muy
+  rapido y manda Enter. No necesita driver, pero si que el campo de
+  busqueda nunca pierda el foco por un scroll accidental.
+*/
+input[type='search']::-webkit-search-cancel-button {
+  @apply cursor-pointer;
+}
