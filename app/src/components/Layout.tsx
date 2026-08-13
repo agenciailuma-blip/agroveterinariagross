@@ -19,6 +19,12 @@ const MENU: ItemMenu[] = [
     icono: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4',
   },
   {
+    a: '/precios',
+    etiqueta: 'Precios',
+    permiso: 'productos.ver',
+    icono: 'M7 7h.01M7 3h5a2 2 0 011.4.6l7 7a2 2 0 010 2.8l-5 5a2 2 0 01-2.8 0l-7-7A2 2 0 015 10V5a2 2 0 012-2z',
+  },
+  {
     a: '/ventas',
     etiqueta: 'Ventas',
     permiso: 'ventas.crear',
