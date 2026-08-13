@@ -45,10 +45,13 @@ export default function Layout() {
 
   return (
     <div className="flex h-full">
-      <aside className="flex w-60 shrink-0 flex-col bg-marca-900 text-marca-100">
-        <div className="border-b border-marca-800 px-5 py-4">
-          <p className="text-sm font-semibold tracking-tight text-white">Agroveterinaria Gross</p>
-          <p className="text-xs text-marca-400">Sistema de gestión</p>
+      <aside className="flex w-60 shrink-0 flex-col bg-marca-950 text-marca-100">
+        <div className="flex items-center gap-3 border-b border-white/10 px-5 py-4">
+          <img src="/marca/isotipo.svg" alt="" className="size-9 shrink-0 brightness-0 invert" />
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium text-white">Agroveterinaria Gross</p>
+            <p className="text-xs text-marca-300/70">Sistema de gestión</p>
+          </div>
         </div>
 
         <nav className="flex-1 space-y-0.5 p-3">
@@ -61,7 +64,7 @@ export default function Layout() {
                 `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                   isActive
                     ? 'bg-marca-700 text-white'
-                    : 'text-marca-200 hover:bg-marca-800 hover:text-white'
+                    : 'text-marca-200/80 hover:bg-white/10 hover:text-white'
                 }`
               }
             >
@@ -80,12 +83,12 @@ export default function Layout() {
           ))}
         </nav>
 
-        <div className="border-t border-marca-800 p-3">
+        <div className="border-t border-white/10 p-3">
           <p className="truncate px-2 text-sm font-medium text-white">{perfil?.nombre}</p>
-          <p className="truncate px-2 text-xs text-marca-400">{perfil?.rol}</p>
+          <p className="truncate px-2 text-xs text-marca-300/70">{perfil?.rol}</p>
           <button
             onClick={salir}
-            className="mt-2 w-full rounded-lg px-2 py-1.5 text-left text-sm text-marca-300 transition-colors hover:bg-marca-800 hover:text-white"
+            className="mt-2 w-full rounded-lg px-2 py-1.5 text-left text-sm text-marca-200/80 transition-colors hover:bg-white/10 hover:text-white"
           >
             Cerrar sesión
           </button>
@@ -93,7 +96,7 @@ export default function Layout() {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center justify-end gap-4 border-b border-slate-200 bg-white px-6 py-3">
+        <header className="flex items-center justify-end gap-4 border-b border-borde bg-white px-6 py-3">
           <IndicadorConexion />
         </header>
         <main className="flex-1 overflow-auto p-6">

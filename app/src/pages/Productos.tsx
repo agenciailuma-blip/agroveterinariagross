@@ -8,7 +8,7 @@ import {
   listarProductos,
   obtenerProducto,
 } from '@/lib/api/catalogo'
-import type { FilaListado } from '@/lib/api/catalogo'
+import type { FilaListado, Referencias } from '@/lib/api/catalogo'
 import ProductoEditor from '@/components/ProductoEditor'
 import type { EstadoFormulario } from '@/components/ProductoEditor'
 import { ESTADO_STOCK, moneda, numero } from '@/lib/tipos'
@@ -333,6 +333,11 @@ export default function Productos() {
                 error={errorGuardado}
                 onGuardar={(marcarRevisado, avanzar) => guardar.mutate({ marcarRevisado, avanzar })}
                 onCancelar={cerrar}
+                onReferenciaCreada={(grupo, nueva) =>
+                  qc.setQueryData(['referencias'], (prev: Referencias | undefined) =>
+                    prev ? { ...prev, [grupo]: [...prev[grupo], nueva] } : prev,
+                  )
+                }
               />
             )}
           </div>

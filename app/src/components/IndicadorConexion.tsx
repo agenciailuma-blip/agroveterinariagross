@@ -12,11 +12,13 @@ export function IndicadorConexion() {
   const { estado, ultimoContacto } = useConexion()
 
   const config = {
+    // Verde para conectado: es color de marca y además es el que
+    // todo el mundo lee como "está bien" sin tener que pensarlo.
     en_linea: {
       etiqueta: 'En línea',
-      punto: 'bg-marca-500',
-      texto: 'text-marca-700',
-      fondo: 'bg-marca-50 ring-marca-200',
+      punto: 'bg-verde-500',
+      texto: 'text-verde-700',
+      fondo: 'bg-verde-50 ring-verde-200',
     },
     sin_conexion: {
       etiqueta: 'Sin conexión',
@@ -43,7 +45,7 @@ export function IndicadorConexion() {
     >
       <span className="relative flex size-2">
         {estado === 'en_linea' && (
-          <span className="absolute inline-flex size-full animate-ping rounded-full bg-marca-400 opacity-75" />
+          <span className="absolute inline-flex size-full animate-ping rounded-full bg-verde-400 opacity-75" />
         )}
         <span className={`relative inline-flex size-2 rounded-full ${config.punto}`} />
       </span>

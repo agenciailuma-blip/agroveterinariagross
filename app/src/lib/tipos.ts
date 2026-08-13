@@ -74,7 +74,7 @@ export interface Permiso {
 
 /** Etiqueta y color de cada estado de stock, para no repetirlo en cada pantalla. */
 export const ESTADO_STOCK: Record<EstadoStock, { etiqueta: string; clase: string }> = {
-  ok: { etiqueta: 'En stock', clase: 'bg-marca-100 text-marca-800 ring-marca-200' },
+  ok: { etiqueta: 'En stock', clase: 'bg-verde-100 text-verde-800 ring-verde-200' },
   bajo: { etiqueta: 'Stock bajo', clase: 'bg-amber-100 text-amber-800 ring-amber-200' },
   critico: { etiqueta: 'Crítico', clase: 'bg-orange-100 text-orange-800 ring-orange-200' },
   sobrevendido: { etiqueta: 'Sobrevendido', clase: 'bg-red-100 text-red-800 ring-red-200' },

@@ -143,6 +143,47 @@ export async function cargarReferencias(): Promise<Referencias> {
   }
 }
 
+export type TablaReferencia = 'categoria' | 'marca' | 'presentacion' | 'animal' | 'etapa_vida'
+
+/** Convierte "Alimento Balanceado" en "alimento-balanceado". */
+function aSlug(texto: string) {
+  return texto
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+/*
+  Crea una categoría, marca, presentación, animal o etapa desde la misma
+  pantalla de producto.
+
+  Sin esto, cargar un producto de una marca nueva obliga a frenar, ir a
+  otra pantalla, crearla y volver. Multiplicado por 2.261 productos, esa
+  fricción es la diferencia entre que el operativo de carga avance o no.
+*/
+export async function crearReferencia(
+  tabla: TablaReferencia,
+  nombre: string,
+): Promise<Referencia> {
+  const limpio = nombre.trim()
+  if (!limpio) throw new Error('El nombre no puede estar vacío.')
+
+  const { data, error } = await supabase
+    .from(tabla)
+    .insert({ nombre: limpio, slug: aSlug(limpio) })
+    .select('id, nombre')
+    .single<Referencia>()
+
+  if (error) {
+    if (error.code === '23505') throw new Error(`Ya existe "${limpio}".`)
+    throw new Error(error.message)
+  }
+  return data
+}
+
 export interface DatosGuardado {
   id?: string
   campos: Partial<ProductoDetalle>

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent } from 'react'
 import { UNIDADES } from '@/lib/api/catalogo'
-import type { ProductoDetalle, Referencias } from '@/lib/api/catalogo'
+import type { Referencia, ProductoDetalle, Referencias } from '@/lib/api/catalogo'
+import { ChipsConAlta, SelectConAlta } from '@/components/SelectConAlta'
 import { numero } from '@/lib/tipos'
 
 export interface EstadoFormulario {
@@ -22,6 +23,7 @@ interface Props {
   error: string | null
   onGuardar: (marcarRevisado: boolean, avanzar: boolean) => void
   onCancelar: () => void
+  onReferenciaCreada: (grupo: keyof Referencias, nueva: Referencia) => void
 }
 
 function Campo({
@@ -66,6 +68,7 @@ export default function ProductoEditor({
   error,
   onGuardar,
   onCancelar,
+  onReferenciaCreada,
 }: Props) {
   const [codigoBarra, setCodigoBarra] = useState('')
   const refNombre = useRef<HTMLInputElement>(null)
@@ -89,10 +92,6 @@ export default function ProductoEditor({
     }
     onCambio({ ...estado, codigosBarra: [...estado.codigosBarra, codigo] })
     setCodigoBarra('')
-  }
-
-  function alternar(lista: string[], id: string) {
-    return lista.includes(id) ? lista.filter((x) => x !== id) : [...lista, id]
   }
 
   const contado = estado.stockContado === '' ? null : Number(estado.stockContado)
@@ -239,95 +238,48 @@ export default function ProductoEditor({
         </Seccion>
 
         <Seccion titulo="Clasificación">
-          <Campo etiqueta="Categoría">
-            <select
-              value={estado.campos.categoria_id ?? ''}
-              onChange={(e) => set({ categoria_id: e.target.value || null })}
-              className={claseInput}
-            >
-              <option value="">—</option>
-              {referencias.categorias.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.nombre}
-                </option>
-              ))}
-            </select>
-          </Campo>
-          <Campo etiqueta="Marca">
-            <select
-              value={estado.campos.marca_id ?? ''}
-              onChange={(e) => set({ marca_id: e.target.value || null })}
-              className={claseInput}
-            >
-              <option value="">—</option>
-              {referencias.marcas.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.nombre}
-                </option>
-              ))}
-            </select>
-          </Campo>
-          <Campo etiqueta="Presentación">
-            <select
-              value={estado.campos.presentacion_id ?? ''}
-              onChange={(e) => set({ presentacion_id: e.target.value || null })}
-              className={claseInput}
-            >
-              <option value="">—</option>
-              {referencias.presentaciones.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.nombre}
-                </option>
-              ))}
-            </select>
-          </Campo>
-          <div className="col-span-1" />
+          <SelectConAlta
+            etiqueta="Categoría"
+            tabla="categoria"
+            opciones={referencias.categorias}
+            valor={estado.campos.categoria_id ?? null}
+            onCambio={(id) => set({ categoria_id: id })}
+            onCreada={(r) => onReferenciaCreada('categorias', r)}
+          />
+          <SelectConAlta
+            etiqueta="Marca"
+            tabla="marca"
+            opciones={referencias.marcas}
+            valor={estado.campos.marca_id ?? null}
+            onCambio={(id) => set({ marca_id: id })}
+            onCreada={(r) => onReferenciaCreada('marcas', r)}
+          />
+          <SelectConAlta
+            etiqueta="Presentación"
+            tabla="presentacion"
+            opciones={referencias.presentaciones}
+            valor={estado.campos.presentacion_id ?? null}
+            onCambio={(id) => set({ presentacion_id: id })}
+            onCreada={(r) => onReferenciaCreada('presentaciones', r)}
+          />
+          <div className="col-span-2" />
 
-          <div className="col-span-2">
-            <span className="mb-1.5 block text-xs font-medium text-slate-600">Animal</span>
-            <div className="flex flex-wrap gap-1.5">
-              {referencias.animales.map((a) => {
-                const activo = estado.animales.includes(a.id)
-                return (
-                  <button
-                    key={a.id}
-                    type="button"
-                    onClick={() => onCambio({ ...estado, animales: alternar(estado.animales, a.id) })}
-                    className={`rounded-full px-3 py-1 text-xs font-medium ring-1 transition-colors ${
-                      activo
-                        ? 'bg-marca-600 text-white ring-marca-600'
-                        : 'bg-white text-slate-600 ring-slate-300 hover:bg-slate-50'
-                    }`}
-                  >
-                    {a.nombre}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-
-          <div className="col-span-2">
-            <span className="mb-1.5 block text-xs font-medium text-slate-600">Etapa de vida</span>
-            <div className="flex flex-wrap gap-1.5">
-              {referencias.etapas.map((e) => {
-                const activo = estado.etapas.includes(e.id)
-                return (
-                  <button
-                    key={e.id}
-                    type="button"
-                    onClick={() => onCambio({ ...estado, etapas: alternar(estado.etapas, e.id) })}
-                    className={`rounded-full px-3 py-1 text-xs font-medium ring-1 transition-colors ${
-                      activo
-                        ? 'bg-marca-600 text-white ring-marca-600'
-                        : 'bg-white text-slate-600 ring-slate-300 hover:bg-slate-50'
-                    }`}
-                  >
-                    {e.nombre}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
+          <ChipsConAlta
+            etiqueta="Animal"
+            tabla="animal"
+            opciones={referencias.animales}
+            seleccion={estado.animales}
+            onCambio={(animales) => onCambio({ ...estado, animales })}
+            onCreada={(r) => onReferenciaCreada('animales', r)}
+          />
+          <ChipsConAlta
+            etiqueta="Etapa de vida"
+            tabla="etapa_vida"
+            opciones={referencias.etapas}
+            seleccion={estado.etapas}
+            onCambio={(etapas) => onCambio({ ...estado, etapas })}
+            onCreada={(r) => onReferenciaCreada('etapas', r)}
+          />
         </Seccion>
 
         <Seccion titulo="Códigos de barra">

@@ -1,0 +1,24 @@
+Fuente Principal:
+https://fonts.google.com/specimen/Ubuntu?query=ubuntu
+Fuente secundaria
+https://fonts.google.com/specimen/Luckiest+Guy?preview.script=Latn (para ciertos textos resaltados, quizás para el sistema nunca se use).
+
+Logos: Adjunto los archivos en la carpeta.
+Texturas: Adjunto 2 con transparencia para algunos fondos (Sin ser obligatorio su uso, no debe molestar la visual).
+Pattern: Adjunto 2 con transparencia para algunos fondos (Sin ser obligatorio su uso, no debe molestar la visual).
+ISO y favicon: para un menú colapsado, o para el favicon, o icono de la app en windows, o lo que se necesite.
+
+Colores: 
+Principal: #8d0b7b
+Secundario: #64b32e
+Secundario: #d5d857
+Negro: #1f2021
+Blanco: #f0f5f7
+Gris Claro: #d1e2e8
+Gris Oscuro: #554f59
+
+Estetica minimalista, pero moderna, con patrones de movimiento, partículas o luces que le de un poquito de onda a la pantalla de login y algunas otras. Usarlos con criterio.
+Ejemplos de lo que digo con "con patrones de movimiento, partículas o luces":
+-https://sistema.iluma.com.ar/ Luces de fondo
+-https://kaitex.com.ar/ Partículas de la sección de contacto
+-https://sitio-web-iluma.pages.dev/ Luces y movimientos

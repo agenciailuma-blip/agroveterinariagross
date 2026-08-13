@@ -23,21 +23,43 @@ export default function Login() {
   }
 
   return (
-    <div className="grid min-h-full place-items-center bg-linear-to-br from-marca-800 to-marca-950 p-4">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight text-white">
-            Agroveterinaria Gross
-          </h1>
-          <p className="mt-1 text-sm text-marca-200">Sistema de gestión</p>
-        </div>
+    <div className="relative grid min-h-full place-items-center overflow-hidden bg-marca-950 p-4">
+      {/* Luces de fondo. Decorativas: no llevan texto ni foco. */}
+      <div aria-hidden className="pointer-events-none absolute inset-0">
+        <span
+          className="luz size-[34rem] bg-marca-600/45"
+          style={{ top: '-12%', left: '-10%' }}
+        />
+        <span
+          className="luz size-[26rem] bg-verde-500/25"
+          style={{ bottom: '-14%', right: '-6%', animationDelay: '-9s' }}
+        />
+        <span
+          className="luz size-[20rem] bg-acento-400/12"
+          style={{ top: '38%', right: '22%', animationDelay: '-17s' }}
+        />
+        <div
+          className="absolute inset-0 opacity-[0.09]"
+          style={{
+            backgroundImage: 'url(/marca/pattern.svg)',
+            backgroundSize: '620px',
+          }}
+        />
+      </div>
+
+      <div className="relative w-full max-w-sm">
+        <img
+          src="/marca/logo.svg"
+          alt="Agroveterinaria Gross"
+          className="mx-auto mb-8 h-16 w-auto brightness-0 invert"
+        />
 
         <form
           onSubmit={onSubmit}
-          className="space-y-4 rounded-xl bg-white p-6 shadow-xl ring-1 ring-black/5"
+          className="space-y-4 rounded-2xl bg-papel/95 p-6 shadow-2xl ring-1 ring-white/10 backdrop-blur-sm"
         >
           <div>
-            <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-slate-700">
+            <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-piedra-600">
               Correo
             </label>
             <input
@@ -47,12 +69,12 @@ export default function Login() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-slate-900 outline-none focus:border-marca-500 focus:ring-2 focus:ring-marca-500/20"
+              className="w-full rounded-lg border border-borde bg-white px-3 py-2.5 text-tinta outline-none focus:border-marca-500 focus:ring-2 focus:ring-marca-500/20"
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-slate-700">
+            <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-piedra-600">
               Contraseña
             </label>
             <input
@@ -62,7 +84,7 @@ export default function Login() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-slate-900 outline-none focus:border-marca-500 focus:ring-2 focus:ring-marca-500/20"
+              className="w-full rounded-lg border border-borde bg-white px-3 py-2.5 text-tinta outline-none focus:border-marca-500 focus:ring-2 focus:ring-marca-500/20"
             />
           </div>
 
@@ -78,14 +100,14 @@ export default function Login() {
           <button
             type="submit"
             disabled={enviando}
-            className="w-full rounded-lg bg-marca-600 px-4 py-2.5 font-medium text-white transition-colors hover:bg-marca-700 focus:ring-2 focus:ring-marca-500/40 focus:outline-none disabled:opacity-60"
+            className="w-full rounded-lg bg-marca-700 px-4 py-2.5 font-medium text-white transition-colors hover:bg-marca-600 focus:ring-2 focus:ring-marca-400/50 focus:outline-none disabled:opacity-60"
           >
             {enviando ? 'Ingresando…' : 'Ingresar'}
           </button>
         </form>
 
-        <p className="mt-6 text-center text-xs text-marca-300">
-          ILUMA · {new Date().getFullYear()}
+        <p className="mt-6 text-center text-xs text-marca-300/70">
+          Sistema de gestión · ILUMA {new Date().getFullYear()}
         </p>
       </div>
     </div>

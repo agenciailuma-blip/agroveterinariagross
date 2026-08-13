@@ -1,24 +1,92 @@
 @import 'tailwindcss';
 
 /*
-  Paleta del sistema.
+  ─────────────────────────────────────────────────────────────
+  Tipografía
 
-  Pensada para mostrador: contraste alto y estados de stock que se
-  distingan de un vistazo desde parado, no mirando la pantalla de cerca.
+  Ubuntu va empaquetada, no traída de Google Fonts. En un sistema
+  que tiene que funcionar sin internet, una fuente remota significa
+  que el mostrador se ve distinto justo el día que se corta la
+  conexión. Pesan 855 kB entre las tres variantes y quedan en caché
+  para siempre después de la primera carga.
+  ─────────────────────────────────────────────────────────────
 */
-@theme {
-  --color-marca-50: #f0f9f4;
-  --color-marca-100: #dbf0e3;
-  --color-marca-200: #b9e1ca;
-  --color-marca-300: #8bcaa8;
-  --color-marca-400: #57ac81;
-  --color-marca-500: #348f64;
-  --color-marca-600: #24724f;
-  --color-marca-700: #1d5b41;
-  --color-marca-800: #1a4936;
-  --color-marca-900: #163c2d;
+@font-face {
+  font-family: 'Ubuntu';
+  src: url('/fuentes/Ubuntu-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Ubuntu';
+  src: url('/fuentes/Ubuntu-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Ubuntu';
+  src: url('/fuentes/Ubuntu-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
 
-  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+@theme {
+  /*
+    Identidad de Agroveterinaria Gross.
+    Principal #8d0b7b · Secundarios #64b32e y #d5d857
+    Negro #1f2021 · Blanco #f0f5f7 · Gris claro #d1e2e8 · Gris oscuro #554f59
+  */
+  --color-marca-50: #fdf2fb;
+  --color-marca-100: #fbe4f7;
+  --color-marca-200: #f8c9ef;
+  --color-marca-300: #f29fe1;
+  --color-marca-400: #e767cc;
+  --color-marca-500: #d63bb2;
+  --color-marca-600: #b81f95;
+  --color-marca-700: #8d0b7b;
+  --color-marca-800: #750f66;
+  --color-marca-900: #611255;
+  --color-marca-950: #3d0134;
+
+  --color-verde-50: #f4faec;
+  --color-verde-100: #e6f4d6;
+  --color-verde-200: #cfe9b2;
+  --color-verde-300: #b0da85;
+  --color-verde-400: #8ec95b;
+  --color-verde-500: #64b32e;
+  --color-verde-600: #4d8f22;
+  --color-verde-700: #3c6e1e;
+  --color-verde-800: #33581d;
+  --color-verde-900: #2c4a1c;
+
+  --color-acento-100: #f6f7d3;
+  --color-acento-200: #eceeab;
+  --color-acento-300: #e0e37e;
+  --color-acento-400: #d5d857;
+  --color-acento-500: #c2c63c;
+  --color-acento-600: #a0a52d;
+
+  /* Neutros de la identidad, con su rol explícito */
+  --color-tinta: #1f2021;
+  --color-papel: #f0f5f7;
+  --color-borde: #d1e2e8;
+  --color-apagado: #554f59;
+
+  --color-piedra-50: #f7fafb;
+  --color-piedra-100: #f0f5f7;
+  --color-piedra-200: #d1e2e8;
+  --color-piedra-300: #b3ccd6;
+  --color-piedra-400: #8aa2ad;
+  --color-piedra-500: #667c86;
+  --color-piedra-600: #554f59;
+  --color-piedra-700: #403c44;
+  --color-piedra-800: #2c2b30;
+  --color-piedra-900: #1f2021;
+
+  --font-sans: 'Ubuntu', system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
 
 html,
@@ -28,14 +96,49 @@ body,
 }
 
 body {
-  @apply bg-slate-100 text-slate-900 antialiased;
+  @apply bg-papel text-tinta antialiased;
+  font-family: var(--font-sans);
 }
 
 /*
-  El lector de codigos de barra se comporta como un teclado: escribe muy
-  rapido y manda Enter. No necesita driver, pero si que el campo de
-  busqueda nunca pierda el foco por un scroll accidental.
+  ─────────────────────────────────────────────────────────────
+  Luces de fondo
+
+  Se mueven muy despacio y sólo animan transform y opacity, que el
+  navegador resuelve en la placa de video. En las PC del mostrador,
+  que tienen ocho años, una animación que toque el layout se nota;
+  ésta no.
+
+  Y se apaga entera si el sistema operativo pide menos movimiento.
+  ─────────────────────────────────────────────────────────────
 */
+@keyframes deriva {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  33% {
+    transform: translate3d(6%, -8%, 0) scale(1.12);
+  }
+  66% {
+    transform: translate3d(-5%, 6%, 0) scale(0.94);
+  }
+}
+
+.luz {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(72px);
+  will-change: transform;
+  animation: deriva 26s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .luz {
+    animation: none;
+  }
+}
+
 input[type='search']::-webkit-search-cancel-button {
   @apply cursor-pointer;
 }
