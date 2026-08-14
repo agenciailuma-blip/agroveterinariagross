@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTerminal } from '@/lib/terminal'
+import { useAuth } from '@/auth/AuthProvider'
 import { IdentificarOperador, useOperador } from '@/components/IdentificarOperador'
 import {
   abrirCaja,
+  ajustarTotal,
   aplicarLista,
   cajaAbierta,
   cerrarCaja,
@@ -21,6 +23,7 @@ import { moneda, numero } from '@/lib/tipos'
 export default function Caja() {
   const { terminal, cargando: cargandoTerminal } = useTerminal()
   const { operador, identificar, salir } = useOperador()
+  const { tienePermiso } = useAuth()
   const qc = useQueryClient()
 
   const [seleccionada, setSeleccionada] = useState<string | null>(null)
@@ -83,6 +86,19 @@ export default function Caja() {
     setCuotas(n)
     aplicar.mutate({ m, n })
   }
+
+  const ajustar = useMutation({
+    mutationFn: ({ nuevo, motivo }: { nuevo: number; motivo: string }) =>
+      ajustarTotal(seleccionada!, nuevo, motivo, operador!.usuario_id),
+    onSuccess: (nuevoTotal) => {
+      setPagos((prev) =>
+        prev.length === 1 ? [{ ...prev[0], importe: nuevoTotal }] : prev,
+      )
+      qc.invalidateQueries({ queryKey: ['venta', seleccionada] })
+      setError(null)
+    },
+    onError: (e) => setError(e instanceof Error ? e.message : 'No se pudo ajustar.'),
+  })
 
   const totalVenta = venta.data?.total ?? 0
   const totalPagos = pagos.reduce((s, p) => s + p.importe, 0)
@@ -222,8 +238,11 @@ export default function Caja() {
             saldoActual={saldo.data ?? 0}
             aplicando={aplicar.isPending}
             cobrando={cobrarVenta.isPending}
+            ajustando={ajustar.isPending}
+            puedeAjustar={tienePermiso('ventas.ajustar_total')}
             error={error}
             onElegirMedio={elegirMedio}
+            onAjustar={(nuevo, motivo) => ajustar.mutate({ nuevo, motivo })}
             onCobrar={() => cobrarVenta.mutate()}
             onCancelar={limpiar}
           />
@@ -308,8 +327,11 @@ function PanelCobro({
   saldoActual,
   aplicando,
   cobrando,
+  ajustando,
+  puedeAjustar,
   error,
   onElegirMedio,
+  onAjustar,
   onCobrar,
   onCancelar,
 }: {
@@ -323,8 +345,11 @@ function PanelCobro({
   saldoActual: number
   aplicando: boolean
   cobrando: boolean
+  ajustando: boolean
+  puedeAjustar: boolean
   error: string | null
   onElegirMedio: (m: MedioPago, cuotas?: number) => void
+  onAjustar: (nuevoTotal: number, motivo: string) => void
   onCobrar: () => void
   onCancelar: () => void
 }) {
@@ -418,10 +443,45 @@ function PanelCobro({
           <div className="mt-4 space-y-3 border-t border-borde pt-4">
             <div className="flex items-baseline justify-between">
               <span className="font-medium text-tinta">Total a cobrar</span>
-              <span className="text-2xl font-semibold tabular-nums text-tinta">
-                {moneda.format(venta.total)}
-              </span>
+              <div className="flex items-baseline gap-3">
+                {puedeAjustar && (
+                  <button
+                    onClick={() => {
+                      const propuesto = window.prompt(
+                        `Total actual: ${moneda.format(venta.total)}\n¿En cuánto queda?`,
+                        String(Math.round(venta.total)),
+                      )
+                      if (propuesto === null) return
+                      const nuevo = Number(propuesto)
+                      if (!Number.isFinite(nuevo) || nuevo <= 0) return
+                      const motivo = window.prompt('¿Por qué se ajusta?', 'Redondeo al cliente')
+                      if (!motivo || motivo.trim().length < 3) return
+                      onAjustar(nuevo, motivo.trim())
+                    }}
+                    disabled={ajustando || aplicando}
+                    className="text-sm font-medium text-marca-700 hover:underline disabled:opacity-40"
+                  >
+                    {ajustando ? 'Ajustando…' : 'Ajustar'}
+                  </button>
+                )}
+                <span className="text-2xl font-semibold tabular-nums text-tinta">
+                  {moneda.format(venta.total)}
+                </span>
+              </div>
             </div>
+
+            {/*
+              Si ya hubo un ajuste a mano y después se cambia el medio de
+              pago, el importe se rescala en proporción. Conviene avisarlo:
+              cuando la tarjeta no pasa y se termina pagando en efectivo,
+              la rebaja normalmente se vuelve a conversar.
+            */}
+            {venta.venta_linea.some((l) => l.motivo_modificacion) && (
+              <p className="rounded-lg bg-marca-50 px-3 py-2 text-xs text-marca-800 ring-1 ring-marca-200">
+                Esta venta tiene precios ajustados a mano. Si cambiás el medio de pago se recalculan
+                en proporción — verificá el total antes de cobrar.
+              </p>
+            )}
 
             {pagos.map((p, i) => {
               const mp = medios.find((x) => x.id === p.medio_pago_id)

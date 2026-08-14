@@ -7,9 +7,12 @@ import {
   buscarProductosVenta,
   clienteConsumidorFinal,
   enviarACaja,
+  esFraccionable,
+  pasoCantidad,
 } from '@/lib/api/ventas'
 import type { ClienteVenta, LineaVenta, ProductoVenta } from '@/lib/api/ventas'
 import { cargarPrecios, previsualizarPrecio } from '@/lib/api/precios'
+import type { MedioPago } from '@/lib/api/precios'
 import { moneda, numero } from '@/lib/tipos'
 
 const BORRADOR = 'gross.venta-en-curso'
@@ -28,6 +31,8 @@ export default function PuntoDeVenta() {
   const [cliente, setCliente] = useState<ClienteVenta | null>(null)
   const [buscandoCliente, setBuscandoCliente] = useState(false)
   const [textoCliente, setTextoCliente] = useState('')
+  const [medioAnticipado, setMedioAnticipado] = useState<string | null>(null)
+  const [cuotasAnticipadas, setCuotasAnticipadas] = useState(1)
   const [texto, setTexto] = useState('')
   const [debounced, setDebounced] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -64,6 +69,13 @@ export default function PuntoDeVenta() {
   const precios = useQuery({ queryKey: ['precios'], queryFn: cargarPrecios, staleTime: 300_000 })
 
   const listaTarjeta = precios.data?.listas.find((l) => !l.es_predeterminada)
+  const medios = precios.data?.medios ?? []
+  const medio = medios.find((m) => m.id === medioAnticipado)
+  const listaElegida = medio
+    ? precios.data?.listas.find((l) => l.id === medio.lista_precio_id)
+    : undefined
+  const recargoElegido =
+    medio?.medio_pago_cuota.find((c) => c.cuotas === cuotasAnticipadas)?.recargo_porcentaje ?? 0
 
   const totales = useMemo(() => {
     const bruto = lineas.reduce((s, l) => s + l.cantidad * l.precio_original, 0)
@@ -74,11 +86,12 @@ export default function PuntoDeVenta() {
       bruto,
       descuentoLineas: bruto - neto,
       descuentoCliente: neto - conDescuento,
-      total: Math.round(conDescuento * 100) / 100,
+      contado: Math.round(conDescuento * 100) / 100,
       conTarjeta: previsualizarPrecio(conDescuento, listaTarjeta, 0),
+      elegido: previsualizarPrecio(conDescuento, listaElegida, recargoElegido),
       unidades: lineas.reduce((s, l) => s + l.cantidad, 0),
     }
-  }, [lineas, cliente, listaTarjeta])
+  }, [lineas, cliente, listaTarjeta, listaElegida, recargoElegido])
 
   function agregar(p: ProductoVenta) {
     renovar()
@@ -97,6 +110,7 @@ export default function PuntoDeVenta() {
           producto_id: p.producto_id,
           codigo_producto: p.codigo,
           descripcion: p.nombre_interno,
+          unidad_medida: p.unidad_medida,
           cantidad: 1,
           precio_original: p.precio_venta,
           precio_unitario: p.precio_venta,
@@ -114,7 +128,19 @@ export default function PuntoDeVenta() {
   function cambiarCantidad(id: string, cantidad: number) {
     renovar()
     if (cantidad <= 0) return setLineas((p) => p.filter((l) => l.id !== id))
-    setLineas((p) => p.map((l) => (l.id === id ? { ...l, cantidad } : l)))
+    setLineas((p) =>
+      p.map((l) =>
+        l.id === id
+          ? {
+              ...l,
+              // Un collar o un frasco no se venden por mitades. Se
+              // redondea acá y no sólo con el paso del campo, porque
+              // tipear a mano también tiene que respetarlo.
+              cantidad: esFraccionable(l.unidad_medida) ? cantidad : Math.round(cantidad),
+            }
+          : l,
+      ),
+    )
   }
 
   function cambiarPrecio(id: string) {
@@ -156,9 +182,12 @@ export default function PuntoDeVenta() {
         terminalId: terminal!.id,
         lineas,
         observaciones: null,
+        listaPrecioId: medio?.lista_precio_id ?? null,
       }),
     onSuccess: (v) => {
       setLineas([])
+      setMedioAnticipado(null)
+      setCuotasAnticipadas(1)
       setError(null)
       setExito(`Venta ${v.codigo} enviada a caja`)
       setTimeout(() => setExito(null), 4000)
@@ -288,11 +317,16 @@ export default function PuntoDeVenta() {
                           <input
                             type="number"
                             min="0"
-                            step="0.01"
+                            step={pasoCantidad(l.unidad_medida)}
                             value={l.cantidad}
                             onChange={(e) => cambiarCantidad(l.id, Number(e.target.value))}
                             className="w-full rounded-lg border border-borde px-2 py-1 text-center tabular-nums outline-none focus:border-marca-500"
                           />
+                          {esFraccionable(l.unidad_medida) && (
+                            <p className="mt-0.5 text-center text-xs text-piedra-400">
+                              {l.unidad_medida}
+                            </p>
+                          )}
                         </td>
                         <td className="px-3 py-2.5 text-right">
                           <button
@@ -386,6 +420,65 @@ export default function PuntoDeVenta() {
           )}
         </div>
 
+        {/*
+          El vendedor pregunta cómo va a pagar antes de mandar a caja: le
+          pide la tarjeta, mira si hay promoción, lo resuelve ahí. La caja
+          recibe la venta con el precio correcto y el cliente no escucha
+          dos números distintos. Se puede cambiar en la caja igual, porque
+          la tarjeta puede no pasar.
+        */}
+        {lineas.length > 0 && (
+          <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-borde">
+            <p className="mb-2 text-xs font-medium tracking-wide text-piedra-400 uppercase">
+              ¿Cómo va a pagar?
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {medios
+                .filter((m) => m.tipo !== 'cuenta_corriente' || cliente?.cuenta_corriente)
+                .flatMap((m: MedioPago) =>
+                  m.admite_cuotas
+                    ? Array.from({ length: m.cuotas_maximas }, (_, i) => i + 1).map((n) => ({
+                        m,
+                        n,
+                        clave: `${m.id}-${n}`,
+                        etiqueta: `${m.nombre} ${n}c`,
+                      }))
+                    : [{ m, n: 1, clave: m.id, etiqueta: m.nombre }],
+                )
+                .map(({ m, n, clave, etiqueta }) => {
+                  const activo = medioAnticipado === m.id && cuotasAnticipadas === n
+                  return (
+                    <button
+                      key={clave}
+                      onClick={() => {
+                        renovar()
+                        if (activo) {
+                          setMedioAnticipado(null)
+                          setCuotasAnticipadas(1)
+                        } else {
+                          setMedioAnticipado(m.id)
+                          setCuotasAnticipadas(n)
+                        }
+                      }}
+                      className={`rounded-lg px-2.5 py-1.5 text-xs font-medium ring-1 transition-colors ${
+                        activo
+                          ? 'bg-marca-700 text-white ring-marca-700'
+                          : 'bg-white text-piedra-600 ring-borde hover:bg-piedra-50'
+                      }`}
+                    >
+                      {etiqueta}
+                    </button>
+                  )
+                })}
+            </div>
+            {!medio && (
+              <p className="mt-2 text-xs text-piedra-400">
+                Si no se elige, la caja decide y el total puede cambiar.
+              </p>
+            )}
+          </div>
+        )}
+
         <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-borde">
           <dl className="space-y-1.5 text-sm">
             <div className="flex justify-between text-piedra-500">
@@ -405,22 +498,23 @@ export default function PuntoDeVenta() {
               </div>
             )}
             {/*
-              El precio que se le dice al cliente es el de tarjeta, y el
-              efectivo se presenta como descuento. Es como venden, así que
-              el número grande tiene que ser ese: si el vendedor lee el de
-              contado y después la caja cobra más, queda pegado.
+              Mientras no se sepa cómo paga, el número grande es el de
+              tarjeta y el efectivo va debajo como beneficio: es como
+              cotizan. Una vez elegido el medio, manda ese.
             */}
             <div className="flex items-baseline justify-between border-t border-borde pt-2">
-              <dt className="font-medium text-tinta">Total</dt>
+              <dt className="font-medium text-tinta">
+                {medio ? `Total ${medio.nombre.toLowerCase()}` : 'Total'}
+              </dt>
               <dd className="text-2xl font-semibold tabular-nums text-tinta">
-                {moneda.format(totales.conTarjeta)}
+                {moneda.format(medio ? totales.elegido : totales.conTarjeta)}
               </dd>
             </div>
-            {listaTarjeta && listaTarjeta.ajuste_porcentaje !== 0 && totales.total > 0 && (
+            {!medio && listaTarjeta && listaTarjeta.ajuste_porcentaje !== 0 && totales.contado > 0 && (
               <div className="flex items-baseline justify-between rounded-lg bg-verde-50 px-2.5 py-1.5 ring-1 ring-verde-200">
                 <dt className="text-sm font-medium text-verde-800">Pagando en efectivo</dt>
                 <dd className="text-base font-semibold tabular-nums text-verde-800">
-                  {moneda.format(totales.total)}
+                  {moneda.format(totales.contado)}
                 </dd>
               </div>
             )}

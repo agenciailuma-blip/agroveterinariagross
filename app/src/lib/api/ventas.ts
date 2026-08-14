@@ -30,12 +30,28 @@ export interface ClienteVenta {
   limite_credito: number | null
 }
 
+/*
+  Unidades que no se pueden partir. Una correa, un frasco o una bolsa se
+  venden enteros: el paso de la flecha tiene que ser 1 y no aceptar
+  decimales. El alimento suelto o el caño por metro, al revés.
+*/
+const UNIDADES_ENTERAS = new Set(['unidad', 'bolsa', 'caja'])
+
+export function esFraccionable(unidad: string) {
+  return !UNIDADES_ENTERAS.has(unidad)
+}
+
+export function pasoCantidad(unidad: string) {
+  return esFraccionable(unidad) ? 0.01 : 1
+}
+
 export interface LineaVenta {
   /** Id local, generado en el cliente. Sobrevive a la sincronización. */
   id: string
   producto_id: string
   codigo_producto: string
   descripcion: string
+  unidad_medida: string
   cantidad: number
   precio_original: number
   precio_unitario: number
@@ -143,6 +159,13 @@ export interface EnvioACaja {
   terminalId: string
   lineas: LineaVenta[]
   observaciones: string | null
+  /*
+    Con qué dijo el cliente que va a pagar. El vendedor ya se lo pregunta
+    en el mostrador —le pide la tarjeta, mira si hay promoción— así que la
+    caja recibe la venta con el precio correcto y no hay sorpresa al
+    cobrar. La caja lo puede cambiar igual: la tarjeta puede no pasar.
+  */
+  listaPrecioId: string | null
 }
 
 /*
@@ -202,6 +225,15 @@ export async function enviarACaja(datos: EnvioACaja): Promise<{ id: string; codi
     // La cabecera quedó sin líneas: se descarta para no dejar basura.
     await supabase.from('venta').delete().eq('id', venta.id)
     throw new Error(`No se pudieron cargar los productos: ${errorLineas.message}`)
+  }
+
+  // Se aplica la lista del medio de pago que anticipó el vendedor. Si es
+  // la predeterminada no cambia nada, pero deja la venta marcada.
+  if (datos.listaPrecioId) {
+    await supabase.rpc('aplicar_lista_a_venta', {
+      p_venta_id: venta.id,
+      p_lista_id: datos.listaPrecioId,
+    })
   }
 
   return venta

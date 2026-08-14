@@ -118,6 +118,29 @@ export async function aplicarLista(ventaId: string, listaId: string | null): Pro
   return Number(data)
 }
 
+/*
+  Lleva el total a un importe acordado con el cliente.
+
+  "Dale, te queda en mil." La base lo prorratea entre las líneas, deja
+  motivo y responsable, y ajusta el precio acordado para que la rebaja
+  no se evapore si después cambia el medio de pago.
+*/
+export async function ajustarTotal(
+  ventaId: string,
+  nuevoTotal: number,
+  motivo: string,
+  usuarioId: string,
+): Promise<number> {
+  const { data, error } = await supabase.rpc('ajustar_total_venta', {
+    p_venta_id: ventaId,
+    p_nuevo_total: nuevoTotal,
+    p_motivo: motivo,
+    p_usuario_id: usuarioId,
+  })
+  if (error) throw new Error(error.message)
+  return Number(data)
+}
+
 export async function saldoCuentaCorriente(clienteId: string): Promise<number> {
   const { data } = await supabase
     .from('cuenta_corriente_saldo')
