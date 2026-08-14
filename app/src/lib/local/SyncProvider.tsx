@@ -1,5 +1,6 @@
 import { createContext, use, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
+import { liveQuery } from 'dexie'
 import { db } from '@/lib/local/db'
 import { hayDatosLocales } from '@/lib/local/consultas'
 import { pendientes, recuperarHuerfanas, sincronizar } from '@/lib/local/sync'
@@ -101,6 +102,22 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       vigente = false
     }
   }, [refrescarPendientes])
+
+  /*
+    El contador de pendientes se sigue solo desde la base local.
+
+    Antes se refrescaba dentro de la sincronización, que no corre cuando
+    no hay conexión — es decir, dejaba de actualizarse exactamente
+    cuando más importa. El vendedor guardaba una venta sin internet y el
+    indicador seguía diciendo que no había nada esperando.
+  */
+  useEffect(() => {
+    const sub = liveQuery(() => pendientes()).subscribe({
+      next: setSinSubir,
+      error: () => {},
+    })
+    return () => sub.unsubscribe()
+  }, [])
 
   useEffect(() => {
     if (!enLinea) return

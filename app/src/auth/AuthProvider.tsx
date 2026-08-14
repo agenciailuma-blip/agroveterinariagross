@@ -89,6 +89,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [perfilEnCache, setPerfilEnCache] = useState(false)
 
   const cargarPerfil = useCallback(async (userId: string) => {
+    /*
+      Sin conexión y con copia local, ni se intenta.
+
+      Supabase reintenta refrescar el token cada tanto, y cada intento
+      disparaba una consulta del perfil que fallaba igual. Además de
+      inútil, llenaba la consola de errores rojos que tapan los que sí
+      importan cuando hay que diagnosticar algo de verdad.
+    */
+    if (!navigator.onLine) {
+      const guardado = leerDeCache(userId)
+      if (guardado) {
+        setPerfil(guardado)
+        setPerfilEnCache(true)
+        setError(null)
+        return
+      }
+    }
+
     let respuesta
     try {
       respuesta = await supabase
