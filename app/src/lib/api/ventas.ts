@@ -213,7 +213,34 @@ export interface EnvioACaja {
   las líneas, así no puede quedar una venta cuyo total no coincida con
   lo que tiene adentro.
 */
+/*
+  Nada de lo que hace enviarACaja toca la red, así que no debería poder
+  tardar más de unos milisegundos. Si tarda, algo está mal —la base local
+  bloqueada, el disco lleno— y hay que decirlo, no dejar el botón girando.
+
+  Una pantalla que se queda "Enviando…" sin explicar nada es peor que un
+  error: quien está en el mostrador no sabe si la venta salió, si tiene
+  que volver a apretar, o si va a mandar la misma venta dos veces.
+*/
+const LIMITE_LOCAL_MS = 5_000
+
+function conLimite<T>(promesa: Promise<T>, mensaje: string): Promise<T> {
+  return Promise.race([
+    promesa,
+    new Promise<never>((_, rechazar) =>
+      setTimeout(() => rechazar(new Error(mensaje)), LIMITE_LOCAL_MS),
+    ),
+  ])
+}
+
 export async function enviarACaja(datos: EnvioACaja): Promise<{ id: string; codigo: string }> {
+  return conLimite(
+    guardarVenta(datos),
+    'La base local no respondió. Anotá la venta a mano y avisá: la computadora no está pudiendo guardar.',
+  )
+}
+
+async function guardarVenta(datos: EnvioACaja): Promise<{ id: string; codigo: string }> {
   if (!datos.lineas.length) throw new Error('La venta no tiene productos.')
 
   const id = crypto.randomUUID()

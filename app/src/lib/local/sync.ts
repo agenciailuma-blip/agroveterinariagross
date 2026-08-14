@@ -251,8 +251,30 @@ export async function subirPendientes() {
   return { enviadas, fallidas }
 }
 
+/*
+  Rescata operaciones huérfanas.
+
+  Si la página se recarga —o se corta la luz— mientras una operación
+  estaba en vuelo, queda marcada "enviando" y nadie la vuelve a mirar:
+  el reintento sólo busca pendientes y con error. Quedaría una venta
+  guardada que jamás sube, sin aparecer en ningún contador.
+
+  Reenviar es seguro: el id lo generó la terminal, así que si el
+  servidor ya la tenía responde con clave duplicada y se descarta.
+*/
+export async function recuperarHuerfanas() {
+  const huerfanas = await db.outbox.where('estado').equals('enviando').toArray()
+  if (!huerfanas.length) return 0
+  await db.outbox.bulkPut(huerfanas.map((o) => ({ ...o, estado: 'pendiente' as const })))
+  return huerfanas.length
+}
+
 export async function pendientes() {
-  return db.outbox.where('estado').anyOf('pendiente', 'error').count()
+  return db.outbox.where('estado').anyOf('pendiente', 'error', 'enviando').count()
+}
+
+export async function listarPendientes() {
+  return db.outbox.orderBy('creado_en').toArray()
 }
 
 export async function conError() {

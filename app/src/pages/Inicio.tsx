@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/AuthProvider'
+import { Pendientes } from '@/components/Pendientes'
 import { numero } from '@/lib/tipos'
 
 interface Frescura {
@@ -81,6 +82,8 @@ export default function Inicio() {
           })}
         </p>
       </div>
+
+      <Pendientes />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Tarjeta

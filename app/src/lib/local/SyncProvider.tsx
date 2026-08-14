@@ -2,7 +2,7 @@ import { createContext, use, useCallback, useEffect, useMemo, useRef, useState }
 import type { ReactNode } from 'react'
 import { db } from '@/lib/local/db'
 import { hayDatosLocales } from '@/lib/local/consultas'
-import { pendientes, sincronizar } from '@/lib/local/sync'
+import { pendientes, recuperarHuerfanas, sincronizar } from '@/lib/local/sync'
 import { useConexion } from '@/lib/useConexion'
 import { useTerminal } from '@/lib/terminal'
 import { supabase } from '@/lib/supabase'
@@ -83,6 +83,9 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     db.open()
       .then(async () => {
         if (!vigente) return
+        // Lo que quedó a medio enviar en la sesión anterior vuelve a la
+        // cola. Reenviar es seguro; perder una venta no.
+        await recuperarHuerfanas()
         setListo(await hayDatosLocales())
         await refrescarPendientes()
       })
