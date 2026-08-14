@@ -136,6 +136,18 @@ export interface Cursor {
   sincronizado_en: string
 }
 
+/*
+  Contadores propios de la terminal, separados de configuracion porque
+  esa tabla se pisa entera con lo que baja del servidor. Un contador de
+  numeración que se borra en una sincronización hace que la terminal
+  repita números de venta, y eso rompe la restricción de unicidad.
+*/
+export interface Contador {
+  clave: string
+  valor: number
+  actualizado_en: string
+}
+
 export type EstadoOperacion = 'pendiente' | 'enviando' | 'error'
 
 /*
@@ -176,6 +188,7 @@ class BaseLocal extends Dexie {
   configuracion!: EntityTable<ConfiguracionLocal, 'clave'>
   referencia!: EntityTable<ReferenciaLocal, 'id'>
   cursor!: EntityTable<Cursor, 'tabla'>
+  contador!: EntityTable<Contador, 'clave'>
   outbox!: EntityTable<OperacionPendiente, 'id'>
 
   constructor() {
@@ -193,6 +206,10 @@ class BaseLocal extends Dexie {
       referencia: 'id, tipo, actualizado_en',
       cursor: 'tabla',
       outbox: 'id, lote, estado, creado_en, [lote+orden]',
+    })
+
+    this.version(2).stores({
+      contador: 'clave',
     })
   }
 }

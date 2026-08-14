@@ -5,8 +5,7 @@ import {
   buscarProductosLocal,
   consumidorFinalLocal,
   hayDatosLocales,
-  recordarUltimoNumero,
-  siguienteCodigoLocal,
+  reservarCodigoVenta,
 } from '@/lib/local/consultas'
 import { encolar, subirPendientes } from '@/lib/local/sync'
 
@@ -233,6 +232,18 @@ function conLimite<T>(promesa: Promise<T>, mensaje: string): Promise<T> {
   ])
 }
 
+/*
+  Traza de los pasos al guardar.
+
+  Queda permanente y no es para depurar en el escritorio: es para poder
+  atender un problema en Oberá por teléfono. Si el mostrador dice "no
+  guarda", pedirle que abra la consola y lea la última línea dice
+  exactamente qué paso quedó colgado, sin tener que reproducirlo acá.
+*/
+function paso(nombre: string, desde: number) {
+  console.info(`[venta] ${nombre} · ${Math.round(performance.now() - desde)} ms`)
+}
+
 export async function enviarACaja(datos: EnvioACaja): Promise<{ id: string; codigo: string }> {
   return conLimite(
     guardarVenta(datos),
@@ -241,10 +252,15 @@ export async function enviarACaja(datos: EnvioACaja): Promise<{ id: string; codi
 }
 
 async function guardarVenta(datos: EnvioACaja): Promise<{ id: string; codigo: string }> {
+  const t0 = performance.now()
   if (!datos.lineas.length) throw new Error('La venta no tiene productos.')
 
   const id = crypto.randomUUID()
-  const codigo = await siguienteCodigoLocal(datos.terminalPrefijo)
+  paso('id generado', t0)
+
+  const codigo = await reservarCodigoVenta(datos.terminalPrefijo)
+  paso(`numero reservado (${codigo})`, t0)
+
   const ahora = new Date().toISOString()
 
   const cabecera = {
@@ -305,7 +321,7 @@ async function guardarVenta(datos: EnvioACaja): Promise<{ id: string; codigo: st
       : []),
   ])
 
-  await recordarUltimoNumero(datos.terminalPrefijo, codigo)
+  paso('encolada', t0)
 
   // Si hay conexión se intenta subir enseguida, para que la caja la vea
   // sin esperar el próximo ciclo. Si falla no importa: ya está guardada.
@@ -313,5 +329,6 @@ async function guardarVenta(datos: EnvioACaja): Promise<{ id: string; codigo: st
     void subirPendientes().catch(() => {})
   }
 
+  paso('LISTA', t0)
   return { id, codigo }
 }

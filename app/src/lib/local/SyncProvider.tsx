@@ -46,7 +46,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     corriendo.current = true
     setSincronizando(true)
     try {
-      const r = await sincronizar()
+      const r = await sincronizar(terminal?.prefijo)
       setUltimaSync(new Date())
       setError(null)
       setListo(await hayDatosLocales())

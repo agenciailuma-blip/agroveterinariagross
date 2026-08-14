@@ -285,10 +285,32 @@ export async function descartarOperacion(id: string) {
   await db.outbox.delete(id)
 }
 
-export async function sincronizar() {
+/*
+  Alinea el contador de numeración con el servidor.
+
+  Una terminal recién configurada arrancaría en uno y chocaría con toda
+  la numeración anterior. Se consulta el mayor número ya emitido con ese
+  prefijo y se sube el contador local si hace falta.
+*/
+async function alinearNumeracion(prefijo: string) {
+  const { alinearContador } = await import('@/lib/local/consultas')
+  const { data } = await supabase
+    .from('venta')
+    .select('codigo')
+    .like('codigo', `${prefijo}-%`)
+    .order('codigo', { ascending: false })
+    .limit(1)
+
+  const ultimo = data?.[0]?.codigo
+  if (!ultimo) return
+  await alinearContador(prefijo, Number(String(ultimo).split('-').pop()) || 0)
+}
+
+export async function sincronizar(prefijoTerminal?: string | null) {
   const inicio = performance.now()
   const subida = await subirPendientes()
   const bajados = await bajarCambios()
+  if (prefijoTerminal) await alinearNumeracion(prefijoTerminal)
   return {
     ...subida,
     bajados,

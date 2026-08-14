@@ -169,27 +169,52 @@ export async function preciosLocal(): Promise<{ listas: ListaPrecio[]; medios: M
   Numeración de la venta sin conexión.
 
   Cada terminal tiene su prefijo, así que puede numerar sola sin
-  coordinar con nadie. Se toma el mayor entre lo que hay en la bandeja
-  de salida y el último conocido del servidor, para que reconectar no
-  reinicie la cuenta.
-*/
-export async function siguienteCodigoLocal(prefijo: string) {
-  const enCola = await db.outbox.filter((o) => o.tabla === 'venta').toArray()
-  const numeros = enCola
-    .map((o) => String((o.datos as { codigo?: string }).codigo ?? ''))
-    .filter((c) => c.startsWith(prefijo + '-'))
-    .map((c) => Number(c.split('-').pop()) || 0)
+  coordinar con nadie. Pero el número tiene que quedar RESERVADO antes
+  de usarse, en una sola operación indivisible.
 
-  const guardado = Number((await db.configuracion.get(`ultimo_numero:${prefijo}`))?.valor ?? 0)
-  const siguiente = Math.max(guardado, ...numeros, 0) + 1
-  return `${prefijo}-${String(siguiente).padStart(6, '0')}`
+  La versión anterior lo deducía mirando la bandeja de salida y lo
+  guardaba después de encolar. Eso tenía un agujero real: si la venta
+  subía y se borraba de la cola antes de ese guardado, el contador
+  volvía a cero y la siguiente venta repetía un número ya existente.
+  El servidor la rechazaba por número duplicado, sus líneas quedaban
+  apuntando a una venta inexistente, y el lote entero se trababa.
+
+  Reservar primero e incrementar en la misma transacción no deja esa
+  ventana. Si después la venta se descarta, se pierde un número — que
+  es infinitamente más barato que repetirlo.
+*/
+export async function reservarCodigoVenta(prefijo: string) {
+  return db.transaction('rw', db.contador, async () => {
+    const clave = `venta:${prefijo}`
+    const actual = (await db.contador.get(clave))?.valor ?? 0
+    const siguiente = actual + 1
+    await db.contador.put({
+      clave,
+      valor: siguiente,
+      actualizado_en: new Date().toISOString(),
+    })
+    return `${prefijo}-${String(siguiente).padStart(6, '0')}`
+  })
 }
 
-export async function recordarUltimoNumero(prefijo: string, codigo: string) {
-  const numero = Number(codigo.split('-').pop()) || 0
-  await db.configuracion.put({
-    clave: `ultimo_numero:${prefijo}`,
-    valor: numero,
-    actualizado_en: new Date().toISOString(),
+/*
+  Alinea el contador con lo que ya existe en el servidor.
+
+  Hace falta para una terminal recién configurada, que si no arrancaría
+  en uno y chocaría con toda la numeración anterior. Sólo sube el
+  contador, nunca lo baja: si local está más adelante es porque hay
+  ventas sin subir todavía.
+*/
+export async function alinearContador(prefijo: string, ultimoServidor: number) {
+  const clave = `venta:${prefijo}`
+  await db.transaction('rw', db.contador, async () => {
+    const actual = (await db.contador.get(clave))?.valor ?? 0
+    if (ultimoServidor > actual) {
+      await db.contador.put({
+        clave,
+        valor: ultimoServidor,
+        actualizado_en: new Date().toISOString(),
+      })
+    }
   })
 }
