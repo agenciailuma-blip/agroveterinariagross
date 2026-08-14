@@ -70,9 +70,11 @@ export function useOperador() {
 const TECLAS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'borrar', '0', 'ok']
 
 export function IdentificarOperador({
+  terminalId,
   onIdentificado,
   onCancelar,
 }: {
+  terminalId: string
   onIdentificado: (o: Operador) => void
   onCancelar?: () => void
 }) {
@@ -87,7 +89,7 @@ export function IdentificarOperador({
       setVerificando(true)
       setError(null)
       try {
-        const o = await verificarPin(valor)
+        const o = await verificarPin(valor, terminalId)
         if (o) {
           onIdentificado(o)
         } else {
@@ -101,7 +103,7 @@ export function IdentificarOperador({
         setVerificando(false)
       }
     },
-    [onIdentificado, verificando],
+    [onIdentificado, verificando, terminalId],
   )
 
   function teclear(t: string) {

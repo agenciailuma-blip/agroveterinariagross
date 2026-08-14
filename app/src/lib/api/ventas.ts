@@ -70,12 +70,44 @@ export interface LineaVenta {
   stock_disponible: number
 }
 
-/** Identifica al operador por PIN dentro de la sesión de la terminal. */
-export async function verificarPin(pin: string): Promise<Operador | null> {
-  const { data, error } = await supabase.rpc('verificar_pin', { p_pin: pin })
-  if (error) throw new Error(error.message)
-  const filas = (data ?? []) as Operador[]
-  return filas[0] ?? null
+/*
+  Identifica al operador.
+
+  Con conexión pregunta al servidor, que es la única fuente autorizada, y
+  guarda un verificador local para poder reconocerlo después sin
+  internet. Sin conexión usa ese verificador.
+
+  Alguien que nunca se identificó en esta computadora no va a poder
+  hacerlo sin conexión, y está bien: la terminal no tiene forma honesta
+  de saber quién es.
+*/
+export async function verificarPin(pin: string, terminalId: string): Promise<Operador | null> {
+  const { recordarPin, verificarPinLocal, hayPinesGuardados } = await import('@/lib/local/pin')
+
+  if (navigator.onLine) {
+    try {
+      const { data, error } = await supabase.rpc('verificar_pin', { p_pin: pin })
+      if (error) throw new Error(error.message)
+      const operador = ((data ?? []) as Operador[])[0] ?? null
+      if (operador) await recordarPin(pin, operador, terminalId)
+      return operador
+    } catch (e) {
+      // Si el servidor no contesta se sigue por el camino local en vez
+      // de dejar al mostrador sin poder trabajar.
+      const mensaje = e instanceof Error ? e.message : String(e)
+      if (!/failed to fetch|networkerror|load failed/i.test(mensaje)) throw e
+    }
+  }
+
+  const local = await verificarPinLocal(pin, terminalId)
+  if (local) return local
+
+  if (!(await hayPinesGuardados(terminalId))) {
+    throw new Error(
+      'Sin conexión, esta computadora sólo reconoce a quienes ya se identificaron en ella antes. Conectate una vez para poder usarla desconectada.',
+    )
+  }
+  return null
 }
 
 /*
@@ -235,31 +267,41 @@ function conLimite<T>(promesa: Promise<T>, mensaje: string): Promise<T> {
 /*
   Traza de los pasos al guardar.
 
-  Queda permanente y no es para depurar en el escritorio: es para poder
-  atender un problema en Oberá por teléfono. Si el mostrador dice "no
-  guarda", pedirle que abra la consola y lea la última línea dice
-  exactamente qué paso quedó colgado, sin tener que reproducirlo acá.
+  Va a la consola y también a la pantalla. Lo segundo importa más: si el
+  mostrador llama diciendo "no guarda", nadie va a abrir la consola del
+  navegador. Que el propio botón diga en qué paso se quedó convierte una
+  llamada de media hora en una de treinta segundos.
 */
-function paso(nombre: string, desde: number) {
-  console.info(`[venta] ${nombre} · ${Math.round(performance.now() - desde)} ms`)
-}
+export type AvisoPaso = (nombre: string) => void
 
-export async function enviarACaja(datos: EnvioACaja): Promise<{ id: string; codigo: string }> {
+export async function enviarACaja(
+  datos: EnvioACaja,
+  onPaso?: AvisoPaso,
+): Promise<{ id: string; codigo: string }> {
   return conLimite(
-    guardarVenta(datos),
+    guardarVenta(datos, onPaso),
     'La base local no respondió. Anotá la venta a mano y avisá: la computadora no está pudiendo guardar.',
   )
 }
 
-async function guardarVenta(datos: EnvioACaja): Promise<{ id: string; codigo: string }> {
+async function guardarVenta(
+  datos: EnvioACaja,
+  onPaso?: AvisoPaso,
+): Promise<{ id: string; codigo: string }> {
   const t0 = performance.now()
+  const paso = (nombre: string) => {
+    console.warn(`[venta] ${nombre} · ${Math.round(performance.now() - t0)} ms`)
+    onPaso?.(nombre)
+  }
+
+  paso('empezando')
   if (!datos.lineas.length) throw new Error('La venta no tiene productos.')
 
   const id = crypto.randomUUID()
-  paso('id generado', t0)
+  paso('id generado')
 
   const codigo = await reservarCodigoVenta(datos.terminalPrefijo)
-  paso(`numero reservado (${codigo})`, t0)
+  paso(`número ${codigo}`)
 
   const ahora = new Date().toISOString()
 
@@ -321,7 +363,7 @@ async function guardarVenta(datos: EnvioACaja): Promise<{ id: string; codigo: st
       : []),
   ])
 
-  paso('encolada', t0)
+  paso('encolada')
 
   // Si hay conexión se intenta subir enseguida, para que la caja la vea
   // sin esperar el próximo ciclo. Si falla no importa: ya está guardada.
@@ -329,6 +371,6 @@ async function guardarVenta(datos: EnvioACaja): Promise<{ id: string; codigo: st
     void subirPendientes().catch(() => {})
   }
 
-  paso('LISTA', t0)
+  paso('lista')
   return { id, codigo }
 }

@@ -216,6 +216,32 @@ class BaseLocal extends Dexie {
 
 export const db = new BaseLocal()
 
+/*
+  IndexedDB se queda esperando en silencio cuando otra pestaña tiene la
+  base abierta con una versión anterior del esquema. No falla: espera. Y
+  como todas las operaciones quedan encoladas detrás de esa apertura, la
+  pantalla se congela sin decir nada — que es exactamente el peor modo
+  de fallar para alguien que está atendiendo.
+
+  Estos avisos convierten ese cuelgue mudo en un mensaje concreto.
+*/
+export let bloqueoBaseLocal: string | null = null
+
+db.on('blocked', () => {
+  bloqueoBaseLocal =
+    'La base local está bloqueada por otra pestaña del sistema abierta con una versión anterior. Cerrá las demás pestañas y recargá esta.'
+  console.error(`[base local] ${bloqueoBaseLocal}`)
+})
+
+db.on('versionchange', () => {
+  // Otra pestaña quiere actualizar el esquema: hay que soltar la base o
+  // la bloqueamos nosotros.
+  db.close()
+  bloqueoBaseLocal =
+    'Otra pestaña actualizó el sistema. Recargá esta pantalla para seguir trabajando.'
+  console.warn(`[base local] ${bloqueoBaseLocal}`)
+})
+
 /** Normaliza para buscar: sin acentos, sin mayúsculas. */
 export function normalizar(texto: string) {
   return texto

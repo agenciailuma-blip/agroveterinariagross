@@ -39,6 +39,7 @@ export default function PuntoDeVenta() {
   const [debounced, setDebounced] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [exito, setExito] = useState<string | null>(null)
+  const [pasoEnvio, setPasoEnvio] = useState<string | null>(null)
   const busqueda = useRef<HTMLInputElement>(null)
 
   // El borrador sobrevive a un refresco accidental. Una venta a medio
@@ -186,8 +187,9 @@ export default function PuntoDeVenta() {
         lineas,
         observaciones: null,
         listaPrecioId: medio?.lista_precio_id ?? null,
-      }),
+      }, setPasoEnvio),
     onSuccess: (v) => {
+      setPasoEnvio(null)
       setLineas([])
       setMedioAnticipado(null)
       setCuotasAnticipadas(1)
@@ -200,7 +202,10 @@ export default function PuntoDeVenta() {
       setTimeout(() => setExito(null), 4000)
       busqueda.current?.focus()
     },
-    onError: (e) => setError(e instanceof Error ? e.message : 'No se pudo enviar.'),
+    onError: (e) => {
+      setPasoEnvio(null)
+      setError(e instanceof Error ? e.message : 'No se pudo enviar.')
+    },
   })
 
   if (cargandoTerminal) return <p className="text-sm text-piedra-500">Cargando…</p>
@@ -210,7 +215,7 @@ export default function PuntoDeVenta() {
   if (!operador) {
     return (
       <div className="-m-6 min-h-[calc(100vh-3.5rem)]">
-        <IdentificarOperador onIdentificado={identificar} />
+        <IdentificarOperador terminalId={terminal.id} onIdentificado={identificar} />
       </div>
     )
   }
@@ -574,7 +579,7 @@ export default function PuntoDeVenta() {
           disabled={!lineas.length || !cliente || enviar.isPending}
           className="rounded-xl bg-marca-700 px-4 py-4 text-base font-medium text-white hover:bg-marca-600 disabled:opacity-40"
         >
-          {enviar.isPending ? 'Enviando…' : 'Enviar a caja'}
+          {enviar.isPending ? `Enviando… ${pasoEnvio ?? ''}` : 'Enviar a caja'}
         </button>
 
         {lineas.length > 0 && (
