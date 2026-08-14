@@ -13,6 +13,7 @@ import {
 import type { ClienteVenta, LineaVenta, ProductoVenta } from '@/lib/api/ventas'
 import { cargarPrecios, previsualizarPrecio } from '@/lib/api/precios'
 import type { MedioPago } from '@/lib/api/precios'
+import { useSync } from '@/lib/local/SyncProvider'
 import { moneda, numero } from '@/lib/tipos'
 
 const BORRADOR = 'gross.venta-en-curso'
@@ -20,6 +21,7 @@ const BORRADOR = 'gross.venta-en-curso'
 export default function PuntoDeVenta() {
   const { terminal, disponibles, cargando: cargandoTerminal, elegir } = useTerminal()
   const { operador, identificar, salir, renovar } = useOperador()
+  const { listo: copiaLocalLista, enLinea, sincronizando } = useSync()
 
   const [lineas, setLineas] = useState<LineaVenta[]>(() => {
     try {
@@ -215,6 +217,26 @@ export default function PuntoDeVenta() {
 
   const sinStock = lineas.filter((l) => l.cantidad > l.stock_disponible)
 
+  /*
+    Sin conexión y sin copia local no se puede vender, y hay que decirlo
+    de frente. La versión anterior caía al servidor en silencio y la
+    pantalla se quedaba "Buscando…" sin explicar nunca por qué.
+  */
+  if (!enLinea && !copiaLocalLista) {
+    return (
+      <div className="mx-auto max-w-md py-16 text-center">
+        <div className="rounded-xl bg-amber-50 p-6 ring-1 ring-amber-200">
+          <h1 className="font-semibold text-amber-900">Esta computadora no puede vender sin conexión</h1>
+          <p className="mt-2 text-sm text-amber-800">
+            Todavía no tiene una copia local del catálogo. Hace falta conectarla a internet una vez
+            y esperar a que el indicador de arriba diga <strong>Al día</strong>. Después va a poder
+            trabajar desconectada.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="flex h-full gap-4" onKeyDown={renovar}>
       <div className="flex min-w-0 flex-1 flex-col gap-4">
@@ -229,11 +251,18 @@ export default function PuntoDeVenta() {
               </button>
             </p>
           </div>
-          {exito && (
-            <span className="rounded-full bg-verde-100 px-3 py-1.5 text-sm font-medium text-verde-800 ring-1 ring-verde-200">
-              {exito}
-            </span>
-          )}
+          <div className="flex items-center gap-2">
+            {!copiaLocalLista && enLinea && (
+              <span className="rounded-full bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-900 ring-1 ring-amber-300">
+                {sincronizando ? 'Preparando copia local…' : 'Sin copia local todavía'}
+              </span>
+            )}
+            {exito && (
+              <span className="rounded-full bg-verde-100 px-3 py-1.5 text-sm font-medium text-verde-800 ring-1 ring-verde-200">
+                {exito}
+              </span>
+            )}
+          </div>
         </div>
 
         <div className="relative">

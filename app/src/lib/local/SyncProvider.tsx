@@ -1,5 +1,6 @@
 import { createContext, use, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
+import { db } from '@/lib/local/db'
 import { hayDatosLocales } from '@/lib/local/consultas'
 import { pendientes, sincronizar } from '@/lib/local/sync'
 import { useConexion } from '@/lib/useConexion'
@@ -71,9 +72,31 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     }
   }, [enLinea, terminal, refrescarPendientes])
 
+  /*
+    La base local se abre al arrancar, no la primera vez que alguien
+    busca un producto. Si IndexedDB estuviera bloqueado —modo privado,
+    permisos, disco lleno— hay que enterarse ahora y decirlo, no cuando
+    el vendedor tenga a alguien esperando en el mostrador.
+  */
   useEffect(() => {
-    hayDatosLocales().then(setListo)
-    refrescarPendientes()
+    let vigente = true
+    db.open()
+      .then(async () => {
+        if (!vigente) return
+        setListo(await hayDatosLocales())
+        await refrescarPendientes()
+      })
+      .catch((e) => {
+        if (!vigente) return
+        setError(
+          `Esta computadora no puede guardar datos localmente (${
+            e instanceof Error ? e.message : e
+          }). Sin eso no va a poder trabajar sin conexión.`,
+        )
+      })
+    return () => {
+      vigente = false
+    }
   }, [refrescarPendientes])
 
   useEffect(() => {
