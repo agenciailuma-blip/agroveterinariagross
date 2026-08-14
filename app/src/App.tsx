@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider, useAuth } from '@/auth/AuthProvider'
+import { SyncProvider } from '@/lib/local/SyncProvider'
 import Layout from '@/components/Layout'
 import Login from '@/pages/Login'
 import Inicio from '@/pages/Inicio'
@@ -57,6 +58,14 @@ function Ruteo() {
     )
   }
 
+  return (
+    <SyncProvider>
+      <Rutas />
+    </SyncProvider>
+  )
+}
+
+function Rutas() {
   return (
     <Routes>
       <Route element={<Layout />}>

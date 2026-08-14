@@ -180,6 +180,7 @@ export default function PuntoDeVenta() {
         clienteId: cliente!.id,
         vendedorId: operador!.usuario_id,
         terminalId: terminal!.id,
+        terminalPrefijo: terminal!.prefijo ?? 'T',
         lineas,
         observaciones: null,
         listaPrecioId: medio?.lista_precio_id ?? null,
@@ -189,7 +190,11 @@ export default function PuntoDeVenta() {
       setMedioAnticipado(null)
       setCuotasAnticipadas(1)
       setError(null)
-      setExito(`Venta ${v.codigo} enviada a caja`)
+      setExito(
+        navigator.onLine
+          ? `Venta ${v.codigo} enviada a caja`
+          : `Venta ${v.codigo} guardada — se envía cuando vuelva la conexión`,
+      )
       setTimeout(() => setExito(null), 4000)
       busqueda.current?.focus()
     },

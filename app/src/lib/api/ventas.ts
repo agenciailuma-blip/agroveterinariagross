@@ -1,5 +1,14 @@
 import { supabase } from '@/lib/supabase'
 import type { EstadoStock } from '@/lib/tipos'
+import {
+  buscarClientesLocal,
+  buscarProductosLocal,
+  consumidorFinalLocal,
+  hayDatosLocales,
+  recordarUltimoNumero,
+  siguienteCodigoLocal,
+} from '@/lib/local/consultas'
+import { encolar, subirPendientes } from '@/lib/local/sync'
 
 export interface Operador {
   usuario_id: string
@@ -70,8 +79,22 @@ export async function verificarPin(pin: string): Promise<Operador | null> {
   return filas[0] ?? null
 }
 
+/*
+  Búsqueda de productos.
+
+  Primero local, siempre. No "si no hay internet": siempre. La copia
+  local la mantiene fresca el sincronizador, y consultarla es más rápido
+  que ir al servidor — el buscador dispara con cada tecla que toca el
+  vendedor. Al servidor se va sólo si todavía no hay copia, que es el
+  primer arranque de una terminal nueva.
+*/
 export async function buscarProductosVenta(texto: string): Promise<ProductoVenta[]> {
   if (!texto.trim()) return []
+  if (await hayDatosLocales()) return buscarProductosLocal(texto)
+  return buscarProductosServidor(texto)
+}
+
+async function buscarProductosServidor(texto: string): Promise<ProductoVenta[]> {
   const patron = `%${texto.replace(/[%_]/g, '')}%`
 
   // Primero por código de barra exacto: es el caso del lector, y tiene
@@ -122,6 +145,8 @@ export async function buscarProductosVenta(texto: string): Promise<ProductoVenta
 }
 
 export async function buscarClientes(texto: string): Promise<ClienteVenta[]> {
+  if (await hayDatosLocales()) return buscarClientesLocal(texto)
+
   let q = supabase
     .from('cliente')
     .select(
@@ -143,6 +168,8 @@ export async function buscarClientes(texto: string): Promise<ClienteVenta[]> {
 }
 
 export async function clienteConsumidorFinal(): Promise<ClienteVenta | null> {
+  if (await hayDatosLocales()) return consumidorFinalLocal()
+
   const { data } = await supabase
     .from('cliente')
     .select(
@@ -157,6 +184,7 @@ export interface EnvioACaja {
   clienteId: string
   vendedorId: string
   terminalId: string
+  terminalPrefijo: string
   lineas: LineaVenta[]
   observaciones: string | null
   /*
@@ -171,70 +199,92 @@ export interface EnvioACaja {
 /*
   Manda la venta a caja.
 
-  Crea la cabecera y las líneas en una sola tanda. Los totales NO se
-  envían: los recalcula un disparador en la base a partir de las líneas,
-  así no puede quedar una venta cuyo total no coincida con lo que tiene
-  adentro.
+  SIEMPRE pasa por la bandeja de salida, haya o no conexión. Que sea
+  siempre el mismo camino es lo que evita que el modo sin conexión sea
+  un caso especial lleno de bifurcaciones: es el camino normal, que a
+  veces tarda más en llegar.
+
+  El id y el número los genera la terminal. El id porque es la clave de
+  idempotencia —si algo se reenvía, choca contra la clave primaria en
+  vez de duplicar— y el número porque cada terminal tiene su prefijo y
+  puede numerar sola, sin coordinar con nadie.
+
+  Los totales no se envían: los recalcula un disparador en la base desde
+  las líneas, así no puede quedar una venta cuyo total no coincida con
+  lo que tiene adentro.
 */
 export async function enviarACaja(datos: EnvioACaja): Promise<{ id: string; codigo: string }> {
   if (!datos.lineas.length) throw new Error('La venta no tiene productos.')
 
-  const { data: codigo, error: errorCodigo } = await supabase.rpc('siguiente_codigo_venta', {
-    p_terminal_id: datos.terminalId,
-  })
-  if (errorCodigo) throw new Error(errorCodigo.message)
+  const id = crypto.randomUUID()
+  const codigo = await siguienteCodigoLocal(datos.terminalPrefijo)
+  const ahora = new Date().toISOString()
 
-  const { data: venta, error: errorVenta } = await supabase
-    .from('venta')
-    .insert({
-      codigo,
-      estado: 'en_caja',
-      cliente_id: datos.clienteId,
-      vendedor_id: datos.vendedorId,
-      terminal_origen_id: datos.terminalId,
-      observaciones: datos.observaciones,
-      enviada_caja_en: new Date().toISOString(),
-    })
-    .select('id, codigo')
-    .single<{ id: string; codigo: string }>()
+  const cabecera = {
+    id,
+    codigo,
+    estado: 'en_caja',
+    cliente_id: datos.clienteId,
+    vendedor_id: datos.vendedorId,
+    terminal_origen_id: datos.terminalId,
+    observaciones: datos.observaciones,
+    ocurrido_en: ahora,
+    enviada_caja_en: ahora,
+    registrado_offline: !navigator.onLine,
+  }
 
-  if (errorVenta) throw new Error(`No se pudo crear la venta: ${errorVenta.message}`)
+  const lineas = datos.lineas.map((l, i) => ({
+    id: crypto.randomUUID(),
+    venta_id: id,
+    orden: i + 1,
+    producto_id: l.producto_id,
+    codigo_producto: l.codigo_producto,
+    descripcion: l.descripcion,
+    cantidad: l.cantidad,
+    precio_original: l.precio_original,
+    // El vendedor trabaja a nivel contado: lo que acuerda es el
+    // acordado. El unitario lo ajusta la caja al elegir con qué se
+    // paga, siempre partiendo de este valor.
+    precio_acordado: l.precio_unitario,
+    precio_unitario: l.precio_unitario,
+    motivo_modificacion: l.motivo_modificacion,
+    modificado_por: l.precio_unitario !== l.precio_original ? datos.vendedorId : null,
+    alicuota_iva_id: l.alicuota_iva_id,
+    condicion_iva: l.condicion_iva,
+  }))
 
-  const { error: errorLineas } = await supabase.from('venta_linea').insert(
-    datos.lineas.map((l, i) => ({
-      venta_id: venta.id,
-      orden: i + 1,
-      producto_id: l.producto_id,
-      codigo_producto: l.codigo_producto,
-      descripcion: l.descripcion,
-      cantidad: l.cantidad,
-      precio_original: l.precio_original,
-      // El vendedor trabaja a nivel contado: lo que acuerda es el
-      // acordado. El unitario lo va a ajustar la caja al elegir con qué
-      // se paga, siempre partiendo de este valor.
-      precio_acordado: l.precio_unitario,
-      precio_unitario: l.precio_unitario,
-      motivo_modificacion: l.motivo_modificacion,
-      modificado_por: l.precio_unitario !== l.precio_original ? datos.vendedorId : null,
-      alicuota_iva_id: l.alicuota_iva_id,
-      condicion_iva: l.condicion_iva,
+  await encolar(id, [
+    {
+      tipo: 'insert',
+      tabla: 'venta',
+      datos: cabecera,
+      descripcion: `Venta ${codigo}`,
+    },
+    ...lineas.map((l) => ({
+      tipo: 'insert' as const,
+      tabla: 'venta_linea',
+      datos: l,
+      descripcion: `${codigo} · ${l.descripcion}`,
     })),
-  )
+    ...(datos.listaPrecioId
+      ? [
+          {
+            tipo: 'rpc' as const,
+            tabla: 'aplicar_lista_a_venta',
+            datos: { p_venta_id: id, p_lista_id: datos.listaPrecioId },
+            descripcion: `${codigo} · lista de precios`,
+          },
+        ]
+      : []),
+  ])
 
-  if (errorLineas) {
-    // La cabecera quedó sin líneas: se descarta para no dejar basura.
-    await supabase.from('venta').delete().eq('id', venta.id)
-    throw new Error(`No se pudieron cargar los productos: ${errorLineas.message}`)
+  await recordarUltimoNumero(datos.terminalPrefijo, codigo)
+
+  // Si hay conexión se intenta subir enseguida, para que la caja la vea
+  // sin esperar el próximo ciclo. Si falla no importa: ya está guardada.
+  if (navigator.onLine) {
+    void subirPendientes().catch(() => {})
   }
 
-  // Se aplica la lista del medio de pago que anticipó el vendedor. Si es
-  // la predeterminada no cambia nada, pero deja la venta marcada.
-  if (datos.listaPrecioId) {
-    await supabase.rpc('aplicar_lista_a_venta', {
-      p_venta_id: venta.id,
-      p_lista_id: datos.listaPrecioId,
-    })
-  }
-
-  return venta
+  return { id, codigo }
 }
