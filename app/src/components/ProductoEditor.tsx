@@ -97,6 +97,20 @@ export default function ProductoEditor({
   const contado = estado.stockContado === '' ? null : Number(estado.stockContado)
   const diferencia = contado === null ? null : contado - stockActual
 
+  // Rentabilidad. Todo opcional: sin costo no hay margen y el producto
+  // funciona igual, que es como está el catálogo hoy.
+  const costo = estado.campos.costo ?? null
+  const precio = estado.campos.precio_venta ?? 0
+  const margenReal = costo && costo > 0 ? Math.round((precio / costo - 1) * 10000) / 100 : null
+  // El mismo negocio expresado sobre la venta, que es como lo mira un
+  // contador. Se muestran los dos porque "margen" significa las dos cosas
+  // según quién lo diga, y confundirlas es un error caro.
+  const margenSobreVenta =
+    costo && costo > 0 && precio > 0 ? Math.round(((precio - costo) / precio) * 10000) / 100 : null
+  const objetivo = estado.campos.margen_sobre_costo ?? null
+  const desvio = margenReal !== null && objetivo !== null ? margenReal - objetivo : null
+  const puedeCalcular = !!costo && costo > 0 && objetivo !== null
+
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
@@ -155,7 +169,7 @@ export default function ProductoEditor({
           </Campo>
         </Seccion>
 
-        <Seccion titulo="Precio e impuestos">
+        <Seccion titulo="Precio y rentabilidad">
           <Campo etiqueta="Precio de venta (con IVA)">
             <input
               type="number"
@@ -176,6 +190,71 @@ export default function ProductoEditor({
               className={`${claseInput} text-right tabular-nums`}
             />
           </Campo>
+          <Campo etiqueta="Margen sobre costo">
+            <div className="relative">
+              <input
+                type="number"
+                step="0.5"
+                value={estado.campos.margen_sobre_costo ?? ''}
+                onChange={(e) =>
+                  set({
+                    margen_sobre_costo: e.target.value === '' ? null : Number(e.target.value),
+                  })
+                }
+                className={`${claseInput} pr-6 text-right tabular-nums`}
+                placeholder="—"
+              />
+              <span className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-sm text-piedra-400">
+                %
+              </span>
+            </div>
+          </Campo>
+          <div className="col-span-1 flex items-end">
+            <button
+              type="button"
+              disabled={!puedeCalcular}
+              onClick={() =>
+                set({
+                  precio_venta:
+                    Math.round(costo! * (1 + estado.campos.margen_sobre_costo! / 100) * 100) / 100,
+                })
+              }
+              className="w-full rounded-lg bg-marca-50 px-2 py-1.5 text-xs font-medium text-marca-700 ring-1 ring-marca-200 hover:bg-marca-100 disabled:opacity-40"
+              title="Lleva el precio al que corresponde por costo y margen"
+            >
+              Calcular precio
+            </button>
+          </div>
+
+          {/*
+            El precio es siempre el valor guardado. El margen no lo
+            recalcula solo: cambiar un costo no puede mover un precio de
+            góndola sin que nadie se entere. Acá se muestra el desvío y
+            alguien decide.
+          */}
+          {margenReal !== null && (
+            <div className="col-span-4 flex flex-wrap items-center gap-x-5 gap-y-1 rounded-lg bg-piedra-50 px-3 py-2 text-xs">
+              <span className="text-piedra-600">
+                Margen real:{' '}
+                <strong className="text-tinta">{numero.format(margenReal)}%</strong> sobre costo
+              </span>
+              <span className="text-piedra-500">
+                ({numero.format(margenSobreVenta!)}% sobre venta)
+              </span>
+              {desvio !== null && Math.abs(desvio) >= 0.5 && (
+                <span
+                  className={`font-medium ${desvio > 0 ? 'text-verde-700' : 'text-amber-700'}`}
+                >
+                  {desvio > 0 ? '+' : ''}
+                  {numero.format(desvio)} puntos {desvio > 0 ? 'por encima' : 'por debajo'} del
+                  objetivo
+                </span>
+              )}
+            </div>
+          )}
+        </Seccion>
+
+        <Seccion titulo="Impuestos">
           <Campo etiqueta="Alícuota de IVA">
             <select
               value={estado.campos.alicuota_iva_id ?? 5}

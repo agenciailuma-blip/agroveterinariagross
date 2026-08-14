@@ -27,6 +27,7 @@ export interface ProductoDetalle {
   condicion_iva: 'gravado' | 'exento' | 'no_gravado'
   precio_venta: number
   costo: number | null
+  margen_sobre_costo: number | null
   unidad_medida: string
   permite_fraccionamiento: boolean
   es_producto_veterinario: boolean
