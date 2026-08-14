@@ -13,14 +13,36 @@ import Clientes from '@/pages/Clientes'
 import Usuarios from '@/pages/Usuarios'
 import EnConstruccion from '@/pages/EnConstruccion'
 
+/*
+  networkMode: 'always' es lo más importante de esta configuración.
+
+  Por defecto, React Query PAUSA consultas y mutaciones cuando el
+  navegador se declara sin conexión, y las deja esperando a que vuelva
+  la red. Para una aplicación común está bien: no tiene sentido pedirle
+  datos a un servidor inalcanzable.
+
+  Acá es exactamente al revés. Los datos viven en la base local: buscar
+  un producto o guardar una venta no necesitan internet para nada. Con
+  el modo por defecto, el mostrador quedaba con el botón en "Enviando…"
+  y el buscador en "Buscando…" indefinidamente, sin ningún error —
+  porque el código nunca llegaba a ejecutarse. Se quedaba esperando una
+  red que no hacía falta.
+
+  Con 'always' todo corre siempre. Lo que de verdad necesita internet ya
+  falla por su cuenta, con su propio mensaje.
+*/
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
+      networkMode: 'always',
       // El mostrador tiene que ver datos frescos, pero sin castigar la
       // conexión: se revalida al volver a la pestaña, no cada segundo.
       staleTime: 30_000,
       retry: 1,
       refetchOnWindowFocus: true,
+    },
+    mutations: {
+      networkMode: 'always',
     },
   },
 })
