@@ -14,13 +14,27 @@ const CLAVE = 'gross.terminal'
 /*
   Qué terminal es esta máquina.
 
-  Se elige una vez por PC y queda guardado localmente. No puede venir del
+  Se elige una vez por PC y queda guardada localmente. No puede venir del
   usuario: el mismo vendedor atiende desde cualquiera de los mostradores,
   y lo que define el prefijo de numeración y la impresora es la máquina,
   no la persona.
+
+  Se guarda la terminal ENTERA, no sólo su id. Sin conexión no se puede
+  buscar el resto en el servidor, y una terminal a medias no sirve: sin
+  prefijo no se puede numerar una venta.
 */
 export function useTerminal() {
-  const [terminal, setTerminalEstado] = useState<Terminal | null>(null)
+  const [terminal, setTerminalEstado] = useState<Terminal | null>(() => {
+    const crudo = localStorage.getItem(CLAVE)
+    if (!crudo) return null
+    try {
+      const guardado = JSON.parse(crudo) as Terminal
+      return guardado?.id ? guardado : null
+    } catch {
+      // Formato viejo: sólo el id. Se descarta y se vuelve a elegir.
+      return null
+    }
+  })
   const [disponibles, setDisponibles] = useState<Terminal[]>([])
   const [cargando, setCargando] = useState(true)
 
@@ -28,7 +42,7 @@ export function useTerminal() {
     let vigente = true
 
     async function cargar() {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('terminal')
         .select('id, nombre, tipo, prefijo, punto_venta_id')
         .eq('activo', true)
@@ -36,17 +50,30 @@ export function useTerminal() {
         .order('nombre')
 
       if (!vigente) return
-      const lista = (data ?? []) as Terminal[]
+      setCargando(false)
+
+      // Sin respuesta del servidor no se toca nada de lo guardado. La
+      // versión anterior borraba la terminal cuando la consulta fallaba,
+      // así que un corte de internet hacía que la máquina se olvidara
+      // cuál era y pidiera elegir de nuevo — justo cuando no puede.
+      if (error || !data) return
+
+      const lista = data as Terminal[]
       setDisponibles(lista)
 
-      const guardada = localStorage.getItem(CLAVE)
-      // Se revalida contra el servidor: si la terminal se dio de baja,
-      // la máquina tiene que volver a elegir en vez de operar con una
-      // referencia muerta.
-      const encontrada = lista.find((t) => t.id === guardada) ?? null
-      if (guardada && !encontrada) localStorage.removeItem(CLAVE)
-      setTerminalEstado(encontrada)
-      setCargando(false)
+      // Con respuesta buena sí se revalida: si la terminal se dio de
+      // baja, hay que volver a elegir en vez de operar con una
+      // referencia muerta. Y se refrescan sus datos por si cambiaron.
+      setTerminalEstado((actual) => {
+        if (!actual) return null
+        const encontrada = lista.find((t) => t.id === actual.id)
+        if (!encontrada) {
+          localStorage.removeItem(CLAVE)
+          return null
+        }
+        localStorage.setItem(CLAVE, JSON.stringify(encontrada))
+        return encontrada
+      })
     }
 
     cargar()
@@ -56,7 +83,7 @@ export function useTerminal() {
   }, [])
 
   const elegir = useCallback((t: Terminal) => {
-    localStorage.setItem(CLAVE, t.id)
+    localStorage.setItem(CLAVE, JSON.stringify(t))
     setTerminalEstado(t)
   }, [])
 

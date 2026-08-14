@@ -228,6 +228,22 @@ Un producto puede pertenecer a varios ejes a la vez. Esto es lo que después hab
 
 # BACKLOG — VERSIONES SIGUIENTES
 
+## V2 — Historial de costos por proveedor *(pedido de Lucas, 14/08)*
+
+Hoy el producto guarda **un** costo, y cuando se compra al mismo producto a
+varios proveedores se pisa sin dejar rastro. Lucas no puede saber si la última
+compra vino más cara o más barata que la anterior, ni de quién.
+
+- Historial de costos: cada cambio guarda **fecha, proveedor y valor**
+- Desplegable en la ficha del producto con esa evolución
+- Gráfico chico de la variación *(él mismo lo marcó como secundario:
+  "lo primordial es el historial")*
+
+> Encaja naturalmente con el **módulo de compras de V1-B**: cada recepción de
+> mercadería ya va a registrar proveedor y costo, así que el historial sale
+> como subproducto en vez de ser una función aparte. Conviene hacerlo ahí y no
+> antes.
+
 ## V2 — Comercial y clientes
 - CRM de tareas diarias por usuario
 - Calendario de recibos completo *(alcance a definir según lo que confirme Lucas)*

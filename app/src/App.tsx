@@ -27,6 +27,7 @@ const queryClient = new QueryClient({
 
 function Ruteo() {
   const { session, perfil, cargando, error, salir } = useAuth()
+  const sinConexion = !navigator.onLine
 
   if (cargando) {
     return (
@@ -42,14 +43,20 @@ function Ruteo() {
   if (!perfil) {
     return (
       <div className="grid min-h-full place-items-center bg-slate-100 p-4">
-        <div className="max-w-md rounded-xl bg-white p-6 text-center shadow-sm ring-1 ring-slate-200">
-          <h1 className="font-semibold text-slate-900">No podés entrar todavía</h1>
-          <p className="mt-2 text-sm text-slate-600">
+        <div className="max-w-md rounded-xl bg-white p-6 text-center shadow-sm ring-1 ring-borde">
+          <h1 className="font-semibold text-tinta">No podés entrar todavía</h1>
+          <p className="mt-2 text-sm text-piedra-600">
             {error ?? 'Tu cuenta no tiene un usuario asociado en el sistema.'}
           </p>
+          {sinConexion && (
+            <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 ring-1 ring-amber-200">
+              Estás sin conexión. Si ya habías entrado antes en esta computadora, volvé a
+              intentarlo con internet una vez y después va a funcionar sin él.
+            </p>
+          )}
           <button
             onClick={salir}
-            className="mt-5 rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200"
+            className="mt-5 rounded-lg bg-piedra-100 px-4 py-2 text-sm font-medium text-piedra-700 hover:bg-piedra-200"
           >
             Cerrar sesión
           </button>

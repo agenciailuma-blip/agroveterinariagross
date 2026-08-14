@@ -39,7 +39,17 @@ export const TIPOS_MEDIO_PAGO: Record<string, string> = {
   otro: 'Otro',
 }
 
+/*
+  Precios y medios de pago.
+
+  Local primero, igual que los productos: el punto de venta los necesita
+  para mostrar el total y no puede quedarse esperando al servidor. Al
+  servidor se va sólo si todavía no hay copia local.
+*/
 export async function cargarPrecios() {
+  const { hayDatosLocales, preciosLocal } = await import('@/lib/local/consultas')
+  if (await hayDatosLocales()) return preciosLocal()
+
   const [listas, medios] = await Promise.all([
     supabase
       .from('lista_precio')
