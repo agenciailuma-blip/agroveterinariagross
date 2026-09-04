@@ -16,6 +16,7 @@ import Usuarios from '@/pages/Usuarios'
 import Configuracion from '@/pages/Configuracion'
 import Facturacion from '@/pages/Facturacion'
 import ComprobanteImprimible from '@/pages/ComprobanteImprimible'
+import Remitos from '@/pages/Remitos'
 import NoFiscalImprimible from '@/pages/NoFiscalImprimible'
 
 /*
@@ -114,6 +115,7 @@ function Rutas() {
         <Route path="usuarios" element={<Usuarios />} />
         <Route path="configuracion" element={<Configuracion />} />
         <Route path="facturacion" element={<Facturacion />} />
+        <Route path="remitos" element={<Remitos />} />
       </Route>
       {/*
         Fuera del Layout a propósito: el comprobante se imprime, y no

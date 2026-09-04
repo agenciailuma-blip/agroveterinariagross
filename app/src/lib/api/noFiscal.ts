@@ -217,3 +217,157 @@ export async function obtenerNoFiscalCompleto(id: string): Promise<NoFiscalCompl
 
 /** La leyenda que hace que este papel no se pueda confundir con una factura. */
 export const LEYENDA_NO_FISCAL = 'DOCUMENTO NO VÁLIDO COMO FACTURA'
+
+export interface FilaNoFiscal {
+  id: string
+  tipo_clave: TipoNoFiscal
+  serie: string
+  numero: number
+  fecha: string
+  receptor_nombre: string
+  total: number
+  estado: string
+  entrega_localidad: string | null
+  transportista: string | null
+  venta_codigo: string | null
+  venta_estado: string | null
+}
+
+export async function listarNoFiscales(tipo: TipoNoFiscal | 'todos'): Promise<FilaNoFiscal[]> {
+  let q = supabase
+    .from('comprobante_no_fiscal')
+    .select(
+      `id, tipo_clave, serie, numero, fecha, receptor_nombre, total, estado,
+       entrega_localidad, transportista, venta:venta_id(codigo, estado)`,
+    )
+    .order('creado_en', { ascending: false })
+    .limit(200)
+
+  if (tipo !== 'todos') q = q.eq('tipo_clave', tipo)
+
+  const { data, error } = await q
+  if (error) throw new Error(error.message)
+
+  return ((data ?? []) as unknown as (Omit<FilaNoFiscal, 'venta_codigo' | 'venta_estado'> & {
+    venta: { codigo: string; estado: string } | { codigo: string; estado: string }[] | null
+  })[]).map((f) => {
+    const v = Array.isArray(f.venta) ? f.venta[0] : f.venta
+    return {
+      ...f,
+      total: Number(f.total),
+      venta_codigo: v?.codigo ?? null,
+      venta_estado: v?.estado ?? null,
+    }
+  })
+}
+
+export interface RemitoSinCobrar {
+  id: string
+  serie: string
+  numero: number
+  fecha: string
+  receptor_nombre: string
+  total: number
+  entrega_domicilio: string | null
+  entrega_localidad: string | null
+  venta_codigo: string
+  dias: number
+}
+
+/*
+  Remitos entregados cuya venta todavía no se cobró.
+
+  Es stock que salió del local y plata que no entró. Sin este panel un
+  remito olvidado no aparece en ninguna pantalla: el inventario está
+  bien —la mercadería realmente no está— pero nadie está mirando que
+  falta cobrarla.
+*/
+export async function remitosSinCobrar(): Promise<RemitoSinCobrar[]> {
+  const { data, error } = await supabase
+    .from('remito_sin_cobrar')
+    .select('id, serie, numero, fecha, receptor_nombre, total, entrega_domicilio, entrega_localidad, venta_codigo, dias')
+    .order('dias', { ascending: false })
+  if (error) throw new Error(error.message)
+  return ((data ?? []) as unknown as RemitoSinCobrar[]).map((r) => ({
+    ...r,
+    total: Number(r.total),
+    dias: Number(r.dias),
+  }))
+}
+
+export interface VentaParaRemitir {
+  id: string
+  codigo: string
+  estado: string
+  total: number
+  ocurrido_en: string
+  cliente_nombre: string
+  cliente_domicilio: string | null
+  cliente_localidad: string | null
+  cliente_telefono: string | null
+}
+
+/*
+  Las ventas a las que se les puede hacer un remito.
+
+  Se excluyen las anuladas y las que ya tienen uno emitido. Un segundo
+  remito sobre la misma venta es un caso real —una entrega parcial y
+  después el resto— pero exige elegir qué líneas van en cada uno, y eso
+  es trabajo aparte: hacerlo mal duplicaría la salida de stock.
+*/
+export async function ventasParaRemitir(busqueda: string): Promise<VentaParaRemitir[]> {
+  const { data: conRemito } = await supabase
+    .from('comprobante_no_fiscal')
+    .select('venta_id')
+    .eq('tipo_clave', 'remito')
+    .neq('estado', 'anulado')
+    .not('venta_id', 'is', null)
+
+  const yaTienen = new Set((conRemito ?? []).map((r) => r.venta_id as string))
+
+  let q = supabase
+    .from('venta')
+    .select(
+      `id, codigo, estado, total, ocurrido_en,
+       cliente:cliente_id(nombre, calle, numero, piso_depto, localidad, telefono)`,
+    )
+    .neq('estado', 'anulada')
+    .order('ocurrido_en', { ascending: false })
+    .limit(100)
+
+  const texto = busqueda.trim()
+  if (texto) q = q.ilike('codigo', `%${texto}%`)
+
+  const { data, error } = await q
+  if (error) throw new Error(error.message)
+
+  type Cliente = {
+    nombre: string
+    calle: string | null
+    numero: string | null
+    piso_depto: string | null
+    localidad: string | null
+    telefono: string | null
+  }
+
+  return ((data ?? []) as unknown as (Omit<
+    VentaParaRemitir,
+    'cliente_nombre' | 'cliente_domicilio' | 'cliente_localidad' | 'cliente_telefono'
+  > & { cliente: Cliente | Cliente[] | null })[])
+    .filter((v) => !yaTienen.has(v.id))
+    .map((v) => {
+      const c = Array.isArray(v.cliente) ? v.cliente[0] : v.cliente
+      const domicilio = [c?.calle, c?.numero, c?.piso_depto].filter(Boolean).join(' ')
+      return {
+        id: v.id,
+        codigo: v.codigo,
+        estado: v.estado,
+        total: Number(v.total),
+        ocurrido_en: v.ocurrido_en,
+        cliente_nombre: c?.nombre ?? '—',
+        cliente_domicilio: domicilio || null,
+        cliente_localidad: c?.localidad ?? null,
+        cliente_telefono: c?.telefono ?? null,
+      }
+    })
+}
