@@ -9,14 +9,31 @@
 
 **Lo que sigue, en orden:**
 
-1. **Comprobante no fiscal + remitos.** Elegir antes de cobrar si la venta va con factura de ARCA o con comprobante no fiscal, con su numeración propia, su listado y su exportación. Los remitos se apoyan en la misma base — reparten 2 o 3 veces por semana y van a salir todos los días. Decisiones y límites en [`sugerencias-lucas-2026-09.md`](sugerencias-lucas-2026-09.md), bloque B2.
+**1. Comprobante no fiscal + remitos — EN CURSO.** Decisiones y límites en [`sugerencias-lucas-2026-09.md`](sugerencias-lucas-2026-09.md), bloque B2. Detalle de lo hecho en la sección 5-bis. El bloque por dentro:
+
+| | Paso | Estado |
+|---|---|---|
+| 1 | Migración: tablas, tipos, numeración, RLS, permisos | ✅ 04/09 |
+| 2 | Elección en la Caja + `venta.documentacion` + panel rojo | ✅ 04/09 |
+| 3 | **Impresión del no fiscal: ticket, A4, ESC/POS** | ⏳ **acá estamos** |
+| 4 | Remito: domicilio, transporte, recibí conforme | ⏳ |
+| 5 | Stock del remito: ya está en la base; falta la pantalla | 🟡 |
+| 6 | Presupuesto: validez y conversión | ⏳ |
+| 7 | Listado, exportación y convertir en factura | ⏳ |
+| 8 | Emisión sin conexión | ⏳ |
+| 9 | Pruebas de lo que decide con plata y con stock | 🟡 en curso |
+| **+** | **La caja edita la venta** — subió desde el punto 3 de esta lista | ⏳ |
+
+> **Por qué "la caja edita la venta" se mudó adentro de este bloque.** Era comodidad: el cliente se arrepiente de una bolsa. Con el remito descargando stock antes del cobro, pasó a ser **el mecanismo que cierra el reparto**: el repartidor vuelve con lo que el cliente no quiso, y la única forma de que el stock aterrice bien es que el cajero corrija la venta a lo entregado. La base ya lo reconcilia sola (probado); falta la pantalla que lo permita.
+
+**Después de ese bloque, en orden:**
+
 2. **Proveedor mínimo + aumento de precios por proveedor y por rubro.** Entra en V1-A por decisión de Lucas, con el riesgo de fecha asumido.
-3. **La caja edita la venta** (quitar, cambiar cantidad, agregar; los precios acordados no se tocan sin dejar rastro).
-4. **Tanda de comodidad** — bloque C del mismo documento: stock en el menú, nombre del cliente para llamarlo en caja, modal de cantidad, columna de descuento con PIN, cerrar sesión al enviar a caja, descripción en el editor.
-5. **Reservar el concepto de depósito** en el modelo de stock, aunque haya uno solo. Media hora ahora contra tocar todo el histórico en diciembre.
-6. **Métricas de venta en Inicio** — lo único visible que falta de V1-A.
-7. **Sincronización por red local** y **cifrado de la base local**.
-8. **Todo con teclado** — lo último antes del 26/10, decidido con Lucas.
+3. **Tanda de comodidad** — bloque C del mismo documento: stock en el menú, nombre del cliente para llamarlo en caja, modal de cantidad, columna de descuento con PIN, cerrar sesión al enviar a caja, descripción en el editor.
+4. **Reservar el concepto de depósito** en el modelo de stock, aunque haya uno solo. Media hora ahora contra tocar todo el histórico en diciembre.
+5. **Métricas de venta en Inicio** — lo único visible que falta de V1-A.
+6. **Sincronización por red local** y **cifrado de la base local**.
+7. **Todo con teclado** — lo último antes del 26/10, decidido con Lucas.
 
 **Esperando a terceros:**
 
@@ -26,7 +43,7 @@
 - 🟡 Qué es un **"comprobante de percepción"** para Lucas (punto 9 de sus sugerencias).
 - 🟡 **Probar la impresora del mostrador** y las 4 PC en el local, con el programa instalado.
 
-**Sin verificar todavía:** el ingreso real contra Supabase desde adentro del programa instalado, y la impresión con la Hasar delante.
+**Sin verificar todavía:** el ingreso real contra Supabase desde adentro del programa instalado, la impresión con la Hasar delante, y **la pantalla de la Caja con sesión iniciada** — sigue faltando la contraseña de `agencia.iluma@gmail.com`.
 
 ---
 
@@ -115,12 +132,13 @@ El efectivo se presenta como descuento. Es marketing, pero define qué número l
 | Canales de venta | ✅ | — | Diseñado, se enciende en V1-B |
 | **Facturación ARCA** | ✅ | ✅ | Emite CAE real en homologación, con pantalla y enganchada al cobro. Falta impresión |
 | **Contingencia CAEA** | ✅ | 🟡 | Circuito completo construido y probado contra la base. **Bloqueado por un trámite**: ARCA exige un punto de venta del régimen CAEA (error 15003) |
+| **Comprobantes no fiscales y remitos** | ✅ | 🟡 | Presupuesto, remito e interno con numeración propia. La caja ya elige antes de cobrar. **Faltan impresión, listado y las pantallas de remito** |
 | Compras y Libro de IVA | ❌ | ❌ | V1-B |
 | Métricas de Inicio | ✅ | 🟡 | Muestra productos, alertas, comprobantes y terminales. **Faltan las de venta**: del día/semana/mes, más vendidos, por vendedor |
 | Empaquetado Tauri (4 PC) | ✅ | 🟡 | **Instalador andando**, con actualizador propio. Falta probarlo en el local |
 | Impresión en la Hasar | ✅ | 🟡 | Construida: manda el ticket por red. **Falta la impresora delante** |
 
-**Números:** 42 migraciones · 53 tablas · 11 vistas · 143 políticas de seguridad · 49 funciones · 3 Edge Functions · 75 pruebas automáticas.
+**Números:** 52 migraciones · 55 tablas · 13 vistas · 152 políticas de seguridad · 63 funciones · 3 Edge Functions · 37 permisos · 85 pruebas automáticas.
 
 ---
 
@@ -318,6 +336,70 @@ La clave está en [`secrets/actualizador-gross.key`](../secrets/) y **no está e
 > Las máquinas ya instaladas **nunca más** pueden recibir una actualización. Hay que reinstalarlas a mano, una por una, con un instalador generado con una clave nueva.
 
 ✅ **Copia guardada por Francisco el 04/09/2026**, fuera del repositorio. No se regenera: si esa copia se pierde también, no hay segunda oportunidad.
+
+### 🟡 1i. Comprobantes no fiscales y remitos — la base entera, y la caja eligiendo (04/09)
+
+Punto 20 y punto 24 de las sugerencias de Lucas. Presupuesto, remito y comprobante interno.
+
+**Tabla aparte, no un tipo más de `comprobante`.** Es la decisión de fondo y la que hay que poder defender. Sería más corto agregar "Presupuesto" y "Remito" a `tipo_comprobante` y reusar lo que ya tiene numeración, impresión y listado. Tres razones para no hacerlo, y las tres ya costaron tiempo antes:
+
+1. **Los id de `tipo_comprobante` son los códigos de ARCA, no nuestros.** Inventar un `900 = Remito` es ocupar un espacio de numeración ajeno — exactamente el error de mapeo que esa decisión existe para evitar.
+2. **Un no fiscal adentro de `comprobante` se filtra solo al `FECAEARegInformativo`.** Hay varias consultas que dicen "comprobantes"; la que se olvide de excluirlo una vez le informa a ARCA un documento que para el fisco no existe. Es un problema de cumplimiento, no un bug de pantalla.
+3. **La serie fiscal no tolera huecos y ya nos mordió** con el error 703 al rendir el CAEA.
+
+> **Cómo se lo explicás a Lucas:** son dos archivadores distintos a propósito. En uno van los papeles que ARCA numera y controla; en el otro los que numera Gross. Comparten la impresora y la pantalla, pero nunca los números. Es lo que hace imposible que un presupuesto se cuele en una declaración.
+
+**El límite vive en el esquema, no en una intención.** `comprobante_no_fiscal` no tiene columna de CAE, ni de clase A/B, y sus líneas no tienen alícuota de IVA. No es que la pantalla evite mostrarlos: **es que no existen**. Y anular exige motivo por restricción de la base, no por validación de formulario. Verificado con `insert` directos.
+
+**Numeración propia, a prueba de cortes.** Serie por terminal (`REM CAJA1-00000045`), reusando el prefijo que ya usa `venta.codigo`. Dos terminales sin internet no pueden chocar porque el prefijo las separa. El contador toma el mayor usado + 1 y no su propio valor anterior — la lección que dejó la numeración fiscal.
+
+#### El remito mueve el stock
+
+Confirmado con Lucas el 04/09: **a veces la mercadería sale con remito antes de que la venta esté cobrada.** Eso rompió el supuesto que tenía el sistema, que era uno solo y cómodo.
+
+> **La regla:** el stock sigue al hecho físico, no al comercial. Sale cuando sale la mercadería, y **una sola vez**.
+
+- El remito descarga stock **sólo si la venta todavía no lo descargó**. El caso de todos los días en Gross —cobran y después reparten— no cambia en nada.
+- **`cobrar_venta()` ya no descuenta a ciegas: reconcilia.** Compara lo vendido contra lo que ya salió por remito. Si el remito llevó 3 bolsas y el cliente se quedó con 2, la que volvió en la camioneta reingresa sola.
+- **`anular_venta()` dejó de mirar el estado y mira el libro de movimientos.** Antes sólo reingresaba si la venta estaba cobrada; con remitos eso dejaba mercadería afuera para siempre.
+
+"Lo remitido" se lee del libro y no de las líneas del remito, y eso importa: un remito anulado tiene su salida y su retorno anotados, el neto da cero, y la cuenta lo toma bien sin saber nada de estados.
+
+**La propiedad que hizo seguro tocar `cobrar_venta()`:** sin remitos de por medio, la reconciliación da exactamente lo mismo que la resta anterior. Una venta común se cobra igual que antes. *(Única diferencia visible en el libro: antes un movimiento por línea de venta, ahora uno por producto. El saldo es idéntico.)*
+
+⚠️ **Falta la pantalla.** La base reconcilia sola, pero hoy no hay dónde emitir un remito ni dónde corregir la venta al volver el reparto.
+
+#### La caja elige antes de cobrar
+
+Selector **Con factura / Sin factura** al lado del botón de cobrar. Tres candados, **todos del lado del servidor**, donde un navegador con la consola abierta no llega:
+
+1. **Permiso propio** `facturacion.vender_sin_factura`, que no tienen ni el Cajero ni el Vendedor. Emitir un presupuesto o un remito es operación diaria; decidir que una venta no lleve factura es del dueño.
+2. **A un Responsable Inscripto no se le entrega otra cosa.** Compra para descargar el IVA; darle un interno es un problema para el cliente. La base lo rechaza por nombre y motivo.
+3. **Sólo antes de cobrar.** Cambiar la marca después sería decir que pasó algo distinto de lo que efectivamente pasó.
+
+**El panel rojo dejó de mentir.** `ventasSinFacturar()` filtra `documentacion = 'fiscal'`. Sin eso, el panel de "cobradas sin comprobante" —que existe para el caso grave— se llenaría de casos normales y en dos semanas nadie lo mira.
+
+⚠️ **Sin conexión sólo se cobra con factura**, y si internet se corta con "sin factura" ya elegido vuelve solo a "con factura". Marcar la venta necesita servidor, y sin esa vuelta atrás fallaría **el cobro entero**, no la marca. Prefiere cobrar de más con factura que no cobrar. Se levanta con la emisión sin conexión.
+
+#### Verificado contra la base real
+
+En transacciones que se revierten, confirmando después que no quedó ni una fila:
+
+- Venta común sin remitos: se cobra igual que antes.
+- Remito antes de cobrar descuenta; cobrar después **no vuelve a descontar**.
+- Remito de 5 con la venta corregida a 3: neto −3, con su `retorno_remito`.
+- Anular una venta `en_caja` con remito devuelve el stock entero.
+- Cobrar y después remitir no mueve nada.
+- Los tres candados de la caja, simulando sesiones reales con `request.jwt.claims`.
+- El panel rojo incluye la fiscal sin facturar y excluye la no fiscal.
+
+**Roto a propósito:** con el bloque de stock anterior salen **8 unidades por una venta de 4**. El doble descuento era real y la prueba lo detecta.
+
+**Encontrado probando:** `emitir_comprobante_no_fiscal()` descartaba en silencio los parámetros ajenos al tipo — una fecha de validez en un remito se perdía sin error. Corregido en la migración `20260904100200`.
+
+⚠️ **Sin verificar con sesión iniciada**, igual que el resto de la interfaz: falta la contraseña.
+
+---
 
 ### 🟡 2. Cobro sin conexión — construido y probado, falta verlo en el local
 
@@ -539,6 +621,8 @@ Tres cosas que conviene tener presentes:
 - **Cuatro ya estaban hechas** — umbrales de stock bajo, movimientos con motivo, la descripción del producto y el cambio de precio con registro de quién y por qué. Mostrárselas es la forma más barata de sacarlas de la lista.
 - **La mayor parte de lo grande ya estaba prevista en V1-B**: compras a proveedores y Libro de IVA. No es alcance nuevo, es confirmación de que el plan apunta a donde él necesita.
 - **Las tres decisiones de fondo se tomaron el 04/09** y están anotadas en ese documento: la caja edita la venta con límites, los depósitos van a V1-B reservando el concepto ahora, y el proveedor entra en V1-A con el riesgo de fecha asumido por Lucas.
+- **El punto 20 y el 24 están arrancados** — ver la sección 1i. La base entera y la elección en la caja quedaron el 04/09.
+- ⚠️ **El punto 24 sumó alcance el 04/09.** Lucas confirmó que a veces la mercadería sale con remito antes de cobrarse. Eso obligó a tocar `cobrar_venta()` y `anular_venta()`, y subió el bloque de ~6½ a ~9 días. Es la segunda razón anotada, después del proveedor, si el 26/10 se mueve.
 
 ## 8. Pendientes con terceros
 

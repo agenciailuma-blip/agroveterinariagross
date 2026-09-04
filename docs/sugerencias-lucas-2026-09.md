@@ -127,6 +127,17 @@ Buena noticia: **la mayor parte ya estaba prevista**. No es alcance nuevo, es co
 | 24 | Remitos **suben de prioridad**: reparten 2 a 3 veces por semana |
 | 16 | Todo con teclado: **para lo último**, antes del 26/10 |
 
+## Decisiones tomadas el 04/09 — segunda vuelta, al empezar el punto 20
+
+| # | Decisión |
+|---|---|
+| 20 | El comprobante no fiscal vive en **tabla aparte**, no como un tipo más de `comprobante`. Los id de `tipo_comprobante` son de ARCA, y un no fiscal mezclado se filtra solo a la rendición del CAEA. Comparten pantalla e impresora, nunca los números |
+| 20 | Los **tres tipos entran**: presupuesto, remito y comprobante interno. Comparten tabla, numeración e impresión, así que el presupuesto salía casi gratis |
+| 20 | Elegir "sin factura" exige **permiso propio** (`facturacion.vender_sin_factura`), que no tienen ni el Cajero ni el Vendedor. Y **a un Responsable Inscripto no se le ofrece**: compra para descargar IVA. Las dos las verifica la base |
+| 24 | ⚠️ **A veces la mercadería sale con remito antes de que la venta esté cobrada** (confirmado por Lucas). Regla nueva: *el stock sigue al hecho físico, sale una sola vez*. Obligó a tocar `cobrar_venta()` y `anular_venta()` |
+| 24 | El **remito queda como documento interno**, sin consulta al contador. Decisión de Francisco |
+| 13, 14 | "La caja edita la venta" **sube de prioridad y entra en este bloque**: dejó de ser comodidad y pasó a ser el mecanismo que cierra el reparto cuando el repartidor vuelve con mercadería |
+
 ## Lo único que queda sin respuesta
 
 **¿Qué es un "comprobante de percepción"** en su cabeza? (punto 9) — Lucas quedó en consultarlo. Si la percepción va en la factura, la factura es el comprobante; puede estar pidiendo un listado para el contador.
