@@ -6,12 +6,16 @@ import Layout from '@/components/Layout'
 import Login from '@/pages/Login'
 import Inicio from '@/pages/Inicio'
 import Productos from '@/pages/Productos'
+import ImportarProductos from '@/pages/ImportarProductos'
+import Inventario from '@/pages/Inventario'
 import Precios from '@/pages/Precios'
 import PuntoDeVenta from '@/pages/PuntoDeVenta'
 import Caja from '@/pages/Caja'
 import Clientes from '@/pages/Clientes'
 import Usuarios from '@/pages/Usuarios'
-import EnConstruccion from '@/pages/EnConstruccion'
+import Configuracion from '@/pages/Configuracion'
+import Facturacion from '@/pages/Facturacion'
+import ComprobanteImprimible from '@/pages/ComprobanteImprimible'
 
 /*
   networkMode: 'always' es lo más importante de esta configuración.
@@ -100,13 +104,21 @@ function Rutas() {
       <Route element={<Layout />}>
         <Route index element={<Inicio />} />
         <Route path="productos" element={<Productos />} />
+        <Route path="productos/importar" element={<ImportarProductos />} />
+        <Route path="inventario" element={<Inventario />} />
         <Route path="precios" element={<Precios />} />
         <Route path="ventas" element={<PuntoDeVenta />} />
         <Route path="caja" element={<Caja />} />
         <Route path="clientes" element={<Clientes />} />
         <Route path="usuarios" element={<Usuarios />} />
-        <Route path="facturacion" element={<EnConstruccion titulo="Facturación" />} />
+        <Route path="configuracion" element={<Configuracion />} />
+        <Route path="facturacion" element={<Facturacion />} />
       </Route>
+      {/*
+        Fuera del Layout a propósito: el comprobante se imprime, y no
+        tiene que salir con el menú lateral pegado al costado.
+      */}
+      <Route path="comprobante/:id" element={<ComprobanteImprimible />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

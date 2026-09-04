@@ -1,12 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/auth/AuthProvider'
 import {
   cargarReferencias,
   contarAvance,
+  darDeBajaProductos,
   guardarProducto,
   listarProductos,
+  listarProductosDeBaja,
   obtenerProducto,
+  restaurarProductos,
 } from '@/lib/api/catalogo'
 import type { FilaListado, Referencias } from '@/lib/api/catalogo'
 import ProductoEditor from '@/components/ProductoEditor'
@@ -42,10 +46,14 @@ export default function Productos() {
   const [creando, setCreando] = useState(false)
   const [form, setForm] = useState<EstadoFormulario>(FORM_VACIO)
   const [errorGuardado, setErrorGuardado] = useState<string | null>(null)
+  const [verBajas, setVerBajas] = useState(false)
+  const [marcados, setMarcados] = useState<Set<string>>(new Set())
+  const [aviso, setAviso] = useState<string | null>(null)
   const inputBusqueda = useRef<HTMLInputElement>(null)
 
   const puedeEditar = tienePermiso('productos.editar')
   const puedeCrear = tienePermiso('productos.crear')
+  const puedeDarDeBaja = tienePermiso('productos.eliminar')
 
   useEffect(() => {
     const t = setTimeout(() => setDebounced(texto.trim()), 250)
@@ -62,6 +70,62 @@ export default function Productos() {
   })
 
   const avance = useQuery({ queryKey: ['avance-carga'], queryFn: contarAvance })
+
+  const bajas = useQuery({
+    queryKey: ['productos-baja', debounced],
+    queryFn: () => listarProductosDeBaja(debounced),
+    enabled: verBajas,
+  })
+
+  function avisar(texto: string) {
+    setAviso(texto)
+    setTimeout(() => setAviso(null), 6000)
+  }
+
+  function refrescarListados() {
+    qc.invalidateQueries({ queryKey: ['productos'] })
+    qc.invalidateQueries({ queryKey: ['productos-baja'] })
+    qc.invalidateQueries({ queryKey: ['avance-carga'] })
+    setMarcados(new Set())
+  }
+
+  /*
+    Dar de baja. Es baja lógica: el producto sale del catálogo y del
+    mostrador, pero su historial de ventas y movimientos queda intacto y
+    se puede restaurar.
+  */
+  const darDeBaja = useMutation({
+    mutationFn: (ids: string[]) => darDeBajaProductos(ids),
+    onSuccess: (resultados) => {
+      const dados = resultados.filter((r) => r.resultado === 'baja')
+      const conStock = dados.filter((r) => r.detalle)
+      avisar(
+        `${dados.length} ${dados.length === 1 ? 'producto dado' : 'productos dados'} de baja.` +
+          (conStock.length
+            ? ` ${conStock.length} todavía tenía stock registrado — revisalos en “Dados de baja”.`
+            : ''),
+      )
+      refrescarListados()
+      if (seleccionado && resultados.some((r) => r.id === seleccionado)) cerrar()
+    },
+    onError: (e) => setErrorGuardado(e instanceof Error ? e.message : 'No se pudo dar de baja.'),
+  })
+
+  const restaurar = useMutation({
+    mutationFn: (ids: string[]) => restaurarProductos(ids),
+    onSuccess: (n) => {
+      avisar(`${n} ${n === 1 ? 'producto restaurado' : 'productos restaurados'}.`)
+      refrescarListados()
+    },
+    onError: (e) => setErrorGuardado(e instanceof Error ? e.message : 'No se pudo restaurar.'),
+  })
+
+  function alternarMarca(id: string) {
+    const nuevo = new Set(marcados)
+    if (nuevo.has(id)) nuevo.delete(id)
+    else nuevo.add(id)
+    setMarcados(nuevo)
+  }
 
   const referencias = useQuery({
     queryKey: ['referencias'],
@@ -169,12 +233,20 @@ export default function Productos() {
           </p>
         </div>
         {puedeCrear && (
-          <button
-            onClick={nuevo}
-            className="rounded-lg bg-marca-600 px-4 py-2 text-sm font-medium text-white hover:bg-marca-700"
-          >
-            Nuevo producto
-          </button>
+          <div className="flex gap-2">
+            <Link
+              to="/productos/importar"
+              className="rounded-lg px-4 py-2 text-sm font-medium text-marca-700 ring-1 ring-slate-300 hover:bg-slate-50"
+            >
+              Importar planilla
+            </Link>
+            <button
+              onClick={nuevo}
+              className="rounded-lg bg-marca-600 px-4 py-2 text-sm font-medium text-white hover:bg-marca-700"
+            >
+              Nuevo producto
+            </button>
+          </div>
         )}
       </div>
 
@@ -222,16 +294,88 @@ export default function Productos() {
             className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pr-4 pl-11 text-slate-900 shadow-sm outline-none focus:border-marca-500 focus:ring-2 focus:ring-marca-500/20"
           />
         </div>
-        <label className="flex cursor-pointer items-center gap-2 text-sm whitespace-nowrap text-slate-600">
-          <input
-            type="checkbox"
-            checked={soloSinRevisar}
-            onChange={(e) => setSoloSinRevisar(e.target.checked)}
-            className="size-4 rounded border-slate-300 text-marca-600 focus:ring-marca-500"
-          />
-          Sólo sin revisar
-        </label>
+        {!verBajas && (
+          <label className="flex cursor-pointer items-center gap-2 text-sm whitespace-nowrap text-slate-600">
+            <input
+              type="checkbox"
+              checked={soloSinRevisar}
+              onChange={(e) => setSoloSinRevisar(e.target.checked)}
+              className="size-4 rounded border-slate-300 text-marca-600 focus:ring-marca-500"
+            />
+            Sólo sin revisar
+          </label>
+        )}
+        {puedeDarDeBaja && (
+          <button
+            onClick={() => {
+              setVerBajas(!verBajas)
+              setMarcados(new Set())
+              cerrar()
+            }}
+            className={`rounded-lg px-3 py-2 text-sm font-medium whitespace-nowrap ring-1 ${
+              verBajas
+                ? 'bg-slate-700 text-white ring-slate-700'
+                : 'text-slate-600 ring-slate-300 hover:bg-slate-50'
+            }`}
+          >
+            {verBajas ? 'Ver el catálogo' : 'Dados de baja'}
+          </button>
+        )}
       </div>
+
+      {aviso && (
+        <p className="rounded-xl bg-verde-50 px-4 py-3 text-sm font-medium text-verde-800 ring-1 ring-verde-200">
+          {aviso}
+        </p>
+      )}
+
+      {/*
+        Barra de acciones sobre lo marcado. Aparece sólo cuando hay algo
+        seleccionado: una barra siempre visible con botones apagados es
+        ruido, y sobre 3.000 productos la pantalla ya tiene bastante.
+      */}
+      {marcados.size > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-slate-800 px-4 py-2.5 text-white">
+          <span className="text-sm">
+            {marcados.size} {marcados.size === 1 ? 'seleccionado' : 'seleccionados'}
+          </span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setMarcados(new Set())}
+              className="rounded-lg px-3 py-1.5 text-sm text-slate-300 hover:bg-white/10"
+            >
+              Quitar selección
+            </button>
+            {verBajas ? (
+              <button
+                onClick={() => restaurar.mutate([...marcados])}
+                disabled={restaurar.isPending}
+                className="rounded-lg bg-white px-4 py-1.5 text-sm font-medium text-slate-900 hover:bg-slate-100 disabled:opacity-50"
+              >
+                {restaurar.isPending ? 'Restaurando…' : 'Restaurar'}
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  const n = marcados.size
+                  if (
+                    window.confirm(
+                      `¿Dar de baja ${n} ${n === 1 ? 'producto' : 'productos'}?\n\n` +
+                        'Salen del catálogo y del mostrador, pero no se borra nada: el historial de ventas y movimientos queda, y se pueden restaurar desde "Dados de baja".',
+                    )
+                  ) {
+                    darDeBaja.mutate([...marcados])
+                  }
+                }}
+                disabled={darDeBaja.isPending}
+                className="rounded-lg bg-red-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-red-500 disabled:opacity-50"
+              >
+                {darDeBaja.isPending ? 'Dando de baja…' : 'Dar de baja'}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="flex min-h-0 flex-1 gap-4">
         <div className="min-w-0 flex-1 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
@@ -239,25 +383,40 @@ export default function Productos() {
             <table className="w-full text-sm">
               <thead className="sticky top-0 border-b border-slate-200 bg-slate-50 text-left text-xs tracking-wide text-slate-500 uppercase">
                 <tr>
+                  {puedeDarDeBaja && <th className="w-10 px-4 py-2.5" />}
                   <th className="px-4 py-2.5 font-medium">Código</th>
                   <th className="px-4 py-2.5 font-medium">Producto</th>
                   <th className="px-4 py-2.5 text-right font-medium">Precio</th>
-                  <th className="px-4 py-2.5 text-right font-medium">Stock</th>
-                  <th className="px-4 py-2.5 font-medium">Estado</th>
+                  {verBajas ? (
+                    <th className="px-4 py-2.5 font-medium">Dado de baja</th>
+                  ) : (
+                    <>
+                      <th className="px-4 py-2.5 text-right font-medium">Stock</th>
+                      <th className="px-4 py-2.5 font-medium">Estado</th>
+                    </>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {listado.isPending && (
+                {(verBajas ? bajas.isPending : listado.isPending) && (
                   <tr>
-                    <td colSpan={5} className="px-4 py-12 text-center text-slate-400">
+                    <td colSpan={6} className="px-4 py-12 text-center text-slate-400">
                       Buscando…
                     </td>
                   </tr>
                 )}
 
-                {!listado.isPending && listado.data?.filas.length === 0 && (
+                {verBajas && !bajas.isPending && bajas.data?.filas.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-4 py-12 text-center text-slate-400">
+                    <td colSpan={6} className="px-4 py-12 text-center text-slate-400">
+                      No hay productos dados de baja.
+                    </td>
+                  </tr>
+                )}
+
+                {!verBajas && !listado.isPending && listado.data?.filas.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-12 text-center text-slate-400">
                       {debounced
                         ? `No hay productos que coincidan con “${debounced}”.`
                         : 'Todavía no hay productos cargados. Van a llegar con la importación del listado.'}
@@ -265,51 +424,100 @@ export default function Productos() {
                   </tr>
                 )}
 
-                {listado.data?.filas.map((p: FilaListado) => {
-                  const estado = ESTADO_STOCK[p.estado]
-                  const activa = p.producto_id === seleccionado
-                  return (
-                    <tr
-                      key={p.producto_id}
-                      onClick={() => {
-                        if (!puedeEditar) return
-                        setCreando(false)
-                        setSeleccionado(p.producto_id)
-                      }}
-                      className={`cursor-pointer ${activa ? 'bg-marca-50' : 'hover:bg-slate-50'}`}
-                    >
+                {verBajas &&
+                  bajas.data?.filas.map((p) => (
+                    <tr key={p.id} className="hover:bg-slate-50">
+                      {puedeDarDeBaja && (
+                        <td className="px-4 py-2.5">
+                          <input
+                            type="checkbox"
+                            checked={marcados.has(p.id)}
+                            onChange={() => alternarMarca(p.id)}
+                            className="size-4 rounded border-slate-300 text-marca-600 focus:ring-marca-500"
+                          />
+                        </td>
+                      )}
                       <td className="px-4 py-2.5 font-mono text-xs text-slate-500">{p.codigo}</td>
-                      <td className="px-4 py-2.5">
-                        <div className="flex items-center gap-2">
-                          {!p.revisado_en && (
-                            <span
-                              className="size-1.5 shrink-0 rounded-full bg-amber-400"
-                              title="Sin revisar"
-                            />
-                          )}
-                          <span className="font-medium text-slate-900">{p.nombre_interno}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-2.5 text-right tabular-nums text-slate-900">
+                      <td className="px-4 py-2.5 text-slate-600">{p.nombre_interno}</td>
+                      <td className="px-4 py-2.5 text-right tabular-nums text-slate-600">
                         {moneda.format(p.precio_venta)}
                       </td>
-                      <td className="px-4 py-2.5 text-right tabular-nums text-slate-700">
-                        {numero.format(p.cantidad)}
-                      </td>
-                      <td className="px-4 py-2.5">
-                        <span
-                          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ring-1 ${estado.clase}`}
-                        >
-                          {estado.etiqueta}
-                        </span>
+                      <td className="px-4 py-2.5 text-xs text-slate-500">
+                        {new Date(p.eliminado_en).toLocaleDateString('es-AR')}
                       </td>
                     </tr>
-                  )
-                })}
+                  ))}
+
+                {!verBajas &&
+                  listado.data?.filas.map((p: FilaListado) => {
+                    const estado = ESTADO_STOCK[p.estado]
+                    const activa = p.producto_id === seleccionado
+                    return (
+                      <tr
+                        key={p.producto_id}
+                        className={activa ? 'bg-marca-50' : 'hover:bg-slate-50'}
+                      >
+                        {puedeDarDeBaja && (
+                          <td className="px-4 py-2.5">
+                            <input
+                              type="checkbox"
+                              checked={marcados.has(p.producto_id)}
+                              onChange={() => alternarMarca(p.producto_id)}
+                              className="size-4 rounded border-slate-300 text-marca-600 focus:ring-marca-500"
+                            />
+                          </td>
+                        )}
+                        {/* La fila abre el editor, pero el casillero no:
+                            marcar para dar de baja y abrir para editar son
+                            dos intenciones distintas. */}
+                        <td
+                          onClick={() => {
+                            if (!puedeEditar) return
+                            setCreando(false)
+                            setSeleccionado(p.producto_id)
+                          }}
+                          className="cursor-pointer px-4 py-2.5 font-mono text-xs text-slate-500"
+                        >
+                          {p.codigo}
+                        </td>
+                        <td
+                          onClick={() => {
+                            if (!puedeEditar) return
+                            setCreando(false)
+                            setSeleccionado(p.producto_id)
+                          }}
+                          className="cursor-pointer px-4 py-2.5"
+                        >
+                          <div className="flex items-center gap-2">
+                            {!p.revisado_en && (
+                              <span
+                                className="size-1.5 shrink-0 rounded-full bg-amber-400"
+                                title="Sin revisar"
+                              />
+                            )}
+                            <span className="font-medium text-slate-900">{p.nombre_interno}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-2.5 text-right tabular-nums text-slate-900">
+                          {moneda.format(p.precio_venta)}
+                        </td>
+                        <td className="px-4 py-2.5 text-right tabular-nums text-slate-700">
+                          {numero.format(p.cantidad)}
+                        </td>
+                        <td className="px-4 py-2.5">
+                          <span
+                            className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ring-1 ${estado.clase}`}
+                          >
+                            {estado.etiqueta}
+                          </span>
+                        </td>
+                      </tr>
+                    )
+                  })}
               </tbody>
             </table>
 
-            {listado.data && listado.data.total > listado.data.filas.length && (
+            {!verBajas && listado.data && listado.data.total > listado.data.filas.length && (
               <p className="border-t border-slate-200 bg-slate-50 px-4 py-2.5 text-center text-xs text-slate-500">
                 Mostrando {listado.data.filas.length} de {numero.format(listado.data.total)}. Afiná
                 la búsqueda para ver el resto.
@@ -333,6 +541,20 @@ export default function Productos() {
                 error={errorGuardado}
                 onGuardar={(marcarRevisado, avanzar) => guardar.mutate({ marcarRevisado, avanzar })}
                 onCancelar={cerrar}
+                onDarDeBaja={
+                  puedeDarDeBaja && seleccionado
+                    ? () => {
+                        if (
+                          window.confirm(
+                            `¿Dar de baja "${form.campos.nombre_interno}"?\n\n` +
+                              'Sale del catálogo y del mostrador, pero no se borra: el historial de ventas y movimientos queda, y se puede restaurar desde "Dados de baja".',
+                          )
+                        ) {
+                          darDeBaja.mutate([seleccionado])
+                        }
+                      }
+                    : undefined
+                }
                 onReferenciaCreada={(grupo, nueva) =>
                   qc.setQueryData(['referencias'], (prev: Referencias | undefined) =>
                     prev ? { ...prev, [grupo]: [...prev[grupo], nueva] } : prev,

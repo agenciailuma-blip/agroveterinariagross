@@ -23,6 +23,7 @@ export interface ProductoDetalle {
   categoria_id: string | null
   marca_id: string | null
   presentacion_id: string | null
+  rubro_arca_id: number | null
   alicuota_iva_id: number
   condicion_iva: 'gravado' | 'exento' | 'no_gravado'
   precio_venta: number
@@ -52,6 +53,7 @@ export interface Referencias {
   animales: Referencia[]
   etapas: Referencia[]
   alicuotas: { id: number; descripcion: string }[]
+  rubrosArca: { id: number; descripcion: string }[]
 }
 
 export const UNIDADES = [
@@ -66,6 +68,71 @@ export const UNIDADES = [
 ] as const
 
 const LIMITE_LISTADO = 100
+
+export interface ResultadoBaja {
+  id: string
+  codigo: string | null
+  resultado: 'baja' | 'omitido'
+  detalle: string | null
+}
+
+/*
+  Da de baja productos.
+
+  Baja lógica, nunca borrado: el producto se marca y esa marca viaja a
+  las terminales del mostrador. Un borrado físico no viajaría —el
+  sincronizador trae lo que cambió, y una fila que ya no está no
+  cambió— y el producto quedaría vendible para siempre en las máquinas
+  que estuvieron desconectadas.
+*/
+export async function darDeBajaProductos(ids: string[]): Promise<ResultadoBaja[]> {
+  const { data, error } = await supabase.rpc('dar_de_baja_productos', { p_ids: ids })
+  if (error) throw new Error(error.message)
+  return (data ?? []) as ResultadoBaja[]
+}
+
+export async function restaurarProductos(ids: string[]): Promise<number> {
+  const { data, error } = await supabase.rpc('restaurar_productos', { p_ids: ids })
+  if (error) throw new Error(error.message)
+  return Number(data)
+}
+
+/*
+  Los productos dados de baja.
+
+  Se consultan contra la tabla y no contra vista_stock a propósito: esa
+  vista filtra las bajas y de ahí lee el punto de venta. Tocarla para
+  poder listarlas acá haría que reaparezcan en el buscador del
+  mostrador, que es justo lo que la baja evita.
+*/
+export async function listarProductosDeBaja(texto: string) {
+  let q = supabase
+    .from('producto')
+    .select('id, codigo, nombre_interno, precio_venta, unidad_medida, eliminado_en', {
+      count: 'exact',
+    })
+    .not('eliminado_en', 'is', null)
+    .order('eliminado_en', { ascending: false })
+    .limit(LIMITE_LISTADO)
+
+  if (texto) {
+    const patron = `%${texto.replace(/[%_]/g, '')}%`
+    q = q.or(`codigo.ilike.${patron},nombre_interno.ilike.${patron}`)
+  }
+
+  const { data, error, count } = await q
+  if (error) throw new Error(error.message)
+
+  type Baja = {
+    id: string
+    codigo: string
+    nombre_interno: string
+    precio_venta: number
+    unidad_medida: string
+    eliminado_en: string
+  }
+  return { filas: (data ?? []) as Baja[], total: count ?? 0 }
+}
 
 export async function listarProductos(texto: string, soloSinRevisar: boolean) {
   let q = supabase
@@ -126,13 +193,14 @@ export async function obtenerProducto(id: string) {
 }
 
 export async function cargarReferencias(): Promise<Referencias> {
-  const [cat, mar, pre, ani, eta, ali] = await Promise.all([
+  const [cat, mar, pre, ani, eta, ali, rub] = await Promise.all([
     supabase.from('categoria').select('id, nombre').is('eliminado_en', null).order('orden'),
     supabase.from('marca').select('id, nombre').is('eliminado_en', null).order('nombre'),
     supabase.from('presentacion').select('id, nombre').is('eliminado_en', null).order('nombre'),
     supabase.from('animal').select('id, nombre').is('eliminado_en', null).order('orden'),
     supabase.from('etapa_vida').select('id, nombre').is('eliminado_en', null).order('orden'),
     supabase.from('alicuota_iva').select('id, descripcion').eq('activo', true).order('id'),
+    supabase.from('rubro_arca').select('id, descripcion').eq('activo', true).order('orden'),
   ])
   return {
     categorias: (cat.data ?? []) as Referencia[],
@@ -141,6 +209,7 @@ export async function cargarReferencias(): Promise<Referencias> {
     animales: (ani.data ?? []) as Referencia[],
     etapas: (eta.data ?? []) as Referencia[],
     alicuotas: (ali.data ?? []) as { id: number; descripcion: string }[],
+    rubrosArca: (rub.data ?? []) as { id: number; descripcion: string }[],
   }
 }
 

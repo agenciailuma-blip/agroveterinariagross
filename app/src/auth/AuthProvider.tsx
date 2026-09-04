@@ -152,19 +152,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return
     }
 
-    // Llegamos al servidor y respondió que esta cuenta no tiene usuario.
-    // Eso NO es un problema de conexión: es una cuenta sin habilitar, y
-    // la copia local no puede rescatarla.
-    if (!data) {
+    let perfil = data
+
+    /*
+      Llegamos al servidor y no hay usuario para esta cuenta. Antes de
+      rendirse, se intenta vincular.
+
+      El administrador da de alta a la persona por correo, mucho antes
+      de que esa persona entre. Las dos puntas —la cuenta con la que
+      inicia sesión y el usuario con su rol— recién existen a la vez
+      ahora, en este primer ingreso, así que este es el único momento en
+      que se pueden unir. La base verifica que el correo esté confirmado
+      y que ese usuario no tenga ya otra cuenta.
+    */
+    if (!perfil) {
+      const { data: reclamado } = await supabase.rpc('reclamar_usuario')
+      if (reclamado) {
+        const reintento = await supabase
+          .from('usuario')
+          .select('id, nombre, email, activo, rol:rol_id ( nombre, rol_permiso ( permiso_clave ) )')
+          .eq('auth_user_id', userId)
+          .maybeSingle<RespuestaPerfil>()
+        perfil = reintento.data
+      }
+    }
+
+    // Sigue sin haber usuario. Eso NO es un problema de conexión: es una
+    // cuenta sin habilitar, y la copia local no puede rescatarla.
+    if (!perfil) {
       localStorage.removeItem(CLAVE_CACHE)
       setError(
-        'Tu cuenta no está vinculada a ningún usuario del sistema. Pedile al administrador que te dé de alta.',
+        'Tu cuenta no está vinculada a ningún usuario del sistema. Pedile al administrador que te dé de alta con este mismo correo.',
       )
       setPerfil(null)
       return
     }
 
-    if (!data.activo) {
+    if (!perfil.activo) {
       localStorage.removeItem(CLAVE_CACHE)
       setError('Tu usuario está dado de baja.')
       setPerfil(null)
@@ -172,12 +196,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const nuevo: PerfilUsuario = {
-      id: data.id,
-      nombre: data.nombre,
-      email: data.email,
-      activo: data.activo,
-      rol: data.rol?.nombre ?? 'Sin rol',
-      permisos: new Set(data.rol?.rol_permiso.map((p) => p.permiso_clave) ?? []),
+      id: perfil.id,
+      nombre: perfil.nombre,
+      email: perfil.email,
+      activo: perfil.activo,
+      rol: perfil.rol?.nombre ?? 'Sin rol',
+      permisos: new Set(perfil.rol?.rol_permiso.map((p) => p.permiso_clave) ?? []),
     }
 
     setError(null)

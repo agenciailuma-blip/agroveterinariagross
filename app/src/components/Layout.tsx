@@ -1,4 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom'
+import AvisoDeActualizacion from '@/components/AvisoDeActualizacion'
 import { useAuth } from '@/auth/AuthProvider'
 import { IndicadorConexion } from '@/components/IndicadorConexion'
 
@@ -17,6 +18,12 @@ const MENU: ItemMenu[] = [
     etiqueta: 'Productos',
     permiso: 'productos.ver',
     icono: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4',
+  },
+  {
+    a: '/inventario',
+    etiqueta: 'Inventario',
+    permiso: 'stock.ver',
+    icono: 'M9 12h6m-6 4h6M9 8h6M5 21h14a1 1 0 001-1V6.4L16.6 3H6a1 1 0 00-1 1v16a1 1 0 001 1z',
   },
   {
     a: '/precios',
@@ -53,6 +60,12 @@ const MENU: ItemMenu[] = [
     etiqueta: 'Usuarios',
     permiso: 'usuarios.gestionar',
     icono: 'M10.3 4.3a2 2 0 013.4 0l.4.7a2 2 0 002 1l.8-.1a2 2 0 011.7 3l-.4.7a2 2 0 000 2.2l.4.7a2 2 0 01-1.7 3l-.8-.1a2 2 0 00-2 1l-.4.7a2 2 0 01-3.4 0l-.4-.7a2 2 0 00-2-1l-.8.1a2 2 0 01-1.7-3l.4-.7a2 2 0 000-2.2l-.4-.7a2 2 0 011.7-3l.8.1a2 2 0 002-1l.4-.7zM14 12a2 2 0 11-4 0 2 2 0 014 0z',
+  },
+  {
+    a: '/configuracion',
+    etiqueta: 'Configuración',
+    permiso: 'configuracion.gestionar',
+    icono: 'M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75',
   },
 ]
 
@@ -114,6 +127,8 @@ export default function Layout() {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
+        {/* Va arriba de todo y ocupa una franja: avisa sin tapar nada. */}
+        <AvisoDeActualizacion />
         <header className="flex items-center justify-end gap-4 border-b border-borde bg-white px-6 py-3">
           <IndicadorConexion />
         </header>

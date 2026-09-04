@@ -1,0 +1,6 @@
+# Toda ruta la resuelve la aplicación, no el servidor.
+#
+# Sin esto, entrar directo a /facturacion o refrescar la página en
+# cualquier pantalla que no sea la raíz devuelve 404: Cloudflare busca
+# un archivo que no existe, porque las rutas las maneja el navegador.
+/*  /index.html  200

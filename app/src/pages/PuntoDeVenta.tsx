@@ -187,6 +187,8 @@ export default function PuntoDeVenta() {
         lineas,
         observaciones: null,
         listaPrecioId: medio?.lista_precio_id ?? null,
+        medioPagoId: medioAnticipado,
+        cuotas: cuotasAnticipadas,
       }, setPasoEnvio),
     onSuccess: (v) => {
       setPasoEnvio(null)

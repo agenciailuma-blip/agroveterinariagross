@@ -2,283 +2,616 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/auth/AuthProvider'
 import {
-  cargarPrecios,
+  TIPOS_MEDIO_PAGO,
+  cargarPreciosServidor,
+  darDeBajaLista,
+  darDeBajaMedioPago,
   guardarCuota,
   guardarLista,
+  guardarMedioPago,
   previsualizarPrecio,
-  TIPOS_MEDIO_PAGO,
 } from '@/lib/api/precios'
 import type { ListaPrecio, MedioPago } from '@/lib/api/precios'
 import { moneda } from '@/lib/tipos'
 
-/** Precio de referencia de la vista previa. Redondo a propósito, para leer el efecto de un vistazo. */
-const BASE_EJEMPLO = 10000
+/*
+  Precios y medios de pago.
+
+  Acá se administra cómo cobra el local. En Argentina las formas de pago
+  cambian varias veces por año —promociones, planes de cuotas, recargos
+  nuevos— así que todo tiene que ser editable sin depender de una
+  actualización del sistema. Eso está comprometido en el alcance.
+
+  Las reglas que importan viven en la base, no en esta pantalla: que
+  haya una sola lista predeterminada, que no se dé de baja una lista en
+  uso, que no quede la caja sin medio de pago. Acá sólo se muestran.
+*/
+const PRECIO_EJEMPLO = 10000
 
 export default function Precios() {
   const { tienePermiso } = useAuth()
   const qc = useQueryClient()
-  const [guardado, setGuardado] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [aviso, setAviso] = useState<string | null>(null)
+  const [editandoLista, setEditandoLista] = useState<Partial<ListaPrecio> | null>(null)
+  const [editandoMedio, setEditandoMedio] = useState<Partial<MedioPago> | null>(null)
 
-  const puedeEditar = tienePermiso('productos.editar_precio')
-  const puedeConfigurar = tienePermiso('configuracion.gestionar')
+  const puedeGestionar = tienePermiso('configuracion.gestionar')
 
-  const { data, isPending, error } = useQuery({ queryKey: ['precios'], queryFn: cargarPrecios })
+  // Del servidor y no de la copia local: acá se administra, y hay que
+  // ver el efecto del cambio enseguida, no en la próxima sincronización.
+  const datos = useQuery({ queryKey: ['precios-admin'], queryFn: cargarPreciosServidor })
 
-  function avisar() {
-    setGuardado('Guardado')
-    setTimeout(() => setGuardado(null), 1800)
+  function avisar(texto: string) {
+    setAviso(texto)
+    setError(null)
+    setTimeout(() => setAviso(null), 4000)
   }
 
+  function refrescar() {
+    qc.invalidateQueries({ queryKey: ['precios-admin'] })
+    qc.invalidateQueries({ queryKey: ['precios'] })
+  }
+
+  const alGuardar = (texto: string) => () => {
+    avisar(texto)
+    refrescar()
+    setEditandoLista(null)
+    setEditandoMedio(null)
+  }
+  const alFallar = (e: unknown) =>
+    setError(e instanceof Error ? e.message : 'No se pudo guardar.')
+
   const mutarLista = useMutation({
-    mutationFn: ({ id, ajuste }: { id: string; ajuste: number }) =>
-      guardarLista(id, { ajuste_porcentaje: ajuste }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['precios'] })
-      avisar()
-    },
+    mutationFn: (l: Partial<ListaPrecio>) =>
+      guardarLista({
+        id: l.id,
+        nombre: l.nombre ?? '',
+        ajuste_porcentaje: Number(l.ajuste_porcentaje ?? 0),
+        es_predeterminada: !!l.es_predeterminada,
+        orden: Number(l.orden ?? 0),
+      }),
+    onSuccess: alGuardar('Lista guardada'),
+    onError: alFallar,
+  })
+
+  const bajaLista = useMutation({
+    mutationFn: (id: string) => darDeBajaLista(id),
+    onSuccess: alGuardar('Lista dada de baja'),
+    onError: alFallar,
+  })
+
+  const mutarMedio = useMutation({
+    mutationFn: (m: Partial<MedioPago>) =>
+      guardarMedioPago({
+        id: m.id,
+        nombre: m.nombre ?? '',
+        tipo: m.tipo ?? 'otro',
+        lista_precio_id: m.lista_precio_id ?? null,
+        admite_cuotas: !!m.admite_cuotas,
+        cuotas_maximas: Number(m.cuotas_maximas ?? 1),
+        afecta_caja: m.afecta_caja ?? true,
+        orden: Number(m.orden ?? 0),
+      }),
+    onSuccess: alGuardar('Medio de pago guardado'),
+    onError: alFallar,
+  })
+
+  const bajaMedio = useMutation({
+    mutationFn: (id: string) => darDeBajaMedioPago(id),
+    onSuccess: alGuardar('Medio de pago dado de baja'),
+    onError: alFallar,
   })
 
   const mutarCuota = useMutation({
     mutationFn: ({ medio, cuotas, recargo }: { medio: string; cuotas: number; recargo: number }) =>
       guardarCuota(medio, cuotas, recargo),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['precios'] })
-      avisar()
+      avisar('Recargo guardado')
+      refrescar()
     },
+    onError: alFallar,
   })
 
-  if (isPending) return <p className="text-sm text-piedra-500">Cargando…</p>
-  if (error)
+  if (!puedeGestionar) {
     return (
-      <p role="alert" className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 ring-1 ring-red-200">
-        {error.message}
+      <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800 ring-1 ring-amber-200">
+        No tenés permiso para administrar precios y medios de pago.
       </p>
     )
+  }
 
-  const listaDe = (m: MedioPago) => data.listas.find((l) => l.id === m.lista_precio_id)
+  const listas = datos.data?.listas ?? []
+  const medios = datos.data?.medios ?? []
 
   return (
-    <div className="max-w-4xl space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight text-tinta">Precios</h1>
-          <p className="text-sm text-piedra-500">
-            Listas de precios y medios de pago. El precio de cada producto se calcula a partir de
-            estas reglas.
-          </p>
-        </div>
-        {guardado && (
-          <span className="rounded-full bg-verde-100 px-3 py-1 text-xs font-medium text-verde-800 ring-1 ring-verde-200">
-            {guardado}
-          </span>
-        )}
+    <div className="max-w-5xl space-y-5">
+      <div>
+        <h1 className="text-xl font-semibold tracking-tight text-tinta">Precios y medios de pago</h1>
+        <p className="text-sm text-piedra-500">
+          Cómo cobra el local. Se puede cambiar cuando cambian las promociones, sin esperar una
+          actualización del sistema.
+        </p>
       </div>
 
-      {/*
-        Cómo se arma el precio final. Va arriba de todo porque el orden de
-        las capas cambia el resultado, y quien toca un porcentaje acá tiene
-        que saber sobre qué se aplica.
-      */}
-      <div className="rounded-xl bg-marca-50 p-4 ring-1 ring-marca-200">
-        <p className="text-sm font-medium text-marca-900">Cómo se calcula el precio final</p>
-        <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-marca-800">
+      {aviso && (
+        <p className="rounded-xl bg-verde-50 px-4 py-3 text-sm font-medium text-verde-800 ring-1 ring-verde-200">
+          {aviso}
+        </p>
+      )}
+      {error && (
+        <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 ring-1 ring-red-200">
+          {error}
+        </p>
+      )}
+
+      {/* ── Cómo se arma un precio ── */}
+      <div className="rounded-xl bg-marca-50 p-4 text-sm text-marca-900 ring-1 ring-marca-200">
+        <p className="font-medium">Cómo se arma el precio que ve el cliente</p>
+        <p className="mt-1 flex flex-wrap items-center gap-1.5 text-xs">
           <span className="rounded bg-white px-2 py-0.5 ring-1 ring-marca-200">Precio del producto</span>
-          <span className="text-marca-400">→</span>
+          <span>→</span>
           <span className="rounded bg-white px-2 py-0.5 ring-1 ring-marca-200">Ajuste de la lista</span>
-          <span className="text-marca-400">→</span>
+          <span>→</span>
           <span className="rounded bg-white px-2 py-0.5 ring-1 ring-marca-200">Recargo por cuotas</span>
-          <span className="text-marca-400">→</span>
+          <span>→</span>
           <span className="rounded bg-white px-2 py-0.5 ring-1 ring-marca-200">Descuento del cliente</span>
-        </div>
+        </p>
+        <p className="mt-2 text-xs">
+          Cada <strong>medio de pago</strong> usa una <strong>lista</strong>. Por eso el efectivo y
+          la tarjeta pueden tener precios distintos sin cargar el producto dos veces.
+        </p>
       </div>
 
-      <section className="rounded-xl bg-white shadow-sm ring-1 ring-borde">
-        <div className="border-b border-borde px-5 py-3">
-          <h2 className="font-medium text-tinta">Listas de precios</h2>
-          <p className="text-xs text-piedra-500">
-            El ajuste se aplica sobre el precio cargado en el producto. Positivo recarga, negativo
-            descuenta.
-          </p>
+      {/* ── Listas ── */}
+      <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-borde">
+        <div className="flex items-center justify-between border-b border-borde px-5 py-3">
+          <div>
+            <h2 className="font-medium text-tinta">Listas de precios</h2>
+            <p className="text-sm text-piedra-500">
+              Un porcentaje sobre el precio del producto. La predeterminada se usa cuando el medio
+              de pago no tiene una propia.
+            </p>
+          </div>
+          <button
+            onClick={() =>
+              setEditandoLista({ nombre: '', ajuste_porcentaje: 0, es_predeterminada: false, orden: listas.length * 10 })
+            }
+            className="shrink-0 rounded-lg bg-marca-700 px-4 py-2 text-sm font-medium text-white hover:bg-marca-600"
+          >
+            Nueva lista
+          </button>
         </div>
+
+        <table className="w-full text-sm">
+          <thead className="border-b border-borde bg-piedra-50 text-left text-xs tracking-wide text-piedra-500 uppercase">
+            <tr>
+              <th className="px-5 py-2 font-medium">Lista</th>
+              <th className="py-2 text-right font-medium">Ajuste</th>
+              <th className="py-2 text-right font-medium">Un producto de {moneda.format(PRECIO_EJEMPLO)}</th>
+              <th className="w-32 px-5 py-2" />
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-piedra-100">
+            {listas.map((l) => (
+              <tr key={l.id}>
+                <td className="px-5 py-2.5">
+                  <span className="font-medium text-tinta">{l.nombre}</span>
+                  {l.es_predeterminada && (
+                    <span className="ml-2 rounded-full bg-marca-100 px-2 py-0.5 text-xs text-marca-800">
+                      Predeterminada
+                    </span>
+                  )}
+                </td>
+                <td className="py-2.5 text-right tabular-nums text-piedra-600">
+                  {l.ajuste_porcentaje > 0 ? '+' : ''}
+                  {l.ajuste_porcentaje}%
+                </td>
+                <td className="py-2.5 text-right font-medium tabular-nums text-tinta">
+                  {moneda.format(previsualizarPrecio(PRECIO_EJEMPLO, l, 0))}
+                </td>
+                <td className="px-5 py-2.5 text-right">
+                  <button onClick={() => setEditandoLista(l)} className="text-xs text-marca-700 hover:underline">
+                    Editar
+                  </button>
+                  {!l.es_predeterminada && (
+                    <button
+                      onClick={() => {
+                        if (window.confirm(`¿Dar de baja la lista "${l.nombre}"?`)) bajaLista.mutate(l.id)
+                      }}
+                      className="ml-3 text-xs text-piedra-400 hover:text-red-600"
+                    >
+                      Dar de baja
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* ── Medios de pago ── */}
+      <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-borde">
+        <div className="flex items-center justify-between border-b border-borde px-5 py-3">
+          <div>
+            <h2 className="font-medium text-tinta">Medios de pago</h2>
+            <p className="text-sm text-piedra-500">
+              Lo que el cajero ve al cobrar. Cada uno usa una lista y puede tener recargo por
+              cantidad de cuotas.
+            </p>
+          </div>
+          <button
+            onClick={() =>
+              setEditandoMedio({
+                nombre: '',
+                tipo: 'efectivo',
+                lista_precio_id: listas.find((l) => l.es_predeterminada)?.id ?? null,
+                admite_cuotas: false,
+                cuotas_maximas: 1,
+                afecta_caja: true,
+                orden: medios.length * 10,
+              })
+            }
+            className="shrink-0 rounded-lg bg-marca-700 px-4 py-2 text-sm font-medium text-white hover:bg-marca-600"
+          >
+            Nuevo medio de pago
+          </button>
+        </div>
+
         <div className="divide-y divide-piedra-100">
-          {data.listas.map((l) => (
-            <FilaLista
-              key={l.id}
-              lista={l}
-              editable={puedeEditar}
-              guardando={mutarLista.isPending}
-              onGuardar={(ajuste) => mutarLista.mutate({ id: l.id, ajuste })}
-            />
+          {medios.map((m) => (
+            <div key={m.id} className="px-5 py-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <span className="font-medium text-tinta">{m.nombre}</span>
+                  <span className="ml-2 text-xs text-piedra-500">
+                    {TIPOS_MEDIO_PAGO[m.tipo] ?? m.tipo} ·{' '}
+                    {listas.find((l) => l.id === m.lista_precio_id)?.nombre ?? 'lista predeterminada'}
+                    {!m.afecta_caja && ' · no entra al arqueo'}
+                  </span>
+                </div>
+                <div>
+                  <button onClick={() => setEditandoMedio(m)} className="text-xs text-marca-700 hover:underline">
+                    Editar
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (window.confirm(`¿Dar de baja "${m.nombre}"?`)) bajaMedio.mutate(m.id)
+                    }}
+                    className="ml-3 text-xs text-piedra-400 hover:text-red-600"
+                  >
+                    Dar de baja
+                  </button>
+                </div>
+              </div>
+
+              {m.admite_cuotas && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {Array.from({ length: m.cuotas_maximas }, (_, i) => i + 1).map((n) => {
+                    const cuota = m.medio_pago_cuota.find((c) => c.cuotas === n)
+                    return (
+                      <CampoCuota
+                        key={n}
+                        cuotas={n}
+                        recargo={cuota?.recargo_porcentaje ?? 0}
+                        guardando={mutarCuota.isPending}
+                        onGuardar={(recargo) => mutarCuota.mutate({ medio: m.id, cuotas: n, recargo })}
+                      />
+                    )
+                  })}
+                </div>
+              )}
+            </div>
           ))}
         </div>
-      </section>
+      </div>
 
-      <section className="rounded-xl bg-white shadow-sm ring-1 ring-borde">
-        <div className="border-b border-borde px-5 py-3">
-          <h2 className="font-medium text-tinta">Medios de pago</h2>
-          <p className="text-xs text-piedra-500">
-            Cada medio usa una lista. Los que admiten cuotas pueden tener un recargo distinto por
-            cantidad de cuotas.
-          </p>
-        </div>
-        <div className="divide-y divide-piedra-100">
-          {data.medios.map((m) => {
-            const lista = listaDe(m)
-            return (
-              <div key={m.id} className="px-5 py-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <p className="font-medium text-tinta">{m.nombre}</p>
-                    <p className="text-xs text-piedra-500">
-                      {TIPOS_MEDIO_PAGO[m.tipo] ?? m.tipo} · lista{' '}
-                      <span className="font-medium">{lista?.nombre ?? 'predeterminada'}</span>
-                      {m.afecta_caja && ' · suma al arqueo de caja'}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xs text-piedra-400">Un producto de {moneda.format(BASE_EJEMPLO)}</p>
-                    <p className="text-lg font-semibold tabular-nums text-tinta">
-                      {moneda.format(previsualizarPrecio(BASE_EJEMPLO, lista, 0))}
-                    </p>
-                  </div>
-                </div>
+      {editandoLista && (
+        <ModalLista
+          lista={editandoLista}
+          guardando={mutarLista.isPending}
+          onGuardar={(l) => mutarLista.mutate(l)}
+          onCerrar={() => setEditandoLista(null)}
+        />
+      )}
 
-                {m.admite_cuotas && (
-                  <div className="mt-3 flex flex-wrap gap-2 border-t border-piedra-100 pt-3">
-                    {Array.from({ length: m.cuotas_maximas }, (_, i) => i + 1).map((n) => {
-                      const cuota = m.medio_pago_cuota.find((c) => c.cuotas === n)
-                      return (
-                        <CampoCuota
-                          key={n}
-                          cuotas={n}
-                          recargo={cuota?.recargo_porcentaje ?? 0}
-                          resultado={previsualizarPrecio(
-                            BASE_EJEMPLO,
-                            lista,
-                            cuota?.recargo_porcentaje ?? 0,
-                          )}
-                          editable={puedeConfigurar}
-                          onGuardar={(recargo) =>
-                            mutarCuota.mutate({ medio: m.id, cuotas: n, recargo })
-                          }
-                        />
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      </section>
-
-      {!puedeEditar && (
-        <p className="text-xs text-piedra-500">
-          No tenés permiso para modificar precios. Estás viendo la configuración en modo consulta.
-        </p>
+      {editandoMedio && (
+        <ModalMedio
+          medio={editandoMedio}
+          listas={listas}
+          guardando={mutarMedio.isPending}
+          onGuardar={(m) => mutarMedio.mutate(m)}
+          onCerrar={() => setEditandoMedio(null)}
+        />
       )}
     </div>
   )
 }
 
-function FilaLista({
-  lista,
-  editable,
-  guardando,
-  onGuardar,
-}: {
-  lista: ListaPrecio
-  editable: boolean
-  guardando: boolean
-  onGuardar: (ajuste: number) => void
-}) {
-  const [valor, setValor] = useState(String(lista.ajuste_porcentaje))
-  const cambiado = Number(valor) !== Number(lista.ajuste_porcentaje)
+const claseInput =
+  'w-full rounded-lg border border-borde px-2.5 py-2 text-sm text-tinta outline-none focus:border-marca-500 focus:ring-2 focus:ring-marca-500/20'
 
+function Modal({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-4">
-      <div className="min-w-48">
-        <p className="font-medium text-tinta">
-          {lista.nombre}
-          {lista.es_predeterminada && (
-            <span className="ml-2 rounded-full bg-piedra-100 px-2 py-0.5 text-xs font-normal text-piedra-600">
-              predeterminada
-            </span>
-          )}
-        </p>
-        {lista.descripcion && <p className="text-xs text-piedra-500">{lista.descripcion}</p>}
-      </div>
-
-      <div className="flex items-center gap-3">
-        <div className="text-right">
-          <p className="text-xs text-piedra-400">{moneda.format(10000)} queda en</p>
-          <p className="font-semibold tabular-nums text-tinta">
-            {moneda.format(previsualizarPrecio(10000, { ...lista, ajuste_porcentaje: Number(valor) || 0 }, 0))}
-          </p>
-        </div>
-
-        <div className="relative">
-          <input
-            type="number"
-            step="0.5"
-            value={valor}
-            disabled={!editable}
-            onChange={(e) => setValor(e.target.value)}
-            className="w-24 rounded-lg border border-borde py-1.5 pr-7 pl-2.5 text-right tabular-nums outline-none focus:border-marca-500 focus:ring-2 focus:ring-marca-500/20 disabled:bg-piedra-50"
-          />
-          <span className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-sm text-piedra-400">
-            %
-          </span>
-        </div>
-
-        <button
-          onClick={() => onGuardar(Number(valor) || 0)}
-          disabled={!editable || !cambiado || guardando}
-          className="rounded-lg bg-marca-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-marca-600 disabled:opacity-40"
-        >
-          Guardar
-        </button>
+    <div className="fixed inset-0 z-50 grid place-items-center bg-tinta/50 p-4">
+      <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+        <h2 className="mb-4 font-semibold text-tinta">{titulo}</h2>
+        {children}
       </div>
     </div>
+  )
+}
+
+function ModalLista({
+  lista,
+  guardando,
+  onGuardar,
+  onCerrar,
+}: {
+  lista: Partial<ListaPrecio>
+  guardando: boolean
+  onGuardar: (l: Partial<ListaPrecio>) => void
+  onCerrar: () => void
+}) {
+  const [datos, setDatos] = useState(lista)
+  const set = (c: Partial<ListaPrecio>) => setDatos({ ...datos, ...c })
+
+  return (
+    <Modal titulo={lista.id ? `Editar ${lista.nombre}` : 'Nueva lista de precios'}>
+      <div className="space-y-3">
+        <label className="block">
+          <span className="mb-1 block text-xs font-medium text-piedra-600">Nombre</span>
+          <input
+            autoFocus
+            value={datos.nombre ?? ''}
+            onChange={(e) => set({ nombre: e.target.value })}
+            placeholder="Contado, Tarjeta, Mayorista…"
+            className={claseInput}
+          />
+        </label>
+
+        <label className="block">
+          <span className="mb-1 block text-xs font-medium text-piedra-600">
+            Ajuste sobre el precio del producto
+          </span>
+          <div className="relative">
+            <input
+              type="number"
+              step="1"
+              value={datos.ajuste_porcentaje ?? 0}
+              onChange={(e) => set({ ajuste_porcentaje: Number(e.target.value) })}
+              className={`${claseInput} pr-7 text-right tabular-nums`}
+            />
+            <span className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-sm text-piedra-400">
+              %
+            </span>
+          </div>
+          <span className="mt-1 block text-xs text-piedra-500">
+            Positivo encarece, negativo abarata. Un producto de {moneda.format(PRECIO_EJEMPLO)}{' '}
+            quedaría en{' '}
+            <strong>
+              {moneda.format(
+                previsualizarPrecio(PRECIO_EJEMPLO, datos as ListaPrecio, 0),
+              )}
+            </strong>
+            .
+          </span>
+        </label>
+
+        <label className="flex items-start gap-2 text-sm text-tinta">
+          <input
+            type="checkbox"
+            checked={!!datos.es_predeterminada}
+            onChange={(e) => set({ es_predeterminada: e.target.checked })}
+            className="mt-0.5 size-4 rounded border-borde text-marca-700 focus:ring-marca-500"
+          />
+          <span>
+            Es la lista predeterminada
+            <span className="block text-xs text-piedra-500">
+              La usan los medios de pago que no tienen una propia. Hay una sola: marcarla acá se la
+              saca a la que la tenía.
+            </span>
+          </span>
+        </label>
+      </div>
+
+      <div className="mt-5 flex gap-2">
+        <button
+          onClick={() => onGuardar(datos)}
+          disabled={!datos.nombre?.trim() || guardando}
+          className="flex-1 rounded-lg bg-marca-700 px-4 py-2.5 font-medium text-white hover:bg-marca-600 disabled:opacity-40"
+        >
+          {guardando ? 'Guardando…' : 'Guardar'}
+        </button>
+        <button
+          onClick={onCerrar}
+          className="rounded-lg px-4 py-2.5 text-sm font-medium text-piedra-500 hover:bg-piedra-100"
+        >
+          Cancelar
+        </button>
+      </div>
+    </Modal>
+  )
+}
+
+function ModalMedio({
+  medio,
+  listas,
+  guardando,
+  onGuardar,
+  onCerrar,
+}: {
+  medio: Partial<MedioPago>
+  listas: ListaPrecio[]
+  guardando: boolean
+  onGuardar: (m: Partial<MedioPago>) => void
+  onCerrar: () => void
+}) {
+  const [datos, setDatos] = useState(medio)
+  const set = (c: Partial<MedioPago>) => setDatos({ ...datos, ...c })
+
+  return (
+    <Modal titulo={medio.id ? `Editar ${medio.nombre}` : 'Nuevo medio de pago'}>
+      <div className="space-y-3">
+        <label className="block">
+          <span className="mb-1 block text-xs font-medium text-piedra-600">
+            Nombre <span className="font-normal text-piedra-400">(lo que ve el cajero)</span>
+          </span>
+          <input
+            autoFocus
+            value={datos.nombre ?? ''}
+            onChange={(e) => set({ nombre: e.target.value })}
+            placeholder="Efectivo, Visa crédito, Transferencia…"
+            className={claseInput}
+          />
+        </label>
+
+        <div className="grid grid-cols-2 gap-3">
+          <label className="block">
+            <span className="mb-1 block text-xs font-medium text-piedra-600">Tipo</span>
+            <select
+              value={datos.tipo ?? 'efectivo'}
+              onChange={(e) => set({ tipo: e.target.value })}
+              className={claseInput}
+            >
+              {Object.entries(TIPOS_MEDIO_PAGO).map(([valor, etiqueta]) => (
+                <option key={valor} value={valor}>
+                  {etiqueta}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block">
+            <span className="mb-1 block text-xs font-medium text-piedra-600">Lista de precios</span>
+            <select
+              value={datos.lista_precio_id ?? ''}
+              onChange={(e) => set({ lista_precio_id: e.target.value || null })}
+              className={claseInput}
+            >
+              <option value="">La predeterminada</option>
+              {listas.map((l) => (
+                <option key={l.id} value={l.id}>
+                  {l.nombre} ({l.ajuste_porcentaje > 0 ? '+' : ''}
+                  {l.ajuste_porcentaje}%)
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <label className="flex items-start gap-2 text-sm text-tinta">
+          <input
+            type="checkbox"
+            checked={!!datos.admite_cuotas}
+            onChange={(e) =>
+              set({ admite_cuotas: e.target.checked, cuotas_maximas: e.target.checked ? 3 : 1 })
+            }
+            className="mt-0.5 size-4 rounded border-borde text-marca-700 focus:ring-marca-500"
+          />
+          <span>Se puede pagar en cuotas</span>
+        </label>
+
+        {/*
+          Desplegable y no un campo numérico: las cuotas son 1, 2, 3 —
+          no 2,5 ni −1. Un campo con flechitas invita a números que no
+          existen.
+        */}
+        {datos.admite_cuotas && (
+          <label className="block">
+            <span className="mb-1 block text-xs font-medium text-piedra-600">
+              Hasta cuántas cuotas
+            </span>
+            <select
+              value={datos.cuotas_maximas ?? 3}
+              onChange={(e) => set({ cuotas_maximas: Number(e.target.value) })}
+              className={claseInput}
+            >
+              {Array.from({ length: 12 }, (_, i) => i + 1).map((n) => (
+                <option key={n} value={n}>
+                  {n} {n === 1 ? 'cuota' : 'cuotas'}
+                </option>
+              ))}
+            </select>
+            <span className="mt-1 block text-xs text-piedra-500">
+              El recargo de cada cuota se carga después, en el listado. Si bajás el máximo, las
+              cuotas que sobran se eliminan.
+            </span>
+          </label>
+        )}
+
+        <label className="flex items-start gap-2 text-sm text-tinta">
+          <input
+            type="checkbox"
+            checked={datos.afecta_caja ?? true}
+            onChange={(e) => set({ afecta_caja: e.target.checked })}
+            className="mt-0.5 size-4 rounded border-borde text-marca-700 focus:ring-marca-500"
+          />
+          <span>
+            Entra al arqueo de caja
+            <span className="block text-xs text-piedra-500">
+              Destildalo para lo que no es plata en el cajón: cuenta corriente, transferencias que
+              van directo al banco.
+            </span>
+          </span>
+        </label>
+      </div>
+
+      <div className="mt-5 flex gap-2">
+        <button
+          onClick={() => onGuardar(datos)}
+          disabled={!datos.nombre?.trim() || guardando}
+          className="flex-1 rounded-lg bg-marca-700 px-4 py-2.5 font-medium text-white hover:bg-marca-600 disabled:opacity-40"
+        >
+          {guardando ? 'Guardando…' : 'Guardar'}
+        </button>
+        <button
+          onClick={onCerrar}
+          className="rounded-lg px-4 py-2.5 text-sm font-medium text-piedra-500 hover:bg-piedra-100"
+        >
+          Cancelar
+        </button>
+      </div>
+    </Modal>
   )
 }
 
 function CampoCuota({
   cuotas,
   recargo,
-  resultado,
-  editable,
+  guardando,
   onGuardar,
 }: {
   cuotas: number
   recargo: number
-  resultado: number
-  editable: boolean
+  guardando: boolean
   onGuardar: (recargo: number) => void
 }) {
   const [valor, setValor] = useState(String(recargo))
-  const cambiado = Number(valor) !== Number(recargo)
 
   return (
-    <div className="rounded-lg bg-piedra-50 px-3 py-2 ring-1 ring-borde">
-      <p className="text-xs font-medium text-piedra-600">
+    <label className="flex items-center gap-1.5 rounded-lg bg-piedra-50 px-2.5 py-1.5 ring-1 ring-borde">
+      <span className="text-xs whitespace-nowrap text-piedra-600">
         {cuotas} {cuotas === 1 ? 'cuota' : 'cuotas'}
-      </p>
-      <div className="mt-1 flex items-center gap-1.5">
+      </span>
+      <div className="relative">
         <input
           type="number"
-          step="0.5"
+          step="1"
           value={valor}
-          disabled={!editable}
+          disabled={guardando}
           onChange={(e) => setValor(e.target.value)}
-          onBlur={() => cambiado && onGuardar(Number(valor) || 0)}
-          className="w-16 rounded border border-borde px-1.5 py-1 text-right text-sm tabular-nums outline-none focus:border-marca-500 disabled:bg-white"
+          onBlur={() => {
+            const n = Number(valor)
+            if (Number.isFinite(n) && n !== recargo) onGuardar(n)
+          }}
+          className="w-20 rounded border border-borde bg-white py-1 pr-5 pl-2 text-right text-xs tabular-nums outline-none focus:border-marca-500"
         />
-        <span className="text-xs text-piedra-400">%</span>
-        <span className="ml-1 text-sm font-medium tabular-nums text-tinta">
-          {moneda.format(resultado)}
+        <span className="pointer-events-none absolute top-1/2 right-1.5 -translate-y-1/2 text-xs text-piedra-400">
+          %
         </span>
       </div>
-    </div>
+    </label>
   )
 }

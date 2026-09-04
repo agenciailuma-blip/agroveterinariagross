@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTerminal } from '@/lib/terminal'
 import { useAuth } from '@/auth/AuthProvider'
@@ -18,6 +19,8 @@ import {
 import type { PagoNuevo, VentaCompleta } from '@/lib/api/caja'
 import { cargarPrecios } from '@/lib/api/precios'
 import type { MedioPago } from '@/lib/api/precios'
+import { facturarVenta } from '@/lib/api/facturacion'
+import { abrirComprobante } from '@/lib/escritorio'
 import { moneda, numero } from '@/lib/tipos'
 
 export default function Caja() {
@@ -31,7 +34,12 @@ export default function Caja() {
   const [medioPrincipal, setMedioPrincipal] = useState<string | null>(null)
   const [cuotas, setCuotas] = useState(1)
   const [error, setError] = useState<string | null>(null)
-  const [exito, setExito] = useState<string | null>(null)
+  const [facturaPendiente, setFacturaPendiente] = useState<string | null>(null)
+  const [listoParaImprimir, setListoParaImprimir] = useState<{
+    codigo: string
+    cae: string
+    comprobanteId: string | null
+  } | null>(null)
   const [cerrando, setCerrando] = useState(false)
 
   const caja = useQuery({
@@ -104,14 +112,67 @@ export default function Caja() {
   const totalPagos = pagos.reduce((s, p) => s + p.importe, 0)
   const diferencia = Math.round((totalPagos - totalVenta) * 100) / 100
 
+  /*
+    Cobrar y facturar son dos cosas distintas, y el orden importa.
+
+    Una vez que cobrar_venta() volvió bien, la plata entró, el stock se
+    descontó y la deuda quedó registrada. Nada de lo que pase después
+    con ARCA puede deshacer eso. Por eso el pedido de CAE va adentro de
+    su propio try: si ARCA no responde, la venta queda cobrada igual y
+    el comprobante espera en la cola de Facturación.
+
+    Al revés —fallar el cobro porque ARCA está caído— dejaría al cliente
+    parado en el mostrador con la mercadería en la mano.
+  */
   const cobrarVenta = useMutation({
-    mutationFn: () => cobrar(seleccionada!, caja.data!.id, operador!.usuario_id, pagos),
-    onSuccess: () => {
-      setExito(`Venta ${venta.data?.codigo} cobrada`)
-      setTimeout(() => setExito(null), 4000)
+    mutationFn: async () => {
+      const codigo = venta.data?.codigo
+      const { subida } = await cobrar(seleccionada!, caja.data!.id, operador!.usuario_id, pagos)
+
+      // Sin haber llegado al servidor no hay nada que facturar todavía:
+      // el comprobante se arma sobre una venta cobrada, y para el
+      // servidor esta venta sigue esperando en la cola.
+      if (!subida) {
+        return {
+          codigo,
+          cae: null,
+          comprobanteId: null,
+          problema:
+            'la venta quedó guardada en esta computadora y se va a facturar sola cuando vuelva la conexión.',
+        }
+      }
+
+      try {
+        const { cae, comprobanteId } = await facturarVenta(seleccionada!)
+        return { codigo, cae, comprobanteId, problema: null as string | null }
+      } catch (e) {
+        return {
+          codigo,
+          cae: null,
+          comprobanteId: null,
+          problema: e instanceof Error ? e.message : 'ARCA no respondió.',
+        }
+      }
+    },
+    onSuccess: ({ codigo, cae, comprobanteId, problema }) => {
+      if (problema) {
+        setFacturaPendiente(`Venta ${codigo} cobrada, pero la factura quedó pendiente: ${problema}`)
+      } else {
+        /*
+          El comprobante queda a un clic, no escondido en otra pantalla.
+
+          El cajero tiene que entregarle algo al cliente que está parado
+          adelante: mandarlo a buscarlo a Facturación es una pantalla de
+          más en el peor momento. No se abre solo porque el navegador
+          bloquea las ventanas que no abrió una persona.
+        */
+        setListoParaImprimir({ codigo: codigo ?? '', cae: cae ?? '', comprobanteId })
+      }
       limpiar()
       qc.invalidateQueries({ queryKey: ['cola-caja'] })
       qc.invalidateQueries({ queryKey: ['resumen-caja'] })
+      qc.invalidateQueries({ queryKey: ['comprobantes'] })
+      qc.invalidateQueries({ queryKey: ['ventas-sin-facturar'] })
     },
     onError: (e) => setError(e instanceof Error ? e.message : 'No se pudo cobrar.'),
   })
@@ -130,6 +191,26 @@ export default function Caja() {
     setCuotas(1)
     setError(null)
   }, [seleccionada])
+
+  /*
+    Lo que el vendedor ya preguntó, queda elegido.
+
+    El vendedor le pregunta al cliente cómo va a pagar porque lo necesita
+    para decirle el precio. Si la caja arranca en blanco, el cajero
+    vuelve a preguntar lo mismo con el cliente adelante — y encima puede
+    elegir otro medio y cobrar un precio distinto del que se dijo.
+
+    Queda igual de editable: la tarjeta puede no pasar.
+  */
+  const ventaId = venta.data?.id
+  const previsto = venta.data?.medio_pago_previsto_id
+  useEffect(() => {
+    if (!previsto || !medios.length || medioPrincipal) return
+    const m = medios.find((x) => x.id === previsto)
+    if (m) elegirMedio(m, venta.data?.cuotas_previstas ?? 1)
+    // Sólo al abrir la venta: después manda lo que elija el cajero.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ventaId, previsto, medios.length])
 
   if (cargandoTerminal || caja.isPending) return <p className="text-sm text-piedra-500">Cargando…</p>
 
@@ -214,10 +295,57 @@ export default function Caja() {
       </div>
 
       <div className="min-w-0 flex-1">
-        {exito && (
-          <p className="mb-3 rounded-xl bg-verde-50 px-4 py-3 text-sm font-medium text-verde-800 ring-1 ring-verde-200">
-            {exito}
-          </p>
+        {/* Cobrado y facturado: lo único que falta es entregarlo. */}
+        {listoParaImprimir && (
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-verde-50 px-4 py-3 ring-1 ring-verde-200">
+            <div className="min-w-0">
+              <p className="font-medium text-verde-900">
+                Venta {listoParaImprimir.codigo} cobrada y facturada
+              </p>
+              <p className="text-xs text-verde-800">CAE {listoParaImprimir.cae}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              {listoParaImprimir.comprobanteId && (
+                <button
+                  onClick={() => abrirComprobante(listoParaImprimir.comprobanteId!)}
+                  className="rounded-lg bg-verde-600 px-4 py-2 text-sm font-medium text-white hover:bg-verde-500"
+                >
+                  Imprimir comprobante
+                </button>
+              )}
+              <button
+                onClick={() => setListoParaImprimir(null)}
+                className="rounded-lg px-3 py-2 text-sm font-medium text-verde-800 hover:bg-verde-100"
+              >
+                Listo
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/*
+          Este aviso NO se va solo. La venta se cobró pero no tiene
+          comprobante: alguien tiene que enterarse y resolverlo, no que
+          se le desvanezca de la pantalla mientras atiende al que sigue.
+        */}
+        {facturaPendiente && (
+          <div className="mb-3 flex items-start gap-3 rounded-xl bg-amber-50 px-4 py-3 ring-1 ring-amber-200">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-amber-900">{facturaPendiente}</p>
+              <Link to="/facturacion" className="text-xs text-amber-800 underline">
+                Ir a Facturación para reintentar
+              </Link>
+            </div>
+            <button
+              onClick={() => setFacturaPendiente(null)}
+              className="rounded p-1 text-amber-700 hover:bg-amber-100"
+              aria-label="Entendido"
+            >
+              <svg className="size-4" fill="none" viewBox="0 0 24 24" strokeWidth={2.2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         )}
 
         {!seleccionada ? (
@@ -252,6 +380,7 @@ export default function Caja() {
       {cerrando && caja.data && (
         <ModalCierre
           cajaId={caja.data.id}
+          terminalId={terminal.id}
           montoInicial={caja.data.monto_inicial}
           onCerrada={() => {
             setCerrando(false)
@@ -356,6 +485,15 @@ function PanelCobro({
   const usables = medios.filter(
     (m) => m.tipo !== 'cuenta_corriente' || venta.cliente?.cuenta_corriente,
   )
+
+  // Lo que el vendedor dejó anotado, para que el cajero no vuelva a
+  // preguntarlo y para que se note si termina cobrando con otra cosa.
+  const mPrevisto = medios.find((m) => m.id === venta.medio_pago_previsto_id)
+  const avisoPrevisto = mPrevisto
+    ? mPrevisto.admite_cuotas && (venta.cuotas_previstas ?? 1) > 1
+      ? `${mPrevisto.nombre} · ${venta.cuotas_previstas} cuotas`
+      : mPrevisto.nombre
+    : null
   const medio = medios.find((m) => m.id === medioPrincipal)
   const esCuentaCorriente = medio?.tipo === 'cuenta_corriente'
   const nuevoSaldo = saldoActual + (pagos.find((p) => p.medio_pago_id === medio?.id)?.importe ?? 0)
@@ -402,9 +540,14 @@ function PanelCobro({
       </div>
 
       <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-borde">
-        <p className="mb-3 text-xs font-medium tracking-wide text-piedra-400 uppercase">
-          ¿Cómo paga?
-        </p>
+        <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+          <p className="text-xs font-medium tracking-wide text-piedra-400 uppercase">¿Cómo paga?</p>
+          {avisoPrevisto && (
+            <p className="text-xs text-marca-700">
+              El vendedor anotó: <strong>{avisoPrevisto}</strong>
+            </p>
+          )}
+        </div>
         <div className="flex flex-wrap gap-2">
           {usables.map((m) =>
             m.admite_cuotas ? (
@@ -599,11 +742,13 @@ function PanelCobro({
 
 function ModalCierre({
   cajaId,
+  terminalId,
   montoInicial,
   onCerrada,
   onCancelar,
 }: {
   cajaId: string
+  terminalId: string
   montoInicial: number
   onCerrada: () => void
   onCancelar: () => void
@@ -615,7 +760,7 @@ function ModalCierre({
   const resumen = useQuery({ queryKey: ['resumen-caja', cajaId], queryFn: () => resumenCaja(cajaId) })
 
   const cerrar = useMutation({
-    mutationFn: () => cerrarCaja(cajaId, Number(declarado) || 0),
+    mutationFn: () => cerrarCaja(cajaId, terminalId, Number(declarado) || 0),
     onSuccess: (r) => setResultado({ esperado: r.esperado, diferencia: r.diferencia }),
     onError: (e) => setError(e instanceof Error ? e.message : 'No se pudo cerrar.'),
   })

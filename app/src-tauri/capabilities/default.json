@@ -1,0 +1,16 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Lo que la ventana del sistema tiene permitido hacer contra el programa que la contiene. Arranca en lo mínimo a propósito: cada permiso que se agregue después va a ser porque una pantalla lo necesita, y va a quedar escrito acá con su motivo.",
+  "windows": [
+    "main",
+    "comprobante-*"
+  ],
+  "permissions": [
+    "core:default",
+    "core:webview:allow-create-webview-window",
+    "core:window:allow-set-focus",
+    "updater:default",
+    "process:allow-restart"
+  ]
+}

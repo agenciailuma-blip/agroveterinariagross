@@ -75,15 +75,90 @@ export async function cargarPrecios() {
   }
 }
 
-export async function guardarLista(id: string, cambios: Partial<ListaPrecio>) {
-  const { error } = await supabase.from('lista_precio').update(cambios).eq('id', id)
+/*
+  Alta y edición pasan por funciones de la base, no por un update
+  directo, porque hay reglas que no se pueden dejar en manos de la
+  pantalla: que haya una sola lista predeterminada, que no se dé de baja
+  una lista que un medio de pago está usando, que no quede la caja sin
+  ningún medio activo. Un navegador con la consola abierta se saltea
+  cualquier validación que viva sólo acá.
+*/
+export interface ListaEditable {
+  id?: string
+  nombre: string
+  ajuste_porcentaje: number
+  es_predeterminada: boolean
+  orden: number
+}
+
+export async function guardarLista(datos: ListaEditable): Promise<string> {
+  const { data, error } = await supabase.rpc('guardar_lista_precio', {
+    p_id: datos.id ?? null,
+    p_nombre: datos.nombre,
+    p_ajuste: datos.ajuste_porcentaje,
+    p_es_predeterminada: datos.es_predeterminada,
+    p_orden: datos.orden,
+  })
+  if (error) throw new Error(error.message)
+  return data as string
+}
+
+export async function darDeBajaLista(id: string) {
+  const { error } = await supabase.rpc('dar_de_baja_lista_precio', { p_id: id })
   if (error) throw new Error(error.message)
 }
 
-export async function guardarMedioPago(id: string, cambios: Partial<MedioPago>) {
-  const { medio_pago_cuota: _ignorado, ...campos } = cambios as Record<string, unknown>
-  const { error } = await supabase.from('medio_pago').update(campos).eq('id', id)
+export interface MedioEditable {
+  id?: string
+  nombre: string
+  tipo: string
+  lista_precio_id: string | null
+  admite_cuotas: boolean
+  cuotas_maximas: number
+  afecta_caja: boolean
+  orden: number
+}
+
+export async function guardarMedioPago(datos: MedioEditable): Promise<string> {
+  const { data, error } = await supabase.rpc('guardar_medio_pago', {
+    p_id: datos.id ?? null,
+    p_nombre: datos.nombre,
+    p_tipo: datos.tipo,
+    p_lista_precio_id: datos.lista_precio_id,
+    p_admite_cuotas: datos.admite_cuotas,
+    p_cuotas_maximas: datos.cuotas_maximas,
+    p_afecta_caja: datos.afecta_caja,
+    p_orden: datos.orden,
+  })
   if (error) throw new Error(error.message)
+  return data as string
+}
+
+export async function darDeBajaMedioPago(id: string) {
+  const { error } = await supabase.rpc('dar_de_baja_medio_pago', { p_id: id })
+  if (error) throw new Error(error.message)
+}
+
+/** Trae listas y medios del servidor, sin pasar por la copia local. */
+export async function cargarPreciosServidor() {
+  const [listas, medios] = await Promise.all([
+    supabase.from('lista_precio').select('*').is('eliminado_en', null).order('orden'),
+    supabase
+      .from('medio_pago')
+      .select('*, medio_pago_cuota(medio_pago_id, cuotas, recargo_porcentaje, activo)')
+      .is('eliminado_en', null)
+      .order('orden'),
+  ])
+  if (listas.error) throw new Error(listas.error.message)
+  if (medios.error) throw new Error(medios.error.message)
+
+  return {
+    listas: (listas.data ?? []) as ListaPrecio[],
+    medios: ((medios.data ?? []) as MedioPago[]).map((m) => ({
+      ...m,
+      medio_pago_cuota: [...(m.medio_pago_cuota ?? [])].sort((a, b) => a.cuotas - b.cuotas),
+    })),
+  }
 }
 
 export async function guardarCuota(

@@ -83,6 +83,11 @@ const MAESTROS: Definicion[] = [
     mapear: (f) => ({ ...f, clave: `${f.medio_pago_id}-${f.cuotas}` }),
   },
   { tabla: 'configuracion', origen: 'configuracion', columnas: 'clave, valor, actualizado_en' },
+  {
+    tabla: 'saldo_cuenta_corriente',
+    origen: 'cuenta_corriente_saldo',
+    columnas: 'cliente_id, saldo, actualizado_en',
+  },
 ]
 
 /*
@@ -157,10 +162,117 @@ async function bajarReferencias() {
   return total
 }
 
+/*
+  ─────────────────────────────────────────────────────────────
+  La cola de la caja
+
+  No usa cursor como los maestros, y es a propósito. La cola es chica
+  —lo que espera cobro en un momento dado— y lo que importa no es qué
+  cambió sino qué sigue esperando. Se trae la lista completa y se
+  reemplaza la local.
+
+  Lo delicado es no resucitar una venta ya cobrada. Si la caja cobró sin
+  conexión, la venta quedó marcada 'cobrada' localmente pero el servidor
+  todavía la ve 'en_caja' hasta que suba la operación. Traerla de vuelta
+  la pondría otra vez en la pantalla del cajero, con la plata ya
+  cobrada. Por eso las cobradas localmente se respetan y sólo se borran
+  cuando su lote terminó de subir.
+  ─────────────────────────────────────────────────────────────
+*/
+/*
+  Decide qué hacer con cada venta de la cola.
+
+  Está separada del acceso a la base a propósito: es la regla que evita
+  que una venta ya cobrada vuelva a aparecerle al cajero, y esa regla se
+  puede equivocar de formas silenciosas y caras. Aparte, se puede probar
+  sin servidor ni IndexedDB de por medio.
+
+  Las tres situaciones:
+    · Está en el servidor y no la cobramos → se guarda, es la cola real.
+    · La cobramos acá y todavía no subió → se respeta, no se toca.
+      Traerla de vuelta la pondría otra vez en pantalla con la plata ya
+      cobrada, y el cajero la cobraría dos veces.
+    · Ya no está en el servidor, o ya subió lo nuestro → se borra.
+*/
+export function conciliarCola(
+  enServidor: { id: string }[],
+  locales: { id: string; estado: string }[],
+  lotesPendientes: Set<string>,
+): { idsAGuardar: Set<string>; aBorrar: string[] } {
+  const idsServidor = new Set(enServidor.map((v) => v.id))
+  const cobradasAcá = new Set(locales.filter((v) => v.estado === 'cobrada').map((v) => v.id))
+
+  const idsAGuardar = new Set(enServidor.filter((v) => !cobradasAcá.has(v.id)).map((v) => v.id))
+
+  const aBorrar = locales
+    .filter((v) => {
+      // Cobrada acá: sólo se va cuando su lote terminó de subir.
+      if (cobradasAcá.has(v.id)) return !lotesPendientes.has(v.id)
+      // El resto: se va si el servidor ya no la tiene en cola.
+      return !idsServidor.has(v.id)
+    })
+    .map((v) => v.id)
+
+  return { idsAGuardar, aBorrar }
+}
+
+async function bajarColaCaja() {
+  const { data, error } = await supabase
+    .from('venta')
+    .select(
+      'id, codigo, estado, cliente_id, vendedor_id, total, descuento_total, lista_precio_id, medio_pago_previsto_id, cuotas_previstas, ' +
+        'observaciones, ocurrido_en, enviada_caja_en, actualizado_en',
+    )
+    .eq('estado', 'en_caja')
+    .order('enviada_caja_en')
+    .limit(200)
+
+  if (error) throw new Error(`cola de caja: ${error.message}`)
+  const enServidor = (data ?? []) as unknown as import('@/lib/local/db').VentaLocal[]
+
+  const locales = await db.venta.toArray()
+  const lotesPendientes = new Set(
+    (await db.outbox.toArray()).map((o) => o.lote),
+  )
+
+  const { idsAGuardar, aBorrar } = conciliarCola(enServidor, locales, lotesPendientes)
+
+  const aGuardar = enServidor.filter((v) => idsAGuardar.has(v.id))
+  if (aGuardar.length) await db.venta.bulkPut(aGuardar)
+
+  if (aBorrar.length) {
+    await db.venta.bulkDelete(aBorrar)
+    await db.venta_linea.where('venta_id').anyOf(aBorrar).delete()
+  }
+
+  // Las líneas de lo que quedó en cola. Se piden sólo para las ventas
+  // que todavía no las tienen: no cambian una vez enviada la venta,
+  // salvo por el precio, que se recalcula al aplicar la lista.
+  const vigentes = aGuardar.map((v) => v.id)
+  if (vigentes.length) {
+    const { data: lineas, error: errorLineas } = await supabase
+      .from('venta_linea')
+      .select(
+        'id, venta_id, orden, producto_id, codigo_producto, descripcion, cantidad, ' +
+          'precio_original, precio_acordado, precio_unitario, motivo_modificacion, ' +
+          'alicuota_iva_id, condicion_iva, actualizado_en',
+      )
+      .in('venta_id', vigentes)
+
+    if (errorLineas) throw new Error(`líneas de la cola: ${errorLineas.message}`)
+    if (lineas?.length) {
+      await db.venta_linea.bulkPut(lineas as unknown as import('@/lib/local/db').VentaLineaLocal[])
+    }
+  }
+
+  return enServidor.length
+}
+
 export async function bajarCambios() {
   let total = 0
   for (const def of MAESTROS) total += await bajarTabla(def)
   total += await bajarReferencias()
+  total += await bajarColaCaja()
   return total
 }
 

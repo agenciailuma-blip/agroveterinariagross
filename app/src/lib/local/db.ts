@@ -129,6 +129,74 @@ export interface ReferenciaLocal {
   eliminado_en: string | null
 }
 
+/*
+  Saldo de cuenta corriente.
+
+  Es lo único que hace falta para decidir, sin conexión, si una venta
+  financiada entra dentro del límite de crédito del cliente. Los
+  movimientos que lo componen no se replican: la terminal no los
+  necesita para cobrar, y son muchos.
+*/
+export interface SaldoCuentaCorrienteLocal {
+  cliente_id: string
+  saldo: number
+  actualizado_en: string
+}
+
+/*
+  ─────────────────────────────────────────────────────────────
+  La cola de la caja
+
+  Estas dos tablas son la excepción a la regla de "sólo datos maestros".
+  La caja necesita ver las ventas que esperan cobro, y esas ventas las
+  generan otras terminales: sin una copia local, cortar internet deja a
+  la caja con la pantalla vacía aunque haya gente esperando para pagar.
+
+  Se replican sólo mientras están en cola. Cuando una venta se cobra o
+  se anula desaparece de acá: no es un histórico, es una bandeja de
+  entrada.
+
+  ⚠️ Alcance real de esto: como la sincronización pasa por el servidor,
+  sin internet la caja sólo ve las ventas que alcanzó a bajar ANTES del
+  corte. Una venta armada por un vendedor durante la caída no tiene
+  camino para llegar hasta que vuelva la conexión.
+  ─────────────────────────────────────────────────────────────
+*/
+export interface VentaLocal {
+  id: string
+  codigo: string
+  estado: string
+  cliente_id: string
+  vendedor_id: string | null
+  total: number
+  descuento_total: number
+  lista_precio_id: string | null
+  /** Lo que el vendedor ya le preguntó al cliente, para no repetirlo. */
+  medio_pago_previsto_id: string | null
+  cuotas_previstas: number | null
+  observaciones: string | null
+  ocurrido_en: string
+  enviada_caja_en: string | null
+  actualizado_en: string
+}
+
+export interface VentaLineaLocal {
+  id: string
+  venta_id: string
+  orden: number
+  producto_id: string | null
+  codigo_producto: string
+  descripcion: string
+  cantidad: number
+  precio_original: number
+  precio_acordado: number
+  precio_unitario: number
+  motivo_modificacion: string | null
+  alicuota_iva_id: number
+  condicion_iva: string
+  actualizado_en: string
+}
+
 /** Marca hasta dónde se sincronizó cada tabla. */
 export interface Cursor {
   tabla: string
@@ -182,6 +250,9 @@ class BaseLocal extends Dexie {
   saldo!: EntityTable<SaldoLocal, 'producto_id'>
   umbral!: EntityTable<UmbralLocal, 'id'>
   cliente!: EntityTable<ClienteLocal, 'id'>
+  saldo_cuenta_corriente!: EntityTable<SaldoCuentaCorrienteLocal, 'cliente_id'>
+  venta!: EntityTable<VentaLocal, 'id'>
+  venta_linea!: EntityTable<VentaLineaLocal, 'id'>
   lista_precio!: EntityTable<ListaPrecioLocal, 'id'>
   medio_pago!: EntityTable<MedioPagoLocal, 'id'>
   cuota!: EntityTable<CuotaLocal, 'clave'>
@@ -210,6 +281,13 @@ class BaseLocal extends Dexie {
 
     this.version(2).stores({
       contador: 'clave',
+    })
+
+    // v3 — lo que la caja necesita para cobrar sin conexión
+    this.version(3).stores({
+      saldo_cuenta_corriente: 'cliente_id, actualizado_en',
+      venta: 'id, codigo, estado, cliente_id, enviada_caja_en, actualizado_en',
+      venta_linea: 'id, venta_id, orden, actualizado_en',
     })
   }
 }

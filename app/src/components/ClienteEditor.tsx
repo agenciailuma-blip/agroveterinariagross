@@ -135,6 +135,59 @@ export default function ClienteEditor({
             A y ARCA la rechaza.
           </p>
         )}
+
+        {/*
+          La marca de exención se muestra en TODOS los clientes, no sólo
+          en los Responsables Inscriptos.
+
+          Al que no es RI se le emite Factura B y hoy no se le percibe
+          igual, así que técnicamente sobraría. Pero los casos que
+          nombró Lucas —fundaciones, municipalidades— son justamente de
+          esos, y si al cargarlos no encuentra dónde marcarlo va a
+          pensar que el sistema no lo contempla. Que esté visible y no
+          haga nada es mejor que que no esté.
+        */}
+        <>
+          <label className="col-span-4 flex items-start gap-2 text-sm text-tinta">
+            <input
+              type="checkbox"
+              checked={datos.iibb_percepcion_excluido ?? false}
+              disabled={!puedeEditar}
+              onChange={(e) => set({ iibb_percepcion_excluido: e.target.checked })}
+              className="mt-0.5 size-4 rounded border-borde text-marca-700 focus:ring-marca-500"
+            />
+            <span>
+              Exento de percepción de IIBB (DGR Misiones)
+              <span className="block text-xs text-piedra-500">
+                {esResponsableInscripto
+                  ? 'Tildado, no se le percibe IIBB aunque la factura supere el mínimo.'
+                  : 'A este cliente se le emite Factura B, a la que hoy no se le percibe IIBB. Se puede dejar marcado igual, para que quede constancia.'}
+              </span>
+            </span>
+          </label>
+
+          {datos.iibb_percepcion_excluido && (
+            <>
+              <Campo etiqueta="Número de certificado" ancho="col-span-2">
+                <input
+                  value={datos.iibb_certificado_numero ?? ''}
+                  disabled={!puedeEditar}
+                  onChange={(e) => set({ iibb_certificado_numero: e.target.value })}
+                  className={`${claseInput} font-mono`}
+                />
+              </Campo>
+              <Campo etiqueta="Vigente hasta" ancho="col-span-2">
+                <input
+                  type="date"
+                  value={datos.iibb_certificado_vigencia_hasta ?? ''}
+                  disabled={!puedeEditar}
+                  onChange={(e) => set({ iibb_certificado_vigencia_hasta: e.target.value || null })}
+                  className={claseInput}
+                />
+              </Campo>
+            </>
+          )}
+        </>
       </Seccion>
 
       <Seccion titulo="Contacto y domicilio">

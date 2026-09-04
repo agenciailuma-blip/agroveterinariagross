@@ -33,6 +33,9 @@ export interface Cliente {
   cuenta_corriente: boolean
   limite_credito: number | null
   dias_vencimiento: number
+  iibb_percepcion_excluido: boolean
+  iibb_certificado_numero: string | null
+  iibb_certificado_vigencia_hasta: string | null
   observaciones: string | null
   activo: boolean
 }
@@ -68,6 +71,7 @@ export const CLIENTE_NUEVO: Partial<Cliente> = {
   descuento_porcentaje: 0,
   cuenta_corriente: false,
   dias_vencimiento: 30,
+  iibb_percepcion_excluido: false,
   activo: true,
 }
 

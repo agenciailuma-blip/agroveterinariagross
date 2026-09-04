@@ -7,26 +7,41 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "prueba": "vitest run",
+    "prueba:mirar": "vitest",
+    "escritorio": "tauri dev",
+    "escritorio:instalador": "tauri build",
+    "tauri": "tauri",
+    "escritorio:publicar": "node publicar-actualizacion.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.3",
     "@tanstack/react-query": "^5.101.4",
+    "@tauri-apps/api": "^2.11.1",
+    "@tauri-apps/plugin-process": "^2.3.1",
+    "@tauri-apps/plugin-updater": "^2.11.0",
+    "@types/qrcode": "^1.5.6",
     "dexie": "^4.4.4",
+    "qrcode": "^1.5.4",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "react-router-dom": "^7.18.2"
+    "react-router-dom": "^7.18.2",
+    "read-excel-file": "^9.3.10"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",
+    "@tauri-apps/cli": "^2.11.4",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.4",
+    "fake-indexeddb": "^6.2.5",
     "oxlint": "^1.75.0",
     "tailwindcss": "^4.3.3",
     "typescript": "~6.0.2",
     "vite": "^8.2.0",
-    "vite-plugin-pwa": "^1.3.0"
+    "vite-plugin-pwa": "^1.3.0",
+    "vitest": "^4.1.11"
   }
 }

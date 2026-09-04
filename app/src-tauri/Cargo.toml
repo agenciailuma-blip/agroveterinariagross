@@ -1,0 +1,35 @@
+[package]
+name = "sistema-gross"
+version = "0.1.0"
+description = "Sistema de gestión de Agroveterinaria Gross"
+authors = ["ILUMA"]
+edition = "2021"
+rust-version = "1.77"
+
+# El binario y la biblioteca están separados porque es lo que Tauri
+# espera: main.rs sólo arranca, y toda la lógica vive en lib.rs, que es
+# lo que después se puede probar y compartir con otras plataformas.
+[lib]
+name = "sistema_gross_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-updater = "2"
+tauri-plugin-process = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# El instalador pesa bastante menos y arranca más rápido optimizando
+# para tamaño. En una PC de mostrador eso se nota más que unos
+# milisegundos de cálculo, que acá no hay: el trabajo pesado lo hace la
+# base de datos, no este programa.
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

@@ -1,4 +1,13 @@
 import { supabase } from '@/lib/supabase'
+import { db } from '@/lib/local/db'
+import { subirPendientes } from '@/lib/local/sync'
+import {
+  aplicarListaLocal,
+  cobrarLocal,
+  listarColaLocal,
+  obtenerVentaLocal,
+  saldoCuentaCorrienteLocal,
+} from '@/lib/local/caja'
 
 export interface Caja {
   id: string
@@ -38,6 +47,9 @@ export interface VentaCompleta {
   total: number
   descuento_total: number
   lista_precio_id: string | null
+  /** Lo que el vendedor ya le preguntó al cliente. */
+  medio_pago_previsto_id: string | null
+  cuotas_previstas: number | null
   observaciones: string | null
   cliente: {
     id: string
@@ -57,28 +69,98 @@ export interface PagoNuevo {
   referencia: string | null
 }
 
-export async function cajaAbierta(terminalId: string): Promise<Caja | null> {
-  const { data, error } = await supabase
-    .from('caja')
-    .select('id, terminal_id, cajero_id, estado, monto_inicial, abierta_en')
-    .eq('terminal_id', terminalId)
-    .eq('estado', 'abierta')
-    .maybeSingle<Caja>()
-  if (error) throw new Error(error.message)
-  return data
+/*
+  La caja abierta, recordada en la máquina.
+
+  Regla del proyecto: nada en el camino de arranque puede depender de una
+  respuesta del servidor. Ya pasó dos veces —el perfil del usuario y la
+  terminal asignada— que una consulta al arranque dejaba la aplicación
+  entera esperando sin conexión.
+
+  Acá es lo mismo: si la caja no sabe que está abierta, no puede cobrar
+  aunque todo lo demás funcione. Se guarda al abrirla y se lee de ahí
+  cuando el servidor no contesta.
+*/
+const CLAVE_CAJA = 'gross.caja'
+
+function recordarCaja(terminalId: string, caja: Caja | null) {
+  if (caja) localStorage.setItem(`${CLAVE_CAJA}.${terminalId}`, JSON.stringify(caja))
+  else localStorage.removeItem(`${CLAVE_CAJA}.${terminalId}`)
 }
 
+function cajaRecordada(terminalId: string): Caja | null {
+  try {
+    const crudo = localStorage.getItem(`${CLAVE_CAJA}.${terminalId}`)
+    return crudo ? (JSON.parse(crudo) as Caja) : null
+  } catch {
+    return null
+  }
+}
+
+export async function cajaAbierta(terminalId: string): Promise<Caja | null> {
+  if (navigator.onLine) {
+    const { data, error } = await supabase
+      .from('caja')
+      .select('id, terminal_id, cajero_id, estado, monto_inicial, abierta_en')
+      .eq('terminal_id', terminalId)
+      .eq('estado', 'abierta')
+      .maybeSingle<Caja>()
+
+    // Sólo se cree la respuesta del servidor si de verdad contestó. Una
+    // consulta que falla no significa "no hay caja abierta": significa
+    // que no sabemos, y en ese caso vale lo último que sí supimos.
+    if (!error) {
+      recordarCaja(terminalId, data)
+      return data
+    }
+  }
+  return cajaRecordada(terminalId)
+}
+
+/*
+  Abrir la caja SÍ necesita internet, y es a propósito.
+
+  Es una operación de una vez por turno, al empezar el día, y crea el
+  contenedor contra el que después se arquea. Dejar que dos terminales
+  abran cajas distintas sin coordinar, o que se abra una caja que el
+  servidor nunca va a conocer, arruina el cierre del turno — que es
+  justamente el momento en que se cuenta la plata.
+
+  Cobrar sin conexión sí funciona, porque eso pasa en medio de la
+  atención y no se puede frenar.
+*/
 export async function abrirCaja(terminalId: string, cajeroId: string, montoInicial: number) {
+  if (!navigator.onLine) {
+    throw new Error(
+      'Para abrir la caja hace falta internet. Si ya estaba abierta antes de que se cortara, podés seguir cobrando igual.',
+    )
+  }
+
   const { data, error } = await supabase
     .from('caja')
     .insert({ terminal_id: terminalId, cajero_id: cajeroId, monto_inicial: montoInicial })
     .select('id, terminal_id, cajero_id, estado, monto_inicial, abierta_en')
     .single<Caja>()
   if (error) throw new Error(`No se pudo abrir la caja: ${error.message}`)
+
+  recordarCaja(terminalId, data)
   return data
 }
 
+/*
+  Lecturas: el servidor manda mientras haya conexión.
+
+  La copia local es la red de contención, no la fuente. Con internet se
+  lee del servidor porque ahí está la cola completa y actualizada —otra
+  caja puede haber cobrado algo hace un segundo— y porque trae el nombre
+  del vendedor, que la terminal no replica.
+
+  Sin internet se lee lo que se alcanzó a bajar. Es menos, pero es lo que
+  permite seguir cobrando.
+*/
 export async function listarVentasEnCola(): Promise<VentaEnCola[]> {
+  if (!navigator.onLine) return listarColaLocal()
+
   const { data, error } = await supabase
     .from('venta')
     .select(
@@ -86,36 +168,57 @@ export async function listarVentasEnCola(): Promise<VentaEnCola[]> {
     )
     .eq('estado', 'en_caja')
     .order('enviada_caja_en', { ascending: true })
-  if (error) throw new Error(error.message)
+
+  if (error) return listarColaLocal()
   return (data ?? []) as unknown as VentaEnCola[]
 }
 
 export async function obtenerVentaCompleta(id: string): Promise<VentaCompleta> {
-  const { data, error } = await supabase
-    .from('venta')
-    .select(
-      `id, codigo, estado, total, descuento_total, lista_precio_id, observaciones,
-       cliente:cliente_id(id, nombre, condicion_iva_id, cuenta_corriente, limite_credito),
-       vendedor:vendedor_id(id, nombre),
-       venta_linea(id, orden, codigo_producto, descripcion, cantidad,
-                   precio_original, precio_acordado, precio_unitario, motivo_modificacion)`,
+  if (navigator.onLine) {
+    const { data, error } = await supabase
+      .from('venta')
+      .select(
+        `id, codigo, estado, total, descuento_total, lista_precio_id, medio_pago_previsto_id, cuotas_previstas, observaciones,
+         cliente:cliente_id(id, nombre, condicion_iva_id, cuenta_corriente, limite_credito),
+         vendedor:vendedor_id(id, nombre),
+         venta_linea(id, orden, codigo_producto, descripcion, cantidad,
+                     precio_original, precio_acordado, precio_unitario, motivo_modificacion)`,
+      )
+      .eq('id', id)
+      .single()
+
+    if (!error && data) {
+      const venta = data as unknown as VentaCompleta
+      venta.venta_linea = [...venta.venta_linea].sort((a, b) => a.orden - b.orden)
+      return venta
+    }
+  }
+
+  const local = await obtenerVentaLocal(id)
+  if (!local) {
+    throw new Error(
+      'Esta venta no está en esta computadora y no hay conexión para traerla. Se puede cobrar cuando vuelva internet.',
     )
-    .eq('id', id)
-    .single()
-  if (error) throw new Error(error.message)
-  const venta = data as unknown as VentaCompleta
-  venta.venta_linea = [...venta.venta_linea].sort((a, b) => a.orden - b.orden)
-  return venta
+  }
+  return local as VentaCompleta
 }
 
 /** Aplica una lista a la venta y devuelve el total recalculado. */
 export async function aplicarLista(ventaId: string, listaId: string | null): Promise<number> {
-  const { data, error } = await supabase.rpc('aplicar_lista_a_venta', {
-    p_venta_id: ventaId,
-    p_lista_id: listaId,
-  })
-  if (error) throw new Error(error.message)
-  return Number(data)
+  if (navigator.onLine) {
+    const { data, error } = await supabase.rpc('aplicar_lista_a_venta', {
+      p_venta_id: ventaId,
+      p_lista_id: listaId,
+    })
+    if (!error) {
+      // El servidor recalculó: la copia local queda vieja y es contra
+      // ella que se valida el cobro. Se refresca antes de seguir.
+      await db.venta.delete(ventaId)
+      await asegurarVentaLocal(ventaId)
+      return Number(data)
+    }
+  }
+  return aplicarListaLocal(ventaId, listaId)
 }
 
 /*
@@ -142,46 +245,102 @@ export async function ajustarTotal(
 }
 
 export async function saldoCuentaCorriente(clienteId: string): Promise<number> {
-  const { data } = await supabase
-    .from('cuenta_corriente_saldo')
-    .select('saldo')
-    .eq('cliente_id', clienteId)
-    .maybeSingle<{ saldo: number }>()
-  return Number(data?.saldo ?? 0)
+  if (navigator.onLine) {
+    const { data, error } = await supabase
+      .from('cuenta_corriente_saldo')
+      .select('saldo')
+      .eq('cliente_id', clienteId)
+      .maybeSingle<{ saldo: number }>()
+    if (!error) return Number(data?.saldo ?? 0)
+  }
+  return saldoCuentaCorrienteLocal(clienteId)
 }
 
 /*
   Cobra la venta.
 
-  Los pagos se insertan y después se llama a cobrar_venta(), que valida
-  que sumen el total, verifica el límite de crédito, descuenta stock y
-  registra la deuda en una sola transacción. Si algo falla ahí, se
-  limpian los pagos: una venta con pagos cargados y sin cobrar se
-  volvería a cobrar mal en el próximo intento.
+  SIEMPRE pasa por la bandeja de salida, haya o no conexión — el mismo
+  criterio que ya usa el mostrador para enviar ventas a caja. Que sea
+  siempre el mismo camino es lo que evita que el modo sin conexión sea un
+  caso especial lleno de bifurcaciones: es el camino normal, que a veces
+  tarda más en llegar.
+
+  La validación (pagos que sumen, límite de crédito) ocurre antes de
+  encolar, así un cobro que el servidor va a rechazar se frena acá y no
+  tres horas después con el cliente en la casa.
+
+  Devuelve si la operación llegó a subir. No es un error que no suba:
+  significa que la venta está cobrada y esperando. Pero el que llama
+  necesita saberlo, porque sin haber subido no se puede facturar.
 */
+/*
+  Baja la venta a la copia local si todavía no está.
+
+  La caja lee la cola del servidor cuando hay conexión, pero cobrar se
+  resuelve contra la copia local. Entre una cosa y la otra hay hasta un
+  minuto —lo que tarda el próximo ciclo de sincronización— y en ese rato
+  el cajero ve en pantalla una venta que su computadora todavía no
+  tiene. Sin esto, cobrarla falla con "la venta no está en esta
+  computadora", que además suena a que se perdió algo.
+*/
+async function asegurarVentaLocal(ventaId: string): Promise<void> {
+  if (await db.venta.get(ventaId)) return
+
+  if (!navigator.onLine) {
+    throw new Error(
+      'Esta venta todavía no llegó a esta computadora y no hay conexión para traerla. Se puede cobrar cuando vuelva internet.',
+    )
+  }
+
+  const [venta, lineas] = await Promise.all([
+    supabase
+      .from('venta')
+      .select(
+        'id, codigo, estado, cliente_id, vendedor_id, total, descuento_total, lista_precio_id, medio_pago_previsto_id, cuotas_previstas, ' +
+          'observaciones, ocurrido_en, enviada_caja_en, actualizado_en',
+      )
+      .eq('id', ventaId)
+      .single(),
+    supabase
+      .from('venta_linea')
+      .select(
+        'id, venta_id, orden, producto_id, codigo_producto, descripcion, cantidad, ' +
+          'precio_original, precio_acordado, precio_unitario, motivo_modificacion, ' +
+          'alicuota_iva_id, condicion_iva, actualizado_en',
+      )
+      .eq('venta_id', ventaId),
+  ])
+
+  if (venta.error || !venta.data) {
+    throw new Error(`No se pudo traer la venta: ${venta.error?.message ?? 'no existe'}`)
+  }
+
+  await db.venta.put(venta.data as never)
+  if (lineas.data?.length) await db.venta_linea.bulkPut(lineas.data as never)
+}
+
 export async function cobrar(
   ventaId: string,
   cajaId: string,
   cajeroId: string,
   pagos: PagoNuevo[],
-): Promise<void> {
-  await supabase.from('venta_pago').delete().eq('venta_id', ventaId)
+): Promise<{ subida: boolean }> {
+  await asegurarVentaLocal(ventaId)
+  await cobrarLocal({ ventaId, cajaId, cajeroId, pagos })
 
-  const { error: errorPagos } = await supabase
-    .from('venta_pago')
-    .insert(pagos.map((p) => ({ ...p, venta_id: ventaId })))
-  if (errorPagos) throw new Error(`No se pudieron registrar los pagos: ${errorPagos.message}`)
+  if (!navigator.onLine) return { subida: false }
 
-  const { error } = await supabase.rpc('cobrar_venta', {
-    p_venta_id: ventaId,
-    p_caja_id: cajaId,
-    p_cajero_id: cajeroId,
-  })
-
-  if (error) {
-    await supabase.from('venta_pago').delete().eq('venta_id', ventaId)
-    throw new Error(error.message)
+  try {
+    await subirPendientes()
+  } catch {
+    // Ya está guardada y encolada: que falle el envío no la pierde.
   }
+
+  // Se pregunta por el lote de esta venta y no por el resultado general:
+  // pueden estar fallando operaciones viejas de otra venta y esta haber
+  // subido perfecto, o al revés.
+  const quedanPendientes = await db.outbox.where('lote').equals(ventaId).count()
+  return { subida: quedanPendientes === 0 }
 }
 
 export async function anular(ventaId: string, motivo: string) {
@@ -198,12 +357,36 @@ export interface ResultadoCierre {
   diferencia: number
 }
 
-export async function cerrarCaja(cajaId: string, montoDeclarado: number) {
+/*
+  Cerrar también necesita internet: el arqueo compara contra las ventas
+  del turno, y si hay cobros esperando subir, el número contra el que se
+  arquea estaría incompleto. Cerrar con la mitad de las ventas sin
+  registrar produce una diferencia de caja que no existe y que después
+  alguien tiene que explicar.
+*/
+export async function cerrarCaja(cajaId: string, terminalId: string, montoDeclarado: number) {
+  if (!navigator.onLine) {
+    throw new Error('Para cerrar la caja hace falta internet: el arqueo se calcula en el servidor.')
+  }
+
+  const pendientes = await db.outbox.where('estado').anyOf('pendiente', 'error', 'enviando').count()
+  if (pendientes > 0) {
+    await subirPendientes()
+    const quedan = await db.outbox.where('estado').anyOf('pendiente', 'error').count()
+    if (quedan > 0) {
+      throw new Error(
+        `Quedan ${quedan} operaciones sin subir. Esperá a que terminen de enviarse antes de cerrar, o el arqueo va a dar diferencia.`,
+      )
+    }
+  }
+
   const { data, error } = await supabase.rpc('cerrar_caja', {
     p_caja_id: cajaId,
     p_monto_declarado: montoDeclarado,
   })
   if (error) throw new Error(error.message)
+
+  recordarCaja(terminalId, null)
   const filas = (data ?? []) as ResultadoCierre[]
   return filas[0]
 }

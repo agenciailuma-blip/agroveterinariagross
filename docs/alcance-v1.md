@@ -4,6 +4,7 @@
 **Fecha:** 12 de agosto de 2026
 **Estado:** borrador para revisión y firma con el cliente
 **Cambios respecto de la v1.0:** se incorporan a V1 la sincronización con la tienda, el lector de códigos de barra y el módulo de compras. Se reorganiza V1 en dos entregas. Se elimina la dependencia de OBTech.
+**Cambio del 21/08/2026:** se incorpora a V1 la **sincronización por red local** entre terminales (punto 2-bis). Va al final de V1, después de todo lo demás.
 
 ---
 
@@ -57,10 +58,23 @@ V1 se entrega en **dos tandas**, por una razón práctica: hay cosas sin las cua
 - Las 4 PC con la aplicación instalada como programa de Windows *(necesario para operar sin conexión y para hablarle a la impresora)*
 - Oficina, celulares y reportes: la misma aplicación desde el navegador
 - Motor de sincronización: lo hecho sin conexión se envía al reconectar
+- **Sincronización por red local entre las 4 PC** *(ver punto 2-bis)*
 - **El stock se sincroniza como movimientos, no como saldos** — si dos terminales venden la última unidad estando offline, el sistema lo detecta y avisa en lugar de perder una venta
 - Indicador visible de estado: conectado / sin conexión / sincronizando / con pendientes
 
 > **Consecuencia buena de esta topología:** como solo la caja factura, alcanza con **un único punto de venta de ARCA**, el que ya tienen. Se sugiere dar de alta un segundo de respaldo, sin uso habitual, por si falla esa PC.
+
+## 2-bis. Sincronización por red local
+
+*Incorporado el 21 de agosto de 2026, durante el desarrollo del cobro sin conexión.*
+
+Sin esto, las 4 PC sólo se sincronizan **contra el servidor**. La consecuencia práctica aparece justo cuando el modo sin conexión tendría que salvar el día: si se corta internet, la venta que arma un vendedor **no tiene cómo llegar a la caja** hasta que vuelva la conexión. Cada terminal queda aislada.
+
+- Las terminales se descubren y sincronizan **entre sí por la red del local**, sin depender de internet
+- La venta armada en cualquier mostrador llega a la caja aunque no haya conexión externa
+- Al volver internet, todo sube al servidor por el mismo motor de siempre
+
+> **Por qué entra a V1 y no queda para más adelante:** lo comprometido es que el mostrador siga funcionando sin internet. Sin esto, eso se cumple a medias. **Se hace al final de V1**, después de todo lo demás, porque es lo único que puede esperar sin bloquear el corte del 26 de octubre.
 
 ## 3. Productos, categorías y precios
 

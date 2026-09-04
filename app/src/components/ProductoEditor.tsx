@@ -23,6 +23,8 @@ interface Props {
   error: string | null
   onGuardar: (marcarRevisado: boolean, avanzar: boolean) => void
   onCancelar: () => void
+  /** Sin permiso de baja no se pasa, y el botón no aparece. */
+  onDarDeBaja?: () => void
   onReferenciaCreada: (grupo: keyof Referencias, nueva: Referencia) => void
 }
 
@@ -30,15 +32,18 @@ function Campo({
   etiqueta,
   children,
   ancho = 'col-span-2',
+  ayuda,
 }: {
   etiqueta: string
   children: React.ReactNode
   ancho?: string
+  ayuda?: string
 }) {
   return (
     <label className={`block ${ancho}`}>
       <span className="mb-1 block text-xs font-medium text-slate-600">{etiqueta}</span>
       {children}
+      {ayuda && <span className="mt-1 block text-xs text-slate-400">{ayuda}</span>}
     </label>
   )
 }
@@ -68,6 +73,7 @@ export default function ProductoEditor({
   error,
   onGuardar,
   onCancelar,
+  onDarDeBaja,
   onReferenciaCreada,
 }: Props) {
   const [codigoBarra, setCodigoBarra] = useState('')
@@ -281,6 +287,26 @@ export default function ProductoEditor({
               <option value="no_gravado">No gravado</option>
             </select>
           </Campo>
+          <Campo
+            etiqueta="Rubro ARCA"
+            ancho="col-span-2"
+            ayuda="Actividad de ARCA para separar las ventas del contador. Distinto de la categoría de arriba."
+          >
+            <select
+              value={estado.campos.rubro_arca_id ?? ''}
+              onChange={(e) =>
+                set({ rubro_arca_id: e.target.value === '' ? null : Number(e.target.value) })
+              }
+              className={claseInput}
+            >
+              <option value="">Sin clasificar</option>
+              {referencias.rubrosArca.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.descripcion}
+                </option>
+              ))}
+            </select>
+          </Campo>
         </Seccion>
 
         <Seccion titulo="Stock">
@@ -465,6 +491,17 @@ export default function ProductoEditor({
         >
           Guardar
         </button>
+        {/* Sólo sobre un producto que ya existe, y separado de los
+            botones de guardar para que no se apriete sin querer. */}
+        {!esNuevo && onDarDeBaja && (
+          <button
+            onClick={onDarDeBaja}
+            disabled={guardando}
+            className="ml-auto rounded-lg px-3 py-2.5 text-sm font-medium text-slate-500 hover:bg-red-50 hover:text-red-700 disabled:opacity-60"
+          >
+            Dar de baja
+          </button>
+        )}
       </div>
     </div>
   )

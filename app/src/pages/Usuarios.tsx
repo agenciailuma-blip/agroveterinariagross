@@ -321,7 +321,20 @@ function Personas() {
                         PIN
                       </span>
                     )}
-                    {!u.auth_user_id && !u.opera_con_pin && (
+                    {/*
+                      Con correo cargado y sin cuenta todavía, no está
+                      roto: está esperando. La cuenta se vincula sola la
+                      primera vez que la persona entra con ese correo.
+                    */}
+                    {!u.auth_user_id && u.email && (
+                      <span
+                        className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800"
+                        title="Se va a vincular sola la primera vez que entre con este correo"
+                      >
+                        Todavía no entró
+                      </span>
+                    )}
+                    {!u.auth_user_id && !u.email && !u.opera_con_pin && (
                       <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800">
                         No puede operar
                       </span>

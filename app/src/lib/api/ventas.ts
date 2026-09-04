@@ -225,6 +225,16 @@ export interface EnvioACaja {
     cobrar. La caja lo puede cambiar igual: la tarjeta puede no pasar.
   */
   listaPrecioId: string | null
+  /*
+    Con qué dijo el cliente que va a pagar, y en cuántas cuotas.
+
+    Viaja además de la lista porque varios medios pueden compartirla:
+    si Efectivo y Transferencia usan la lista Contado, desde la lista no
+    hay forma de saber cuál dijo el cliente, y el cajero termina
+    preguntando de nuevo algo que ya se preguntó.
+  */
+  medioPagoId: string | null
+  cuotas: number
 }
 
 /*
@@ -316,6 +326,8 @@ async function guardarVenta(
     ocurrido_en: ahora,
     enviada_caja_en: ahora,
     registrado_offline: !navigator.onLine,
+    medio_pago_previsto_id: datos.medioPagoId,
+    cuotas_previstas: datos.medioPagoId ? datos.cuotas : null,
   }
 
   const lineas = datos.lineas.map((l, i) => ({
