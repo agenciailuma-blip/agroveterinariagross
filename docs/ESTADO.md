@@ -43,7 +43,9 @@
 - 🟡 Qué es un **"comprobante de percepción"** para Lucas (punto 9 de sus sugerencias).
 - 🟡 **Probar la impresora del mostrador** y las 4 PC en el local, con el programa instalado.
 
-**Sin verificar todavía:** el ingreso real contra Supabase desde adentro del programa instalado, la impresión con la Hasar delante, y **la pantalla de la Caja con sesión iniciada** — sigue faltando la contraseña de `agencia.iluma@gmail.com`.
+**Sin verificar todavía:** el ingreso real contra Supabase desde adentro del **programa instalado**, y la impresión con la **Hasar delante**.
+
+✅ **La interfaz ya se recorrió con sesión iniciada (04/09).** Caja, Facturación, Remitos e impresión, de punta a punta. Salió un bug real: ver la trampa de las consultas deshabilitadas en la sección 6.
 
 ---
 
@@ -173,7 +175,7 @@ La capa de datos está entera: comprobantes, numeración, CAEA, cola de continge
 
 ✅ **Comprobante imprimible con QR (21/08/2026).** Pantalla `/comprobante/:id` con el formato de una factura argentina (letra en su recuadro, encabezado del emisor, discriminación de IVA en la A, leyenda de la Ley 27.743 y "IVA contenido" en la B, pie con CAE y QR). El QR sigue la RG 4892: **verificado contra el ejemplo oficial de ARCA, produce el mismo Base64 byte a byte**. Se imprime desde el navegador a cualquier impresora o a PDF, y al imprimir el semáforo pasa a verde.
 
-⚠️ **Sin verificar logueado:** el circuito se probó contra la base, contra ARCA y renderizando el comprobante con datos reales, pero nadie recorrió la interfaz con sesión iniciada (hace falta la contraseña de `agencia.iluma@gmail.com`). Quedó el comprobante `00001-00000002` pendiente, con fecha de hoy, para probar "Pedir CAE", y el `00001-00000001` autorizado para probar la impresión.
+✅ **Verificado con sesión iniciada el 04/09.** Se recorrieron Caja, Facturación y la impresión del comprobante. Quedó el comprobante `00001-00000002` pendiente, con fecha de hoy, para probar "Pedir CAE", y el `00001-00000001` autorizado para probar la impresión.
 
 ✅ **Devoluciones con nota de crédito (24/08/2026).**
 
@@ -397,7 +399,15 @@ En transacciones que se revierten, confirmando después que no quedó ni una fil
 
 **Encontrado probando:** `emitir_comprobante_no_fiscal()` descartaba en silencio los parámetros ajenos al tipo — una fecha de validez en un remito se perdía sin error. Corregido en la migración `20260904100200`.
 
-⚠️ **Sin verificar con sesión iniciada**, igual que el resto de la interfaz: falta la contraseña.
+✅ **Verificado con sesión iniciada el 04/09**, de punta a punta:
+
+- El selector aparece y arranca en "Con factura". **No aparece** con un Responsable Inscripto; **sí aparece** con un Monotributo, que es lo correcto — a un monotributista le corresponde B y no hay obligación de A.
+- Cobrado sin factura: el botón cambia a "Cobrar sin factura", sale el aviso gris con el número, y el registro queda con `documentacion = 'no_fiscal'` y el nombre de quien lo hizo.
+- El ticket y la hoja A4 salen con datos reales, con la leyenda arriba y abajo, sin CAE ni QR ni discriminación de IVA.
+- El panel rojo **no** lista esa venta — y se verificó que sea por la razón correcta, no porque la consulta esté rota.
+- Remito sobre una venta sin cobrar: domicilio, localidad y contacto se precargan del cliente, aparece el aviso de descuento de stock, y el stock **se descuenta de verdad**.
+
+Quedan en la base un comprobante interno y un remito reales, que sirven para mostrarle el circuito a Lucas.
 
 ---
 
@@ -572,6 +582,16 @@ Cloudflare Pages (10 minutos cuando haya algo que publicar) y Tauri para las 4 P
 ## 6. Trampas aprendidas peleando con el offline
 
 Costaron varias vueltas. Están todas corregidas, pero conviene no repetirlas.
+
+### Una consulta deshabilitada de React Query informa `isPending` para siempre
+
+Aparecido el 04/09, la primera vez que se entró a la Caja con sesión en una máquina sin terminal asignada. La pantalla se quedaba en **"Cargando…" eternamente**, y el mensaje que explicaba qué hacer —*"Esta máquina todavía no tiene terminal asignada"*— no se mostraba nunca.
+
+La consulta de la caja tiene `enabled: !!terminal`. Cuando `enabled` es falso, React Query no informa "inactiva": informa `isPending: true`. **No está cargando — nunca va a arrancar.** Como la guarda preguntaba primero por `caja.isPending`, el `if (!terminal)` de abajo quedaba muerto.
+
+> **La regla:** cuando una consulta tiene `enabled`, la condición que la deshabilita se pregunta ANTES que su estado de carga. Si no, el aviso que explica el problema queda tapado justo por el problema.
+
+Es el peor final posible para un aviso: la máquina no está rota, hay una sola cosa que hacer, y la pantalla no la dice. Y habría aparecido **el día de la instalación en las 4 PC de Gross**, que es cuando ninguna tiene terminal todavía.
 
 ### React Query pausa todo sin conexión
 `networkMode` por defecto es `'online'`: pausa consultas y mutaciones cuando el navegador se declara sin red. El código **nunca llegaba a ejecutarse** — no se colgaba, no arrancaba. Está en `'always'` y tiene que quedar así.
