@@ -76,6 +76,13 @@ export interface VentaCompletaLocal {
   lista_precio_id: string | null
   medio_pago_previsto_id: string | null
   cuotas_previstas: number | null
+  /*
+    Opcional a propósito: una terminal que se sincronizó antes de que
+    esta columna existiera no la tiene guardada. Quien la lee asume
+    'fiscal', que es el valor por omisión de la base y el único que no
+    puede hacer daño — como mucho se emite una factura de más.
+  */
+  documentacion?: 'fiscal' | 'no_fiscal'
   observaciones: string | null
   cliente: {
     id: string

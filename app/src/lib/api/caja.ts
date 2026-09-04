@@ -50,6 +50,8 @@ export interface VentaCompleta {
   /** Lo que el vendedor ya le preguntó al cliente. */
   medio_pago_previsto_id: string | null
   cuotas_previstas: number | null
+  /** Si se cobra con factura de ARCA o con comprobante no fiscal. */
+  documentacion: 'fiscal' | 'no_fiscal'
   observaciones: string | null
   cliente: {
     id: string
@@ -178,7 +180,7 @@ export async function obtenerVentaCompleta(id: string): Promise<VentaCompleta> {
     const { data, error } = await supabase
       .from('venta')
       .select(
-        `id, codigo, estado, total, descuento_total, lista_precio_id, medio_pago_previsto_id, cuotas_previstas, observaciones,
+        `id, codigo, estado, total, descuento_total, lista_precio_id, medio_pago_previsto_id, cuotas_previstas, observaciones, documentacion,
          cliente:cliente_id(id, nombre, condicion_iva_id, cuenta_corriente, limite_credito),
          vendedor:vendedor_id(id, nombre),
          venta_linea(id, orden, codigo_producto, descripcion, cantidad,
@@ -200,7 +202,13 @@ export async function obtenerVentaCompleta(id: string): Promise<VentaCompleta> {
       'Esta venta no está en esta computadora y no hay conexión para traerla. Se puede cobrar cuando vuelva internet.',
     )
   }
-  return local as VentaCompleta
+  /*
+    La copia local puede no traer la marca de documentación todavía. Se
+    asume "fiscal", que es el valor por omisión de la base y el que no
+    puede hacer daño: como mucho se emite una factura de más, nunca una
+    de menos.
+  */
+  return { ...local, documentacion: local.documentacion ?? 'fiscal' } as VentaCompleta
 }
 
 /** Aplica una lista a la venta y devuelve el total recalculado. */

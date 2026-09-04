@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTerminal } from '@/lib/terminal'
+import { useSync } from '@/lib/local/SyncProvider'
 import { useAuth } from '@/auth/AuthProvider'
 import { IdentificarOperador, useOperador } from '@/components/IdentificarOperador'
 import {
@@ -20,6 +21,12 @@ import type { PagoNuevo, VentaCompleta } from '@/lib/api/caja'
 import { cargarPrecios } from '@/lib/api/precios'
 import type { MedioPago } from '@/lib/api/precios'
 import { facturarVenta } from '@/lib/api/facturacion'
+import {
+  emitirNoFiscal,
+  marcarDocumentacion,
+  noFiscalesDeVenta,
+  numeroNoFiscal,
+} from '@/lib/api/noFiscal'
 import { abrirComprobante } from '@/lib/escritorio'
 import { moneda, numero } from '@/lib/tipos'
 
@@ -27,6 +34,7 @@ export default function Caja() {
   const { terminal, cargando: cargandoTerminal } = useTerminal()
   const { operador, identificar, salir } = useOperador()
   const { tienePermiso } = useAuth()
+  const { enLinea } = useSync()
   const qc = useQueryClient()
 
   const [seleccionada, setSeleccionada] = useState<string | null>(null)
@@ -35,6 +43,16 @@ export default function Caja() {
   const [cuotas, setCuotas] = useState(1)
   const [error, setError] = useState<string | null>(null)
   const [facturaPendiente, setFacturaPendiente] = useState<string | null>(null)
+  /*
+    La elección de documentación, antes de cobrar.
+
+    Arranca siempre en 'fiscal' y hay que elegir salirse. Lo contrario
+    —recordar la última elección, por ejemplo— haría que una venta salga
+    sin factura porque la anterior salió así, y eso no puede pasar por
+    inercia.
+  */
+  const [documentacion, setDocumentacion] = useState<'fiscal' | 'no_fiscal'>('fiscal')
+  const [noFiscalEmitido, setNoFiscalEmitido] = useState<string | null>(null)
   const [listoParaImprimir, setListoParaImprimir] = useState<{
     codigo: string
     cae: string
@@ -127,36 +145,82 @@ export default function Caja() {
   const cobrarVenta = useMutation({
     mutationFn: async () => {
       const codigo = venta.data?.codigo
+      const sinFactura = documentacion === 'no_fiscal'
+
+      /*
+        La marca va ANTES del cobro, y es a propósito.
+
+        Los dos candados —el permiso y que a un Responsable Inscripto le
+        corresponde Factura A— los verifica la base. Si esta venta no
+        podía cobrarse sin factura, tiene que fallar ahora, con el
+        cliente todavía sin pagar; no después, con la plata adentro y un
+        documento que no se puede emitir.
+      */
+      if (sinFactura) await marcarDocumentacion(seleccionada!, 'no_fiscal')
+
       const { subida } = await cobrar(seleccionada!, caja.data!.id, operador!.usuario_id, pagos)
 
-      // Sin haber llegado al servidor no hay nada que facturar todavía:
-      // el comprobante se arma sobre una venta cobrada, y para el
-      // servidor esta venta sigue esperando en la cola.
+      // Sin haber llegado al servidor no hay nada que documentar
+      // todavía: el comprobante se arma sobre una venta cobrada, y para
+      // el servidor esta venta sigue esperando en la cola.
       if (!subida) {
         return {
           codigo,
           cae: null,
           comprobanteId: null,
+          noFiscal: null as string | null,
           problema:
             'la venta quedó guardada en esta computadora y se va a facturar sola cuando vuelva la conexión.',
         }
       }
 
+      if (sinFactura) {
+        try {
+          await emitirNoFiscal(seleccionada!, 'comprobante_interno', terminal?.id ?? null)
+          const [emitido] = await noFiscalesDeVenta(seleccionada!)
+          return {
+            codigo,
+            cae: null,
+            comprobanteId: null,
+            noFiscal: emitido
+              ? numeroNoFiscal(emitido.tipo_clave, emitido.serie, emitido.numero)
+              : null,
+            problema: null as string | null,
+          }
+        } catch (e) {
+          return {
+            codigo,
+            cae: null,
+            comprobanteId: null,
+            noFiscal: null,
+            problema:
+              e instanceof Error
+                ? `no se pudo emitir el comprobante interno: ${e.message}`
+                : 'no se pudo emitir el comprobante interno.',
+          }
+        }
+      }
+
       try {
         const { cae, comprobanteId } = await facturarVenta(seleccionada!)
-        return { codigo, cae, comprobanteId, problema: null as string | null }
+        return { codigo, cae, comprobanteId, noFiscal: null, problema: null as string | null }
       } catch (e) {
         return {
           codigo,
           cae: null,
           comprobanteId: null,
+          noFiscal: null,
           problema: e instanceof Error ? e.message : 'ARCA no respondió.',
         }
       }
     },
-    onSuccess: ({ codigo, cae, comprobanteId, problema }) => {
+    onSuccess: ({ codigo, cae, comprobanteId, noFiscal, problema }) => {
       if (problema) {
         setFacturaPendiente(`Venta ${codigo} cobrada, pero la factura quedó pendiente: ${problema}`)
+      } else if (noFiscal) {
+        // Sin CAE y sin pantalla de impresión todavía: lo que el cajero
+        // necesita ahora es el número, para poder nombrarlo.
+        setNoFiscalEmitido(`Venta ${codigo} cobrada sin factura. Comprobante interno ${noFiscal}.`)
       } else {
         /*
           El comprobante queda a un clic, no escondido en otra pantalla.
@@ -183,6 +247,7 @@ export default function Caja() {
     setMedioPrincipal(null)
     setCuotas(1)
     setError(null)
+    setDocumentacion('fiscal')
   }
 
   useEffect(() => {
@@ -190,7 +255,23 @@ export default function Caja() {
     setMedioPrincipal(null)
     setCuotas(1)
     setError(null)
+    // Cada venta decide de nuevo. Que la anterior se haya cobrado sin
+    // factura no dice nada de esta, y arrastrar la elección haría que
+    // una venta salga sin factura porque nadie miró el selector.
+    setDocumentacion('fiscal')
   }, [seleccionada])
+
+  /*
+    Si se corta internet con "sin factura" ya elegido, vuelve a factura.
+
+    Marcar la venta necesita servidor. Sin esto, el cajero apretaría
+    Cobrar y fallaría el cobro entero —no la marca, el cobro— justo en el
+    momento en que el sistema tiene que seguir funcionando igual. Prefiere
+    cobrar de más con factura que no cobrar.
+  */
+  useEffect(() => {
+    if (!enLinea) setDocumentacion('fiscal')
+  }, [enLinea])
 
   /*
     Lo que el vendedor ya preguntó, queda elegido.
@@ -324,6 +405,34 @@ export default function Caja() {
         )}
 
         {/*
+          Cobrada sin factura, a propósito.
+
+          Va en gris y no en verde ni en ámbar: no es un éxito que
+          festejar ni un problema que resolver, es una constancia. El
+          número está para que el cajero pueda nombrarlo si el cliente
+          pregunta.
+        */}
+        {noFiscalEmitido && (
+          <div className="mb-3 flex items-start gap-3 rounded-xl bg-piedra-50 px-4 py-3 ring-1 ring-borde">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-tinta">{noFiscalEmitido}</p>
+              <p className="text-xs text-piedra-500">
+                No es una factura y no tiene CAE. Queda registrado con tu nombre.
+              </p>
+            </div>
+            <button
+              onClick={() => setNoFiscalEmitido(null)}
+              className="rounded p-1 text-piedra-500 hover:bg-piedra-100"
+              aria-label="Entendido"
+            >
+              <svg className="size-4" fill="none" viewBox="0 0 24 24" strokeWidth={2.2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        )}
+
+        {/*
           Este aviso NO se va solo. La venta se cobró pero no tiene
           comprobante: alguien tiene que enterarse y resolverlo, no que
           se le desvanezca de la pantalla mientras atiende al que sigue.
@@ -368,6 +477,10 @@ export default function Caja() {
             cobrando={cobrarVenta.isPending}
             ajustando={ajustar.isPending}
             puedeAjustar={tienePermiso('ventas.ajustar_total')}
+            documentacion={documentacion}
+            onDocumentacion={setDocumentacion}
+            puedeVenderSinFactura={tienePermiso('facturacion.vender_sin_factura')}
+            enLinea={enLinea}
             error={error}
             onElegirMedio={elegirMedio}
             onAjustar={(nuevo, motivo) => ajustar.mutate({ nuevo, motivo })}
@@ -458,6 +571,10 @@ function PanelCobro({
   cobrando,
   ajustando,
   puedeAjustar,
+  documentacion,
+  onDocumentacion,
+  puedeVenderSinFactura,
+  enLinea,
   error,
   onElegirMedio,
   onAjustar,
@@ -476,6 +593,10 @@ function PanelCobro({
   cobrando: boolean
   ajustando: boolean
   puedeAjustar: boolean
+  documentacion: 'fiscal' | 'no_fiscal'
+  onDocumentacion: (d: 'fiscal' | 'no_fiscal') => void
+  puedeVenderSinFactura: boolean
+  enLinea: boolean
   error: string | null
   onElegirMedio: (m: MedioPago, cuotas?: number) => void
   onAjustar: (nuevoTotal: number, motivo: string) => void
@@ -496,6 +617,8 @@ function PanelCobro({
     : null
   const medio = medios.find((m) => m.id === medioPrincipal)
   const esCuentaCorriente = medio?.tipo === 'cuenta_corriente'
+  // 1 es "IVA Responsable Inscripto" en la tabla de ARCA.
+  const esResponsableInscripto = venta.cliente?.condicion_iva_id === 1
   const nuevoSaldo = saldoActual + (pagos.find((p) => p.medio_pago_id === medio?.id)?.importe ?? 0)
   const excede =
     esCuentaCorriente &&
@@ -720,13 +843,80 @@ function PanelCobro({
           </p>
         )}
 
+        {/*
+          Con qué documento sale la venta.
+
+          Sólo aparece si el permiso lo habilita: emitir un presupuesto o
+          un remito es operación diaria, pero decidir que una venta no
+          lleve factura es una decisión del dueño. A un Responsable
+          Inscripto no se le ofrece — compra para descargar el IVA, y
+          entregarle otra cosa es un problema para él. La base rechaza
+          las dos cosas igual; esto sólo evita ofrecer lo que va a fallar.
+        */}
+        {puedeVenderSinFactura && !esResponsableInscripto && (
+          <div className="mt-4 rounded-lg border border-borde p-1">
+            <div className="grid grid-cols-2 gap-1">
+              {(
+                [
+                  ['fiscal', 'Con factura', 'Factura de ARCA con CAE'],
+                  ['no_fiscal', 'Sin factura', 'Comprobante interno'],
+                ] as const
+              ).map(([valor, titulo, detalle]) => (
+                <button
+                  key={valor}
+                  type="button"
+                  aria-pressed={documentacion === valor}
+                  disabled={valor === 'no_fiscal' && !enLinea}
+                  onClick={() => onDocumentacion(valor)}
+                  className={`rounded-md px-3 py-2 text-left transition disabled:opacity-40 ${
+                    documentacion === valor
+                      ? valor === 'fiscal'
+                        ? 'bg-verde-600 text-white'
+                        : 'bg-tinta text-white'
+                      : 'text-piedra-500 enabled:hover:bg-piedra-100'
+                  }`}
+                >
+                  <span className="block text-sm font-medium">{titulo}</span>
+                  <span
+                    className={`block text-[11px] ${
+                      documentacion === valor ? 'text-white/70' : 'text-piedra-400'
+                    }`}
+                  >
+                    {detalle}
+                  </span>
+                </button>
+              ))}
+            </div>
+            {!enLinea && (
+              <p className="px-3 pb-1.5 pt-2 text-[11px] leading-snug text-piedra-500">
+                Sin conexión sólo se puede cobrar con factura. Podés cobrar igual: la factura se
+                emite sola cuando vuelva internet.
+              </p>
+            )}
+            {enLinea && documentacion === 'no_fiscal' && (
+              <p className="px-3 pb-1.5 pt-2 text-[11px] leading-snug text-piedra-500">
+                No es una factura, no tiene CAE y no se puede entregar como tal. La venta se
+                registra igual: descuenta stock, queda en la cuenta del cliente y lleva tu nombre.
+              </p>
+            )}
+          </div>
+        )}
+
         <div className="mt-4 flex gap-2">
           <button
             onClick={onCobrar}
             disabled={!medio || Math.abs(diferencia) > 0.009 || cobrando || aplicando}
-            className="flex-1 rounded-lg bg-verde-600 px-4 py-3 font-medium text-white hover:bg-verde-500 disabled:opacity-40"
+            className={`flex-1 rounded-lg px-4 py-3 font-medium text-white disabled:opacity-40 ${
+              documentacion === 'no_fiscal'
+                ? 'bg-tinta hover:bg-tinta/90'
+                : 'bg-verde-600 hover:bg-verde-500'
+            }`}
           >
-            {cobrando ? 'Cobrando…' : 'Cobrar'}
+            {cobrando
+              ? 'Cobrando…'
+              : documentacion === 'no_fiscal'
+                ? 'Cobrar sin factura'
+                : 'Cobrar'}
           </button>
           <button
             onClick={onCancelar}

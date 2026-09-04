@@ -80,10 +80,21 @@ export async function ventasSinFacturar(): Promise<VentaSinFacturar[]> {
 
   const yaFacturadas = new Set((conComprobante ?? []).map((c) => c.venta_id as string))
 
+  /*
+    Sólo las que se cobraron CON la promesa de una factura.
+
+    Una venta marcada como no fiscal no está esperando ningún comprobante
+    de ARCA: alguien decidió, con permiso y dejando su nombre, que no
+    lleva. Si entrara acá, el panel rojo —que existe para el caso grave,
+    la plata que entró sin respaldo fiscal— se llenaría de casos
+    normales, y en dos semanas nadie lo mira. Un semáforo que grita
+    siempre deja de ser un semáforo.
+  */
   const { data, error } = await supabase
     .from('venta')
     .select('id, codigo, total, ocurrido_en, cliente:cliente_id(nombre)')
     .eq('estado', 'cobrada')
+    .eq('documentacion', 'fiscal')
     .order('ocurrido_en', { ascending: false })
     .limit(200)
   if (error) throw new Error(error.message)
