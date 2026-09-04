@@ -62,6 +62,12 @@ const MENU: ItemMenu[] = [
     icono: 'M9 17a2 2 0 11-4 0 2 2 0 014 0zm10 0a2 2 0 11-4 0 2 2 0 014 0zM3 5h11v12H9M14 8h3.5L21 11.5V17h-2',
   },
   {
+    a: '/no-fiscales',
+    etiqueta: 'Presupuestos',
+    permiso: 'facturacion.no_fiscal_ver',
+    icono: 'M9 12h6m-6 4h6M9 8h2m-2 13h10a2 2 0 002-2V7.4L14.6 3H7a2 2 0 00-2 2v14a2 2 0 002 2z',
+  },
+  {
     a: '/usuarios',
     etiqueta: 'Usuarios',
     permiso: 'usuarios.gestionar',

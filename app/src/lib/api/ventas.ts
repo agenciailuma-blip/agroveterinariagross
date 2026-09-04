@@ -212,6 +212,15 @@ export async function clienteConsumidorFinal(): Promise<ClienteVenta | null> {
 }
 
 export interface EnvioACaja {
+  /*
+    En qué estado nace la venta.
+
+    'en_caja' es lo de siempre: va a la cola del cajero. 'borrador' es el
+    presupuesto — el cliente se lo lleva a pensar, así que la venta queda
+    armada pero NO le aparece a la caja. Si vuelve, se manda a cobrar sin
+    volver a cargar nada.
+  */
+  estado?: 'en_caja' | 'borrador'
   clienteId: string
   vendedorId: string
   terminalId: string
@@ -315,16 +324,19 @@ async function guardarVenta(
 
   const ahora = new Date().toISOString()
 
+  const esBorrador = datos.estado === 'borrador'
+
   const cabecera = {
     id,
     codigo,
-    estado: 'en_caja',
+    estado: datos.estado ?? 'en_caja',
     cliente_id: datos.clienteId,
     vendedor_id: datos.vendedorId,
     terminal_origen_id: datos.terminalId,
     observaciones: datos.observaciones,
     ocurrido_en: ahora,
-    enviada_caja_en: ahora,
+    // Un presupuesto no está esperando en la caja: no tiene fecha de envío.
+    enviada_caja_en: esBorrador ? null : ahora,
     registrado_offline: !navigator.onLine,
     medio_pago_previsto_id: datos.medioPagoId,
     cuotas_previstas: datos.medioPagoId ? datos.cuotas : null,

@@ -227,8 +227,10 @@ export interface FilaNoFiscal {
   receptor_nombre: string
   total: number
   estado: string
+  valido_hasta: string | null
   entrega_localidad: string | null
   transportista: string | null
+  venta_id: string | null
   venta_codigo: string | null
   venta_estado: string | null
 }
@@ -237,8 +239,8 @@ export async function listarNoFiscales(tipo: TipoNoFiscal | 'todos'): Promise<Fi
   let q = supabase
     .from('comprobante_no_fiscal')
     .select(
-      `id, tipo_clave, serie, numero, fecha, receptor_nombre, total, estado,
-       entrega_localidad, transportista, venta:venta_id(codigo, estado)`,
+      `id, tipo_clave, serie, numero, fecha, receptor_nombre, total, estado, valido_hasta,
+       entrega_localidad, transportista, venta_id, venta:venta_id(codigo, estado)`,
     )
     .order('creado_en', { ascending: false })
     .limit(200)
@@ -259,6 +261,22 @@ export async function listarNoFiscales(tipo: TipoNoFiscal | 'todos'): Promise<Fi
       venta_estado: v?.estado ?? null,
     }
   })
+}
+
+/*
+  Anular, con motivo.
+
+  El motivo lo exige la base, no la pantalla: un comprobante que se le
+  entregó a alguien y después desaparece sin explicación es exactamente
+  lo que este módulo tiene prohibido. Si era un remito, la base también
+  devuelve la mercadería al stock.
+*/
+export async function anularNoFiscal(id: string, motivo: string): Promise<void> {
+  const { error } = await supabase.rpc('anular_comprobante_no_fiscal', {
+    p_id: id,
+    p_motivo: motivo,
+  })
+  if (error) throw new Error(error.message)
 }
 
 export interface RemitoSinCobrar {
@@ -370,4 +388,118 @@ export async function ventasParaRemitir(busqueda: string): Promise<VentaParaRemi
         cliente_telefono: c?.telefono ?? null,
       }
     })
+}
+
+/** Días que vale un presupuesto, salvo que se diga otra cosa. */
+export const DIAS_VALIDEZ_PRESUPUESTO = 15
+
+/*
+  El presupuesto que el cliente se lleva a pensar.
+
+  La venta se guarda en BORRADOR, no en la cola de la caja: nadie la está
+  esperando para cobrar. Si el cliente vuelve, esa venta ya está armada y
+  sólo hay que mandarla a cobrar — no se vuelve a cargar nada, que es
+  justamente lo que un presupuesto tiene que ahorrar.
+
+  Necesita conexión, y se avisa antes de armar nada. Un presupuesto que
+  se guarda pero no se puede imprimir no le sirve a nadie: el cliente se
+  tiene que ir con el papel en la mano.
+*/
+export async function emitirPresupuesto(
+  ventaId: string,
+  terminalId: string | null,
+  diasValidez = DIAS_VALIDEZ_PRESUPUESTO,
+): Promise<string> {
+  const hasta = new Date()
+  hasta.setDate(hasta.getDate() + diasValidez)
+
+  return emitirNoFiscal(ventaId, 'presupuesto', terminalId, {
+    validoHasta: hasta.toISOString().slice(0, 10),
+  })
+}
+
+/*
+  El cliente volvió: el presupuesto pasa a la cola de la caja.
+
+  No se convierte en factura acá — se convierte en una venta lista para
+  cobrar, y la factura sale al cobrarla, por el camino de siempre. Meter
+  un segundo camino a la facturación sería tener dos lugares donde se
+  decide lo mismo.
+*/
+export async function mandarPresupuestoACaja(ventaId: string): Promise<void> {
+  const { error } = await supabase
+    .from('venta')
+    .update({ estado: 'en_caja', enviada_caja_en: new Date().toISOString() })
+    .eq('id', ventaId)
+    .eq('estado', 'borrador')
+  if (error) throw new Error(error.message)
+}
+
+/*
+  El listado a CSV.
+
+  "Registro, veo y exporto" — punto 12 de Lucas, que él mismo planteó
+  como criterio y no como pedido. Un listado que no se puede sacar del
+  sistema obliga a copiarlo a mano, y ahí es donde aparecen los números
+  que no coinciden con nada.
+
+  Separador de punto y coma y BOM al principio: es lo que hace que Excel
+  en español abra el archivo con las columnas separadas y los acentos
+  bien, sin que nadie tenga que importar nada.
+*/
+export function aCsv(filas: FilaNoFiscal[]): string {
+  const escapar = (v: string | number | null) => {
+    const t = String(v ?? '')
+    return /[";\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t
+  }
+
+  const cabecera = [
+    'Tipo',
+    'Numero',
+    'Fecha',
+    'Cliente',
+    'Total',
+    'Estado',
+    'Destino',
+    'Transporte',
+    'Venta',
+  ]
+
+  const lineas = filas.map((f) =>
+    [
+      ETIQUETA_NO_FISCAL[f.tipo_clave],
+      numeroNoFiscal(f.tipo_clave, f.serie, f.numero),
+      f.fecha,
+      f.receptor_nombre,
+      // Coma decimal: es lo que espera Excel en español.
+      f.total.toFixed(2).replace('.', ','),
+      f.estado,
+      f.entrega_localidad ?? '',
+      f.transportista ?? '',
+      f.venta_codigo ?? '',
+    ]
+      .map(escapar)
+      .join(';'),
+  )
+
+  return '\uFEFF' + [cabecera.join(';'), ...lineas].join('\r\n')
+}
+
+/*
+  Bajar el archivo.
+
+  Adentro del programa instalado un enlace de descarga no siempre hace
+  algo, así que se abre en una ventana y se deja que el sistema resuelva.
+  En el navegador es una descarga común.
+*/
+export function descargarCsv(nombre: string, contenido: string) {
+  const blob = new Blob([contenido], { type: 'text/csv;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = nombre
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
 }

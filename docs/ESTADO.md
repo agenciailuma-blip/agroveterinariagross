@@ -15,14 +15,14 @@
 |---|---|---|
 | 1 | Migración: tablas, tipos, numeración, RLS, permisos | ✅ 04/09 |
 | 2 | Elección en la Caja + `venta.documentacion` + panel rojo | ✅ 04/09 |
-| 3 | **Impresión del no fiscal: ticket, A4, ESC/POS** | ⏳ **acá estamos** |
-| 4 | Remito: domicilio, transporte, recibí conforme | ⏳ |
-| 5 | Stock del remito: ya está en la base; falta la pantalla | 🟡 |
-| 6 | Presupuesto: validez y conversión | ⏳ |
-| 7 | Listado, exportación y convertir en factura | ⏳ |
-| 8 | Emisión sin conexión | ⏳ |
+| 3 | Impresión del no fiscal: ticket, A4, ESC/POS | ✅ 04/09 |
+| 4 | Remito: domicilio, transporte, recibí conforme | ✅ 04/09 |
+| 5 | Stock del remito: descarga, reconciliación y panel | ✅ 04/09 |
+| 6 | Presupuesto: validez y conversión | ✅ 04/09 |
+| 7 | Listado, exportación y convertir en factura | ✅ 04/09 |
+| 8 | **Emisión sin conexión** | ⏳ **lo único que queda** |
 | 9 | Pruebas de lo que decide con plata y con stock | 🟡 en curso |
-| **+** | **La caja edita la venta** — subió desde el punto 3 de esta lista | ⏳ |
+| **+** | **La caja edita la venta** — subió desde el punto 3 de esta lista | ✅ 04/09 |
 
 > **Por qué "la caja edita la venta" se mudó adentro de este bloque.** Era comodidad: el cliente se arrepiente de una bolsa. Con el remito descargando stock antes del cobro, pasó a ser **el mecanismo que cierra el reparto**: el repartidor vuelve con lo que el cliente no quiso, y la única forma de que el stock aterrice bien es que el cajero corrija la venta a lo entregado. La base ya lo reconcilia sola (probado); falta la pantalla que lo permita.
 

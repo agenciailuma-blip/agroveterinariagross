@@ -14,6 +14,9 @@ import type { ClienteVenta, LineaVenta, ProductoVenta } from '@/lib/api/ventas'
 import { cargarPrecios, previsualizarPrecio } from '@/lib/api/precios'
 import type { MedioPago } from '@/lib/api/precios'
 import { useSync } from '@/lib/local/SyncProvider'
+import { subirPendientes } from '@/lib/local/sync'
+import { emitirPresupuesto } from '@/lib/api/noFiscal'
+import { abrirNoFiscal } from '@/lib/escritorio'
 import { moneda, numero } from '@/lib/tipos'
 
 const BORRADOR = 'gross.venta-en-curso'
@@ -176,6 +179,58 @@ export default function PuntoDeVenta() {
       ),
     )
   }
+
+  /*
+    El presupuesto que el cliente se lleva a pensar.
+
+    La venta se guarda en BORRADOR: no entra en la cola de la caja,
+    porque nadie la está esperando para cobrar. Si el cliente vuelve, esa
+    venta ya está armada y desde Presupuestos se manda a cobrar sin
+    volver a cargar nada.
+
+    Necesita conexión, y por eso el botón se apaga sin ella: un
+    presupuesto que se guarda pero no se puede imprimir no le sirve a
+    nadie — el cliente se tiene que ir con el papel en la mano.
+  */
+  const presupuestar = useMutation({
+    mutationFn: async () => {
+      const v = await enviarACaja(
+        {
+          estado: 'borrador',
+          clienteId: cliente!.id,
+          vendedorId: operador!.usuario_id,
+          terminalId: terminal!.id,
+          terminalPrefijo: terminal!.prefijo ?? 'T',
+          lineas,
+          observaciones: null,
+          listaPrecioId: medio?.lista_precio_id ?? null,
+          medioPagoId: medioAnticipado,
+          cuotas: cuotasAnticipadas,
+        },
+        setPasoEnvio,
+      )
+      // El comprobante se arma en el servidor, así que la venta tiene que
+      // haber llegado antes de pedirlo.
+      await subirPendientes()
+      const id = await emitirPresupuesto(v.id, terminal!.id)
+      return { codigo: v.codigo, id }
+    },
+    onSuccess: ({ codigo, id }) => {
+      setPasoEnvio(null)
+      setLineas([])
+      setMedioAnticipado(null)
+      setCuotasAnticipadas(1)
+      setError(null)
+      setExito(`Presupuesto de la venta ${codigo} listo`)
+      setTimeout(() => setExito(null), 4000)
+      abrirNoFiscal(id)
+      busqueda.current?.focus()
+    },
+    onError: (e) => {
+      setPasoEnvio(null)
+      setError(e instanceof Error ? e.message : 'No se pudo armar el presupuesto.')
+    },
+  })
 
   const enviar = useMutation({
     mutationFn: () =>
@@ -578,11 +633,33 @@ export default function PuntoDeVenta() {
 
         <button
           onClick={() => enviar.mutate()}
-          disabled={!lineas.length || !cliente || enviar.isPending}
+          disabled={!lineas.length || !cliente || enviar.isPending || presupuestar.isPending}
           className="rounded-xl bg-marca-700 px-4 py-4 text-base font-medium text-white hover:bg-marca-600 disabled:opacity-40"
         >
           {enviar.isPending ? `Enviando… ${pasoEnvio ?? ''}` : 'Enviar a caja'}
         </button>
+
+        {/*
+          El presupuesto va debajo y en segundo plano: lo habitual es
+          cobrar. Pero está a la vista, porque el cliente lo pide en el
+          momento y mandarlo a otra pantalla sería perderlo.
+        */}
+        <button
+          onClick={() => presupuestar.mutate()}
+          disabled={
+            !lineas.length || !cliente || enviar.isPending || presupuestar.isPending || !enLinea
+          }
+          title={enLinea ? undefined : 'Hace falta conexión para armar un presupuesto.'}
+          className="rounded-xl border border-borde px-4 py-2.5 text-sm font-medium text-tinta hover:bg-piedra-50 disabled:opacity-40"
+        >
+          {presupuestar.isPending ? `Armando… ${pasoEnvio ?? ''}` : 'Hacer un presupuesto'}
+        </button>
+
+        {!enLinea && lineas.length > 0 && (
+          <p className="text-xs text-piedra-500">
+            Sin conexión se puede vender y cobrar, pero no armar presupuestos.
+          </p>
+        )}
 
         {lineas.length > 0 && (
           <button
