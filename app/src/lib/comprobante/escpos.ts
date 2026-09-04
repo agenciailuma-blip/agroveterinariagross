@@ -24,7 +24,12 @@ const ANCHO = 48
 const ESC = 0x1b
 const GS = 0x1d
 
-class Cinta {
+/*
+  La cinta de bytes. Se exporta para que el ticket no fiscal la use sin
+  volver a escribirla: lo que comparten es la forma de hablarle a la
+  impresora, no los datos que le mandan.
+*/
+export class Cinta {
   private partes: number[] = []
   private codificador = new TextEncoder()
 

@@ -62,7 +62,7 @@ export interface ComprobanteCompleto {
 }
 
 /** Datos del emisor que van en el encabezado. Vienen de configuración. */
-async function datosEmisor(): Promise<Record<string, string>> {
+export async function datosEmisor(): Promise<Record<string, string>> {
   const { data } = await supabase
     .from('configuracion')
     .select('clave, valor')

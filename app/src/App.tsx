@@ -16,6 +16,7 @@ import Usuarios from '@/pages/Usuarios'
 import Configuracion from '@/pages/Configuracion'
 import Facturacion from '@/pages/Facturacion'
 import ComprobanteImprimible from '@/pages/ComprobanteImprimible'
+import NoFiscalImprimible from '@/pages/NoFiscalImprimible'
 
 /*
   networkMode: 'always' es lo más importante de esta configuración.
@@ -119,6 +120,7 @@ function Rutas() {
         tiene que salir con el menú lateral pegado al costado.
       */}
       <Route path="comprobante/:id" element={<ComprobanteImprimible />} />
+      <Route path="no-fiscal/:id" element={<NoFiscalImprimible />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

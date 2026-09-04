@@ -32,16 +32,13 @@ export const enEscritorio =
   En las dos, lo importante es lo mismo: el cajero no pierde de vista la
   cola mientras entrega el comprobante.
 */
-export async function abrirComprobante(comprobanteId: string): Promise<void> {
-  const ruta = `/comprobante/${comprobanteId}`
-
+async function abrirDocumento(ruta: string, etiqueta: string, titulo: string): Promise<void> {
   if (!enEscritorio) {
     window.open(ruta, '_blank', 'noreferrer')
     return
   }
 
   const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow')
-  const etiqueta = `comprobante-${comprobanteId}`
 
   // Si ya estaba abierta, se la trae al frente. Volver a crearla con la
   // misma etiqueta falla, y el cajero vería que el botón dejó de andar
@@ -54,11 +51,29 @@ export async function abrirComprobante(comprobanteId: string): Promise<void> {
 
   new WebviewWindow(etiqueta, {
     url: ruta,
-    title: 'Comprobante',
+    title: titulo,
     width: 900,
     height: 1000,
     center: true,
   })
+}
+
+export function abrirComprobante(comprobanteId: string): Promise<void> {
+  return abrirDocumento(
+    `/comprobante/${comprobanteId}`,
+    `comprobante-${comprobanteId}`,
+    'Comprobante',
+  )
+}
+
+/*
+  El presupuesto, el remito o el comprobante interno.
+
+  Va por el mismo camino y con etiqueta propia: si compartieran etiqueta,
+  abrir un remito traería al frente la factura que ya estaba abierta.
+*/
+export function abrirNoFiscal(id: string): Promise<void> {
+  return abrirDocumento(`/no-fiscal/${id}`, `no-fiscal-${id}`, 'Comprobante no fiscal')
 }
 
 /*

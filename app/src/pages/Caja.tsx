@@ -27,7 +27,7 @@ import {
   noFiscalesDeVenta,
   numeroNoFiscal,
 } from '@/lib/api/noFiscal'
-import { abrirComprobante } from '@/lib/escritorio'
+import { abrirComprobante, abrirNoFiscal } from '@/lib/escritorio'
 import { moneda, numero } from '@/lib/tipos'
 
 export default function Caja() {
@@ -52,7 +52,9 @@ export default function Caja() {
     inercia.
   */
   const [documentacion, setDocumentacion] = useState<'fiscal' | 'no_fiscal'>('fiscal')
-  const [noFiscalEmitido, setNoFiscalEmitido] = useState<string | null>(null)
+  const [noFiscalEmitido, setNoFiscalEmitido] = useState<{ texto: string; id: string } | null>(
+    null,
+  )
   const [listoParaImprimir, setListoParaImprimir] = useState<{
     codigo: string
     cae: string
@@ -168,7 +170,7 @@ export default function Caja() {
           codigo,
           cae: null,
           comprobanteId: null,
-          noFiscal: null as string | null,
+          noFiscal: null as { id: string; numero: string } | null,
           problema:
             'la venta quedó guardada en esta computadora y se va a facturar sola cuando vuelva la conexión.',
         }
@@ -176,14 +178,21 @@ export default function Caja() {
 
       if (sinFactura) {
         try {
-          await emitirNoFiscal(seleccionada!, 'comprobante_interno', terminal?.id ?? null)
+          const noFiscalId = await emitirNoFiscal(
+            seleccionada!,
+            'comprobante_interno',
+            terminal?.id ?? null,
+          )
           const [emitido] = await noFiscalesDeVenta(seleccionada!)
           return {
             codigo,
             cae: null,
             comprobanteId: null,
             noFiscal: emitido
-              ? numeroNoFiscal(emitido.tipo_clave, emitido.serie, emitido.numero)
+              ? {
+                  id: noFiscalId,
+                  numero: numeroNoFiscal(emitido.tipo_clave, emitido.serie, emitido.numero),
+                }
               : null,
             problema: null as string | null,
           }
@@ -218,9 +227,12 @@ export default function Caja() {
       if (problema) {
         setFacturaPendiente(`Venta ${codigo} cobrada, pero la factura quedó pendiente: ${problema}`)
       } else if (noFiscal) {
-        // Sin CAE y sin pantalla de impresión todavía: lo que el cajero
-        // necesita ahora es el número, para poder nombrarlo.
-        setNoFiscalEmitido(`Venta ${codigo} cobrada sin factura. Comprobante interno ${noFiscal}.`)
+        // Igual que con la factura: el papel queda a un clic, no
+        // escondido en otra pantalla. El cliente está parado adelante.
+        setNoFiscalEmitido({
+          id: noFiscal.id,
+          texto: `Venta ${codigo} cobrada sin factura. Comprobante interno ${noFiscal.numero}.`,
+        })
       } else {
         /*
           El comprobante queda a un clic, no escondido en otra pantalla.
@@ -415,11 +427,17 @@ export default function Caja() {
         {noFiscalEmitido && (
           <div className="mb-3 flex items-start gap-3 rounded-xl bg-piedra-50 px-4 py-3 ring-1 ring-borde">
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-tinta">{noFiscalEmitido}</p>
+              <p className="text-sm font-medium text-tinta">{noFiscalEmitido.texto}</p>
               <p className="text-xs text-piedra-500">
                 No es una factura y no tiene CAE. Queda registrado con tu nombre.
               </p>
             </div>
+            <button
+              onClick={() => abrirNoFiscal(noFiscalEmitido.id)}
+              className="shrink-0 rounded-lg bg-tinta px-3 py-2 text-sm font-medium text-white hover:bg-tinta/90"
+            >
+              Imprimir
+            </button>
             <button
               onClick={() => setNoFiscalEmitido(null)}
               className="rounded p-1 text-piedra-500 hover:bg-piedra-100"
