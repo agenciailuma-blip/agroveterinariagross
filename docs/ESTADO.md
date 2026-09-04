@@ -42,7 +42,8 @@
 - 🔴 El **certificado de producción de ARCA**.
 - 🟡 Qué es un **"comprobante de percepción"** para Lucas (punto 9 de sus sugerencias).
 - 🟡 **Probar la impresora del mostrador** y las 4 PC en el local, con el programa instalado. Guion listo en [`instalacion-en-el-local.md`](instalacion-en-el-local.md).
-- 🔴 **El modelo exacto de la Hasar y su IP.** Es lo único de la instalación que puede no ser un ajuste sino un rediseño: si resulta ser un controlador fiscal en vez de una impresora de tickets, el protocolo es otro. El texto para pedírselo está en el guion.
+- ✅ **El modelo de la Hasar, resuelto el 04/09.** Lucas mandó la foto de la etiqueta: `P-HAS-181-STD-3I-N`, **IMPRESOR TERMICO** (no controlador fiscal) con USB/RS232/Ethernet. **ESC/POS es el protocolo correcto y lo construido sirve tal cual** — el riesgo de rediseño quedó descartado.
+- 🔴 **Falta confirmar que la impresora esté EN la red, y su IP.** Tener puerto Ethernet no es estar conectada: en la foto se ve un solo cable. Si está por USB, el programa no la alcanza —abre una conexión de red, no habla USB— y hay que pasarla a la red antes de la sesión. Texto para pedírselo en el guion.
 
 **Sin verificar todavía:** el ingreso real contra Supabase desde adentro del **programa instalado**, y la impresión con la **Hasar delante**.
 

@@ -10,20 +10,29 @@
 
 Estas dos van por WhatsApp con días de anticipación. **Ninguna se resuelve con él esperando del otro lado.**
 
-### 🔴 La impresora — es el único riesgo que no es un bug
+### ✅ La impresora — resuelto el 04/09 con la foto de la etiqueta
 
-El sistema le manda el ticket a la impresora **por la red**, hablándole en ESC/POS. Eso funciona si la Hasar es una impresora de tickets. Si resultara ser un **controlador fiscal**, el protocolo es otro y no es un ajuste: es rehacer la impresión.
+**`P-HAS-181-STD-3I-N` · HASAR IMPRESOR TERMICO · USB/RS232/E…**
 
-Lo que hay que pedirle, tal cual:
+Lo que dice la etiqueta y por qué importa:
 
-> Lucas, para dejar lista la impresión necesito dos datos de la impresora del mostrador:
+- **"IMPRESOR TERMICO"**, no "impresor fiscal". Es una impresora de tickets, así que **ESC/POS es el protocolo correcto y el circuito construido sirve tal cual**. Era el único riesgo de la instalación que podía ser un rediseño, y quedó descartado.
+- **`-3I-`** son tres interfaces: USB, RS232 y una tercera que empieza con "E" —cortada en la foto— casi con seguridad **Ethernet**. Tiene puerto de red.
+
+### 🔴 Lo que queda por confirmar: que esté EN la red
+
+Tener puerto de red no es lo mismo que estar conectada a la red. En la foto se ve **un solo cable**. Si hoy está por USB a una PC, el sistema no la alcanza: el programa abre una **conexión de red**, no habla por USB.
+
+Lo que hay que pedirle a Lucas, tal cual:
+
+> Lucas, la impresora es la correcta, no hace falta cambiar nada. Me quedan dos cosas:
 >
-> 1. **El modelo exacto**, como figura en la etiqueta de atrás o abajo del aparato. Una foto de la etiqueta me sirve.
-> 2. **Si está conectada a la red** (cable de red o wifi) o si va por USB a una sola PC. Si está en la red, necesito la **dirección IP** que tiene.
+> 1. **¿Está conectada con un cable de red** (el mismo tipo que va al módem) **o por USB a una computadora?**
+> 2. Si está en la red, necesito su **dirección IP**.
 >
-> Si no sabés dónde ver la IP, muchas imprimen una hoja de prueba con los datos si se las apaga y se las prende manteniendo apretado el botón de avance de papel.
+> Para saber la IP: apagala, y prendela manteniendo apretado el botón de avance de papel. Suele imprimir una hoja con la configuración, y ahí figura. Mandame una foto de esa hoja.
 
-**Por qué importa:** con eso sabemos antes de conectarnos si el circuito de impresión que está construido sirve tal cual, o si hay trabajo por delante.
+**Si está por USB:** hay que pasarla a la red (cable al router o al switch del local) y darle una IP. Es trabajo de conexión, no de programación — pero conviene resolverlo **antes** de la sesión, porque puede necesitar a alguien que toque el router.
 
 ### 🟡 Cuántas PC y cuál es la caja
 
@@ -88,7 +97,9 @@ Si el diagnóstico dijo que falta: **Ventas** → elegir cuál es esta máquina.
 
 ✅ **Sale bien si:** sale un papel que dice "Si estás leyendo esto, la impresora está bien configurada".
 
-❌ **Si no sale nada:** la impresora no está en esa dirección o no habla ESC/POS por ese puerto. Ahí entra lo que se averiguó en el punto 1.
+❌ **Si no sale nada:** o la impresora no está en esa dirección, o no está en la red, o no escucha en ese puerto. Ver el punto 1: el modelo es el correcto, así que casi siempre es lo primero o lo segundo.
+
+> El puerto 9100 es el habitual para imprimir por red. Si la hoja de configuración de la impresora menciona otro, se usa ese.
 
 ### Paso 6 · Una venta de punta a punta
 
