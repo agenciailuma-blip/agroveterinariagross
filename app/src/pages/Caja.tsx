@@ -749,69 +749,79 @@ function PanelCobro({
           </div>
           <p className="text-xs text-piedra-400">vendió {venta.vendedor?.nombre}</p>
         </div>
-        <table className="w-full text-sm">
-          <tbody className="divide-y divide-piedra-100">
-            {venta.venta_linea.map((l) => (
-              <tr key={l.id}>
-                <td className="px-5 py-2">
+        {/*
+          Dos renglones por producto, no una fila de tabla.
+
+          Una tabla con columnas fijas necesita un ancho que la caja no
+          siempre tiene: el panel de cobro es angosto, y con los botones
+          de cantidad sumados los importes se montaban unos sobre otros
+          y el botón de quitar quedaba fuera de la pantalla.
+
+          Así la descripción se lleva el ancho que necesite y los números
+          quedan alineados a la derecha, entre en la pantalla que entre.
+        */}
+        <ul className="divide-y divide-piedra-100 text-sm">
+          {venta.venta_linea.map((l) => (
+            <li key={l.id} className="px-5 py-2.5">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
                   <p className="text-tinta">{l.descripcion}</p>
                   {l.motivo_modificacion && (
                     <p className="text-xs text-marca-700">
                       Precio modificado: {l.motivo_modificacion}
                     </p>
                   )}
-                </td>
-                <td className="w-28 py-2 text-center">
-                  {puedeEditar ? (
-                    <div className="flex items-center justify-center gap-1">
-                      <BotonCantidad
-                        etiqueta={`Quitar uno de ${l.descripcion}`}
-                        onClick={() => onCantidad(l.id, l.cantidad - 1)}
-                        disabled={editando}
-                      >
-                        −
-                      </BotonCantidad>
-                      <span className="w-8 tabular-nums text-tinta">
-                        {numero.format(l.cantidad)}
-                      </span>
-                      <BotonCantidad
-                        etiqueta={`Agregar uno de ${l.descripcion}`}
-                        onClick={() => onCantidad(l.id, l.cantidad + 1)}
-                        disabled={editando}
-                      >
-                        +
-                      </BotonCantidad>
-                    </div>
-                  ) : (
-                    <span className="tabular-nums text-piedra-500">
-                      ×{numero.format(l.cantidad)}
-                    </span>
-                  )}
-                </td>
-                <td className="w-32 py-2 text-right tabular-nums text-piedra-500">
-                  {moneda.format(l.precio_unitario)}
-                </td>
-                <td className="w-32 py-2 text-right font-medium tabular-nums text-tinta">
-                  {moneda.format(l.cantidad * l.precio_unitario)}
-                </td>
-                <td className="w-10 px-5 py-2 text-right">
-                  {puedeEditar && venta.venta_linea.length > 1 && (
-                    <button
-                      onClick={() => onQuitar(l.id)}
-                      disabled={editando}
-                      aria-label={`Sacar ${l.descripcion} de la venta`}
-                      className="rounded p-1 text-piedra-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-40"
+                </div>
+                {puedeEditar && venta.venta_linea.length > 1 && (
+                  <button
+                    onClick={() => onQuitar(l.id)}
+                    disabled={editando}
+                    aria-label={`Sacar ${l.descripcion} de la venta`}
+                    className="shrink-0 rounded p-1 text-piedra-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-40"
+                  >
+                    <svg className="size-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+
+              <div className="mt-1 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                {puedeEditar ? (
+                  <div className="flex items-center gap-1">
+                    <BotonCantidad
+                      etiqueta={`Quitar uno de ${l.descripcion}`}
+                      onClick={() => onCantidad(l.id, l.cantidad - 1)}
+                      disabled={editando || l.cantidad <= 1}
                     >
-                      <svg className="size-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                      −
+                    </BotonCantidad>
+                    <span className="w-8 text-center tabular-nums text-tinta">
+                      {numero.format(l.cantidad)}
+                    </span>
+                    <BotonCantidad
+                      etiqueta={`Agregar uno de ${l.descripcion}`}
+                      onClick={() => onCantidad(l.id, l.cantidad + 1)}
+                      disabled={editando}
+                    >
+                      +
+                    </BotonCantidad>
+                    <span className="ml-1 whitespace-nowrap text-piedra-500">
+                      × {moneda.format(l.precio_unitario)}
+                    </span>
+                  </div>
+                ) : (
+                  <span className="whitespace-nowrap tabular-nums text-piedra-500">
+                    {numero.format(l.cantidad)} × {moneda.format(l.precio_unitario)}
+                  </span>
+                )}
+                <span className="ml-auto whitespace-nowrap font-medium tabular-nums text-tinta">
+                  {moneda.format(l.cantidad * l.precio_unitario)}
+                </span>
+              </div>
+            </li>
+          ))}
+        </ul>
 
         {/*
           Agregar acá y no mandarlo de vuelta al mostrador.

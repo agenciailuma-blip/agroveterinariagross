@@ -80,7 +80,9 @@ Queda en `http://localhost:5173`. Mientras esa consola esté abierta, el sistema
 
 **Cuentas:** todo bajo `lucasgross.cuentas@gmail.com` (Supabase y Cloudflare). El repo está en `agenciailuma-blip/agroveterinariagross` — **pendiente transferirlo a Gross al cerrar V1**.
 
-**Usuario de prueba:** `agencia.iluma@gmail.com`. PINs sembrados: Francisco `1111`, Marcela `2222`, Diego `3333`, Silvina (cajera) `4444`.
+**Usuario de prueba:** `agencia.iluma@gmail.com`.
+
+**PINs de operador.** Los sembrados son los de los usuarios DEMO: Marcela `2222`, Diego `3333`, Silvina (cajera) `4444`. ⚠️ **Francisco y Lucas son usuarios reales, agregados después, y tienen PIN propio** — el `1111` que decía acá antes no funciona. Verificado el 04/09 recorriendo la caja.
 
 ---
 
