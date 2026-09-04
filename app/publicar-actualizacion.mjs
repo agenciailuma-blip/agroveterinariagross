@@ -139,6 +139,18 @@ execFileSync('npm', ['run', 'build'], { cwd: aqui, stdio: 'inherit', shell: true
 rmSync(DESTINO, { recursive: true, force: true })
 mkdirSync(DESTINO, { recursive: true })
 
+/*
+  El paso anterior corrió `npm run build`, y su verificación dejó adentro
+  de dist un NO-SUBIR-ESTA-CARPETA.txt: en ese momento tenía razón, la
+  carpeta de actualizaciones todavía no existía. Ahora sí, así que la
+  marca sobra y se saca.
+
+  Si quedara, el aviso diría lo contrario de la verdad, y un aviso que
+  miente es peor que no tenerlo: la próxima vez que aparezca de verdad,
+  nadie le va a creer.
+*/
+rmSync(join(DIST, 'NO-SUBIR-ESTA-CARPETA.txt'), { force: true })
+
 // Sin espacios en el nombre: viaja por una dirección web y un espacio
 // ahí se convierte en %20, que es una fuente de errores tonta y difícil
 // de ver.
