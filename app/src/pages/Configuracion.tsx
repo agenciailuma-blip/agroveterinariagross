@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/auth/AuthProvider'
+import DiagnosticoTerminal from '@/components/DiagnosticoTerminal'
 import DatosDelEmisor from '@/components/DatosDelEmisor'
 import ImpresoraDelMostrador from '@/components/ImpresoraDelMostrador'
 import {
@@ -150,6 +151,8 @@ export default function Configuracion() {
           )}
         </div>
       </div>
+
+      <DiagnosticoTerminal />
 
       <DatosDelEmisor />
 

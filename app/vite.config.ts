@@ -4,6 +4,18 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import { fileURLToPath, URL } from 'node:url'
+import { readFileSync } from 'node:fs'
+
+/*
+  La versión sale de tauri.conf.json, que es la única que importa: es la
+  que compara el actualizador para decidir si hay algo nuevo. Tenerla
+  también adentro de la interfaz permite que el diagnóstico de la
+  terminal diga qué versión está instalada, que es la primera pregunta
+  de cualquier soporte a distancia.
+*/
+const version = JSON.parse(
+  readFileSync(fileURLToPath(new URL('./src-tauri/tauri.conf.json', import.meta.url)), 'utf8'),
+).version as string
 
 /*
   El programa instalado y la página web son la misma aplicación, pero no
@@ -21,6 +33,7 @@ import { fileURLToPath, URL } from 'node:url'
 const enTauri = !!process.env.TAURI_ENV_PLATFORM
 
 export default defineConfig({
+  define: { __VERSION__: JSON.stringify(version) },
   plugins: [
     react(),
     tailwindcss(),

@@ -41,7 +41,8 @@
 - 🔴 El **alta del punto de venta CAEA**: el estudio contable se ofreció a hacerlo, falta que Lucas lo autorice. Cuando esté, hace falta el **número** del punto de venta.
 - 🔴 El **certificado de producción de ARCA**.
 - 🟡 Qué es un **"comprobante de percepción"** para Lucas (punto 9 de sus sugerencias).
-- 🟡 **Probar la impresora del mostrador** y las 4 PC en el local, con el programa instalado.
+- 🟡 **Probar la impresora del mostrador** y las 4 PC en el local, con el programa instalado. Guion listo en [`instalacion-en-el-local.md`](instalacion-en-el-local.md).
+- 🔴 **El modelo exacto de la Hasar y su IP.** Es lo único de la instalación que puede no ser un ajuste sino un rediseño: si resulta ser un controlador fiscal en vez de una impresora de tickets, el protocolo es otro. El texto para pedírselo está en el guion.
 
 **Sin verificar todavía:** el ingreso real contra Supabase desde adentro del **programa instalado**, y la impresión con la **Hasar delante**.
 
@@ -702,4 +703,5 @@ Tres cosas que conviene tener presentes:
 | [`mensajes-lucas-2026-08-10.md`](mensajes-lucas-2026-08-10.md) | Mensajes redactados para el cliente |
 | [`mensajes-lucas-2026-08-21.md`](mensajes-lucas-2026-08-21.md) | Pedido de la alícuota de IVA por producto y confirmación del mínimo de percepción |
 | [`demostracion-lucas.md`](demostracion-lucas.md) | Guion de la demostración, cómo subirlo a Cloudflare y qué pedirle a Lucas |
+| [`instalacion-en-el-local.md`](instalacion-en-el-local.md) | **Guion de la instalación en las 4 PC**: qué preguntarle a Lucas antes, el orden exacto de la sesión, y qué hacer cuando algo falla |
 | [`marca/`](marca/) | Kit de identidad: logos, patterns, tipografía, colores |
