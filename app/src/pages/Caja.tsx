@@ -305,14 +305,29 @@ export default function Caja() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ventaId, previsto, medios.length])
 
-  if (cargandoTerminal || caja.isPending) return <p className="text-sm text-piedra-500">Cargando…</p>
+  if (cargandoTerminal) return <p className="text-sm text-piedra-500">Cargando…</p>
 
+  /*
+    Esto va ANTES de mirar si la caja está cargando, y el orden importa.
+
+    La consulta de la caja está deshabilitada mientras no haya terminal
+    (`enabled: !!terminal`), y una consulta deshabilitada de React Query
+    informa `isPending: true` para siempre — no está cargando, es que
+    nunca va a arrancar. Preguntando primero por `caja.isPending`, esta
+    pantalla se quedaba en "Cargando…" eternamente en una máquina sin
+    terminal, y el mensaje de abajo no se mostraba nunca.
+
+    Es el peor final posible para el aviso: la máquina no está rota y hay
+    una sola cosa que hacer para arreglarla, pero la pantalla no la dice.
+  */
   if (!terminal)
     return (
       <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800 ring-1 ring-amber-200">
         Esta máquina todavía no tiene terminal asignada. Entrá a Ventas para elegirla.
       </p>
     )
+
+  if (caja.isPending) return <p className="text-sm text-piedra-500">Cargando…</p>
 
   if (terminal.tipo !== 'caja')
     return (

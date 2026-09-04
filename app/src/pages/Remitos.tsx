@@ -101,7 +101,7 @@ export default function Remitos() {
                 key={r.id}
                 className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-white/70 px-3 py-2 text-sm"
               >
-                <span className="font-medium text-tinta">
+                <span className="whitespace-nowrap font-medium text-tinta">
                   {numeroNoFiscal('remito', r.serie, r.numero)}
                 </span>
                 <span className="text-piedra-600">{r.receptor_nombre}</span>
@@ -110,11 +110,11 @@ export default function Remitos() {
                 </span>
                 <span className="tabular-nums text-piedra-600">{moneda.format(r.total)}</span>
                 <span
-                  className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                  className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ${
                     r.dias >= 7 ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-900'
                   }`}
                 >
-                  hace {r.dias} {r.dias === 1 ? 'día' : 'días'}
+                  {r.dias === 0 ? 'hoy' : `hace ${r.dias} ${r.dias === 1 ? 'día' : 'días'}`}
                 </span>
                 <button
                   onClick={() => abrirNoFiscal(r.id)}
@@ -154,10 +154,10 @@ export default function Remitos() {
               <tbody>
                 {remitos.data!.map((r) => (
                   <tr key={r.id} className="border-b border-piedra-100 last:border-0">
-                    <td className="px-3 py-2 font-medium tabular-nums text-tinta">
+                    <td className="whitespace-nowrap px-3 py-2 font-medium tabular-nums text-tinta">
                       {numeroNoFiscal('remito', r.serie, r.numero)}
                     </td>
-                    <td className="px-3 py-2 tabular-nums text-piedra-600">
+                    <td className="whitespace-nowrap px-3 py-2 tabular-nums text-piedra-600">
                       {new Date(`${r.fecha}T00:00:00`).toLocaleDateString('es-AR')}
                     </td>
                     <td className="px-3 py-2 text-piedra-700">{r.receptor_nombre}</td>
@@ -166,7 +166,7 @@ export default function Remitos() {
                     <td className="px-3 py-2 text-right tabular-nums text-piedra-700">
                       {r.total > 0 ? moneda.format(r.total) : '—'}
                     </td>
-                    <td className="px-3 py-2 text-xs text-piedra-500">
+                    <td className="whitespace-nowrap px-3 py-2 text-xs text-piedra-500">
                       {r.venta_codigo ?? '—'}
                       {r.venta_estado && r.venta_estado !== 'cobrada' && (
                         <span className="ml-1 rounded bg-amber-100 px-1.5 py-0.5 text-amber-900">
