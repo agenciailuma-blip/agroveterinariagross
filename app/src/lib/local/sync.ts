@@ -287,12 +287,28 @@ export async function encolar(
   operaciones: Omit<OperacionPendiente, 'id' | 'lote' | 'orden' | 'creado_en' | 'intentos' | 'ultimo_error' | 'estado'>[],
 ) {
   const ahora = new Date().toISOString()
+
+  /*
+    El orden sigue donde quedó el lote, no vuelve a cero.
+
+    Un lote puede llenarse en varias tandas: la caja corrige la venta, y
+    después la cobra. Si cada llamada empezara a numerar de cero, las dos
+    tandas tendrían un `orden` 0 y el orden de subida dependería de que
+    `sort` sea estable y de que la consulta viniera ordenada por fecha.
+    Funciona hoy, pero por dos casualidades encadenadas.
+
+    Y el orden acá no es un detalle: subir el cobro antes que la
+    corrección haría que el servidor cobre la venta vieja.
+  */
+  const previas = await db.outbox.where('lote').equals(lote).toArray()
+  const desde = previas.length ? Math.max(...previas.map((o) => o.orden)) + 1 : 0
+
   await db.outbox.bulkAdd(
     operaciones.map((op, i) => ({
       ...op,
       id: crypto.randomUUID(),
       lote,
-      orden: i,
+      orden: desde + i,
       creado_en: ahora,
       intentos: 0,
       ultimo_error: null,

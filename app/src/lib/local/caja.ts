@@ -350,3 +350,91 @@ async function aplicarEfectoLocal(
     })
   }
 }
+
+export interface LineaDeseada {
+  /** La línea que ya existía. Nulo si es un producto que se agrega. */
+  venta_linea_id: string | null
+  producto_id: string | null
+  cantidad: number
+}
+
+/*
+  Deja la venta con las líneas indicadas, en la copia local.
+
+  Réplica de editar_venta_en_caja(). Igual que allá, se declara el
+  resultado y no los cambios: es lo que hace que reintentar la operación
+  desde la bandeja de salida sea inofensivo.
+
+  Y por la misma razón que en el servidor, acá tampoco se toca el precio
+  acordado. De una línea que ya existía sólo cambia la cantidad; el
+  precio de una nueva se calcula igual que lo haría el servidor, desde
+  el precio del producto y el ajuste de la lista que la venta tiene.
+*/
+export async function editarVentaLocal(
+  ventaId: string,
+  deseadas: LineaDeseada[],
+): Promise<number> {
+  const venta = await db.venta.get(ventaId)
+  if (!venta) throw new Error('La venta no está en esta computadora.')
+  if (!['borrador', 'en_caja'].includes(venta.estado)) {
+    throw new Error(`La venta está ${venta.estado} y ya no se puede corregir.`)
+  }
+  if (!deseadas.length) {
+    throw new Error('La venta tiene que quedar con al menos un producto. Si no va nada, anulala.')
+  }
+
+  let ajuste = 0
+  if (venta.lista_precio_id) {
+    const lista = await db.lista_precio.get(venta.lista_precio_id)
+    ajuste = Number(lista?.ajuste_porcentaje ?? 0)
+  }
+
+  const actuales = await db.venta_linea.where('venta_id').equals(ventaId).toArray()
+  const porId = new Map(actuales.map((l) => [l.id, l]))
+  const ahora = new Date().toISOString()
+  const quedan: VentaLineaLocal[] = []
+
+  let orden = 0
+  for (const d of deseadas) {
+    orden += 1
+    if (d.cantidad <= 0) {
+      throw new Error('Una cantidad tiene que ser mayor que cero. Para sacar el producto, quitalo.')
+    }
+
+    if (d.venta_linea_id) {
+      const linea = porId.get(d.venta_linea_id)
+      if (!linea) throw new Error('Una de las líneas no pertenece a esta venta.')
+      quedan.push({ ...linea, cantidad: d.cantidad, orden, actualizado_en: ahora })
+      continue
+    }
+
+    const p = d.producto_id ? await db.producto.get(d.producto_id) : undefined
+    if (!p) throw new Error('Ese producto no está en esta computadora.')
+
+    const base = Number(p.precio_venta)
+    quedan.push({
+      id: crypto.randomUUID(),
+      venta_id: ventaId,
+      orden,
+      producto_id: p.id,
+      codigo_producto: p.codigo,
+      descripcion: p.nombre_interno,
+      cantidad: d.cantidad,
+      precio_original: base,
+      precio_acordado: base,
+      precio_unitario: Math.round(base * (1 + ajuste / 100) * 100) / 100,
+      motivo_modificacion: null,
+      alicuota_iva_id: p.alicuota_iva_id,
+      condicion_iva: p.condicion_iva,
+      actualizado_en: ahora,
+    })
+  }
+
+  const sacadas = actuales.filter((l) => !quedan.some((q) => q.id === l.id)).map((l) => l.id)
+  if (sacadas.length) await db.venta_linea.bulkDelete(sacadas)
+  await db.venta_linea.bulkPut(quedan)
+
+  const total = totalDeLineas(quedan)
+  await db.venta.update(ventaId, { total })
+  return total
+}

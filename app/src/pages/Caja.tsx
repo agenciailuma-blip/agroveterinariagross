@@ -12,12 +12,16 @@ import {
   cajaAbierta,
   cerrarCaja,
   cobrar,
+  editarVentaEnCaja,
   listarVentasEnCola,
   obtenerVentaCompleta,
   resumenCaja,
   saldoCuentaCorriente,
 } from '@/lib/api/caja'
 import type { PagoNuevo, VentaCompleta } from '@/lib/api/caja'
+import type { LineaDeseada } from '@/lib/local/caja'
+import { buscarProductosVenta } from '@/lib/api/ventas'
+import type { ProductoVenta } from '@/lib/api/ventas'
 import { cargarPrecios } from '@/lib/api/precios'
 import type { MedioPago } from '@/lib/api/precios'
 import { facturarVenta } from '@/lib/api/facturacion'
@@ -61,6 +65,7 @@ export default function Caja() {
     comprobanteId: string | null
   } | null>(null)
   const [cerrando, setCerrando] = useState(false)
+  const [errorEdicion, setErrorEdicion] = useState<string | null>(null)
 
   const caja = useQuery({
     queryKey: ['caja', terminal?.id],
@@ -127,6 +132,36 @@ export default function Caja() {
     },
     onError: (e) => setError(e instanceof Error ? e.message : 'No se pudo ajustar.'),
   })
+
+  /*
+    Corregir la venta con el cliente adelante.
+
+    Se manda la venta entera como tiene que quedar, no el cambio: es lo
+    que hace que reintentarla desde la bandeja de salida sea inofensiva.
+    Los pagos se limpian porque el total cambió, y cobrar con el importe
+    viejo es justamente lo que el servidor va a rechazar.
+  */
+  const editar = useMutation({
+    mutationFn: (lineas: LineaDeseada[]) =>
+      editarVentaEnCaja(seleccionada!, lineas, operador!.usuario_id, terminal?.id ?? null),
+    onSuccess: () => {
+      setPagos([])
+      setMedioPrincipal(null)
+      setCuotas(1)
+      setErrorEdicion(null)
+      qc.invalidateQueries({ queryKey: ['venta', seleccionada] })
+      qc.invalidateQueries({ queryKey: ['cola-caja'] })
+    },
+    onError: (e) =>
+      setErrorEdicion(e instanceof Error ? e.message : 'No se pudo corregir la venta.'),
+  })
+
+  /** Las líneas de ahora, con un cambio aplicado encima. */
+  function lineasCon(cambio: (l: VentaCompleta['venta_linea'][number]) => LineaDeseada | null) {
+    return (venta.data?.venta_linea ?? [])
+      .map(cambio)
+      .filter((l): l is LineaDeseada => l !== null)
+  }
 
   const totalVenta = venta.data?.total ?? 0
   const totalPagos = pagos.reduce((s, p) => s + p.importe, 0)
@@ -514,6 +549,38 @@ export default function Caja() {
             onDocumentacion={setDocumentacion}
             puedeVenderSinFactura={tienePermiso('facturacion.vender_sin_factura')}
             enLinea={enLinea}
+            puedeEditar={tienePermiso('ventas.editar_en_caja')}
+            editando={editar.isPending}
+            errorEdicion={errorEdicion}
+            onCantidad={(lineaId, cantidad) => {
+              if (cantidad < 1) return
+              editar.mutate(
+                lineasCon((l) => ({
+                  venta_linea_id: l.id,
+                  producto_id: null,
+                  cantidad: l.id === lineaId ? cantidad : l.cantidad,
+                })),
+              )
+            }}
+            onQuitar={(lineaId) =>
+              editar.mutate(
+                lineasCon((l) =>
+                  l.id === lineaId
+                    ? null
+                    : { venta_linea_id: l.id, producto_id: null, cantidad: l.cantidad },
+                ),
+              )
+            }
+            onAgregar={(productoId) =>
+              editar.mutate([
+                ...lineasCon((l) => ({
+                  venta_linea_id: l.id,
+                  producto_id: null,
+                  cantidad: l.cantidad,
+                })),
+                { venta_linea_id: null, producto_id: productoId, cantidad: 1 },
+              ])
+            }
             error={error}
             onElegirMedio={elegirMedio}
             onAjustar={(nuevo, motivo) => ajustar.mutate({ nuevo, motivo })}
@@ -608,6 +675,12 @@ function PanelCobro({
   onDocumentacion,
   puedeVenderSinFactura,
   enLinea,
+  puedeEditar,
+  editando,
+  errorEdicion,
+  onCantidad,
+  onQuitar,
+  onAgregar,
   error,
   onElegirMedio,
   onAjustar,
@@ -630,12 +703,20 @@ function PanelCobro({
   onDocumentacion: (d: 'fiscal' | 'no_fiscal') => void
   puedeVenderSinFactura: boolean
   enLinea: boolean
+  puedeEditar: boolean
+  editando: boolean
+  errorEdicion: string | null
+  onCantidad: (lineaId: string, cantidad: number) => void
+  onQuitar: (lineaId: string) => void
+  onAgregar: (productoId: string) => void
   error: string | null
   onElegirMedio: (m: MedioPago, cuotas?: number) => void
   onAjustar: (nuevoTotal: number, motivo: string) => void
   onCobrar: () => void
   onCancelar: () => void
 }) {
+  const [agregando, setAgregando] = useState(false)
+
   const usables = medios.filter(
     (m) => m.tipo !== 'cuenta_corriente' || venta.cliente?.cuenta_corriente,
   )
@@ -680,19 +761,91 @@ function PanelCobro({
                     </p>
                   )}
                 </td>
-                <td className="w-20 py-2 text-center tabular-nums text-piedra-500">
-                  ×{numero.format(l.cantidad)}
+                <td className="w-28 py-2 text-center">
+                  {puedeEditar ? (
+                    <div className="flex items-center justify-center gap-1">
+                      <BotonCantidad
+                        etiqueta={`Quitar uno de ${l.descripcion}`}
+                        onClick={() => onCantidad(l.id, l.cantidad - 1)}
+                        disabled={editando}
+                      >
+                        −
+                      </BotonCantidad>
+                      <span className="w-8 tabular-nums text-tinta">
+                        {numero.format(l.cantidad)}
+                      </span>
+                      <BotonCantidad
+                        etiqueta={`Agregar uno de ${l.descripcion}`}
+                        onClick={() => onCantidad(l.id, l.cantidad + 1)}
+                        disabled={editando}
+                      >
+                        +
+                      </BotonCantidad>
+                    </div>
+                  ) : (
+                    <span className="tabular-nums text-piedra-500">
+                      ×{numero.format(l.cantidad)}
+                    </span>
+                  )}
                 </td>
                 <td className="w-32 py-2 text-right tabular-nums text-piedra-500">
                   {moneda.format(l.precio_unitario)}
                 </td>
-                <td className="w-32 px-5 py-2 text-right font-medium tabular-nums text-tinta">
+                <td className="w-32 py-2 text-right font-medium tabular-nums text-tinta">
                   {moneda.format(l.cantidad * l.precio_unitario)}
+                </td>
+                <td className="w-10 px-5 py-2 text-right">
+                  {puedeEditar && venta.venta_linea.length > 1 && (
+                    <button
+                      onClick={() => onQuitar(l.id)}
+                      disabled={editando}
+                      aria-label={`Sacar ${l.descripcion} de la venta`}
+                      className="rounded p-1 text-piedra-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-40"
+                    >
+                      <svg className="size-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+
+        {/*
+          Agregar acá y no mandarlo de vuelta al mostrador.
+
+          "Ponele también una bolsa de alimento" pasa todo el tiempo, y
+          la alternativa —que el cajero arme una segunda venta por un
+          chicle— deja dos comprobantes para una sola compra.
+        */}
+        {puedeEditar && (
+          <div className="border-t border-piedra-100 px-5 py-3">
+            {agregando ? (
+              <BuscadorParaAgregar
+                onElegir={(productoId) => {
+                  setAgregando(false)
+                  onAgregar(productoId)
+                }}
+                onCancelar={() => setAgregando(false)}
+              />
+            ) : (
+              <button
+                onClick={() => setAgregando(true)}
+                disabled={editando}
+                className="text-sm font-medium text-marca-700 hover:underline disabled:opacity-40"
+              >
+                + Agregar un producto
+              </button>
+            )}
+            {errorEdicion && (
+              <p role="alert" className="mt-2 text-xs text-red-700">
+                {errorEdicion}
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-borde">
@@ -1075,6 +1228,90 @@ function ModalCierre({
           </>
         )}
       </div>
+    </div>
+  )
+}
+
+function BotonCantidad({
+  children,
+  etiqueta,
+  onClick,
+  disabled,
+}: {
+  children: React.ReactNode
+  etiqueta: string
+  onClick: () => void
+  disabled: boolean
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={etiqueta}
+      className="size-6 rounded border border-borde text-piedra-600 hover:bg-piedra-100 disabled:opacity-40"
+    >
+      {children}
+    </button>
+  )
+}
+
+/*
+  Buscar el producto que el cliente sumó en la caja.
+
+  Es el mismo buscador del mostrador —mismo índice, mismos códigos de
+  barra— para que el cajero no tenga que aprender otro y para que un
+  escaneo se comporte igual de los dos lados.
+*/
+function BuscadorParaAgregar({
+  onElegir,
+  onCancelar,
+}: {
+  onElegir: (productoId: string) => void
+  onCancelar: () => void
+}) {
+  const [texto, setTexto] = useState('')
+
+  const resultados = useQuery({
+    queryKey: ['buscar-para-agregar', texto],
+    queryFn: () => buscarProductosVenta(texto),
+    enabled: texto.trim().length > 1,
+  })
+
+  return (
+    <div>
+      <div className="flex gap-2">
+        <input
+          autoFocus
+          value={texto}
+          onChange={(e) => setTexto(e.target.value)}
+          onKeyDown={(e) => e.key === 'Escape' && onCancelar()}
+          placeholder="Escaneá un código de barra o buscá por nombre…"
+          className="flex-1 rounded-lg border border-borde px-3 py-2 text-sm"
+        />
+        <button
+          onClick={onCancelar}
+          className="rounded-lg px-3 py-2 text-sm font-medium text-piedra-500 hover:bg-piedra-100"
+        >
+          Cancelar
+        </button>
+      </div>
+      {(resultados.data?.length ?? 0) > 0 && (
+        <ul className="mt-2 max-h-48 overflow-y-auto rounded-lg ring-1 ring-borde">
+          {resultados.data!.map((p: ProductoVenta) => (
+            <li key={p.producto_id} className="border-b border-piedra-100 last:border-0">
+              <button
+                onClick={() => onElegir(p.producto_id)}
+                className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm hover:bg-piedra-50"
+              >
+                <span className="min-w-0 flex-1 truncate text-tinta">{p.nombre_interno}</span>
+                <span className="tabular-nums text-piedra-500">
+                  {moneda.format(p.precio_venta)}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   )
 }

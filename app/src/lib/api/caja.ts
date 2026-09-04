@@ -1,13 +1,15 @@
 import { supabase } from '@/lib/supabase'
 import { db } from '@/lib/local/db'
-import { subirPendientes } from '@/lib/local/sync'
+import { encolar, subirPendientes } from '@/lib/local/sync'
 import {
   aplicarListaLocal,
   cobrarLocal,
+  editarVentaLocal,
   listarColaLocal,
   obtenerVentaLocal,
   saldoCuentaCorrienteLocal,
 } from '@/lib/local/caja'
+import type { LineaDeseada } from '@/lib/local/caja'
 
 export interface Caja {
   id: string
@@ -226,7 +228,76 @@ export async function aplicarLista(ventaId: string, listaId: string | null): Pro
       return Number(data)
     }
   }
-  return aplicarListaLocal(ventaId, listaId)
+
+  const total = await aplicarListaLocal(ventaId, listaId)
+
+  /*
+    Sin conexión el cambio TAMBIÉN tiene que viajar, y esto faltaba.
+
+    Antes, elegir un medio de pago sin internet recalculaba sólo la copia
+    local. Al volver la conexión subían los pagos con el importe nuevo,
+    pero el servidor seguía teniendo el total viejo — y cobrar_venta()
+    rechaza el cobro cuando los pagos no cierran con el total.
+
+    O sea: cobrado en el mostrador, rechazado al subir, con el cliente ya
+    en la casa. Se encola la misma llamada que se haría con internet.
+  */
+  await encolar(ventaId, [
+    {
+      tipo: 'rpc',
+      tabla: 'aplicar_lista_a_venta',
+      datos: { p_venta_id: ventaId, p_lista_id: listaId },
+      descripcion: 'lista de precios',
+    },
+  ])
+
+  return total
+}
+
+/*
+  La caja corrige la venta: cantidades, quitar y agregar.
+
+  Se manda la venta entera como tiene que quedar, no los cambios. Es lo
+  que hace que reintentar desde la bandeja de salida sea inofensivo:
+  "sacale una unidad" aplicado dos veces saca dos.
+
+  No se manda ningún precio, y eso es el límite de la decisión B1 hecho
+  código: lo acordado por el vendedor no se toca por este camino.
+*/
+export async function editarVentaEnCaja(
+  ventaId: string,
+  lineas: LineaDeseada[],
+  cajeroId: string,
+  terminalId: string | null,
+): Promise<number> {
+  const datos = {
+    p_venta_id: ventaId,
+    p_lineas: lineas.map((l) => ({
+      venta_linea_id: l.venta_linea_id,
+      producto_id: l.producto_id,
+      cantidad: l.cantidad,
+    })),
+    p_cajero_id: cajeroId,
+    p_terminal_id: terminalId,
+  }
+
+  if (navigator.onLine) {
+    const { data, error } = await supabase.rpc('editar_venta_en_caja', datos)
+    if (!error) {
+      await db.venta.delete(ventaId)
+      await asegurarVentaLocal(ventaId)
+      return Number(data)
+    }
+    // Un error del servidor con conexión es una regla que no se cumple
+    // —permiso, venta ya cobrada—, no una caída. No se encola: se avisa.
+    throw new Error(error.message)
+  }
+
+  const total = await editarVentaLocal(ventaId, lineas)
+  await encolar(ventaId, [
+    { tipo: 'rpc', tabla: 'editar_venta_en_caja', datos, descripcion: 'corrección en la caja' },
+  ])
+  return total
 }
 
 /*
