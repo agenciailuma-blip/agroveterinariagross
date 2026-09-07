@@ -182,18 +182,11 @@ function Hoja({ c }: { c: NoFiscalCompleto }) {
       </p>
 
       <div className="flex items-start justify-between gap-6 border-b border-black pb-4">
+        {/* Sólo el logo: los datos fiscales del emisor son de la factura. */}
         <div className="min-w-0">
           {c.emisor.logo && (
-            <img src={c.emisor.logo} alt="" className="mb-2 max-h-[20mm] max-w-[60mm] object-contain" />
+            <img src={c.emisor.logo} alt="" className="max-h-[24mm] max-w-[70mm] object-contain" />
           )}
-          <p className="text-base font-bold">{c.emisor.razon_social}</p>
-          {c.emisor.nombre_fantasia && (
-            <p className="uppercase">{c.emisor.nombre_fantasia}</p>
-          )}
-          <p>CUIT: {c.emisor.cuit}</p>
-          <p>{c.emisor.domicilio}</p>
-          <p>{c.emisor.localidad}</p>
-          {c.emisor.telefono && <p>Tel. {c.emisor.telefono}</p>}
         </div>
         <div className="shrink-0 text-right">
           <p className="text-base font-bold uppercase">{c.tipo_descripcion}</p>

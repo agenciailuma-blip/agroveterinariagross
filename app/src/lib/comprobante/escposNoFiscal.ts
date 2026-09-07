@@ -28,7 +28,6 @@ function centrado(t: string): string {
 }
 
 export function ticketNoFiscalEscPos(d: NoFiscalCompleto): Uint8Array {
-  const e = d.emisor
   const c = new Cinta()
   const esRemito = d.tipo_clave === 'remito'
 
@@ -40,14 +39,14 @@ export function ticketNoFiscalEscPos(d: NoFiscalCompleto): Uint8Array {
   c.negrita(false)
   c.linea()
 
-  // ── Emisor ──
-  c.negrita(true).linea(e.razon_social ?? '').negrita(false)
-  if (e.nombre_fantasia) c.linea(e.nombre_fantasia.toUpperCase())
+  /*
+    Sin datos del emisor.
+
+    CUIT, domicilio e inicio de actividades son obligatorios en una
+    factura y no acá: este papel no es un comprobante fiscal. En el rollo
+    de 80 mm eran seis renglones que no le servían a nadie.
+  */
   c.alinear(0)
-  if (e.cuit) c.linea(`CUIT: ${e.cuit}`)
-  if (e.domicilio) c.linea(`Domicilio: ${e.domicilio}`)
-  if (e.localidad) c.linea(`Localidad: ${e.localidad}`)
-  if (e.telefono) c.linea(`Teléfono: ${e.telefono}`)
 
   // ── Identificación ──
   c.separador()

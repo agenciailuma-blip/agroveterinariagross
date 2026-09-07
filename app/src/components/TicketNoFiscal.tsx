@@ -36,25 +36,20 @@ export default function TicketNoFiscal({ c }: { c: NoFiscalCompleto }) {
         {LEYENDA_NO_FISCAL}
       </p>
 
-      {/* ── Emisor ── */}
+      {/*
+        Sólo el logo identifica al comercio.
+
+        Los datos fiscales del emisor —CUIT, domicilio, inicio de
+        actividades— son obligatorios en una factura y no acá: este papel
+        no es un comprobante fiscal y nadie los necesita. En 80 mm cada
+        renglón que sobra empuja al resto hacia abajo.
+      */}
       {c.emisor.logo && (
         <img
           src={c.emisor.logo}
           alt=""
           className="mx-auto my-2 max-h-[16mm] max-w-[52mm] object-contain"
         />
-      )}
-
-      <p className="mt-2 text-[10px] font-bold">{c.emisor.razon_social}</p>
-      <Dato k="CUIT" v={c.emisor.cuit} />
-      <Dato k="Domicilio" v={c.emisor.domicilio} />
-      <Dato k="Localidad" v={c.emisor.localidad} />
-      {c.emisor.telefono && <Dato k="Teléfono" v={c.emisor.telefono} />}
-
-      {c.emisor.nombre_fantasia && (
-        <p className="mt-2 text-center text-[9.5px] font-bold uppercase">
-          {c.emisor.nombre_fantasia}
-        </p>
       )}
 
       {/* ── Identificación ── */}

@@ -106,6 +106,21 @@ describe('el no fiscal no puede parecerse a una factura', () => {
     expect(tieneQr).toBe(false)
   })
 
+  it('no lleva los datos fiscales del emisor', () => {
+    // CUIT, domicilio e inicio de actividades son obligatorios en una
+    // factura. Acá no van: este papel no es un comprobante fiscal, y en
+    // 80 mm cada renglón de más empuja al resto hacia abajo.
+    for (const salida of [html(doc()), bytes(doc())]) {
+      expect(salida).not.toContain('20146369767') // el CUIT de Gross
+      expect(salida).not.toContain('Av. Libertad 315')
+      expect(salida).not.toContain('Oberá, Misiones')
+      expect(salida).not.toContain('GROSS ERNESTO HUGO')
+      expect(salida).not.toContain('3755-421829')
+    }
+    // El CUIT del CLIENTE sí va: es a quién se le entrega el papel.
+    expect(html(doc())).toContain('20111111112')
+  })
+
   it('no muestra una letra de comprobante', () => {
     const salida = html(doc())
     expect(salida).not.toMatch(/COD\.\s*\d/)
@@ -184,10 +199,13 @@ describe('el contenido', () => {
   })
 
   it('los acentos van en latin1, no en UTF-8', () => {
-    // Con la codificación equivocada "Oberá" sale "OberÃ¡" impreso.
-    const crudo = ticketNoFiscalEscPos(doc())
+    // Con la codificación equivocada "VÁLIDO" sale "VÃLIDO" impreso, y
+    // justo en la leyenda que hace que este papel no se confunda con una
+    // factura.
+    const crudo = ticketNoFiscalEscPos(doc({ venta_codigo: 'CAJA1-000123' }))
     const texto = new TextDecoder('latin1').decode(crudo)
-    expect(texto).toContain('Oberá')
+    expect(texto).toContain('VÁLIDO')
+    expect(texto).toContain('Operación')
     expect(texto).not.toContain('Ã')
   })
 
