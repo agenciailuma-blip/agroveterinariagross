@@ -35,6 +35,8 @@
 6. **Sincronización por red local** y **cifrado de la base local**.
 7. **Todo con teclado** — lo último antes del 26/10, decidido con Lucas.
 
+🔴 **Pendiente propio, antes de la próxima corrección:** el **actualizador automático** falla al reemplazar el programa —*"Error abriendo archivo para escritura: sistema-gross.exe"*— porque el programa todavía lo tiene abierto. Aparecido el 07/09 al publicar la 0.2.0. No rompe nada y hoy no molesta (las 4 PC se instalan de cero con el `.exe`), pero **cada corrección posterior hay que instalarla a mano con el programa cerrado** hasta resolverlo. Detalle y plan en [`instalacion-en-el-local.md`](instalacion-en-el-local.md), paso 8.
+
 **Esperando a terceros:**
 
 - 🔴 El **Excel con la columna de IVA** — sigue siendo lo que más bloquea.
@@ -323,7 +325,11 @@ Tres decisiones que valen más que el código:
 
 1. Subir el número de versión en `app/src-tauri/tauri.conf.json`
 2. `npm --prefix app run escritorio:publicar`
-3. Arrastrar **`app/dist`** a Cloudflare Pages, al proyecto `gross-sistema`
+3. Ya no hace falta arrastrar nada: **el comando sube solo a Cloudflare** con `wrangler`, autenticado el 07/09 con la cuenta de Gross
+
+> ⚠️ Corré ese comando desde **Git Bash**. En PowerShell falla con *"la ejecución de scripts está deshabilitada"*, que es una política de Windows y no del proyecto. Alternativa: `npm.cmd` en vez de `npm`.
+
+> **Por qué no se conecta el repositorio a Cloudflare Pages.** Sería lo primero que uno intenta, y es una trampa: Cloudflare correría `npm run build` en sus servidores, que genera la aplicación web pero **no** la carpeta de actualizaciones. Cada push dejaría a las cuatro terminales sin recibir correcciones, en silencio. Para que saliera bien habría que compilar Tauri allá y subirles la clave privada de firma, y esa clave no sale de la máquina de ILUMA.
 
 Ese comando genera las dos cosas juntas: la aplicación web y, adentro de `dist/actualizaciones/`, el instalador firmado que las terminales consultan. Antes de compilar, le pregunta a Cloudflare qué versión está publicada y se niega a repetir el número — si no cambia, las terminales no se enteran de nada.
 

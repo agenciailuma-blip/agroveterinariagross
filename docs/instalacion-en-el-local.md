@@ -81,8 +81,10 @@ Entrar a la administración del router (suele ser `192.168.0.1` o `192.168.1.1` 
 
 ## 2. Lo que tiene que estar listo de nuestro lado
 
-- [ ] La versión publicada en Cloudflare con `npm --prefix app run escritorio:publicar` (**no** `npm run build` — ver la advertencia de ESTADO).
-- [ ] El instalador a mano: está en `app/dist/actualizaciones/`.
+- [x] **Versión 0.2.0 publicada el 07/09** en Cloudflare. Sube sola con `npm --prefix app run escritorio:publicar` (**no** `npm run build` — ver la advertencia de ESTADO).
+- [ ] El instalador para las 4 PC: `app/dist/actualizaciones/sistema-gross-0.2.0-setup.exe`. También se puede bajar de
+      `https://gross-sistema.pages.dev/actualizaciones/sistema-gross-0.2.0-setup.exe`
+- [ ] **Cargar el logo** en Configuración → Datos del emisor. Sin logo, los remitos y presupuestos salen sin nada que identifique al comercio, porque ya no llevan los datos del emisor.
 - [ ] Las terminales creadas en el sistema, con su prefijo y —la caja— con su punto de venta de ARCA.
 - [ ] Saber los PIN de los operadores que van a usar las PC.
 
@@ -174,20 +176,44 @@ Si están por red: **Configuración → Impresora del mostrador.** Se carga la I
 
 > **Lo que sí necesita internet a propósito:** abrir y cerrar la caja. Si Lucas prueba eso sin conexión, el sistema lo va a rechazar y **está bien**: arquear con la mitad de las ventas sin registrar produce una diferencia que después alguien tiene que explicar.
 
-### Paso 8 · La actualización sola
+### Paso 8 · La actualización sola — ⚠️ **NO PROBAR HOY**
 
-Con las 4 PC instaladas, publicar una versión nueva y ver que aparezca la franja arriba de la pantalla.
+**El actualizador tiene un problema conocido desde el 07/09. No lo uses en la sesión.**
 
-✅ **Sale bien si:** aparece *"Hay una versión nueva del sistema"* y al apretar **Actualizar ahora** el programa se reinicia con la versión nueva.
+Al apretar **Actualizar ahora** aparece:
+
+> *Error abriendo archivo para escritura: `…\Sistema Gross\sistema-gross.exe`*
+> *Presione abortar…, reintentar…, u omitir…*
+
+**Qué es.** El instalador no llega a reemplazar el programa porque el programa todavía lo tiene abierto. El aviso de versión nueva sí aparece y el instalador sí arranca; falla el último paso.
+
+**Qué NO es.** No rompe nada. Si se aprieta *Omitir*, no se instala nada y todo queda en la versión anterior, coherente — la interfaz va embebida en el `.exe`, así que si ese archivo no se reemplaza, no cambió nada.
+
+**Cómo actualizar mientras tanto**, y es lo que hay que hacer hoy:
+
+1. **Cerrar el programa del todo** (que no quede ninguna ventana abierta).
+2. Ejecutar a mano el instalador de la versión nueva.
+
+Sin el programa corriendo no hay archivo bloqueado y entra limpio.
+
+> **Hoy no molesta:** las 4 PC se instalan de cero con el `.exe`, y ese camino no pasa por el actualizador. El problema aparece recién cuando se quiera publicar una corrección más adelante.
+
+**Pendiente de investigar** — con tiempo y pudiendo reproducirlo, no a las apuradas:
+- Reproducir con una versión de prueba y ver en qué punto exacto falla.
+- Probar el gancho `on_before_exit` que documenta Tauri, que es el pensado para esto.
+- Confirmar que funcione **dos veces seguidas** antes de darlo por bueno.
 
 ---
 
 ## 4. Si hay que corregir algo en el momento
 
 1. Subir el número en `app/src-tauri/tauri.conf.json`.
-2. `npm --prefix app run escritorio:publicar`
-3. Arrastrar `app/dist` a Cloudflare Pages, proyecto `gross-sistema`.
-4. Lucas aprieta **Actualizar ahora** en la franja.
+2. `npm --prefix app run escritorio:publicar` — compila, firma **y sube solo a Cloudflare**. Ya no hay que arrastrar nada.
+3. En cada PC: **cerrar el programa** y ejecutar a mano el instalador nuevo.
+
+> ⚠️ **Correr eso desde Git Bash, no desde PowerShell.** PowerShell tiene bloqueada la ejecución de scripts en esta máquina y `npm`/`npx` fallan con *"la ejecución de scripts está deshabilitada"*. Alternativa rápida: usar `npm.cmd` en vez de `npm`.
+
+> ⚠️ El paso 3 es a mano **hasta que se resuelva lo del actualizador** (ver paso 8). Cuando esté, vuelve a ser apretar "Actualizar ahora".
 
 > ⚠️ **Nunca subir un `dist` hecho con `npm run build`.** Le falta la carpeta de actualizaciones y las 4 PC dejan de recibir correcciones sin ningún error visible. Si pasa, adentro de `dist` queda un archivo `NO-SUBIR-ESTA-CARPETA.txt` avisando.
 
@@ -202,12 +228,15 @@ Con las 4 PC instaladas, publicar una versión nueva y ver que aparezca la franj
 | Acentos raros en el ticket | Codificación | Corregido: va en latin1 |
 | ARCA rechaza con 10015 / 10243 | El CUIT del cliente no existe en los padrones | Es del dato del cliente, no del sistema. Corregir el CUIT |
 | ARCA rechaza con 10016 | La numeración se desfasó | Se corrige sola en el siguiente intento |
+| "Error abriendo archivo para escritura: sistema-gross.exe" | El actualizador no puede reemplazar el programa mientras corre | Omitir, cerrar el programa y ejecutar el instalador a mano. Ver paso 8 |
+| `npm` o `npx` fallan con "ejecución de scripts deshabilitada" | Política de PowerShell | Usar Git Bash, o `npm.cmd` / `npx.cmd` |
 
 ---
 
 ## 6. Lo que NO se resuelve en esta sesión
 
 - **La impresión por USB**, si resulta que están así conectadas. No está construido: es alrededor de un día de trabajo y hay que decidirlo.
+- **El actualizador automático** — ver paso 8. Hasta que se arregle, cada corrección se instala a mano con el programa cerrado.
 - **El punto de venta del régimen CAEA** — trámite en el portal de ARCA. Sin eso no hay contingencia.
 - **El certificado de producción** — hoy todo corre contra homologación. Los comprobantes emitidos **no son válidos** hasta que esté.
 - **La sincronización por red local** — si se corta internet, las terminales no se hablan entre sí. Una venta armada en el mostrador no llega a la caja hasta que vuelva la conexión. Está en el plan, va al final.
