@@ -19,20 +19,28 @@ Lo que dice la etiqueta y por qué importa:
 - **"IMPRESOR TERMICO"**, no "impresor fiscal". Es una impresora de tickets, así que **ESC/POS es el protocolo correcto y el circuito construido sirve tal cual**. Era el único riesgo de la instalación que podía ser un rediseño, y quedó descartado.
 - **`-3I-`** son tres interfaces: USB, RS232 y una tercera que empieza con "E" —cortada en la foto— casi con seguridad **Ethernet**. Tiene puerto de red.
 
-### 🔴 HOY EL SISTEMA SÓLO IMPRIME POR RED
+### 🔴 CONFIRMADO EL 07/09: USB a la caja, compartida a las demás
 
-**Esto hay que tenerlo claro antes de empezar.** El programa abre una **conexión de red** contra la impresora (`impresora.rs` usa TCP). **No habla por USB.**
+Lucas confirmó cómo están conectadas: **la Hasar va por USB a la caja, y las otras PC la usan por red.**
 
-O sea:
+Eso casi con seguridad significa **impresora compartida de Windows** (`\\CAJA\Hasar`), no una impresora con IP propia. Es el esquema habitual y hay que confirmarlo en la reunión.
 
-| Cómo está conectada | Qué pasa hoy |
+**Consecuencia directa: el sistema hoy no puede imprimir en ninguna de las dos.** El programa abre una conexión TCP contra una IP de impresora, y en este esquema **no hay ninguna IP que poner**.
+
+**Y también: el camino por impresora de Windows resuelve las dos de una vez.** La caja imprime a la local por USB; las demás, a la compartida. Las dos por nombre, con el mismo mecanismo. Deja de ser "más cómodo" y pasa a ser **el único que sirve para cómo está armado el local**.
+
+### 📋 Los datos a traer de la reunión
+
+Con esto se puede hacer el camino nuevo con información real en vez de suposiciones. **En cada PC**, Panel de control → Dispositivos e impresoras → clic derecho en la Hasar → Propiedades de impresora:
+
+| Dónde | Qué anotar |
 |---|---|
-| Cable de red, con IP | ✅ Imprime |
-| USB a una PC | ❌ **No imprime, y no hay nada que hacer en la sesión** |
+| **En la caja** (la del USB) | El **nombre exacto** de la impresora, tal cual aparece · la pestaña **Puertos** (debería decir `USB001`) · el **controlador** que usa, en la pestaña Opciones avanzadas |
+| **En otra PC** | Cómo aparece: `\\NOMBRE-PC\Impresora` (compartida) o una IP · el nombre exacto · el controlador |
 
-Tener puerto Ethernet no es lo mismo que estar conectada por Ethernet. Si están por USB, el paso de la impresora **se saltea** y se sigue con el resto: todo lo demás del sistema funciona igual, y el comprobante se puede imprimir desde el navegador a cualquier impresora mientras tanto.
+Una foto de cada pantalla alcanza. Lo que más importa es **el nombre exacto y el controlador**: si el controlador es "Generic / Text Only", los bytes pasan tal cual y es el caso fácil; si es el propio de Hasar, hay que probar que no los reinterprete.
 
-> **Decisión pendiente de Francisco:** agregar el camino por USB —mandándole los bytes a una impresora instalada de Windows, elegida de una lista— cubriría USB y red con un solo camino y sacaría la IP de la configuración. Es alrededor de un día de trabajo y no se puede verificar sin la impresora delante. **No está hecho.**
+> **El trabajo que falta**, para dimensionarlo: mandarle los bytes a una impresora instalada de Windows, elegida de una lista por nombre. Cubre el USB de la caja y la compartida de las demás con un solo camino, y saca la IP de la configuración. Alrededor de un día, y no se puede verificar sin la impresora delante. **No está hecho.**
 
 ### 🟢 Dos cajas, dos Hasar
 
@@ -40,7 +48,7 @@ Confirmado en la última visita: hay **dos puestos con la misma Hasar**. Uno es 
 
 Las **PC de mostrador no usan la Hasar**: arman ventas y las mandan a la caja. Sólo las terminales de tipo `caja` imprimen tickets, y el sistema ya está así.
 
-Si van por red, **cada impresora necesita su propia IP** y cada caja se configura con la suya.
+Con lo confirmado el 07/09, la de la caja va por USB. Falta ver en la reunión cómo está la segunda: si también por USB a esa PC, o si usa la compartida de la primera.
 
 ### 🟡 Cuántas PC y cuál es la caja
 
@@ -132,9 +140,13 @@ Si el diagnóstico dijo que falta: **Ventas** → elegir cuál es esta máquina.
 
 ✅ **Sale bien si:** el diagnóstico ahora dice el nombre de la terminal y su prefijo.
 
-### Paso 5 · La impresora — **saltear si están por USB**
+### Paso 5 · La impresora — **SALTEAR HOY**
 
-**Si la pestaña Puertos dijo `USB001`, este paso no se hace hoy.** Seguí al 6: todo lo demás funciona igual y el comprobante se imprime desde el navegador mientras tanto.
+Confirmado que están por USB y compartidas, **el sistema no puede imprimir todavía**: espera una IP y acá no hay ninguna. Este paso no se hace.
+
+Lo que sí conviene hacer en su lugar: **sacar los datos de la tabla del punto 1** (nombre exacto, puerto y controlador, en la caja y en otra PC). Con eso se construye el camino por impresora de Windows.
+
+Mientras tanto el comprobante se imprime **desde el navegador** a cualquier impresora, incluida ésta: el botón "Imprimir" de la pantalla del comprobante usa el diálogo de Windows y no depende de nada de esto.
 
 Si están por red: **Configuración → Impresora del mostrador.** Se carga la IP y el puerto (9100 salvo que la hoja de configuración diga otro) y se aprieta **Imprimir prueba**.
 

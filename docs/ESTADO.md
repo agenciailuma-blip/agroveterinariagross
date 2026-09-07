@@ -45,7 +45,8 @@
 - 🟡 Qué es un **"comprobante de percepción"** para Lucas (punto 9 de sus sugerencias).
 - 🟡 **Probar la impresora del mostrador** y las 4 PC en el local, con el programa instalado. Guion listo en [`instalacion-en-el-local.md`](instalacion-en-el-local.md).
 - ✅ **El modelo de la Hasar, resuelto el 04/09.** Lucas mandó la foto de la etiqueta: `P-HAS-181-STD-3I-N`, **IMPRESOR TERMICO** (no controlador fiscal) con USB/RS232/Ethernet. **ESC/POS es el protocolo correcto y lo construido sirve tal cual** — el riesgo de rediseño quedó descartado.
-- 🔴 **Falta confirmar que la impresora esté EN la red, y su IP.** Tener puerto Ethernet no es estar conectada: en la foto se ve un solo cable. Si está por USB, el programa no la alcanza —abre una conexión de red, no habla USB— y hay que pasarla a la red antes de la sesión. Texto para pedírselo en el guion.
+- 🔴 **La impresora va por USB a la caja y compartida a las demás** (confirmado por Lucas, 07/09). Casi con seguridad es una **impresora compartida de Windows**, no una con IP propia. **El sistema hoy no puede imprimir en ninguna de las dos**: abre una conexión TCP contra una IP, y en este esquema no hay ninguna IP que poner.
+- 🔴 **Falta construir la impresión por impresora de Windows.** Mandarle los bytes a una impresora instalada, elegida por nombre de una lista. Cubre el USB de la caja y la compartida de las demás con un solo camino. Dejó de ser una comodidad: es lo único que sirve para cómo está armado el local. ~1 día, y no se puede verificar sin la impresora delante. Los datos a traer de la reunión están en el guion.
 
 **Sin verificar todavía:** el ingreso real contra Supabase desde adentro del **programa instalado**, y la impresión con la **Hasar delante**.
 
