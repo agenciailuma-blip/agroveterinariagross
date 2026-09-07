@@ -209,10 +209,14 @@ export default function PuntoDeVenta() {
         },
         setPasoEnvio,
       )
-      // El comprobante se arma en el servidor, así que la venta tiene que
-      // haber llegado antes de pedirlo.
-      await subirPendientes()
-      const id = await emitirPresupuesto(v.id, terminal!.id)
+      /*
+        Con conexión conviene que la venta llegue antes: el servidor arma
+        el comprobante sobre ella. Sin conexión no se espera nada — el
+        presupuesto se guarda acá y viaja después, en el mismo lote y
+        detrás de la venta.
+      */
+      if (navigator.onLine) await subirPendientes()
+      const id = await emitirPresupuesto(v.id, terminal!.id, terminal!.prefijo ?? null)
       return { codigo: v.codigo, id }
     },
     onSuccess: ({ codigo, id }) => {
@@ -646,10 +650,7 @@ export default function PuntoDeVenta() {
         */}
         <button
           onClick={() => presupuestar.mutate()}
-          disabled={
-            !lineas.length || !cliente || enviar.isPending || presupuestar.isPending || !enLinea
-          }
-          title={enLinea ? undefined : 'Hace falta conexión para armar un presupuesto.'}
+          disabled={!lineas.length || !cliente || enviar.isPending || presupuestar.isPending}
           className="rounded-xl border border-borde px-4 py-2.5 text-sm font-medium text-tinta hover:bg-piedra-50 disabled:opacity-40"
         >
           {presupuestar.isPending ? `Armando… ${pasoEnvio ?? ''}` : 'Hacer un presupuesto'}
@@ -657,7 +658,7 @@ export default function PuntoDeVenta() {
 
         {!enLinea && lineas.length > 0 && (
           <p className="text-xs text-piedra-500">
-            Sin conexión se puede vender y cobrar, pero no armar presupuestos.
+            Sin conexión el presupuesto se imprime igual y viaja cuando vuelva internet.
           </p>
         )}
 

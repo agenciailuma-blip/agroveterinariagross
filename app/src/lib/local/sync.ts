@@ -434,11 +434,39 @@ async function alinearNumeracion(prefijo: string) {
   await alinearContador(prefijo, Number(String(ultimo).split('-').pop()) || 0)
 }
 
+/*
+  Y lo mismo para los comprobantes que numera Gross.
+
+  Una terminal reinstalada perdió su contador y volvería a empezar en
+  uno. El número ya está impreso en papeles que están en la calle, así
+  que no se puede repetir: se le pregunta al servidor cuál es el mayor
+  de esa serie y se sube el contador local si hace falta.
+*/
+async function alinearNumeracionNoFiscal(prefijo: string) {
+  const { alinearNumeroNoFiscal } = await import('@/lib/local/consultas')
+
+  for (const tipo of ['presupuesto', 'remito', 'comprobante_interno']) {
+    const { data } = await supabase
+      .from('comprobante_no_fiscal')
+      .select('numero')
+      .eq('tipo_clave', tipo)
+      .ilike('serie', prefijo)
+      .order('numero', { ascending: false })
+      .limit(1)
+
+    const ultimo = Number(data?.[0]?.numero ?? 0)
+    if (ultimo > 0) await alinearNumeroNoFiscal(tipo, prefijo, ultimo)
+  }
+}
+
 export async function sincronizar(prefijoTerminal?: string | null) {
   const inicio = performance.now()
   const subida = await subirPendientes()
   const bajados = await bajarCambios()
-  if (prefijoTerminal) await alinearNumeracion(prefijoTerminal)
+  if (prefijoTerminal) {
+    await alinearNumeracion(prefijoTerminal)
+    await alinearNumeracionNoFiscal(prefijoTerminal)
+  }
   return {
     ...subida,
     bajados,

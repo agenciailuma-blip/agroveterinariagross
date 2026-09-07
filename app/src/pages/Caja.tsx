@@ -25,12 +25,7 @@ import type { ProductoVenta } from '@/lib/api/ventas'
 import { cargarPrecios } from '@/lib/api/precios'
 import type { MedioPago } from '@/lib/api/precios'
 import { facturarVenta } from '@/lib/api/facturacion'
-import {
-  emitirNoFiscal,
-  marcarDocumentacion,
-  noFiscalesDeVenta,
-  numeroNoFiscal,
-} from '@/lib/api/noFiscal'
+import { emitirNoFiscal, marcarDocumentacion, numeroNoFiscal } from '@/lib/api/noFiscal'
 import { abrirComprobante, abrirNoFiscal } from '@/lib/escritorio'
 import { moneda, numero } from '@/lib/tipos'
 
@@ -213,22 +208,26 @@ export default function Caja() {
 
       if (sinFactura) {
         try {
-          const noFiscalId = await emitirNoFiscal(
+          /*
+            El número sale de la emisión, no de una consulta al servidor.
+
+            Sin conexión no hay a quién preguntarle, y el cajero necesita
+            el número igual: es lo único que puede nombrarle al cliente.
+          */
+          const emitido = await emitirNoFiscal(
             seleccionada!,
             'comprobante_interno',
             terminal?.id ?? null,
+            { serie: terminal?.prefijo ?? null },
           )
-          const [emitido] = await noFiscalesDeVenta(seleccionada!)
           return {
             codigo,
             cae: null,
             comprobanteId: null,
-            noFiscal: emitido
-              ? {
-                  id: noFiscalId,
-                  numero: numeroNoFiscal(emitido.tipo_clave, emitido.serie, emitido.numero),
-                }
-              : null,
+            noFiscal: {
+              id: emitido.id,
+              numero: numeroNoFiscal('comprobante_interno', emitido.serie, emitido.numero),
+            },
             problema: null as string | null,
           }
         } catch (e) {

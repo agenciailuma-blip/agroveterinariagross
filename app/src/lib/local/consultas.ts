@@ -218,3 +218,50 @@ export async function alinearContador(prefijo: string, ultimoServidor: number) {
     }
   })
 }
+
+/*
+  El número del presupuesto, el remito o el comprobante interno.
+
+  Mismo mecanismo que el código de venta y por la misma razón: se
+  RESERVA antes de usarse, en una transacción indivisible. Deducirlo de
+  lo que ya hay deja una ventana donde dos operaciones sacan el mismo
+  número, y en un papel que sale a la calle eso no se puede arreglar
+  después.
+
+  La serie es el prefijo de la terminal, así que nadie más escribe en
+  ella: dos terminales sin conexión no pueden chocar.
+*/
+export async function reservarNumeroNoFiscal(tipo: string, serie: string): Promise<number> {
+  return db.transaction('rw', db.contador, async () => {
+    const clave = `nofiscal:${tipo}:${serie.toUpperCase()}`
+    const siguiente = ((await db.contador.get(clave))?.valor ?? 0) + 1
+    await db.contador.put({ clave, valor: siguiente, actualizado_en: new Date().toISOString() })
+    return siguiente
+  })
+}
+
+/*
+  Alinea el contador con lo que el servidor ya tiene en esa serie.
+
+  Hace falta en una terminal recién instalada —o reinstalada— que si no
+  arrancaría en uno y chocaría con todo lo emitido antes. Sólo sube,
+  nunca baja: si local está más adelante es porque hay comprobantes
+  esperando subir.
+*/
+export async function alinearNumeroNoFiscal(
+  tipo: string,
+  serie: string,
+  ultimoServidor: number,
+) {
+  const clave = `nofiscal:${tipo}:${serie.toUpperCase()}`
+  await db.transaction('rw', db.contador, async () => {
+    const actual = (await db.contador.get(clave))?.valor ?? 0
+    if (ultimoServidor > actual) {
+      await db.contador.put({
+        clave,
+        valor: ultimoServidor,
+        actualizado_en: new Date().toISOString(),
+      })
+    }
+  })
+}

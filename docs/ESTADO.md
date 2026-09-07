@@ -20,8 +20,8 @@
 | 5 | Stock del remito: descarga, reconciliación y panel | ✅ 04/09 |
 | 6 | Presupuesto: validez y conversión | ✅ 04/09 |
 | 7 | Listado, exportación y convertir en factura | ✅ 04/09 |
-| 8 | **Emisión sin conexión** | ⏳ **lo único que queda** |
-| 9 | Pruebas de lo que decide con plata y con stock | 🟡 en curso |
+| 8 | Emisión sin conexión | 🟡 07/09 — construida y probada; falta cortar internet en una máquina real |
+| 9 | Pruebas de lo que decide con plata y con stock | ✅ 130 automáticas |
 | **+** | **La caja edita la venta** — subió desde el punto 3 de esta lista | ✅ 04/09 |
 
 > **Por qué "la caja edita la venta" se mudó adentro de este bloque.** Era comodidad: el cliente se arrepiente de una bolsa. Con el remito descargando stock antes del cobro, pasó a ser **el mecanismo que cierra el reparto**: el repartidor vuelve con lo que el cliente no quiso, y la única forma de que el stock aterrice bien es que el cajero corrija la venta a lo entregado. La base ya lo reconcilia sola (probado); falta la pantalla que lo permita.

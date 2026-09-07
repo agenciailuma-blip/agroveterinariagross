@@ -180,6 +180,49 @@ export interface VentaLocal {
   actualizado_en: string
 }
 
+/*
+  Los comprobantes que numera Gross, guardados en la terminal.
+
+  Están acá por una sola razón: el remito sale a la calle. Si se emite
+  con internet cortado, el papel tiene que poder imprimirse igual, y
+  para eso el documento tiene que existir en esta máquina y no sólo en
+  la bandeja de salida.
+*/
+export interface NoFiscalLocal {
+  id: string
+  tipo_clave: string
+  serie: string
+  numero: number
+  venta_id: string
+  fecha: string
+  estado: string
+  receptor_nombre: string
+  receptor_documento: string | null
+  receptor_documento_sigla: string
+  receptor_condicion: string
+  receptor_domicilio: string | null
+  total: number
+  observaciones: string | null
+  valido_hasta: string | null
+  entrega_domicilio: string | null
+  entrega_localidad: string | null
+  entrega_contacto: string | null
+  transportista: string | null
+  venta_codigo: string | null
+  creado_en: string
+}
+
+export interface NoFiscalLineaLocal {
+  id: string
+  comprobante_no_fiscal_id: string
+  orden: number
+  codigo_producto: string
+  descripcion: string
+  cantidad: number
+  precio_unitario: number
+  importe: number
+}
+
 export interface VentaLineaLocal {
   id: string
   venta_id: string
@@ -260,6 +303,8 @@ class BaseLocal extends Dexie {
   referencia!: EntityTable<ReferenciaLocal, 'id'>
   cursor!: EntityTable<Cursor, 'tabla'>
   contador!: EntityTable<Contador, 'clave'>
+  no_fiscal!: EntityTable<NoFiscalLocal, 'id'>
+  no_fiscal_linea!: EntityTable<NoFiscalLineaLocal, 'id'>
   outbox!: EntityTable<OperacionPendiente, 'id'>
 
   constructor() {
@@ -288,6 +333,13 @@ class BaseLocal extends Dexie {
       saldo_cuenta_corriente: 'cliente_id, actualizado_en',
       venta: 'id, codigo, estado, cliente_id, enviada_caja_en, actualizado_en',
       venta_linea: 'id, venta_id, orden, actualizado_en',
+    })
+
+    // v4 — el remito y el presupuesto se emiten sin conexión, así que el
+    // papel tiene que poder imprimirse desde esta máquina.
+    this.version(4).stores({
+      no_fiscal: 'id, tipo_clave, venta_id, creado_en',
+      no_fiscal_linea: 'id, comprobante_no_fiscal_id, orden',
     })
   }
 }

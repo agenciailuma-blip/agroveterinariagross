@@ -1,5 +1,8 @@
 import { supabase } from '@/lib/supabase'
 import { datosEmisor } from '@/lib/api/comprobante'
+import { encolar } from '@/lib/local/sync'
+import { reservarNumeroNoFiscal } from '@/lib/local/consultas'
+import { emitirNoFiscalLocal, obtenerNoFiscalLocal } from '@/lib/local/noFiscal'
 
 /*
   Presupuestos, remitos y comprobantes internos.
@@ -37,6 +40,18 @@ export function numeroNoFiscal(tipo: TipoNoFiscal, serie: string, numero: number
   return `${SIGLA_NO_FISCAL[tipo]} ${serie}-${String(numero).padStart(8, '0')}`
 }
 
+/*
+  Emitir, con o sin conexión.
+
+  El número lo pone SIEMPRE la terminal, tenga internet o no. Podría
+  pedírselo al servidor cuando hay conexión, pero entonces el camino sin
+  conexión se usaría sólo el día que se corta internet — que es
+  justamente el peor día para estrenarlo. Así se ejerce todos los días.
+
+  No pueden chocar entre terminales porque la serie es el prefijo de
+  cada una, y el contador local se alinea con el servidor al
+  sincronizar.
+*/
 export async function emitirNoFiscal(
   ventaId: string,
   tipo: TipoNoFiscal,
@@ -45,9 +60,15 @@ export async function emitirNoFiscal(
     observaciones?: string | null
     validoHasta?: string | null
     entrega?: DatosEntrega
+    /** El prefijo de la terminal. Sin él no se puede numerar. */
+    serie?: string | null
   } = {},
-): Promise<string> {
-  const { data, error } = await supabase.rpc('emitir_comprobante_no_fiscal', {
+): Promise<{ id: string; serie: string; numero: number }> {
+  const serie = (opciones.serie ?? '').trim() || 'T'
+  const id = crypto.randomUUID()
+  const numero = await reservarNumeroNoFiscal(tipo, serie)
+
+  const datos = {
     p_venta_id: ventaId,
     p_tipo_clave: tipo,
     p_terminal_id: terminalId,
@@ -58,9 +79,50 @@ export async function emitirNoFiscal(
     p_entrega_localidad: opciones.entrega?.localidad ?? null,
     p_entrega_contacto: opciones.entrega?.contacto ?? null,
     p_transportista: opciones.entrega?.transportista ?? null,
+    p_id: id,
+    p_serie: serie,
+    p_numero: numero,
+    p_ocurrido_en: new Date().toISOString(),
+  }
+
+  // Se guarda acá primero, siempre: es lo que permite imprimir el papel
+  // en el acto, y sin conexión es lo único que hay.
+  await emitirNoFiscalLocal({
+    id,
+    ventaId,
+    tipo,
+    serie,
+    numero,
+    observaciones: opciones.observaciones,
+    validoHasta: opciones.validoHasta,
+    entregaDomicilio: opciones.entrega?.domicilio,
+    entregaLocalidad: opciones.entrega?.localidad,
+    entregaContacto: opciones.entrega?.contacto,
+    transportista: opciones.entrega?.transportista,
   })
-  if (error) throw new Error(error.message)
-  return data as string
+
+  if (navigator.onLine) {
+    const { error } = await supabase.rpc('emitir_comprobante_no_fiscal', datos)
+    if (!error) return { id, serie, numero }
+    /*
+      Con conexión, un error del servidor puede ser una regla que no se
+      cumple —la venta está anulada, falta permiso— o una caída. No hay
+      forma barata de distinguirlas acá, así que se encola igual: si era
+      una caída, sube sola; si era una regla, queda a la vista en la
+      bandeja con su mensaje en vez de perderse.
+    */
+  }
+
+  await encolar(ventaId, [
+    {
+      tipo: 'rpc',
+      tabla: 'emitir_comprobante_no_fiscal',
+      datos,
+      descripcion: `${SIGLA_NO_FISCAL[tipo]} ${serie}-${String(numero).padStart(8, '0')}`,
+    },
+  ])
+
+  return { id, serie, numero }
 }
 
 export interface ResumenNoFiscal {
@@ -149,6 +211,31 @@ export interface NoFiscalCompleto {
 }
 
 export async function obtenerNoFiscalCompleto(id: string): Promise<NoFiscalCompleto> {
+  /*
+    Sin conexión se imprime desde la copia local.
+
+    Es la razón de ser de todo esto: el remito recién emitido tiene que
+    poder salir de la impresora aunque el servidor no exista todavía
+    para él. Sale con una etiqueta menos —la sigla del documento del
+    cliente y su condición de IVA viven en tablas que la terminal no
+    replica— y con todo lo demás.
+  */
+  if (!navigator.onLine) {
+    const local = await obtenerNoFiscalLocal(id)
+    if (!local) {
+      throw new Error(
+        'Ese comprobante no está en esta computadora y no hay conexión para traerlo.',
+      )
+    }
+    return {
+      ...local.doc,
+      tipo_clave: local.doc.tipo_clave as TipoNoFiscal,
+      tipo_descripcion: ETIQUETA_NO_FISCAL[local.doc.tipo_clave as TipoNoFiscal] ?? '',
+      lineas: local.lineas,
+      emisor: local.emisor,
+    }
+  }
+
   const { data: d, error } = await supabase
     .from('comprobante_no_fiscal')
     .select(
@@ -408,14 +495,17 @@ export const DIAS_VALIDEZ_PRESUPUESTO = 15
 export async function emitirPresupuesto(
   ventaId: string,
   terminalId: string | null,
+  serie: string | null = null,
   diasValidez = DIAS_VALIDEZ_PRESUPUESTO,
 ): Promise<string> {
   const hasta = new Date()
   hasta.setDate(hasta.getDate() + diasValidez)
 
-  return emitirNoFiscal(ventaId, 'presupuesto', terminalId, {
+  const { id } = await emitirNoFiscal(ventaId, 'presupuesto', terminalId, {
+    serie,
     validoHasta: hasta.toISOString().slice(0, 10),
   })
+  return id
 }
 
 /*

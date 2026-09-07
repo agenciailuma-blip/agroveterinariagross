@@ -197,6 +197,7 @@ export default function Remitos() {
       {nuevo && (
         <ModalNuevoRemito
           terminalId={terminal?.id ?? null}
+          terminalPrefijo={terminal?.prefijo ?? null}
           onCerrar={() => setNuevo(false)}
           onEmitido={(id) => {
             setNuevo(false)
@@ -222,11 +223,13 @@ export default function Remitos() {
 */
 function ModalNuevoRemito({
   terminalId,
+  terminalPrefijo,
   onCerrar,
   onEmitido,
   onError,
 }: {
   terminalId: string | null
+  terminalPrefijo: string | null
   onCerrar: () => void
   onEmitido: (id: string) => void
   onError: (m: string) => void
@@ -252,8 +255,9 @@ function ModalNuevoRemito({
   }
 
   const emitir = useMutation({
-    mutationFn: () =>
-      emitirNoFiscal(elegida!.id, 'remito', terminalId, {
+    mutationFn: async () =>
+      (await emitirNoFiscal(elegida!.id, 'remito', terminalId, {
+        serie: terminalPrefijo,
         observaciones: observaciones.trim() || null,
         entrega: {
           domicilio: domicilio.trim() || null,
@@ -261,7 +265,7 @@ function ModalNuevoRemito({
           contacto: contacto.trim() || null,
           transportista: transportista.trim() || null,
         },
-      }),
+      })).id,
     onSuccess: onEmitido,
     onError: (e) => onError(e instanceof Error ? e.message : 'No se pudo emitir el remito.'),
   })
