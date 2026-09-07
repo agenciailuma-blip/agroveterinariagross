@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react'
 import { supabase } from '@/lib/supabase'
 
 export interface Terminal {
@@ -10,6 +10,52 @@ export interface Terminal {
 }
 
 const CLAVE = 'gross.terminal'
+
+/*
+  ─────────────────────────────────────────────────────────────
+  La terminal es UNA SOLA para toda la aplicación
+
+  Antes cada componente que preguntaba «qué terminal soy» se guardaba su
+  propia copia. Elegirla en Ventas actualizaba la de esa pantalla, y la
+  del motor de sincronización seguía en null hasta reiniciar el programa.
+
+  Eso rompía justo el día de la instalación: en una PC nueva se elige la
+  terminal y se empieza a trabajar, y como el motor no se enteraba, NO
+  ALINEABA LA NUMERACIÓN con la del servidor. El primer comprobante salía
+  con el número uno, que ya estaba usado, y la operación no podía subir.
+
+  Ahora el valor vive en un solo lugar y todos los componentes lo miran.
+  Se descubrió el 07/09 probando la emisión sin conexión.
+  ─────────────────────────────────────────────────────────────
+*/
+function leerGuardada(): Terminal | null {
+  const crudo = localStorage.getItem(CLAVE)
+  if (!crudo) return null
+  try {
+    const guardado = JSON.parse(crudo) as Terminal
+    return guardado?.id ? guardado : null
+  } catch {
+    // Formato viejo: sólo el id. Se descarta y se vuelve a elegir.
+    return null
+  }
+}
+
+let actual: Terminal | null = leerGuardada()
+const oyentes = new Set<() => void>()
+
+function publicar(t: Terminal | null) {
+  actual = t
+  if (t) localStorage.setItem(CLAVE, JSON.stringify(t))
+  else localStorage.removeItem(CLAVE)
+  for (const avisar of oyentes) avisar()
+}
+
+function suscribir(avisar: () => void) {
+  oyentes.add(avisar)
+  return () => {
+    oyentes.delete(avisar)
+  }
+}
 
 /*
   Qué terminal es esta máquina.
@@ -24,17 +70,7 @@ const CLAVE = 'gross.terminal'
   prefijo no se puede numerar una venta.
 */
 export function useTerminal() {
-  const [terminal, setTerminalEstado] = useState<Terminal | null>(() => {
-    const crudo = localStorage.getItem(CLAVE)
-    if (!crudo) return null
-    try {
-      const guardado = JSON.parse(crudo) as Terminal
-      return guardado?.id ? guardado : null
-    } catch {
-      // Formato viejo: sólo el id. Se descarta y se vuelve a elegir.
-      return null
-    }
-  })
+  const terminal = useSyncExternalStore(suscribir, () => actual)
   const [disponibles, setDisponibles] = useState<Terminal[]>([])
   const [cargando, setCargando] = useState(true)
 
@@ -64,16 +100,10 @@ export function useTerminal() {
       // Con respuesta buena sí se revalida: si la terminal se dio de
       // baja, hay que volver a elegir en vez de operar con una
       // referencia muerta. Y se refrescan sus datos por si cambiaron.
-      setTerminalEstado((actual) => {
-        if (!actual) return null
-        const encontrada = lista.find((t) => t.id === actual.id)
-        if (!encontrada) {
-          localStorage.removeItem(CLAVE)
-          return null
-        }
-        localStorage.setItem(CLAVE, JSON.stringify(encontrada))
-        return encontrada
-      })
+      if (actual) {
+        const encontrada = lista.find((t) => t.id === actual!.id)
+        publicar(encontrada ?? null)
+      }
     }
 
     cargar()
@@ -82,15 +112,8 @@ export function useTerminal() {
     }
   }, [])
 
-  const elegir = useCallback((t: Terminal) => {
-    localStorage.setItem(CLAVE, JSON.stringify(t))
-    setTerminalEstado(t)
-  }, [])
-
-  const olvidar = useCallback(() => {
-    localStorage.removeItem(CLAVE)
-    setTerminalEstado(null)
-  }, [])
+  const elegir = useCallback((t: Terminal) => publicar(t), [])
+  const olvidar = useCallback(() => publicar(null), [])
 
   return { terminal, disponibles, cargando, elegir, olvidar }
 }

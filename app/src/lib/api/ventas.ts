@@ -8,6 +8,8 @@ import {
   reservarCodigoVenta,
 } from '@/lib/local/consultas'
 import { encolar, subirPendientes } from '@/lib/local/sync'
+import { db } from '@/lib/local/db'
+import { aplicarListaLocal } from '@/lib/local/caja'
 
 export interface Operador {
   usuario_id: string
@@ -386,6 +388,35 @@ async function guardarVenta(
         ]
       : []),
   ])
+
+  /*
+    Y se guarda también en la base local de esta máquina.
+
+    Hasta ahora la venta sólo iba a la bandeja de salida, y las filas
+    locales las traía la sincronización desde el servidor. Sin conexión
+    eso deja a la venta existiendo únicamente como una operación
+    pendiente: la máquina que acaba de crearla no la encuentra.
+
+    Se descubrió el 07/09 probando el presupuesto sin conexión — el
+    documento se arma sobre la venta, y la venta no estaba.
+  */
+  await db.venta.put({
+    ...cabecera,
+    descuento_total: 0,
+    total: Math.round(lineas.reduce((s, l) => s + l.cantidad * l.precio_unitario, 0) * 100) / 100,
+    lista_precio_id: datos.listaPrecioId ?? null,
+    actualizado_en: ahora,
+  } as never)
+  await db.venta_linea.bulkPut(
+    lineas.map((l) => ({ ...l, actualizado_en: ahora })) as never,
+  )
+
+  // Con lista de precios, la copia local se recalcula con el mismo
+  // criterio que va a usar el servidor al procesar la operación
+  // encolada: siempre desde el precio acordado.
+  if (datos.listaPrecioId) {
+    await aplicarListaLocal(id, datos.listaPrecioId)
+  }
 
   paso('encolada')
 

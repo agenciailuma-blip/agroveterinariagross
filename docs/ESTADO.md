@@ -20,7 +20,7 @@
 | 5 | Stock del remito: descarga, reconciliación y panel | ✅ 04/09 |
 | 6 | Presupuesto: validez y conversión | ✅ 04/09 |
 | 7 | Listado, exportación y convertir en factura | ✅ 04/09 |
-| 8 | Emisión sin conexión | 🟡 07/09 — construida y probada; falta cortar internet en una máquina real |
+| 8 | Emisión sin conexión | ✅ 07/09 — **probada con internet cortado de verdad** |
 | 9 | Pruebas de lo que decide con plata y con stock | ✅ 130 automáticas |
 | **+** | **La caja edita la venta** — subió desde el punto 3 de esta lista | ✅ 04/09 |
 
@@ -596,6 +596,24 @@ La consulta de la caja tiene `enabled: !!terminal`. Cuando `enabled` es falso, R
 > **La regla:** cuando una consulta tiene `enabled`, la condición que la deshabilita se pregunta ANTES que su estado de carga. Si no, el aviso que explica el problema queda tapado justo por el problema.
 
 Es el peor final posible para un aviso: la máquina no está rota, hay una sola cosa que hacer, y la pantalla no la dice. Y habría aparecido **el día de la instalación en las 4 PC de Gross**, que es cuando ninguna tiene terminal todavía.
+
+### La terminal elegida no llegaba al motor de sincronización
+
+Aparecido el 07/09 probando la emisión sin conexión, y es el que más cerca estuvo de arruinar el día de la instalación.
+
+Cada componente que preguntaba «qué terminal soy» se guardaba **su propia copia** del dato: `useTerminal()` era un `useState` por componente. Elegirla en Ventas actualizaba la de esa pantalla, y la del motor de sincronización seguía en `null` **hasta reiniciar el programa**.
+
+Consecuencia: en una PC recién instalada se elige la terminal y se empieza a trabajar, pero el motor no se entera y **no alinea la numeración con la del servidor**. El primer comprobante sale con el número uno, que ya está usado, y la operación no puede subir.
+
+> Habría pasado en las **cuatro PC el mismo día**, y el síntoma —"la venta no sube"— no señala en ninguna dirección útil.
+
+Ahora el valor vive en un solo lugar (`useSyncExternalStore`) y todos lo miran. **Verificado como se descubrió:** máquina sin contadores y sin terminal, se elige, y los cuatro contadores se alinean solos sin recargar.
+
+### Una venta creada sin conexión no existía en su propia máquina
+
+Del mismo día y de la misma prueba. `enviarACaja()` sólo mandaba la venta a la bandeja de salida; las filas locales las traía la sincronización **desde el servidor**. Sin conexión, la máquina que acababa de crear la venta no la encontraba.
+
+Se descubrió porque el presupuesto se arma sobre la venta, y la venta no estaba: *"La venta no está en esta computadora"*. Ahora se guarda también localmente al crearla, con su lista de precios aplicada con el mismo criterio que va a usar el servidor.
 
 ### React Query pausa todo sin conexión
 `networkMode` por defecto es `'online'`: pausa consultas y mutaciones cuando el navegador se declara sin red. El código **nunca llegaba a ejecutarse** — no se colgaba, no arrancaba. Está en `'always'` y tiene que quedar así.
