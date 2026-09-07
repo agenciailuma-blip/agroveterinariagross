@@ -177,9 +177,7 @@ writeFileSync(
 )
 
 console.log(`
-  Versión ${version} lista para publicar.
-
-    Arrastrá  app/dist  a Cloudflare Pages, al proyecto gross-sistema.
+  Versión ${version} construida y firmada.
 
     Adentro va la aplicación web y, en actualizaciones/, el instalador
     firmado que las 4 PC del local van a encontrar solas.
@@ -187,3 +185,47 @@ console.log(`
     Para instalar en una máquina nueva, el mismo archivo sirve:
     app/dist/actualizaciones/${archivo}
 `)
+
+/*
+  ── 5. Subir a Cloudflare ──
+
+  Se sube desde acá y NO conectando el repositorio a Cloudflare Pages.
+
+  Si estuviera conectado, Cloudflare correría `npm run build` en sus
+  servidores, que genera la aplicación web pero NO la carpeta de
+  actualizaciones. Sería automatizar el mismo desastre que el archivo
+  NO-SUBIR-ESTA-CARPETA.txt existe para evitar: cada push dejaría a las
+  cuatro terminales sin recibir correcciones, en silencio.
+
+  Para que allá saliera bien habría que compilar Tauri en sus servidores
+  —Rust, un runner de Windows— y subirles la clave privada de firma. Esa
+  clave es lo único que impide que alguien le instale lo que quiera a las
+  máquinas del local: no sale de esta computadora.
+
+  Si `wrangler` no está autenticado, no se rompe nada: queda el `dist`
+  completo para arrastrar a mano, como antes.
+*/
+console.log('\n  Subiendo a Cloudflare…\n')
+
+try {
+  execFileSync(
+    'npx',
+    ['wrangler', 'pages', 'deploy', 'dist', '--project-name', 'gross-sistema', '--commit-dirty', 'true'],
+    { cwd: aqui, stdio: 'inherit', shell: true },
+  )
+  console.log(`
+  Publicado. Las 4 PC van a ver la ${version} en el próximo arranque, o
+  dentro de un rato si están abiertas.
+`)
+} catch {
+  console.log(`
+  [!] No se pudo subir solo.
+
+      Suele ser que falta autenticar una vez:
+
+          npx wrangler login
+
+      Mientras tanto queda todo listo para arrastrar app/dist a
+      Cloudflare Pages, al proyecto gross-sistema.
+`)
+}
