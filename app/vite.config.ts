@@ -34,6 +34,27 @@ const enTauri = !!process.env.TAURI_ENV_PLATFORM
 
 export default defineConfig({
   define: { __VERSION__: JSON.stringify(version) },
+  /*
+    Hasta dónde tiene que llegar hacia atrás lo que se compila.
+
+    Adentro del programa instalado corre WebView2, que Windows mantiene
+    al día: ahí se puede usar lo último y no tiene sentido compilar para
+    navegadores viejos.
+
+    La web es otra cosa. En el local hay al menos una PC con Windows 7
+    (la de ventas, verificado el 07/09), y el último Chrome que existe
+    para Windows 7 es el 109. El valor por omisión de Vite 8 apunta al
+    111, así que esa máquina recibía JavaScript que no entiende y la
+    página quedaba en blanco, sin ningún error visible.
+
+    ⚠️ Esto arregla el JavaScript, NO el CSS: Tailwind 4 también pide
+    Chrome 111 y usa características que el 109 no tiene. En esas
+    máquinas el sistema va a funcionar pero verse mal. La solución de
+    fondo es actualizar esas PC.
+  */
+  build: {
+    target: enTauri ? 'baseline-widely-available' : ['chrome109', 'firefox115'],
+  },
   plugins: [
     react(),
     tailwindcss(),
