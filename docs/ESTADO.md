@@ -1,11 +1,11 @@
 # Estado del proyecto — leer esto primero
 
-**Última actualización:** 4 de septiembre de 2026
+**Última actualización:** 8 de septiembre de 2026
 **Para qué sirve este documento:** retomar el trabajo sin reconstruir el contexto. Si empezás una sesión nueva, leé esto antes que cualquier otra cosa.
 
 ---
 
-## 🎯 Dónde retomar — al 04/09/2026
+## 🎯 Dónde retomar — al 08/09/2026
 
 **Lo que sigue, en orden:**
 
@@ -26,14 +26,21 @@
 
 > **Por qué "la caja edita la venta" se mudó adentro de este bloque.** Era comodidad: el cliente se arrepiente de una bolsa. Con el remito descargando stock antes del cobro, pasó a ser **el mecanismo que cierra el reparto**: el repartidor vuelve con lo que el cliente no quiso, y la única forma de que el stock aterrice bien es que el cajero corrija la venta a lo entregado. La base ya lo reconcilia sola (probado); falta la pantalla que lo permita.
 
+> ⚠️ **Lo que dejó la reunión del 07/09, y hay que tenerlo en cuenta al ordenar lo que sigue.**
+> Francisco reportó que **se avanzó con poco *visible***. Es cierto y es un problema de percepción real, no de trabajo: casi todo lo del bloque anterior fue infraestructura y corrección —emisión sin conexión, reconciliación de stock del reparto, dos bugs que habrían roto la instalación—. Nada de eso se demuestra en una pantalla.
+>
+> **Consecuencia para el orden de lo que sigue:** conviene adelantar lo que se ve. La impresión por Windows desbloquea el mostrador, pero después de eso el bloque C y las métricas de Inicio valen más que seguir puliendo lo invisible.
+
 **Después de ese bloque, en orden:**
 
-2. **Proveedor mínimo + aumento de precios por proveedor y por rubro.** Entra en V1-A por decisión de Lucas, con el riesgo de fecha asumido.
-3. **Tanda de comodidad** — bloque C del mismo documento: stock en el menú, nombre del cliente para llamarlo en caja, modal de cantidad, columna de descuento con PIN, cerrar sesión al enviar a caja, descripción en el editor.
-4. **Reservar el concepto de depósito** en el modelo de stock, aunque haya uno solo. Media hora ahora contra tocar todo el histórico en diciembre.
-5. **Métricas de venta en Inicio** — lo único visible que falta de V1-A.
-6. **Sincronización por red local** y **cifrado de la base local**.
-7. **Todo con teclado** — lo último antes del 26/10, decidido con Lucas.
+2. 🔴 **Impresión por impresora de Windows.** Lo único que bloquea el mostrador: hoy el sistema no puede imprimir en ninguna de las dos cajas. Ver la sección de terceros.
+3. **Tanda de comodidad** — bloque C: stock en el menú, nombre del cliente para llamarlo en caja, modal de cantidad, columna de descuento con PIN, cerrar sesión al enviar a caja, descripción en el editor. **Adelantado**: es lo que se ve.
+4. **Métricas de venta en Inicio** — lo único visible que falta de V1-A. **Adelantado por lo mismo.**
+5. **Proveedor mínimo + aumento de precios por proveedor y por rubro.** Entra en V1-A por decisión de Lucas, con el riesgo de fecha asumido.
+6. **Reservar el concepto de depósito** en el modelo de stock, aunque haya uno solo. Media hora ahora contra tocar todo el histórico en diciembre.
+7. **Sincronización por red local** y **cifrado de la base local**.
+8. **Todo con teclado** — lo último antes del 26/10, decidido con Lucas.
+9. **El actualizador automático** — ver el pendiente propio más abajo.
 
 🔴 **Pendiente propio, antes de la próxima corrección:** el **actualizador automático** falla al reemplazar el programa —*"Error abriendo archivo para escritura: sistema-gross.exe"*— porque el programa todavía lo tiene abierto. Aparecido el 07/09 al publicar la 0.2.0. No rompe nada y hoy no molesta (las 4 PC se instalan de cero con el `.exe`), pero **cada corrección posterior hay que instalarla a mano con el programa cerrado** hasta resolverlo. Detalle y plan en [`instalacion-en-el-local.md`](instalacion-en-el-local.md), paso 8.
 
@@ -46,7 +53,23 @@
 - 🟡 **Probar la impresora del mostrador** y las 4 PC en el local, con el programa instalado. Guion listo en [`instalacion-en-el-local.md`](instalacion-en-el-local.md).
 - ✅ **El modelo de la Hasar, resuelto el 04/09.** Lucas mandó la foto de la etiqueta: `P-HAS-181-STD-3I-N`, **IMPRESOR TERMICO** (no controlador fiscal) con USB/RS232/Ethernet. **ESC/POS es el protocolo correcto y lo construido sirve tal cual** — el riesgo de rediseño quedó descartado.
 - 🔴 **La impresora va por USB a la caja y compartida a las demás** (confirmado por Lucas, 07/09). Casi con seguridad es una **impresora compartida de Windows**, no una con IP propia. **El sistema hoy no puede imprimir en ninguna de las dos**: abre una conexión TCP contra una IP, y en este esquema no hay ninguna IP que poner.
-- 🔴 **Falta construir la impresión por impresora de Windows.** Mandarle los bytes a una impresora instalada, elegida por nombre de una lista. Cubre el USB de la caja y la compartida de las demás con un solo camino. Dejó de ser una comodidad: es lo único que sirve para cómo está armado el local. ~1 día, y no se puede verificar sin la impresora delante. Los datos a traer de la reunión están en el guion.
+- 🔴 **Falta construir la impresión por impresora de Windows.** Mandarle los bytes a una impresora instalada, elegida por nombre de una lista. Cubre el USB de la caja y la compartida de las demás con un solo camino. Dejó de ser una comodidad: es lo único que sirve para cómo está armado el local. ~1 día, y no se puede verificar sin la impresora delante.
+  ✅ **Es viable**: la caja NO es la máquina con Windows 7, así que ahí sí corre el programa instalado y se le puede hablar a la impresora.
+  ⚠️ **Faltan los datos** que iban a traerse de la reunión: nombre exacto de la impresora en Windows, puerto y controlador, en la caja y en otra PC. Francisco va a mandar fotos. La tabla de qué mirar está en [`instalacion-en-el-local.md`](instalacion-en-el-local.md), punto 1.
+
+### 🖥️ Las PC del local — relevado el 07/09 en el local
+
+| | |
+|---|---|
+| PC con **Windows 7** | **Una sola**: la de ventas. `winver` → 6.1 build 7601 SP1 |
+| ¿La **caja** es Windows 7? | **No.** Es la buena noticia del día: la impresión directa de tickets sigue siendo posible |
+| ¿Van a **actualizar** esa PC? | **No.** Decisión de Gross, avisada |
+
+**Qué significa.** En esa máquina el **programa instalado no puede correr** —Microsoft dejó de soportar WebView2 en Windows 7 en 2023; el instalador falla con `0x8007007F`— y no hay versión nuestra que lo arregle.
+
+**Esa PC usa la versión web**, y Francisco confirmó que **funciona mejor así**. Es un puesto de mostrador: no imprime tickets ni participa de la sincronización por red local, así que no pierde nada de lo que necesita. Lo único degradado es cosmético: los 46 usos de `color-mix()` de Tailwind 4 no existen en Chrome 109, así que algunos fondos con transparencia salen sin color.
+
+⚠️ **No se corrió el diagnóstico en esa máquina.** Queda pendiente para la próxima visita.
 
 **Sin verificar todavía:** el ingreso real contra Supabase desde adentro del **programa instalado**, y la impresión con la **Hasar delante**.
 
