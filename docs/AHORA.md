@@ -10,11 +10,11 @@ estado: en curso
 
 ---
 
-## ⚠️ Lo primero de todo: hay 67 archivos sin commitear
+## Lo primero de todo
 
-Todo el trabajo del 08 y 09/09 está en el árbol de trabajo y **nada está commiteado**. Son dos días de trabajo: las dos tandas de pedidos de Lucas, proveedores, la exportación para el contador, el arreglo del instalador y la reorganización de los documentos.
+🔴 **Actualizar UNA PC a la 0.2.2 desde el programa y ver si el instalador ya no falla.** Está publicada en Cloudflare desde el 09/09. Ver abajo.
 
-👉 **Hacer el commit es lo primero de la próxima sesión**, antes de tocar nada.
+✅ Todo el trabajo del 08 y 09/09 está commiteado en , en tres commits: el arreglo del instalador, las dos tandas de pedidos de Lucas más proveedores y el Excel del contador, y la reorganización de la documentación.
 
 ---
 
