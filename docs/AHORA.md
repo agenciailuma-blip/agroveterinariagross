@@ -14,7 +14,7 @@ estado: en curso
 
 🔴 **Actualizar UNA PC a la 0.2.2 desde el programa y ver si el instalador ya no falla.** Está publicada en Cloudflare desde el 09/09. Ver abajo.
 
-✅ Todo el trabajo del 08 y 09/09 está commiteado en , en tres commits: el arreglo del instalador, las dos tandas de pedidos de Lucas más proveedores y el Excel del contador, y la reorganización de la documentación.
+✅ Todo el trabajo del 08 y 09/09 está commiteado en `main`, en tres commits: el arreglo del instalador, las dos tandas de pedidos de Lucas más proveedores y el Excel del contador, y la reorganización de la documentación.
 
 ---
 
