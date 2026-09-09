@@ -69,3 +69,13 @@ desktop.ini
 # regenera Tauri en cada build a partir de tauri.conf.json.
 app/src-tauri/target/
 app/src-tauri/gen/
+
+# ── Obsidian ──
+#
+# La bóveda es `docs/`, y Obsidian guarda ahí su configuración. Lo único
+# que cambia todo el tiempo es `workspace.json` —qué panel está abierto,
+# dónde quedó el scroll—, que ensuciaría cada commit con ruido que no le
+# importa a nadie. El resto (tema, plugins del núcleo, grafo) sí conviene
+# versionarlo: es la configuración de la bóveda, no de la sesión.
+docs/.obsidian/workspace.json
+docs/.obsidian/workspace-mobile.json

@@ -188,6 +188,24 @@ Un producto puede pertenecer a varios ejes a la vez. Esto es lo que después hab
 - Libro de IVA Compras
 - Exportación en el formato que requiera el contador
 
+> 🟠 **Revisado el 09/09 — hay una decisión pendiente sobre estos dos puntos.**
+>
+> Adentro de "compras" hay **tres cosas de tamaños muy distintos**, y aplastarlas en una lista las volvió invisibles:
+>
+> | | Qué | Para quién | Tamaño |
+> |---|---|---|---|
+> | **A** | Cargar la factura de compra (cabecera + IVA por alícuota) | El contador | Chico |
+> | **B** | Libro de IVA, Ventas y Compras | El contador | Chico / medio |
+> | **C** | Recepción de mercadería: líneas, stock, costos | El negocio | Grande |
+>
+> **A y B se pueden hacer sin C**, porque el libro de IVA no necesita las líneas de la factura. Y **A sólo necesita la ficha de proveedor, que ya entra en V1-A** por los puntos 4 y 5 de Lucas.
+>
+> Además, el **IVA Ventas ya está construido en un 90%**: `comprobante`, `comprobante_alicuota` y `comprobante_tributo` guardan todo lo que hace falta desde agosto.
+>
+> ⚠️ Y es **lo único del alcance con una fecha externa**: el IVA se presenta todos los meses. El criterio de admisión de V1-B —*"el negocio funciona un mes sin ello"*— vale para el resto de este bloque, pero acá hay un tercero con un vencimiento.
+>
+> **Pendiente de decisión de Lucas.** Análisis completo en [`compras-e-iva.md`](compras-e-iva.md).
+
 ## 13. Sincronización con la tienda online
 
 - **API propia**: la tienda consulta stock y precios, y nos informa los pedidos
