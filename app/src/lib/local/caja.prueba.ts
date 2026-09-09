@@ -212,6 +212,44 @@ describe('lo que la terminal adelanta en su copia local', () => {
   })
 })
 
+/*
+  El producto comodín, pedido por Lucas el 07/09.
+
+  Una línea escrita a mano no existe en el catálogo, así que no tiene
+  existencias que mover. Lo que esta prueba cuida es que el cobro no
+  intente descontarlas igual: sin el filtro, la terminal iría a buscar
+  un saldo con producto_id nulo y podría dejar el stock de otro
+  producto tocado, o romper el cobro entero en el mostrador.
+
+  El servidor tiene el mismo filtro (`producto_id is not null` en
+  cobrar_venta), y por eso mismo esto se prueba de los dos lados.
+*/
+describe('una línea escrita a mano no mueve stock', () => {
+  beforeEach(async () => {
+    await sembrar()
+    // Se suma una línea libre a la venta sembrada: sin producto, con su
+    // propia alícuota, por $600.
+    await db.venta_linea.put({
+      id: 'linea-libre', venta_id: VENTA, orden: 2, producto_id: null,
+      codigo_producto: 'LIBRE', descripcion: 'Comedero por pedido', cantidad: 3,
+      precio_original: 200, precio_acordado: 200, precio_unitario: 200,
+      motivo_modificacion: null, alicuota_iva_id: 4, condicion_iva: 'gravado',
+      actualizado_en: AHORA,
+    })
+    await db.venta.update(VENTA, { total: 1600 })
+    await cobrar(1600)
+  })
+
+  it('cobra la venta entera, con la línea libre incluida', async () => {
+    expect(await listarColaLocal()).toHaveLength(0)
+  })
+
+  it('descuenta sólo el producto del catálogo', async () => {
+    const saldo = await db.saldo.get(PRODUCTO)
+    expect(Number(saldo?.cantidad)).toBe(48) // 50 - 2, y nada por la línea libre
+  })
+})
+
 describe('lo que se encola para el servidor', () => {
   beforeEach(async () => {
     await sembrar()

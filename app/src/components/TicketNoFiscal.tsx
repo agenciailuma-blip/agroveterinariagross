@@ -29,6 +29,21 @@ export default function TicketNoFiscal({ c }: { c: NoFiscalCompleto }) {
   const esRemito = c.tipo_clave === 'remito'
   const esPresupuesto = c.tipo_clave === 'presupuesto'
 
+  /*
+    En el remito no van precios. Lucas, 07/09.
+
+    La razón es del negocio y no del diseño: el remito acompaña a la
+    factura, o la factura sale después si es cuenta corriente. El precio
+    va en la factura. Un remito con precios es un papel con los números
+    del cliente circulando en la calle, en la camioneta, sin ser el
+    documento que los tiene que llevar.
+
+    Los precios SÍ se guardan en la base: son lo que permite valorizar
+    después lo que salió sin cobrarse —el panel de "entregado y sin
+    cobrar" vive de eso—. Lo que no se hace es imprimirlos.
+  */
+  const conPrecios = !esRemito
+
   return (
     <div className="mx-auto w-[72mm] bg-white px-2 py-3 font-mono text-[8.5px] leading-[1.35] text-black">
       {/* ── La leyenda va primero. Es lo que este papel es. ── */}
@@ -99,9 +114,9 @@ export default function TicketNoFiscal({ c }: { c: NoFiscalCompleto }) {
           <div className="flex justify-between tabular-nums">
             <span>
               {numero.format(l.cantidad)}
-              {l.precio_unitario > 0 && ` x ${moneda.format(l.precio_unitario)}`}
+              {conPrecios && l.precio_unitario > 0 && ` x ${moneda.format(l.precio_unitario)}`}
             </span>
-            {l.precio_unitario > 0 && <span>{moneda.format(l.importe)}</span>}
+            {conPrecios && l.precio_unitario > 0 && <span>{moneda.format(l.importe)}</span>}
           </div>
         </div>
       ))}
@@ -110,12 +125,29 @@ export default function TicketNoFiscal({ c }: { c: NoFiscalCompleto }) {
       {/* ── Total ──
           Sin desglose de IVA a propósito: un papel que discrimina IVA se
           parece a una factura, y este no puede parecerse. */}
-      {c.total > 0 && (
+      {conPrecios && c.total > 0 && (
         <>
           <div className={LINEA} />
           <div className="flex justify-between text-[11px] font-bold">
             <span>TOTAL:</span>
             <span className="tabular-nums">{moneda.format(c.total)}</span>
+          </div>
+        </>
+      )}
+
+      {/*
+        El remito cierra con bultos, que es lo que se cuenta al recibir.
+        Sin total en pesos el papel necesita algún número que permita
+        verificar la entrega, y ese número es cuántas unidades salieron.
+      */}
+      {esRemito && c.lineas.length > 0 && (
+        <>
+          <div className={LINEA} />
+          <div className="flex justify-between text-[10px] font-bold">
+            <span>TOTAL DE UNIDADES:</span>
+            <span className="tabular-nums">
+              {numero.format(c.lineas.reduce((s, l) => s + Number(l.cantidad), 0))}
+            </span>
           </div>
         </>
       )}

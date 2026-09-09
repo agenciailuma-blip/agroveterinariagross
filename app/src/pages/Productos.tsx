@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/auth/AuthProvider'
+import { confirmar } from '@/components/Dialogo'
 import {
   cargarReferencias,
   contarAvance,
@@ -33,6 +34,9 @@ const FORM_VACIO: EstadoFormulario = {
   animales: [],
   etapas: [],
   stockContado: '',
+  // Un producto nuevo hereda el aviso de su categoría o el general.
+  // Ponerle uno propio es una decisión, no el estado inicial.
+  umbral: { bajo: '', critico: '', propio: false },
 }
 
 export default function Productos() {
@@ -150,6 +154,11 @@ export default function Productos() {
       animales: detalle.data.animales,
       etapas: detalle.data.etapas,
       stockContado: '',
+      umbral: {
+        bajo: String(detalle.data.umbral.bajo),
+        critico: String(detalle.data.umbral.critico),
+        propio: detalle.data.umbral.propio,
+      },
     })
     setErrorGuardado(null)
   }, [detalle.data])
@@ -178,6 +187,14 @@ export default function Productos() {
         etapas: form.etapas,
         stockContado: form.stockContado === '' ? null : Number(form.stockContado),
         stockActual: filaActual?.cantidad ?? 0,
+        /*
+          Sin la marca de "propio" se manda null, que borra el umbral y
+          devuelve el producto a heredar. Es la única forma de deshacer
+          un aviso puesto por error.
+        */
+        umbral: form.umbral.propio
+          ? { bajo: Number(form.umbral.bajo || 0), critico: Number(form.umbral.critico || 0) }
+          : null,
         marcarRevisado,
         usuarioId: perfil!.id,
       }),
@@ -356,16 +373,16 @@ export default function Productos() {
               </button>
             ) : (
               <button
-                onClick={() => {
+                onClick={async () => {
                   const n = marcados.size
-                  if (
-                    window.confirm(
-                      `¿Dar de baja ${n} ${n === 1 ? 'producto' : 'productos'}?\n\n` +
-                        'Salen del catálogo y del mostrador, pero no se borra nada: el historial de ventas y movimientos queda, y se pueden restaurar desde "Dados de baja".',
-                    )
-                  ) {
-                    darDeBaja.mutate([...marcados])
-                  }
+                  const sigue = await confirmar({
+                    titulo: `¿Dar de baja ${n} ${n === 1 ? 'producto' : 'productos'}?`,
+                    detalle:
+                      'Salen del catálogo y del mostrador, pero no se borra nada: el historial de ventas y movimientos queda, y se pueden restaurar desde "Dados de baja".',
+                    aceptar: 'Dar de baja',
+                    peligro: true,
+                  })
+                  if (sigue) darDeBaja.mutate([...marcados])
                 }}
                 disabled={darDeBaja.isPending}
                 className="rounded-lg bg-red-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-red-500 disabled:opacity-50"
@@ -536,6 +553,7 @@ export default function Productos() {
                 estado={form}
                 onCambio={setForm}
                 stockActual={filaActual?.cantidad ?? 0}
+                puedeUmbrales={tienePermiso('stock.configurar_umbrales')}
                 esNuevo={creando}
                 guardando={guardar.isPending}
                 error={errorGuardado}
@@ -543,15 +561,15 @@ export default function Productos() {
                 onCancelar={cerrar}
                 onDarDeBaja={
                   puedeDarDeBaja && seleccionado
-                    ? () => {
-                        if (
-                          window.confirm(
-                            `¿Dar de baja "${form.campos.nombre_interno}"?\n\n` +
-                              'Sale del catálogo y del mostrador, pero no se borra: el historial de ventas y movimientos queda, y se puede restaurar desde "Dados de baja".',
-                          )
-                        ) {
-                          darDeBaja.mutate([seleccionado])
-                        }
+                    ? async () => {
+                        const sigue = await confirmar({
+                          titulo: `¿Dar de baja "${form.campos.nombre_interno}"?`,
+                          detalle:
+                            'Sale del catálogo y del mostrador, pero no se borra: el historial de ventas y movimientos queda, y se puede restaurar desde "Dados de baja".',
+                          aceptar: 'Dar de baja',
+                          peligro: true,
+                        })
+                        if (sigue) darDeBaja.mutate([seleccionado])
                       }
                     : undefined
                 }

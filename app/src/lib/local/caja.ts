@@ -40,6 +40,7 @@ export interface VentaCola {
   total: number
   ocurrido_en: string
   enviada_caja_en: string | null
+  nombre_para_llamar: string | null
   cliente: { nombre: string } | null
   vendedor: { nombre: string } | null
 }
@@ -56,6 +57,7 @@ export async function listarColaLocal(): Promise<VentaCola[]> {
     total: Number(v.total),
     ocurrido_en: v.ocurrido_en,
     enviada_caja_en: v.enviada_caja_en,
+    nombre_para_llamar: v.nombre_para_llamar ?? null,
     cliente: { nombre: clientes.get(v.cliente_id) ?? 'Consumidor Final' },
     // El nombre del vendedor no está en la base local: no se replican
     // usuarios. Sin conexión la caja ve la venta igual, sin ese dato.

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/auth/AuthProvider'
+import { confirmar } from '@/components/Dialogo'
 import {
   abrirToma,
   anularToma,
@@ -323,10 +324,14 @@ function Contando({ id, onSalir }: { id: string; onSalir: () => void }) {
         {abiertaLaToma && puedeInventariar && (
           <div className="flex gap-2">
             <button
-              onClick={() => {
-                if (window.confirm('¿Anular esta toma? No se va a ajustar ningún stock.')) {
-                  anular.mutate()
-                }
+              onClick={async () => {
+                const sigue = await confirmar({
+                  titulo: '¿Anular esta toma?',
+                  detalle: 'No se va a ajustar ningún stock. Lo contado se descarta.',
+                  aceptar: 'Anular la toma',
+                  peligro: true,
+                })
+                if (sigue) anular.mutate()
               }}
               className="rounded-lg px-3 py-2 text-sm font-medium text-piedra-500 hover:bg-piedra-100"
             >

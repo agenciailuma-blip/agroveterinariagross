@@ -20,9 +20,23 @@ const MENU: ItemMenu[] = [
     icono: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4',
   },
   {
+    /*
+      Sugerencia 2 de Lucas: el stock como entrada propia.
+
+      Va entre Productos e Inventario porque ese es el orden en que se
+      usa: se mira qué falta, y recién si el número no cierra se va a
+      contar. Inventario queda como lo que es —el conteo físico— y no
+      como el único lugar donde mirar existencias.
+    */
+    a: '/stock',
+    etiqueta: 'Stock',
+    permiso: 'stock.ver',
+    icono: 'M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-4l-1.5 3h-5L8 13H4',
+  },
+  {
     a: '/inventario',
     etiqueta: 'Inventario',
-    permiso: 'stock.ver',
+    permiso: 'stock.inventariar',
     icono: 'M9 12h6m-6 4h6M9 8h6M5 21h14a1 1 0 001-1V6.4L16.6 3H6a1 1 0 00-1 1v16a1 1 0 001 1z',
   },
   {
@@ -30,6 +44,17 @@ const MENU: ItemMenu[] = [
     etiqueta: 'Precios',
     permiso: 'productos.ver',
     icono: 'M7 7h.01M7 3h5a2 2 0 011.4.6l7 7a2 2 0 010 2.8l-5 5a2 2 0 01-2.8 0l-7-7A2 2 0 015 10V5a2 2 0 012-2z',
+  },
+  {
+    /*
+      Proveedores va después de Precios porque es lo que lo alimenta:
+      el aumento masivo de precios se hace por proveedor, y ese es el
+      motivo por el que el proveedor existe hoy.
+    */
+    a: '/proveedores',
+    etiqueta: 'Proveedores',
+    permiso: 'proveedores.ver',
+    icono: 'M3 3h2l.4 2M7 13h10l4-8H5.4M16 16a2 2 0 100 4 2 2 0 000-4zM8 18a2 2 0 11-4 0 2 2 0 014 0z',
   },
   {
     a: '/ventas',

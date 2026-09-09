@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/auth/AuthProvider'
+import { confirmar, pedirTexto } from '@/components/Dialogo'
 import {
   cambiarPermiso,
   cargarRolesYPermisos,
@@ -164,8 +165,14 @@ function Personas() {
     setError(null)
   }
 
-  function pedirPin(u: UsuarioAdmin) {
-    const valor = window.prompt(`PIN de 4 dígitos para ${u.nombre}`, '')
+  async function pedirPin(u: UsuarioAdmin) {
+    const valor = await pedirTexto({
+      titulo: `PIN de ${u.nombre}`,
+      detalle: 'Lo va a tipear en el mostrador cada vez que arme o cobre una venta.',
+      etiqueta: 'PIN de 4 dígitos',
+      ejemplo: '1234',
+      aceptar: 'Guardar el PIN',
+    })
     if (valor === null) return
     if (!/^[0-9]{4}$/.test(valor.trim())) {
       setError('El PIN tiene que ser de 4 dígitos numéricos.')
@@ -366,8 +373,15 @@ function Personas() {
                   )}
                   {u.activo && (
                     <button
-                      onClick={() => {
-                        if (window.confirm(`¿Dar de baja a ${u.nombre}?`)) baja.mutate(u.id)
+                      onClick={async () => {
+                        const sigue = await confirmar({
+                          titulo: `¿Dar de baja a ${u.nombre}?`,
+                          detalle:
+                            'Deja de poder entrar al sistema. Lo que hizo hasta hoy queda registrado con su nombre.',
+                          aceptar: 'Dar de baja',
+                          peligro: true,
+                        })
+                        if (sigue) baja.mutate(u.id)
                       }}
                       className="ml-3 text-red-600 hover:underline"
                     >

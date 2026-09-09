@@ -5,6 +5,7 @@ import { useTerminal } from '@/lib/terminal'
 import { useSync } from '@/lib/local/SyncProvider'
 import { useAuth } from '@/auth/AuthProvider'
 import { IdentificarOperador, useOperador } from '@/components/IdentificarOperador'
+import DescuentoEnCaja from '@/components/DescuentoEnCaja'
 import {
   abrirCaja,
   ajustarTotal,
@@ -421,8 +422,28 @@ export default function Caja() {
                     {moneda.format(v.total)}
                   </span>
                 </div>
-                <p className="truncate text-sm text-tinta">{v.cliente?.nombre}</p>
-                <p className="truncate text-xs text-piedra-400">{v.vendedor?.nombre}</p>
+                {/*
+                  El nombre para llamar va primero y grande: es lo que el
+                  cajero dice en voz alta. El cliente de la ficha queda
+                  debajo, chico, porque en el mostrador casi siempre dice
+                  "Consumidor Final" y no sirve para llamar a nadie.
+                */}
+                {v.nombre_para_llamar ? (
+                  <>
+                    <p className="truncate text-sm font-medium text-tinta">
+                      {v.nombre_para_llamar}
+                    </p>
+                    <p className="truncate text-xs text-piedra-400">
+                      {v.cliente?.nombre}
+                      {v.vendedor?.nombre ? ` · ${v.vendedor.nombre}` : ''}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="truncate text-sm text-tinta">{v.cliente?.nombre}</p>
+                    <p className="truncate text-xs text-piedra-400">{v.vendedor?.nombre}</p>
+                  </>
+                )}
               </button>
             ))}
           </div>
@@ -715,6 +736,7 @@ function PanelCobro({
   onCancelar: () => void
 }) {
   const [agregando, setAgregando] = useState(false)
+  const [descontando, setDescontando] = useState(false)
 
   const usables = medios.filter(
     (m) => m.tipo !== 'cuenta_corriente' || venta.cliente?.cuenta_corriente,
@@ -740,6 +762,17 @@ function PanelCobro({
 
   return (
     <div className="flex h-full flex-col gap-4">
+      {descontando && (
+        <DescuentoEnCaja
+          totalActual={venta.total}
+          trabajando={ajustando}
+          onCerrar={() => setDescontando(false)}
+          onAplicar={(nuevo, motivo) => {
+            setDescontando(false)
+            onAjustar(nuevo, motivo)
+          }}
+        />
+      )}
       <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-borde">
         <div className="flex items-baseline justify-between border-b border-borde px-5 py-3">
           <div>
@@ -907,22 +940,11 @@ function PanelCobro({
               <div className="flex items-baseline gap-3">
                 {puedeAjustar && (
                   <button
-                    onClick={() => {
-                      const propuesto = window.prompt(
-                        `Total actual: ${moneda.format(venta.total)}\n¿En cuánto queda?`,
-                        String(Math.round(venta.total)),
-                      )
-                      if (propuesto === null) return
-                      const nuevo = Number(propuesto)
-                      if (!Number.isFinite(nuevo) || nuevo <= 0) return
-                      const motivo = window.prompt('¿Por qué se ajusta?', 'Redondeo al cliente')
-                      if (!motivo || motivo.trim().length < 3) return
-                      onAjustar(nuevo, motivo.trim())
-                    }}
+                    onClick={() => setDescontando(true)}
                     disabled={ajustando || aplicando}
                     className="text-sm font-medium text-marca-700 hover:underline disabled:opacity-40"
                   >
-                    {ajustando ? 'Ajustando…' : 'Ajustar'}
+                    {ajustando ? 'Aplicando…' : 'Descuento'}
                   </button>
                 )}
                 <span className="text-2xl font-semibold tabular-nums text-tinta">

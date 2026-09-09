@@ -79,22 +79,51 @@ export function ticketNoFiscalEscPos(d: NoFiscalCompleto): Uint8Array {
     if (d.transportista) c.linea(`Transporte: ${d.transportista}`)
   }
 
-  // ── Detalle ──
+  /*
+    ── Detalle ──
+
+    En el remito no van precios. Lucas, 07/09: el remito acompaña a la
+    factura, o la factura sale después si es cuenta corriente, así que
+    el precio va en la factura. Los precios se siguen guardando —son lo
+    que permite valorizar lo que salió sin cobrarse— pero no se
+    imprimen.
+
+    Vale para los tres formatos: rollo en pantalla, hoja A4 y estos
+    bytes. Los tres tienen que decir lo mismo, y por eso la condición
+    está escrita igual en los tres.
+  */
+  const conPrecios = !esRemito
+
   c.separador()
   for (const l of d.lineas) {
     c.linea(l.descripcion)
-    const izq =
-      l.precio_unitario > 0
-        ? `  ${numero.format(l.cantidad)} x ${moneda.format(l.precio_unitario)}`
-        : `  ${numero.format(l.cantidad)}`
-    c.columnas(izq, l.precio_unitario > 0 ? moneda.format(l.importe) : '')
+    const muestraPrecio = conPrecios && l.precio_unitario > 0
+    const izq = muestraPrecio
+      ? `  ${numero.format(l.cantidad)} x ${moneda.format(l.precio_unitario)}`
+      : `  ${numero.format(l.cantidad)}`
+    c.columnas(izq, muestraPrecio ? moneda.format(l.importe) : '')
   }
   if (d.lineas.length === 0) c.linea('Sin detalle de líneas.')
 
   // ── Total, sin desglose de IVA ──
-  if (d.total > 0) {
+  if (conPrecios && d.total > 0) {
     c.separador()
     c.negrita(true).columnas('TOTAL:', moneda.format(d.total)).negrita(false)
+  }
+
+  /*
+    El remito cierra con bultos. Sin total en pesos hace falta algún
+    número para verificar la entrega, y ese número es cuántas unidades
+    salieron — que además es lo que se cuenta al recibir.
+  */
+  if (esRemito && d.lineas.length > 0) {
+    c.separador()
+    c.negrita(true)
+      .columnas(
+        'TOTAL DE UNIDADES:',
+        numero.format(d.lineas.reduce((s, l) => s + Number(l.cantidad), 0)),
+      )
+      .negrita(false)
   }
 
   if (d.observaciones) {

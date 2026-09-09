@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/auth/AuthProvider'
+import { pedirTexto } from '@/components/Dialogo'
 import {
   ETIQUETA_NO_FISCAL,
   aCsv,
@@ -166,11 +167,16 @@ export default function NoFiscales() {
                   puedeAnular={puedeAnular}
                   trabajando={aCaja.isPending || anular.isPending}
                   onACaja={() => f.venta_id && aCaja.mutate(f.venta_id)}
-                  onAnular={() => {
-                    const motivo = window.prompt('¿Por qué se anula? Queda registrado.')
-                    if (motivo && motivo.trim().length >= 3) {
-                      anular.mutate({ id: f.id, motivo: motivo.trim() })
-                    }
+                  onAnular={async () => {
+                    const motivo = await pedirTexto({
+                      titulo: `¿Anular ${numeroNoFiscal(f.tipo_clave, f.serie, f.numero)}?`,
+                      detalle: 'Queda registrado con tu nombre. El número no se reutiliza.',
+                      etiqueta: '¿Por qué se anula?',
+                      minimo: 3,
+                      aceptar: 'Anular',
+                      peligro: true,
+                    })
+                    if (motivo) anular.mutate({ id: f.id, motivo })
                   }}
                 />
               ))}

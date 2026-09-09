@@ -175,6 +175,14 @@ export interface VentaLocal {
   medio_pago_previsto_id: string | null
   cuotas_previstas: number | null
   observaciones: string | null
+  /*
+    Cómo llamarlo en la caja. Lo escribe el vendedor al enviar.
+
+    Opcional a propósito: las ventas que ya estaban guardadas en una
+    terminal antes de esta versión no tienen el campo, y Dexie no
+    migra filas viejas. Leerlo como `?? null` es correcto para las dos.
+  */
+  nombre_para_llamar?: string | null
   ocurrido_en: string
   enviada_caja_en: string | null
   actualizado_en: string
@@ -193,7 +201,15 @@ export interface NoFiscalLocal {
   tipo_clave: string
   serie: string
   numero: number
-  venta_id: string
+  /*
+    Anulable desde el 09/09: un remito puede nacer sin venta.
+
+    Es el caso que trajo Lucas —documentar mercadería que todavía no
+    entró al local, para la municipalidad o un pedido especial—, y por
+    eso `comprobante_no_fiscal.venta_id` fue anulable desde el
+    principio del lado del servidor.
+  */
+  venta_id: string | null
   fecha: string
   estado: string
   receptor_nombre: string
@@ -208,6 +224,12 @@ export interface NoFiscalLocal {
   entrega_localidad: string | null
   entrega_contacto: string | null
   transportista: string | null
+  /*
+    Sólo el remito. En false documenta un compromiso —mercadería que
+    todavía no entró— y no toca el inventario. Se guarda acá para que
+    el papel lo pueda decir sin preguntarle al servidor.
+  */
+  descuenta_stock?: boolean
   venta_codigo: string | null
   creado_en: string
 }
@@ -216,6 +238,8 @@ export interface NoFiscalLineaLocal {
   id: string
   comprobante_no_fiscal_id: string
   orden: number
+  /** Nulo en una línea libre: no es un producto del catálogo. */
+  producto_id?: string | null
   codigo_producto: string
   descripcion: string
   cantidad: number

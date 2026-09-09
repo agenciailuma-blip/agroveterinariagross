@@ -2,7 +2,11 @@ import { supabase } from '@/lib/supabase'
 import { datosEmisor } from '@/lib/api/comprobante'
 import { encolar } from '@/lib/local/sync'
 import { reservarNumeroNoFiscal } from '@/lib/local/consultas'
-import { emitirNoFiscalLocal, obtenerNoFiscalLocal } from '@/lib/local/noFiscal'
+import {
+  emitirNoFiscalLocal,
+  emitirRemitoDirectoLocal,
+  obtenerNoFiscalLocal,
+} from '@/lib/local/noFiscal'
 
 /*
   Presupuestos, remitos y comprobantes internos.
@@ -62,6 +66,12 @@ export async function emitirNoFiscal(
     entrega?: DatosEntrega
     /** El prefijo de la terminal. Sin él no se puede numerar. */
     serie?: string | null
+    /*
+      Sólo el remito. En false documenta un compromiso y no toca el
+      inventario. Nunca fuerza el descuento: con true sigue rigiendo la
+      regla de siempre —descuenta sólo si la venta no lo hizo ya—.
+    */
+    descuentaStock?: boolean
   } = {},
 ): Promise<{ id: string; serie: string; numero: number }> {
   const serie = (opciones.serie ?? '').trim() || 'T'
@@ -83,6 +93,7 @@ export async function emitirNoFiscal(
     p_serie: serie,
     p_numero: numero,
     p_ocurrido_en: new Date().toISOString(),
+    p_descuenta_stock: opciones.descuentaStock ?? true,
   }
 
   // Se guarda acá primero, siempre: es lo que permite imprimir el papel
@@ -99,6 +110,7 @@ export async function emitirNoFiscal(
     entregaLocalidad: opciones.entrega?.localidad,
     entregaContacto: opciones.entrega?.contacto,
     transportista: opciones.entrega?.transportista,
+    descuentaStock: opciones.descuentaStock ?? true,
   })
 
   if (navigator.onLine) {
@@ -119,6 +131,109 @@ export async function emitirNoFiscal(
       tabla: 'emitir_comprobante_no_fiscal',
       datos,
       descripcion: `${SIGLA_NO_FISCAL[tipo]} ${serie}-${String(numero).padStart(8, '0')}`,
+    },
+  ])
+
+  return { id, serie, numero }
+}
+
+/*
+  ─────────────────────────────────────────────────────────────
+  El remito que nace solo
+
+  Pedido de Lucas el 07/09. Gross emite remitos para la
+  municipalidad —y para clientes por pedido— de mercadería que
+  todavía no entró al local: se pide especialmente para ese cliente
+  y se documenta antes de tenerla.
+
+  Ese remito no puede salir de una venta, porque no hay venta; y no
+  puede descontar stock, porque descontaría algo que no está. Por eso
+  van juntas las dos cosas: `descuentaStock` en false es lo que lo
+  vuelve un documento de compromiso en vez de una salida.
+
+  Las líneas pueden ser de dos clases y se distinguen por una sola
+  cosa: si traen `producto_id` o no.
+
+  · Con producto, el nombre y el código salen del catálogo, así el
+    papel dice lo mismo que el sistema.
+  · Sin producto es una LÍNEA LIBRE —el "producto comodín"—: se
+    escribe para la ocasión, no se crea nada en el catálogo, y no
+    mueve stock porque no tiene existencias que mover.
+  ─────────────────────────────────────────────────────────────
+*/
+export interface LineaRemito {
+  /** Nulo en una línea libre. */
+  producto_id: string | null
+  codigo: string
+  descripcion: string
+  cantidad: number
+  precio_unitario: number
+}
+
+export async function emitirRemitoDirecto(
+  clienteId: string,
+  lineas: LineaRemito[],
+  opciones: {
+    descuentaStock?: boolean
+    terminalId?: string | null
+    serie?: string | null
+    observaciones?: string | null
+    entrega?: DatosEntrega
+  } = {},
+): Promise<{ id: string; serie: string; numero: number }> {
+  if (!lineas.length) throw new Error('El remito no tiene ninguna línea.')
+
+  const serie = (opciones.serie ?? '').trim() || 'T'
+  const id = crypto.randomUUID()
+  const numero = await reservarNumeroNoFiscal('remito', serie)
+
+  const datos = {
+    p_cliente_id: clienteId,
+    p_lineas: lineas.map((l) => ({
+      producto_id: l.producto_id,
+      codigo: l.codigo,
+      descripcion: l.descripcion,
+      cantidad: l.cantidad,
+      precio_unitario: l.precio_unitario,
+    })),
+    p_descuenta_stock: opciones.descuentaStock ?? true,
+    p_terminal_id: opciones.terminalId ?? null,
+    p_observaciones: opciones.observaciones ?? null,
+    p_entrega_domicilio: opciones.entrega?.domicilio ?? null,
+    p_entrega_localidad: opciones.entrega?.localidad ?? null,
+    p_entrega_contacto: opciones.entrega?.contacto ?? null,
+    p_transportista: opciones.entrega?.transportista ?? null,
+    p_id: id,
+    p_serie: serie,
+    p_numero: numero,
+    p_ocurrido_en: new Date().toISOString(),
+  }
+
+  // Igual que el otro camino: se guarda acá primero, siempre. Es lo que
+  // permite imprimir el papel en el acto, y sin conexión es lo único
+  // que hay.
+  await emitirRemitoDirectoLocal({
+    id,
+    serie,
+    numero,
+    clienteId,
+    lineas,
+    descuentaStock: opciones.descuentaStock ?? true,
+    observaciones: opciones.observaciones ?? null,
+    entrega: opciones.entrega,
+  })
+
+  if (navigator.onLine) {
+    const { error } = await supabase.rpc('emitir_remito_directo', datos)
+    if (!error) return { id, serie, numero }
+  }
+
+  await encolar(id, [
+    {
+      tipo: 'rpc',
+      tabla: 'emitir_remito_directo',
+      datos,
+      descripcion: `REM ${serie}-${String(numero).padStart(8, '0')}`,
     },
   ])
 
@@ -185,6 +300,8 @@ export interface LineaNoFiscal {
   factura.
 */
 export interface NoFiscalCompleto {
+  /** Sólo el remito: si tocó el inventario o documenta un compromiso. */
+  descuenta_stock?: boolean
   id: string
   tipo_clave: TipoNoFiscal
   tipo_descripcion: string
@@ -240,7 +357,7 @@ export async function obtenerNoFiscalCompleto(id: string): Promise<NoFiscalCompl
     .from('comprobante_no_fiscal')
     .select(
       `id, tipo_clave, serie, numero, fecha, estado, total, observaciones, valido_hasta,
-       entrega_domicilio, entrega_localidad, entrega_contacto, transportista,
+       entrega_domicilio, entrega_localidad, entrega_contacto, transportista, descuenta_stock,
        receptor_nombre, receptor_documento, receptor_domicilio, creado_en,
        tipo:tipo_clave(descripcion),
        condicion:receptor_condicion_iva_id(descripcion),
@@ -317,6 +434,13 @@ export interface FilaNoFiscal {
   valido_hasta: string | null
   entrega_localidad: string | null
   transportista: string | null
+  /*
+    Sólo el remito. En false documenta mercadería que todavía no entró
+    al local: no tocó el inventario. Se muestra en el listado porque un
+    remito que no descontó y uno que sí se ven idénticos, y son cosas
+    muy distintas para quien mira el stock.
+  */
+  descuenta_stock: boolean
   venta_id: string | null
   venta_codigo: string | null
   venta_estado: string | null
@@ -327,7 +451,7 @@ export async function listarNoFiscales(tipo: TipoNoFiscal | 'todos'): Promise<Fi
     .from('comprobante_no_fiscal')
     .select(
       `id, tipo_clave, serie, numero, fecha, receptor_nombre, total, estado, valido_hasta,
-       entrega_localidad, transportista, venta_id, venta:venta_id(codigo, estado)`,
+       entrega_localidad, transportista, descuenta_stock, venta_id, venta:venta_id(codigo, estado)`,
     )
     .order('creado_en', { ascending: false })
     .limit(200)

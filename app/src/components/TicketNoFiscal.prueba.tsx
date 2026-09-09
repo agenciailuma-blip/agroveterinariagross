@@ -189,7 +189,72 @@ describe('el contenido', () => {
     })
     const salida = html(sinPrecios)
     expect(salida).toContain('Alimento Perro Adulto 15 kg')
-    expect(salida).not.toContain('TOTAL')
+    expect(salida).not.toContain('TOTAL:')
+  })
+
+  /*
+    El caso que pidió Lucas el 07/09, y el que de verdad importa: el
+    remito TIENE precios guardados —hacen falta para valorizar lo que
+    salió sin cobrarse— y aun así no se imprimen.
+
+    La prueba se escribe con importes cargados a propósito. Con un
+    remito en cero pasaría igual sin que el código haga nada, y no
+    estaría probando nada.
+  */
+  it('un remito con precios cargados NO los imprime', () => {
+    const remito = doc({
+      tipo_clave: 'remito' as TipoNoFiscal,
+      tipo_descripcion: 'Remito',
+      total: 92500,
+      lineas: [
+        {
+          orden: 1,
+          codigo_producto: 'A-100',
+          descripcion: 'Alimento Perro Adulto 15 kg',
+          cantidad: 5,
+          precio_unitario: 18500,
+          importe: 92500,
+        },
+      ],
+    })
+
+    const salida = html(remito)
+    expect(salida).toContain('Alimento Perro Adulto 15 kg')
+    // Ni el unitario, ni el importe de la línea, ni el total.
+    expect(salida).not.toContain('18.500')
+    expect(salida).not.toContain('92.500')
+    expect(salida).not.toContain('TOTAL:')
+    // Pero sí los bultos, que es lo que se cuenta al recibir.
+    expect(salida).toContain('TOTAL DE UNIDADES')
+
+    // Y lo mismo por la impresora, que es el camino que nadie mira.
+    const impreso = bytes(remito)
+    expect(impreso).toContain('Alimento Perro Adulto 15 kg')
+    expect(impreso).not.toContain('18.500')
+    expect(impreso).not.toContain('92.500')
+    expect(impreso).toContain('TOTAL DE UNIDADES')
+  })
+
+  it('el presupuesto sigue mostrando los precios', () => {
+    const p = doc({
+      tipo_clave: 'presupuesto' as TipoNoFiscal,
+      tipo_descripcion: 'Presupuesto',
+      total: 92500,
+      lineas: [
+        {
+          orden: 1,
+          codigo_producto: 'A-100',
+          descripcion: 'Alimento Perro Adulto 15 kg',
+          cantidad: 5,
+          precio_unitario: 18500,
+          importe: 92500,
+        },
+      ],
+    })
+    const salida = html(p)
+    expect(salida).toContain('18.500')
+    expect(salida).toContain('92.500')
+    expect(salida).toContain('TOTAL:')
   })
 
   it('un comprobante anulado lo dice, en pantalla y en la impresora', () => {

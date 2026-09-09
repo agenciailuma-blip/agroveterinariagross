@@ -27,6 +27,7 @@ function fila(extra: Partial<FilaNoFiscal> = {}): FilaNoFiscal {
     valido_hasta: null,
     entrega_localidad: 'Campo Ramón',
     transportista: 'Camioneta 1',
+    descuenta_stock: true,
     venta_id: 'v1',
     venta_codigo: 'CAJA1-000010',
     venta_estado: 'cobrada',

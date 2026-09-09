@@ -12,7 +12,7 @@ import type { ListaPrecio, MedioPago } from '@/lib/api/precios'
   aplicación, tiene que ser la misma con otra fuente.
 */
 
-async function valorConfig(clave: string, defecto: number) {
+export async function valorConfig(clave: string, defecto: number) {
   const c = await db.configuracion.get(clave)
   const v = c?.valor
   return typeof v === 'number' ? v : Number(v ?? defecto) || defecto

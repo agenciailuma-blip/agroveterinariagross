@@ -80,6 +80,27 @@ export const ESTADO_STOCK: Record<EstadoStock, { etiqueta: string; clase: string
   sobrevendido: { etiqueta: 'Sobrevendido', clase: 'bg-red-100 text-red-800 ring-red-200' },
 }
 
+/*
+  Las alícuotas de IVA, con los códigos de ARCA.
+
+  Están escritas acá y no se leen de la base a propósito, y es la
+  excepción que confirma la regla: no son datos de Gross, son una tabla
+  fija de ARCA. Sus identificadores ya se usan sin traducir en todo el
+  sistema —es una de las decisiones que no se revisan— y hacen falta en
+  el mostrador, donde una línea escrita a mano tiene que poder salir sin
+  conexión y sin preguntarle a nadie qué IVA lleva.
+
+  Si ARCA agregara una, se agrega un renglón acá.
+*/
+export const ALICUOTAS_IVA = [
+  { id: 5, etiqueta: '21%' },
+  { id: 4, etiqueta: '10,5%' },
+  { id: 6, etiqueta: '27%' },
+  { id: 8, etiqueta: '5%' },
+  { id: 9, etiqueta: '2,5%' },
+  { id: 3, etiqueta: '0%' },
+] as const
+
 export const moneda = new Intl.NumberFormat('es-AR', {
   style: 'currency',
   currency: 'ARS',

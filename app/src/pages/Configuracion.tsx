@@ -4,6 +4,7 @@ import { useAuth } from '@/auth/AuthProvider'
 import DiagnosticoTerminal from '@/components/DiagnosticoTerminal'
 import DatosDelEmisor from '@/components/DatosDelEmisor'
 import ImpresoraDelMostrador from '@/components/ImpresoraDelMostrador'
+import RitmoDelMostrador from '@/components/RitmoDelMostrador'
 import {
   crearPuntoVenta,
   guardarValorConfiguracion,
@@ -151,6 +152,8 @@ export default function Configuracion() {
           )}
         </div>
       </div>
+
+      <RitmoDelMostrador />
 
       <DiagnosticoTerminal />
 

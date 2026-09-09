@@ -2,13 +2,16 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider, useAuth } from '@/auth/AuthProvider'
 import { SyncProvider } from '@/lib/local/SyncProvider'
+import { Dialogos } from '@/components/Dialogo'
 import Layout from '@/components/Layout'
 import Login from '@/pages/Login'
 import Inicio from '@/pages/Inicio'
 import Productos from '@/pages/Productos'
 import ImportarProductos from '@/pages/ImportarProductos'
 import Inventario from '@/pages/Inventario'
+import Stock from '@/pages/Stock'
 import Precios from '@/pages/Precios'
+import Proveedores from '@/pages/Proveedores'
 import PuntoDeVenta from '@/pages/PuntoDeVenta'
 import Caja from '@/pages/Caja'
 import Clientes from '@/pages/Clientes'
@@ -108,8 +111,10 @@ function Rutas() {
         <Route index element={<Inicio />} />
         <Route path="productos" element={<Productos />} />
         <Route path="productos/importar" element={<ImportarProductos />} />
+        <Route path="stock" element={<Stock />} />
         <Route path="inventario" element={<Inventario />} />
         <Route path="precios" element={<Precios />} />
+        <Route path="proveedores" element={<Proveedores />} />
         <Route path="ventas" element={<PuntoDeVenta />} />
         <Route path="caja" element={<Caja />} />
         <Route path="clientes" element={<Clientes />} />
@@ -136,6 +141,11 @@ export default function App() {
       <BrowserRouter>
         <AuthProvider>
           <Ruteo />
+          {/*
+            Arriba de todo y afuera del ruteo: una pregunta abierta no
+            se puede perder porque la pantalla de atrás cambió.
+          */}
+          <Dialogos />
         </AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>

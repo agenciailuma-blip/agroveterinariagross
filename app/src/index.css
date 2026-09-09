@@ -102,6 +102,42 @@ body {
 
 /*
   ─────────────────────────────────────────────────────────────
+  El scroll frena en el tope
+
+  Reportado por Lucas el 07/09 adentro del programa instalado: al
+  llegar al final de una lista el scroll seguía tirando y dejaba
+  ver un fondo gris debajo de la pantalla.
+
+  Es el rebote elástico de Chromium — el mismo que tiene el
+  navegador, sólo que en una ventana sin barra de direcciones
+  parece que la aplicación se despegó. `overscroll-behavior: none`
+  lo apaga y, de paso, evita que el scroll de una lista arrastre a
+  la página entera cuando toca el fondo.
+
+  El gris era el propio WebView asomando: la ventana de Tauri se
+  pinta ahora del color del papel (`backgroundColor` en
+  `tauri.conf.json`), así que aunque algo llegue a asomar, asoma
+  del color correcto.
+  ─────────────────────────────────────────────────────────────
+*/
+html,
+body {
+  overscroll-behavior: none;
+}
+
+/*
+  Y todo lo que scrollea por dentro tampoco contagia a su padre.
+  Sin esto, llegar al final de la lista de productos empuja el
+  layout entero.
+*/
+.overflow-auto,
+.overflow-y-auto,
+.overflow-x-auto {
+  overscroll-behavior: contain;
+}
+
+/*
+  ─────────────────────────────────────────────────────────────
   Luces de fondo
 
   Se mueven muy despacio y sólo animan transform y opacity, que el

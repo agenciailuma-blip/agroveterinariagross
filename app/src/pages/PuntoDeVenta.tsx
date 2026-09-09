@@ -15,9 +15,14 @@ import { cargarPrecios, previsualizarPrecio } from '@/lib/api/precios'
 import type { MedioPago } from '@/lib/api/precios'
 import { useSync } from '@/lib/local/SyncProvider'
 import { subirPendientes } from '@/lib/local/sync'
+import { valorConfig } from '@/lib/local/consultas'
 import { emitirPresupuesto } from '@/lib/api/noFiscal'
 import { abrirNoFiscal } from '@/lib/escritorio'
 import { moneda, numero } from '@/lib/tipos'
+import { confirmar, pedirNumero, pedirTexto } from '@/components/Dialogo'
+import { MOTIVOS_DE_PRECIO } from '@/lib/motivos'
+import LineaLibre from '@/components/LineaLibre'
+import type { DatosLineaLibre } from '@/components/LineaLibre'
 
 const BORRADOR = 'gross.venta-en-curso'
 
@@ -44,6 +49,41 @@ export default function PuntoDeVenta() {
   const [exito, setExito] = useState<string | null>(null)
   const [pasoEnvio, setPasoEnvio] = useState<string | null>(null)
   const busqueda = useRef<HTMLInputElement>(null)
+
+  /*
+    La rebaja que está esperando el PIN que la autorice.
+
+    Se guarda entera —línea, precio nuevo y motivo— y se aplica recién
+    cuando alguien se identifica. Al revés (aplicar y después pedir el
+    PIN) la rebaja quedaría hecha si la persona cierra el cartel, que es
+    justo lo que el PIN tiene que impedir.
+  */
+  const [autorizando, setAutorizando] = useState<{
+    lineaId: string
+    precio: number
+    motivo: string
+    porcentaje: number
+  } | null>(null)
+
+  /** El cartel para escribir una línea que no está en el catálogo. */
+  const [escribiendoLinea, setEscribiendoLinea] = useState(false)
+
+  /*
+    Sugerencia 18 de Lucas: preguntar cuántos al agregar.
+
+    Se lee de la configuración y no está fijo en el código porque cambia
+    el ritmo de la venta entera, y cuál conviene depende de qué se está
+    vendiendo. Cinco bolsas de alimento agradecen la pregunta; doce
+    collares distintos la sufren. Que lo prueben una semana y lo apaguen
+    desde Configuración si molesta.
+
+    Se lee de la base local: el mostrador no puede quedarse esperando al
+    servidor para saber cómo agregar un producto.
+  */
+  const [pedirCantidad, setPedirCantidad] = useState(false)
+  useEffect(() => {
+    valorConfig('ventas.pedir_cantidad_al_agregar', 1).then((v) => setPedirCantidad(v === 1))
+  }, [copiaLocalLista])
 
   // El borrador sobrevive a un refresco accidental. Una venta a medio
   // armar que se pierde por un F5 es media hora de mostrador tirada.
@@ -99,14 +139,41 @@ export default function PuntoDeVenta() {
     }
   }, [lineas, cliente, listaTarjeta, listaElegida, recargoElegido])
 
-  function agregar(p: ProductoVenta) {
+  async function agregar(p: ProductoVenta) {
     renovar()
     setError(null)
+
+    let cuantos = 1
+    if (pedirCantidad) {
+      const pedido = await pedirNumero({
+        titulo: p.nombre_interno,
+        detalle: `${moneda.format(p.precio_venta)} por ${p.unidad_medida} · quedan ${numero.format(p.cantidad)}`,
+        etiqueta: '¿Cuántos?',
+        valorInicial: '1',
+        aceptar: 'Agregar',
+      })
+      // Cancelar no agrega nada. Es lo que se espera de Cancelar, y es
+      // además la forma de corregir un escaneo equivocado sin tener que
+      // agregarlo y después quitarlo de la lista.
+      if (pedido === null) {
+        busqueda.current?.focus()
+        return
+      }
+      if (!(pedido > 0)) {
+        setError('La cantidad tiene que ser mayor que cero.')
+        busqueda.current?.focus()
+        return
+      }
+      // Un collar no se vende por mitades. Mismo criterio que al
+      // corregir la cantidad en la lista.
+      cuantos = esFraccionable(p.unidad_medida) ? pedido : Math.round(pedido)
+    }
+
     setLineas((prev) => {
       const existente = prev.find((l) => l.producto_id === p.producto_id)
       if (existente) {
         return prev.map((l) =>
-          l.producto_id === p.producto_id ? { ...l, cantidad: l.cantidad + 1 } : l,
+          l.producto_id === p.producto_id ? { ...l, cantidad: l.cantidad + cuantos } : l,
         )
       }
       return [
@@ -117,10 +184,11 @@ export default function PuntoDeVenta() {
           codigo_producto: p.codigo,
           descripcion: p.nombre_interno,
           unidad_medida: p.unidad_medida,
-          cantidad: 1,
+          cantidad: cuantos,
           precio_original: p.precio_venta,
           precio_unitario: p.precio_venta,
           motivo_modificacion: null,
+          autorizado_por: null,
           alicuota_iva_id: p.alicuota_iva_id,
           condicion_iva: p.condicion_iva,
           stock_disponible: p.cantidad,
@@ -128,6 +196,107 @@ export default function PuntoDeVenta() {
       ]
     })
     setTexto('')
+    busqueda.current?.focus()
+  }
+
+  /*
+    Descuento por porcentaje sobre una línea. Sugerencia 19 de Lucas.
+
+    El mecanismo ya existía —`cambiarPrecio` deja precio, motivo y
+    responsable— pero el vendedor habla en porcentajes: "hacele el 10%".
+    Obligarlo a calcular el precio con el cliente adelante es donde
+    aparecen los errores de cuenta.
+
+    Termina en el mismo lugar que un precio escrito a mano: un precio
+    unitario con su motivo. No hay una segunda forma de rebajar que
+    después haya que reconciliar con la primera.
+  */
+  async function descontarLinea(id: string) {
+    const linea = lineas.find((l) => l.id === id)
+    if (!linea) return
+
+    const pct = await pedirNumero({
+      titulo: `Descuento sobre ${linea.descripcion}`,
+      detalle: `Precio actual ${moneda.format(linea.precio_unitario)}`,
+      etiqueta: 'Porcentaje de descuento',
+      ejemplo: '10',
+      aceptar: 'Calcular',
+    })
+    if (pct === null) return
+    if (!(pct > 0) || pct >= 100) {
+      return setError('El descuento tiene que estar entre 0 y 100.')
+    }
+
+    const nuevo = Math.round(linea.precio_original * (1 - pct / 100) * 100) / 100
+
+    const motivo = await pedirTexto({
+      titulo: `${pct}% de descuento`,
+      detalle: `${linea.descripcion}\nDe ${moneda.format(linea.precio_original)} a ${moneda.format(nuevo)}`,
+      etiqueta: 'Motivo',
+      opciones: MOTIVOS_DE_PRECIO,
+      permiteOtro: true,
+      minimo: 3,
+      aceptar: 'Aplicar',
+    })
+    if (!motivo) return setError('Para rebajar el precio hay que indicar el motivo.')
+
+    setError(null)
+    setAutorizando({ lineaId: id, precio: nuevo, motivo, porcentaje: pct })
+  }
+
+  /* El PIN llegó: se aplica la rebaja firmada por quien lo puso. */
+  function aplicarRebaja(usuarioId: string) {
+    if (!autorizando) return
+    const { lineaId, precio, motivo } = autorizando
+    setAutorizando(null)
+    renovar()
+    setLineas((p) =>
+      p.map((l) =>
+        l.id === lineaId
+          ? {
+              ...l,
+              precio_unitario: precio,
+              motivo_modificacion: motivo,
+              autorizado_por: usuarioId,
+            }
+          : l,
+      ),
+    )
+  }
+
+  /*
+    Una línea escrita a mano. Ver `components/LineaLibre.tsx` para el
+    porqué y para el límite.
+
+    `precio_original` arranca igual al tipeado a propósito: la base
+    exige motivo y responsable en toda línea cuyo unitario difiera del
+    original, y acá no hay precio de lista del que se esté apartando —
+    el precio ES el que alguien decidió. Si después se rebaja, el
+    circuito de siempre pide motivo y PIN.
+  */
+  function agregarLibre(d: DatosLineaLibre) {
+    setEscribiendoLinea(false)
+    renovar()
+    setError(null)
+    setLineas((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        producto_id: null,
+        codigo_producto: 'LIBRE',
+        descripcion: d.descripcion,
+        unidad_medida: 'unidad',
+        cantidad: d.cantidad,
+        precio_original: d.precio,
+        precio_unitario: d.precio,
+        motivo_modificacion: null,
+        autorizado_por: null,
+        alicuota_iva_id: d.alicuotaIvaId,
+        condicion_iva: 'gravado',
+        // No tiene existencias que mirar: nunca falta.
+        stock_disponible: Number.MAX_SAFE_INTEGER,
+      },
+    ])
     busqueda.current?.focus()
   }
 
@@ -149,16 +318,18 @@ export default function PuntoDeVenta() {
     )
   }
 
-  function cambiarPrecio(id: string) {
+  async function cambiarPrecio(id: string) {
     const linea = lineas.find((l) => l.id === id)
     if (!linea) return
-    const nuevo = window.prompt(
-      `Precio de ${linea.descripcion}\nDe lista: ${moneda.format(linea.precio_original)}`,
-      String(linea.precio_unitario),
-    )
-    if (nuevo === null) return
-    const valor = Number(nuevo)
-    if (!Number.isFinite(valor) || valor < 0) return setError('El precio no es válido.')
+    const valor = await pedirNumero({
+      titulo: `Precio de ${linea.descripcion}`,
+      detalle: `De lista: ${moneda.format(linea.precio_original)}`,
+      etiqueta: 'Precio nuevo',
+      valorInicial: String(linea.precio_unitario),
+      aceptar: 'Aplicar',
+    })
+    if (valor === null) return
+    if (valor < 0) return setError('El precio no es válido.')
 
     if (valor === linea.precio_original) {
       return setLineas((p) =>
@@ -168,15 +339,21 @@ export default function PuntoDeVenta() {
 
     // La base rechaza una línea con precio cambiado sin motivo. Se pide
     // acá para que el error no aparezca recién al enviar a caja.
-    const motivo = window.prompt('¿Por qué se modifica el precio?')
-    if (!motivo || motivo.trim().length < 3) {
+    const motivo = await pedirTexto({
+      titulo: '¿Por qué se modifica el precio?',
+      detalle: `${linea.descripcion}\nDe ${moneda.format(linea.precio_original)} a ${moneda.format(valor)}`,
+      etiqueta: 'Motivo',
+      opciones: MOTIVOS_DE_PRECIO,
+      permiteOtro: true,
+      minimo: 3,
+      aceptar: 'Aplicar',
+    })
+    if (!motivo) {
       return setError('Para cambiar el precio hay que indicar el motivo.')
     }
     setError(null)
     setLineas((p) =>
-      p.map((l) =>
-        l.id === id ? { ...l, precio_unitario: valor, motivo_modificacion: motivo.trim() } : l,
-      ),
+      p.map((l) => (l.id === id ? { ...l, precio_unitario: valor, motivo_modificacion: motivo } : l)),
     )
   }
 
@@ -237,7 +414,7 @@ export default function PuntoDeVenta() {
   })
 
   const enviar = useMutation({
-    mutationFn: () =>
+    mutationFn: (nombreParaLlamar: string | null) =>
       enviarACaja({
         clienteId: cliente!.id,
         vendedorId: operador!.usuario_id,
@@ -245,6 +422,7 @@ export default function PuntoDeVenta() {
         terminalPrefijo: terminal!.prefijo ?? 'T',
         lineas,
         observaciones: null,
+        nombreParaLlamar,
         listaPrecioId: medio?.lista_precio_id ?? null,
         medioPagoId: medioAnticipado,
         cuotas: cuotasAnticipadas,
@@ -261,7 +439,21 @@ export default function PuntoDeVenta() {
           : `Venta ${v.codigo} guardada — se envía cuando vuelva la conexión`,
       )
       setTimeout(() => setExito(null), 4000)
-      busqueda.current?.focus()
+      /*
+        Y se cierra la sesión del operador. Sugerencia 21 de Lucas,
+        repetida el 07/09.
+
+        No es seguridad de contraseña: el PIN es de cuatro dígitos y se
+        tipea en un mostrador lleno de gente. Es atribución. Sin esto,
+        el primer vendedor que pone su PIN a la mañana queda como autor
+        de todo lo que carga cualquiera hasta que la pantalla se vence
+        sola por inactividad — y entonces "quién vendió qué" no
+        significa nada.
+
+        Va acá y no antes: si se cerrara al apretar el botón, un error
+        de la base dejaría la venta sin enviar y al vendedor afuera.
+      */
+      salir()
     },
     onError: (e) => {
       setPasoEnvio(null)
@@ -273,6 +465,35 @@ export default function PuntoDeVenta() {
 
   if (!terminal) return <ElegirTerminal disponibles={disponibles} onElegir={elegir} />
 
+  /*
+    El PIN que autoriza la rebaja. Sugerencia 19 de Lucas.
+
+    Se reusa la misma pantalla de identificación del mostrador en vez de
+    inventar un segundo pedido de PIN: es el mismo gesto para la persona
+    y, más importante, la misma verificación —servidor con conexión,
+    verificador local sin ella— en un solo lugar.
+  */
+  if (autorizando) {
+    const linea = lineas.find((l) => l.id === autorizando.lineaId)
+    return (
+      <div className="fixed inset-0 z-50">
+        <div className="absolute inset-x-0 top-0 z-10 bg-marca-950 px-4 pt-6 text-center">
+          <p className="text-sm text-marca-200">
+            Autorizar {autorizando.porcentaje}% de descuento en {linea?.descripcion}
+          </p>
+          <p className="text-xs text-marca-300/70">
+            {autorizando.motivo} · queda en {moneda.format(autorizando.precio)}
+          </p>
+        </div>
+        <IdentificarOperador
+          terminalId={terminal!.id}
+          onIdentificado={(o) => aplicarRebaja(o.usuario_id)}
+          onCancelar={() => setAutorizando(null)}
+        />
+      </div>
+    )
+  }
+
   if (!operador) {
     return (
       <div className="-m-6 min-h-[calc(100vh-3.5rem)]">
@@ -281,7 +502,9 @@ export default function PuntoDeVenta() {
     )
   }
 
-  const sinStock = lineas.filter((l) => l.cantidad > l.stock_disponible)
+  // Las líneas libres quedan afuera: no son productos del catálogo y no
+  // tienen existencias con las que comparar.
+  const sinStock = lineas.filter((l) => l.producto_id && l.cantidad > l.stock_disponible)
 
   /*
     Sin conexión y sin copia local no se puede vender, y hay que decirlo
@@ -305,6 +528,9 @@ export default function PuntoDeVenta() {
 
   return (
     <div className="flex h-full gap-4" onKeyDown={renovar}>
+      {escribiendoLinea && (
+        <LineaLibre onAgregar={agregarLibre} onCerrar={() => setEscribiendoLinea(false)} />
+      )}
       <div className="flex min-w-0 flex-1 flex-col gap-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -331,7 +557,7 @@ export default function PuntoDeVenta() {
           </div>
         </div>
 
-        <div className="relative">
+        <div className="relative flex gap-2">
           <input
             ref={busqueda}
             autoFocus
@@ -341,8 +567,23 @@ export default function PuntoDeVenta() {
             className="w-full rounded-xl border border-borde bg-white py-3 pr-4 pl-4 text-lg text-tinta shadow-sm outline-none focus:border-marca-500 focus:ring-2 focus:ring-marca-500/20"
           />
 
+          {/*
+            El producto comodín, pedido por Lucas el 07/09.
+
+            Va al lado del buscador y no escondido en un menú: el momento
+            en que hace falta es exactamente cuando el buscador no
+            encontró nada, y ahí tiene que estar a la vista.
+          */}
+          <button
+            onClick={() => setEscribiendoLinea(true)}
+            title="Escribir una línea que no está en el catálogo"
+            className="shrink-0 rounded-xl border border-borde bg-white px-4 text-sm font-medium text-piedra-600 shadow-sm hover:bg-piedra-50 hover:text-marca-700"
+          >
+            Escribir
+          </button>
+
           {debounced.length >= 2 && (
-            <div className="absolute z-20 mt-1 max-h-80 w-full overflow-y-auto rounded-xl bg-white shadow-lg ring-1 ring-borde">
+            <div className="absolute top-full right-0 left-0 z-20 mt-1 max-h-80 overflow-y-auto rounded-xl bg-white shadow-lg ring-1 ring-borde">
               {resultados.isPending && (
                 <p className="px-4 py-3 text-sm text-piedra-400">Buscando…</p>
               )}
@@ -396,7 +637,8 @@ export default function PuntoDeVenta() {
                 </thead>
                 <tbody className="divide-y divide-piedra-100">
                   {lineas.map((l) => {
-                    const falta = l.cantidad > l.stock_disponible
+                    // Una línea libre no tiene existencias: nunca falta.
+                    const falta = !!l.producto_id && l.cantidad > l.stock_disponible
                     return (
                       <tr key={l.id} className={falta ? 'bg-amber-50/60' : ''}>
                         <td className="px-4 py-2.5">
@@ -429,13 +671,30 @@ export default function PuntoDeVenta() {
                           )}
                         </td>
                         <td className="px-3 py-2.5 text-right">
-                          <button
-                            onClick={() => cambiarPrecio(l.id)}
-                            className="tabular-nums text-tinta hover:text-marca-700 hover:underline"
-                            title="Modificar el precio de esta línea"
-                          >
-                            {moneda.format(l.precio_unitario)}
-                          </button>
+                          <div className="flex items-center justify-end gap-1.5">
+                            {/*
+                              Sugerencia 19 de Lucas: descontar por
+                              porcentaje. Va pegado al precio porque es
+                              otra forma de decir lo mismo, y lleva su
+                              propio botón porque "hacele el 10%" y
+                              "dejámelo en 8.500" son dos gestos
+                              distintos del vendedor.
+                            */}
+                            <button
+                              onClick={() => descontarLinea(l.id)}
+                              className="rounded px-1.5 py-0.5 text-xs font-medium text-piedra-400 hover:bg-marca-50 hover:text-marca-700"
+                              title="Descontar un porcentaje"
+                            >
+                              %
+                            </button>
+                            <button
+                              onClick={() => cambiarPrecio(l.id)}
+                              className="tabular-nums text-tinta hover:text-marca-700 hover:underline"
+                              title="Modificar el precio de esta línea"
+                            >
+                              {moneda.format(l.precio_unitario)}
+                            </button>
+                          </div>
                           {l.precio_unitario !== l.precio_original && (
                             <p className="text-xs text-piedra-400 line-through">
                               {moneda.format(l.precio_original)}
@@ -636,7 +895,33 @@ export default function PuntoDeVenta() {
         )}
 
         <button
-          onClick={() => enviar.mutate()}
+          onClick={async () => {
+            /*
+              Antes de mandarla, cómo llamar a la persona en la caja.
+              Sugerencia 15 de Lucas.
+
+              El campo puede quedar vacío: hay ventas donde el cliente
+              está parado al lado del cajero y no hace falta nombrar a
+              nadie. Enter manda igual. Lo que NO manda es Cancelar —
+              ahí se vuelve a la venta, que es lo que se espera de un
+              botón que dice Cancelar.
+
+              Obligar a escribir un nombre sería agregarle un paso a la
+              operación más frecuente del mostrador para resolver un
+              caso que no siempre existe.
+            */
+            const nombre = await pedirTexto({
+              titulo: '¿Cómo lo llamamos en la caja?',
+              detalle: `${totales.unidades} ${totales.unidades === 1 ? 'unidad' : 'unidades'} · ${moneda.format(totales.elegido)}
+
+Se muestra en la cola del cajero. Si no hace falta, dejalo vacío.`,
+              etiqueta: 'Nombre o seña',
+              ejemplo: 'Juan · el de la camioneta blanca',
+              aceptar: 'Enviar a caja',
+            })
+            if (nombre === null) return
+            enviar.mutate(nombre || null)
+          }}
           disabled={!lineas.length || !cliente || enviar.isPending || presupuestar.isPending}
           className="rounded-xl bg-marca-700 px-4 py-4 text-base font-medium text-white hover:bg-marca-600 disabled:opacity-40"
         >
@@ -664,8 +949,14 @@ export default function PuntoDeVenta() {
 
         {lineas.length > 0 && (
           <button
-            onClick={() => {
-              if (window.confirm('¿Descartar la venta en curso?')) setLineas([])
+            onClick={async () => {
+              const sigue = await confirmar({
+                titulo: '¿Descartar la venta en curso?',
+                detalle: `Se pierden las ${lineas.length} ${lineas.length === 1 ? 'línea' : 'líneas'} cargadas.`,
+                aceptar: 'Descartar',
+                peligro: true,
+              })
+              if (sigue) setLineas([])
             }}
             className="text-sm text-piedra-500 hover:text-red-600 hover:underline"
           >

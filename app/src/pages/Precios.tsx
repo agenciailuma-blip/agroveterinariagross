@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/auth/AuthProvider'
+import { confirmar } from '@/components/Dialogo'
 import {
   TIPOS_MEDIO_PAGO,
   cargarPreciosServidor,
@@ -216,8 +217,14 @@ export default function Precios() {
                   </button>
                   {!l.es_predeterminada && (
                     <button
-                      onClick={() => {
-                        if (window.confirm(`¿Dar de baja la lista "${l.nombre}"?`)) bajaLista.mutate(l.id)
+                      onClick={async () => {
+                        const sigue = await confirmar({
+                          titulo: `¿Dar de baja la lista "${l.nombre}"?`,
+                          detalle: 'Deja de ofrecerse en la caja. Las ventas que la usaron no cambian.',
+                          aceptar: 'Dar de baja',
+                          peligro: true,
+                        })
+                        if (sigue) bajaLista.mutate(l.id)
                       }}
                       className="ml-3 text-xs text-piedra-400 hover:text-red-600"
                     >
@@ -276,8 +283,14 @@ export default function Precios() {
                     Editar
                   </button>
                   <button
-                    onClick={() => {
-                      if (window.confirm(`¿Dar de baja "${m.nombre}"?`)) bajaMedio.mutate(m.id)
+                    onClick={async () => {
+                      const sigue = await confirmar({
+                        titulo: `¿Dar de baja "${m.nombre}"?`,
+                        detalle: 'Deja de ofrecerse en la caja. Los cobros ya hechos no cambian.',
+                        aceptar: 'Dar de baja',
+                        peligro: true,
+                      })
+                      if (sigue) bajaMedio.mutate(m.id)
                     }}
                     className="ml-3 text-xs text-piedra-400 hover:text-red-600"
                   >

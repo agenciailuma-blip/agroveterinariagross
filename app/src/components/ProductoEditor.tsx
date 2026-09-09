@@ -11,6 +11,15 @@ export interface EstadoFormulario {
   animales: string[]
   etapas: string[]
   stockContado: string
+  /*
+    Aviso de stock bajo.
+
+    `propio` distingue las dos situaciones que se ven igual en pantalla
+    y se guardan distinto: un producto con umbral puesto a mano, y uno
+    que muestra el mismo número porque lo hereda de su categoría.
+    Apagarlo borra el umbral del producto y lo devuelve a heredar.
+  */
+  umbral: { bajo: string; critico: string; propio: boolean }
 }
 
 interface Props {
@@ -25,6 +34,13 @@ interface Props {
   onCancelar: () => void
   /** Sin permiso de baja no se pasa, y el botón no aparece. */
   onDarDeBaja?: () => void
+  /*
+    Configurar umbrales es un permiso aparte (`stock.configurar_umbrales`)
+    y lo verifica la RLS. Sin él, el umbral que rige se muestra igual
+    —es información útil— pero no se puede tocar: ofrecer un control que
+    la base va a rechazar es peor que no ofrecerlo.
+  */
+  puedeUmbrales: boolean
   onReferenciaCreada: (grupo: keyof Referencias, nueva: Referencia) => void
 }
 
@@ -74,6 +90,7 @@ export default function ProductoEditor({
   onGuardar,
   onCancelar,
   onDarDeBaja,
+  puedeUmbrales,
   onReferenciaCreada,
 }: Props) {
   const [codigoBarra, setCodigoBarra] = useState('')
@@ -102,6 +119,15 @@ export default function ProductoEditor({
 
   const contado = estado.stockContado === '' ? null : Number(estado.stockContado)
   const diferencia = contado === null ? null : contado - stockActual
+
+  // La base tiene la misma restricción (`umbral_critico_menor_o_igual`).
+  // Se avisa acá igual para que el error no aparezca recién al guardar,
+  // que es cuando ya se perdió de vista qué se estaba tocando.
+  const umbralInvalido =
+    estado.umbral.propio &&
+    estado.umbral.bajo !== '' &&
+    estado.umbral.critico !== '' &&
+    Number(estado.umbral.critico) > Number(estado.umbral.bajo)
 
   // Rentabilidad. Todo opcional: sin costo no hay margen y el producto
   // funciona igual, que es como está el catálogo hoy.
@@ -171,6 +197,24 @@ export default function ProductoEditor({
               onChange={(e) => set({ nombre_publico: e.target.value || null })}
               className={claseInput}
               placeholder="Alimento Balanceado Livra Adulto 15 kg"
+            />
+          </Campo>
+          {/*
+            Sugerencia 22 de Lucas. El campo existía en la base desde el
+            principio, pensado para la tienda de Zubu; lo que faltaba era
+            mostrarlo. Se escribe una vez acá y viaja a la web.
+          */}
+          <Campo
+            etiqueta="Descripción (la que va a la tienda web)"
+            ancho="col-span-4"
+            ayuda="Para qué sirve, cómo se usa, qué trae. Se sincroniza con la tienda."
+          >
+            <textarea
+              rows={3}
+              value={estado.campos.descripcion ?? ''}
+              onChange={(e) => set({ descripcion: e.target.value || null })}
+              className={`${claseInput} resize-y`}
+              placeholder="Alimento balanceado para perros adultos de razas medianas y grandes…"
             />
           </Campo>
         </Seccion>
@@ -340,6 +384,117 @@ export default function ProductoEditor({
               </p>
             )}
           </div>
+
+          {/*
+            Aviso de stock bajo. Sugerencia 7 de Lucas.
+
+            Estaba construido en la base desde el principio —dos niveles,
+            por producto o por categoría entera— y el listado ya pintaba
+            "Stock bajo" y "Crítico" con esto. Lo único que faltaba era
+            dónde tocarlo, y por eso el 07/09 no se lo pudo mostrar.
+
+            Va acá adentro de Stock y no en una pantalla aparte: ¿cuántos
+            me quedan? y ¿a partir de cuántos me avisás? son la misma
+            conversación.
+          */}
+          <div className="col-span-4 rounded-lg bg-slate-50 p-3 ring-1 ring-slate-200">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-xs font-medium text-slate-600">Avisarme cuando queden pocos</p>
+              {puedeUmbrales && (
+                <label className="flex items-center gap-2 text-xs text-slate-500">
+                  <input
+                    type="checkbox"
+                    checked={estado.umbral.propio}
+                    onChange={(e) =>
+                      onCambio({
+                        ...estado,
+                        umbral: { ...estado.umbral, propio: e.target.checked },
+                      })
+                    }
+                    className="size-3.5 rounded border-slate-300 accent-marca-700"
+                  />
+                  Poner un aviso propio para este producto
+                </label>
+              )}
+            </div>
+
+            {estado.umbral.propio && puedeUmbrales ? (
+              <div className="mt-3 grid grid-cols-4 gap-3">
+                <Campo etiqueta="Stock bajo (amarillo)" ayuda="Hay que ir pidiendo">
+                  <input
+                    type="number"
+                    step="1"
+                    min="0"
+                    value={estado.umbral.bajo}
+                    onChange={(e) =>
+                      onCambio({ ...estado, umbral: { ...estado.umbral, bajo: e.target.value } })
+                    }
+                    className={`${claseInput} text-right tabular-nums`}
+                  />
+                </Campo>
+                <Campo etiqueta="Crítico (rojo)" ayuda="Se queda sin stock">
+                  <input
+                    type="number"
+                    step="1"
+                    min="0"
+                    value={estado.umbral.critico}
+                    onChange={(e) =>
+                      onCambio({ ...estado, umbral: { ...estado.umbral, critico: e.target.value } })
+                    }
+                    className={`${claseInput} text-right tabular-nums`}
+                  />
+                </Campo>
+                <div className="col-span-2 flex items-end">
+                  {umbralInvalido && (
+                    <p className="w-full rounded-lg bg-amber-50 px-3 py-1.5 text-xs text-amber-800 ring-1 ring-amber-200">
+                      El crítico tiene que ser menor o igual que el bajo.
+                    </p>
+                  )}
+                </div>
+              </div>
+            ) : (
+              /*
+                Sin aviso propio se muestra el que rige igual. Un campo
+                vacío daría a entender que no hay ninguno, y sí lo hay:
+                el de su categoría o el general.
+              */
+              <p className="mt-2 text-xs text-slate-500">
+                Hoy avisa con <strong>{estado.umbral.bajo || 'sin definir'}</strong> (bajo) y{' '}
+                <strong>{estado.umbral.critico || 'sin definir'}</strong> (crítico)
+                {estado.umbral.propio
+                  ? ', puesto para este producto.'
+                  : ', heredado de su categoría o del valor general.'}
+              </p>
+            )}
+          </div>
+        </Seccion>
+
+        <Seccion titulo="Proveedor">
+          {/*
+            Punto 5 de Lucas. Está en su propia sección y no metido en
+            Clasificación porque no clasifica el producto: dice de dónde
+            viene. Y es lo que hace posible el punto 4 —aumentar los
+            precios de un laboratorio de una— que es lo que duele todos
+            los días.
+          */}
+          <Campo
+            etiqueta="A quién se le compra"
+            ancho="col-span-4"
+            ayuda="Permite aumentarle el precio a todos los productos de este proveedor de una sola vez, desde Proveedores."
+          >
+            <select
+              value={estado.campos.proveedor_id ?? ''}
+              onChange={(e) => set({ proveedor_id: e.target.value || null })}
+              className={claseInput}
+            >
+              <option value="">Sin proveedor</option>
+              {referencias.proveedores.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.nombre}
+                </option>
+              ))}
+            </select>
+          </Campo>
         </Seccion>
 
         <Seccion titulo="Clasificación">
@@ -479,14 +634,14 @@ export default function ProductoEditor({
       <div className="flex items-center gap-2 border-t border-slate-200 bg-slate-50 px-5 py-3">
         <button
           onClick={() => onGuardar(true, true)}
-          disabled={guardando}
+          disabled={guardando || umbralInvalido}
           className="flex-1 rounded-lg bg-marca-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-marca-700 disabled:opacity-60"
         >
           {guardando ? 'Guardando…' : 'Revisado y siguiente'}
         </button>
         <button
           onClick={() => onGuardar(false, false)}
-          disabled={guardando}
+          disabled={guardando || umbralInvalido}
           className="rounded-lg bg-white px-4 py-2.5 text-sm font-medium text-slate-700 ring-1 ring-slate-300 hover:bg-slate-100 disabled:opacity-60"
         >
           Guardar
@@ -496,7 +651,7 @@ export default function ProductoEditor({
         {!esNuevo && onDarDeBaja && (
           <button
             onClick={onDarDeBaja}
-            disabled={guardando}
+            disabled={guardando || umbralInvalido}
             className="ml-auto rounded-lg px-3 py-2.5 text-sm font-medium text-slate-500 hover:bg-red-50 hover:text-red-700 disabled:opacity-60"
           >
             Dar de baja

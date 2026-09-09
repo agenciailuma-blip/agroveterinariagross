@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { descartarOperacion, listarPendientes } from '@/lib/local/sync'
 import { useSync } from '@/lib/local/SyncProvider'
+import { confirmar } from '@/components/Dialogo'
 
 const hora = new Intl.DateTimeFormat('es-AR', {
   day: '2-digit',
@@ -104,8 +105,13 @@ export function Pendientes() {
                 <span className="truncate text-piedra-600">{op.descripcion}</span>
                 <button
                   onClick={async () => {
-                    if (!window.confirm(`¿Descartar "${op.descripcion}"? No se va a poder recuperar.`))
-                      return
+                    const sigue = await confirmar({
+                      titulo: '¿Descartar esta operación?',
+                      detalle: `${op.descripcion}\n\nNo se va a poder recuperar.`,
+                      aceptar: 'Descartar',
+                      peligro: true,
+                    })
+                    if (!sigue) return
                     await descartarOperacion(op.id)
                     qc.invalidateQueries({ queryKey: ['pendientes-sync'] })
                     void sincronizar()

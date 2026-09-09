@@ -58,7 +58,16 @@ export function pasoCantidad(unidad: string) {
 export interface LineaVenta {
   /** Id local, generado en el cliente. Sobrevive a la sincronización. */
   id: string
-  producto_id: string
+  /*
+    Nulo en una LÍNEA LIBRE — el "producto comodín" que pidió Lucas el
+    07/09: un renglón escrito para la ocasión, que no existe en el
+    catálogo y que no se crea.
+
+    Es lo único que la distingue, acá y en la base, y es también lo que
+    hace que no mueva stock: `cobrar_venta()`, el remito y la anulación
+    filtran todos por `producto_id is not null`.
+  */
+  producto_id: string | null
   codigo_producto: string
   descripcion: string
   unidad_medida: string
@@ -66,6 +75,18 @@ export interface LineaVenta {
   precio_original: number
   precio_unitario: number
   motivo_modificacion: string | null
+  /*
+    Quién autorizó la rebaja de esta línea, si hubo una.
+
+    Es distinto del vendedor a propósito. El vendedor arma la venta; la
+    rebaja la autoriza quien puso el PIN en ese momento, que puede ser
+    un encargado que se acercó al mostrador. Sin esta distinción, el
+    registro diría siempre que el vendedor se autorizó solo, que es
+    exactamente lo que el PIN existe para evitar.
+
+    Sin rebaja queda en null y `modificado_por` tampoco se escribe.
+  */
+  autorizado_por: string | null
   alicuota_iva_id: number
   condicion_iva: 'gravado' | 'exento' | 'no_gravado'
   /** Existencia al momento de agregarlo, para avisar si no alcanza. */
@@ -230,6 +251,13 @@ export interface EnvioACaja {
   lineas: LineaVenta[]
   observaciones: string | null
   /*
+    Cómo llamar a la persona en la caja mientras espera. Lo escribe el
+    vendedor al enviar. No es el nombre del cliente de la ficha: casi
+    todo el mostrador es Consumidor Final, y aun con ficha "Juan el de
+    la veterinaria" no es lo que dice la razón social.
+  */
+  nombreParaLlamar?: string | null
+  /*
     Con qué dijo el cliente que va a pagar. El vendedor ya se lo pregunta
     en el mostrador —le pide la tarjeta, mira si hay promoción— así que la
     caja recibe la venta con el precio correcto y no hay sorpresa al
@@ -336,6 +364,7 @@ async function guardarVenta(
     vendedor_id: datos.vendedorId,
     terminal_origen_id: datos.terminalId,
     observaciones: datos.observaciones,
+    nombre_para_llamar: datos.nombreParaLlamar?.trim() || null,
     ocurrido_en: ahora,
     // Un presupuesto no está esperando en la caja: no tiene fecha de envío.
     enviada_caja_en: esBorrador ? null : ahora,
@@ -359,7 +388,13 @@ async function guardarVenta(
     precio_acordado: l.precio_unitario,
     precio_unitario: l.precio_unitario,
     motivo_modificacion: l.motivo_modificacion,
-    modificado_por: l.precio_unitario !== l.precio_original ? datos.vendedorId : null,
+    // Quien autorizó la rebaja, si se identificó con PIN; si no, el
+    // vendedor. La base exige que toda línea con precio cambiado tenga
+    // responsable y motivo (`venta_linea_modificacion_justificada`).
+    modificado_por:
+      l.precio_unitario !== l.precio_original
+        ? (l.autorizado_por ?? datos.vendedorId)
+        : null,
     alicuota_iva_id: l.alicuota_iva_id,
     condicion_iva: l.condicion_iva,
   }))

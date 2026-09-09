@@ -173,7 +173,19 @@ export default function NoFiscalImprimible() {
 */
 function Hoja({ c }: { c: NoFiscalCompleto }) {
   const esRemito = c.tipo_clave === 'remito'
-  const conImportes = c.total > 0
+  /*
+    En el remito no van precios. Lucas, 07/09.
+
+    El remito acompaña a la factura, o la factura sale después si es
+    cuenta corriente: el precio va en la factura. Un remito con precios
+    es un papel con los números del cliente viajando en la camioneta,
+    sin ser el documento que los tiene que llevar.
+
+    Se siguen guardando en la base —son lo que permite valorizar lo que
+    salió sin cobrarse—; lo que no se hace es imprimirlos.
+  */
+  const conImportes = !esRemito && c.total > 0
+  const unidades = c.lineas.reduce((s, l) => s + Number(l.cantidad), 0)
 
   return (
     <div className="mx-auto max-w-[21cm] bg-white p-8 text-[11px] text-black shadow-sm ring-1 ring-borde print:p-0 print:shadow-none print:ring-0">
@@ -270,6 +282,20 @@ function Hoja({ c }: { c: NoFiscalCompleto }) {
           <div className="flex w-64 justify-between text-sm font-bold">
             <span>TOTAL</span>
             <span className="tabular-nums">{moneda.format(c.total)}</span>
+          </div>
+        </div>
+      )}
+
+      {/*
+        El remito cierra con bultos. Sin total en pesos hace falta algún
+        número con el que verificar la entrega, y ese número es cuántas
+        unidades salieron — que además es lo que se cuenta al recibir.
+      */}
+      {esRemito && c.lineas.length > 0 && (
+        <div className="mt-3 flex justify-end border-t border-black pt-2">
+          <div className="flex w-64 justify-between text-sm font-bold">
+            <span>TOTAL DE UNIDADES</span>
+            <span className="tabular-nums">{numero.format(unidades)}</span>
           </div>
         </div>
       )}

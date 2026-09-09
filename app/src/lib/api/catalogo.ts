@@ -24,6 +24,8 @@ export interface ProductoDetalle {
   marca_id: string | null
   presentacion_id: string | null
   rubro_arca_id: number | null
+  /** A quién se le compra. Es el eje del aumento masivo de precios. */
+  proveedor_id: string | null
   alicuota_iva_id: number
   condicion_iva: 'gravado' | 'exento' | 'no_gravado'
   precio_venta: number
@@ -54,6 +56,7 @@ export interface Referencias {
   etapas: Referencia[]
   alicuotas: { id: number; descripcion: string }[]
   rubrosArca: { id: number; descripcion: string }[]
+  proveedores: Referencia[]
 }
 
 export const UNIDADES = [
@@ -170,8 +173,27 @@ export async function contarAvance() {
   return { total: total.count ?? 0, revisados: revisados.count ?? 0 }
 }
 
+/*
+  El umbral que le rige a un producto, y de dónde sale.
+
+  Son tres niveles y gana el más específico: el del producto, si no el
+  de su categoría, si no el general de `configuracion`. La vista
+  `vista_stock` ya resuelve esa cascada, así que el número que se
+  muestra es EL MISMO que usa el listado para pintar "Stock bajo" — no
+  una segunda cuenta que algún día se separe de la primera.
+
+  `propio` es lo otro que hace falta saber: sin eso la pantalla no
+  puede distinguir "tiene 5 porque alguien lo puso" de "tiene 5 porque
+  lo hereda", y esas dos cosas se editan distinto.
+*/
+export interface UmbralDelProducto {
+  bajo: number
+  critico: number
+  propio: boolean
+}
+
 export async function obtenerProducto(id: string) {
-  const [producto, codigos, animales, etapas] = await Promise.all([
+  const [producto, codigos, animales, etapas, umbralPropio, vigente] = await Promise.all([
     supabase.from('producto').select('*').eq('id', id).single<ProductoDetalle>(),
     supabase
       .from('producto_codigo_barra')
@@ -180,20 +202,38 @@ export async function obtenerProducto(id: string) {
       .is('eliminado_en', null),
     supabase.from('producto_animal').select('animal_id').eq('producto_id', id),
     supabase.from('producto_etapa_vida').select('etapa_vida_id').eq('producto_id', id),
+    supabase
+      .from('umbral_stock')
+      .select('bajo, critico')
+      .eq('producto_id', id)
+      .eq('ambito', 'producto')
+      .maybeSingle<{ bajo: number; critico: number }>(),
+    supabase
+      .from('vista_stock')
+      .select('umbral_bajo, umbral_critico')
+      .eq('producto_id', id)
+      .maybeSingle<{ umbral_bajo: number; umbral_critico: number }>(),
   ])
 
   if (producto.error) throw new Error(producto.error.message)
+
+  const umbral: UmbralDelProducto = {
+    bajo: Number(umbralPropio.data?.bajo ?? vigente.data?.umbral_bajo ?? 0),
+    critico: Number(umbralPropio.data?.critico ?? vigente.data?.umbral_critico ?? 0),
+    propio: !!umbralPropio.data,
+  }
 
   return {
     producto: producto.data,
     codigosBarra: codigos.data ?? [],
     animales: (animales.data ?? []).map((a) => a.animal_id as string),
     etapas: (etapas.data ?? []).map((e) => e.etapa_vida_id as string),
+    umbral,
   }
 }
 
 export async function cargarReferencias(): Promise<Referencias> {
-  const [cat, mar, pre, ani, eta, ali, rub] = await Promise.all([
+  const [cat, mar, pre, ani, eta, ali, rub, prov] = await Promise.all([
     supabase.from('categoria').select('id, nombre').is('eliminado_en', null).order('orden'),
     supabase.from('marca').select('id, nombre').is('eliminado_en', null).order('nombre'),
     supabase.from('presentacion').select('id, nombre').is('eliminado_en', null).order('nombre'),
@@ -201,6 +241,7 @@ export async function cargarReferencias(): Promise<Referencias> {
     supabase.from('etapa_vida').select('id, nombre').is('eliminado_en', null).order('orden'),
     supabase.from('alicuota_iva').select('id, descripcion').eq('activo', true).order('id'),
     supabase.from('rubro_arca').select('id, descripcion').eq('activo', true).order('orden'),
+    supabase.from('proveedor').select('id, nombre').is('eliminado_en', null).order('nombre'),
   ])
   return {
     categorias: (cat.data ?? []) as Referencia[],
@@ -210,6 +251,12 @@ export async function cargarReferencias(): Promise<Referencias> {
     etapas: (eta.data ?? []) as Referencia[],
     alicuotas: (ali.data ?? []) as { id: number; descripcion: string }[],
     rubrosArca: (rub.data ?? []) as { id: number; descripcion: string }[],
+    /*
+      Vacío si el usuario no tiene `proveedores.ver`: la RLS devuelve
+      cero filas en vez de un error, así que el editor simplemente no
+      ofrece el desplegable. Es el comportamiento correcto.
+    */
+    proveedores: (prov.data ?? []) as Referencia[],
   }
 }
 
@@ -262,6 +309,13 @@ export interface DatosGuardado {
   etapas: string[]
   /** Cantidad contada. Si es null no se toca el stock. */
   stockContado: number | null
+  /*
+    Umbral propio del producto. `null` significa "no tiene uno propio":
+    se borra el que hubiera y vuelve a heredar el de su categoría o el
+    general. No es lo mismo que poner cero — cero es un umbral válido,
+    y querría decir "avisame recién cuando no quede nada".
+  */
+  umbral: { bajo: number; critico: number } | null
   stockActual: number
   marcarRevisado: boolean
   usuarioId: string
@@ -361,6 +415,34 @@ export async function guardarProducto(datos: DatosGuardado): Promise<string> {
       })
       if (error) throw new Error(`No se pudo registrar el stock: ${error.message}`)
     }
+  }
+
+  /*
+    Umbral propio del producto.
+
+    Pasa por `definir_umbral_producto()` y no por un upsert directo: la
+    unicidad la da un índice PARCIAL (`where ambito = 'producto'`), y
+    PostgREST no emite el predicado que Postgres necesita para
+    inferirlo. El upsert falla siempre. Está explicado en la migración
+    `20260908110000`, con el error textual.
+
+    Con los dos valores en null la función borra el umbral y el producto
+    vuelve a heredar el de su categoría o el general. Es la única forma
+    de deshacer uno puesto por error — y no es lo mismo que poner cero.
+  */
+  const { error: errorUmbral } = await supabase.rpc('definir_umbral_producto', {
+    p_producto_id: productoId,
+    p_bajo: datos.umbral?.bajo ?? null,
+    p_critico: datos.umbral?.critico ?? null,
+  })
+  // La base exige crítico <= bajo. Se traduce, porque el mensaje de
+  // Postgres nombra una restricción y no un problema.
+  if (errorUmbral) {
+    throw new Error(
+      errorUmbral.message.includes('umbral_critico_menor_o_igual')
+        ? 'El nivel crítico tiene que ser menor o igual que el nivel bajo.'
+        : `No se pudo guardar el aviso de stock: ${errorUmbral.message}`,
+    )
   }
 
   return productoId

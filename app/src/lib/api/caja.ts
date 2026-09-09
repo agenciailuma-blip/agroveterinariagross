@@ -26,6 +26,8 @@ export interface VentaEnCola {
   total: number
   ocurrido_en: string
   enviada_caja_en: string | null
+  /** Cómo llamar a esta persona en voz alta. Lo escribió el vendedor. */
+  nombre_para_llamar: string | null
   cliente: { nombre: string } | null
   vendedor: { nombre: string } | null
 }
@@ -168,7 +170,7 @@ export async function listarVentasEnCola(): Promise<VentaEnCola[]> {
   const { data, error } = await supabase
     .from('venta')
     .select(
-      'id, codigo, total, ocurrido_en, enviada_caja_en, cliente:cliente_id(nombre), vendedor:vendedor_id(nombre)',
+      'id, codigo, total, ocurrido_en, enviada_caja_en, nombre_para_llamar, cliente:cliente_id(nombre), vendedor:vendedor_id(nombre)',
     )
     .eq('estado', 'en_caja')
     .order('enviada_caja_en', { ascending: true })

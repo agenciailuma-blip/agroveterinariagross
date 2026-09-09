@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/auth/AuthProvider'
+import { pedirTexto } from '@/components/Dialogo'
+import ExportarParaContador from '@/components/ExportarParaContador'
 import {
   ETIQUETA_SEMAFORO,
   devolverVenta,
@@ -181,6 +183,16 @@ export default function Facturacion() {
       <PanelContingencia onAviso={avisar} onError={setError} />
 
       {/*
+        El archivo que Gross le manda al contador todos los meses.
+
+        Vive acá y no en una pantalla propia porque es una salida de la
+        facturación, no un módulo: son los mismos comprobantes de esta
+        pantalla, en un Excel. Una entrada de menú aparte para bajar un
+        archivo por mes sería una entrada que casi nunca se toca.
+      */}
+      <ExportarParaContador />
+
+      {/*
         Ventas cobradas sin comprobante. Va arriba de todo y en rojo
         porque es la única situación donde la plata ya entró y no hay
         respaldo fiscal: es más urgente que un comprobante rechazado.
@@ -266,27 +278,32 @@ export default function Facturacion() {
                 trabajando={trabajando}
                 reintentando={reintentar.isPending && reintentar.variables === c.id}
                 onReintentar={() => reintentar.mutate(c.id)}
-                onContingencia={() => {
-                  const motivo = window.prompt(
-                    `Emitir ${c.comprobante} por contingencia con CAEA.\n\n` +
-                      'Usalo sólo si ARCA no responde. Queda registrado y hay que ' +
-                      'informárselo a ARCA cuando el servicio vuelva.\n\n' +
-                      '¿Qué está pasando?',
-                    'ARCA no responde',
-                  )
-                  if (!motivo || motivo.trim().length < 3) return
-                  porContingencia.mutate({ id: c.id, motivo: motivo.trim() })
+                onContingencia={async () => {
+                  const motivo = await pedirTexto({
+                    titulo: `Emitir ${c.comprobante} por contingencia`,
+                    detalle:
+                      'Usalo sólo si ARCA no responde. Queda registrado y hay que informárselo a ARCA cuando el servicio vuelva.',
+                    etiqueta: '¿Qué está pasando?',
+                    valorInicial: 'ARCA no responde',
+                    minimo: 3,
+                    aceptar: 'Emitir con CAEA',
+                  })
+                  if (!motivo) return
+                  porContingencia.mutate({ id: c.id, motivo })
                 }}
-                onDevolver={() => {
+                onDevolver={async () => {
                   if (!c.venta_id) return
-                  const motivo = window.prompt(
-                    `Devolución de ${c.comprobante} — ${c.receptor_nombre}\n\n` +
-                      'Se va a reingresar el stock, sacarle la deuda al cliente y emitir la nota de crédito.\n\n' +
-                      '¿Por qué se devuelve?',
-                    'Devolución del cliente',
-                  )
-                  if (!motivo || motivo.trim().length < 3) return
-                  devolver.mutate({ ventaId: c.venta_id, motivo: motivo.trim() })
+                  const motivo = await pedirTexto({
+                    titulo: `Devolver ${c.comprobante}`,
+                    detalle: `${c.receptor_nombre}\n\nSe va a reingresar el stock, sacarle la deuda al cliente y emitir la nota de crédito.`,
+                    etiqueta: '¿Por qué se devuelve?',
+                    valorInicial: 'Devolución del cliente',
+                    minimo: 3,
+                    aceptar: 'Devolver',
+                    peligro: true,
+                  })
+                  if (!motivo) return
+                  devolver.mutate({ ventaId: c.venta_id, motivo })
                 }}
               />
             ))}
