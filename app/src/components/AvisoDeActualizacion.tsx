@@ -12,6 +12,10 @@ import { enEscritorio } from '@/lib/escritorio'
 
   1. Es una franja, no un cartel que tape la pantalla. Una actualización
      nunca puede interrumpir una venta con el cliente adelante.
+
+  ⚠️ En Windows la instalación **cierra el programa sola** y lo vuelve a
+  abrir cuando termina. No hay que reiniciarlo desde acá: ver el
+  comentario en el botón de instalar.
   2. Si falla la consulta, no se dice nada. Que no haya internet, o que
      el servidor de actualizaciones no conteste, no es un problema del
      cajero y no tiene por qué enterarse.
@@ -65,8 +69,22 @@ export default function AvisoDeActualizacion() {
               })
               setEstado({ paso: 'listo' })
 
-              const { relaunch } = await import('@tauri-apps/plugin-process')
-              await relaunch()
+              /*
+                Y acá NO se llama a relaunch().
+
+                En Windows, `downloadAndInstall` lanza el instalador y
+                **cierra la aplicación él mismo** —está en la
+                documentación del plugin— y el instalador la vuelve a
+                abrir al terminar (`restartAfterInstall`, que viene en
+                true). Llamar a relaunch() acá es pedirle que se
+                reinicie a un programa que ya se está cerrando.
+
+                La versión anterior lo llamaba, y era una de las cosas
+                que empujaban la carrera del 07/09: el programa tardaba
+                más en morir y el instalador se chocaba contra su propio
+                archivo abierto. La otra mitad de ese arreglo vive en
+                `src-tauri/instalador.nsh`.
+              */
             } catch (e) {
               setEstado({
                 paso: 'falló',
@@ -134,7 +152,10 @@ export default function AvisoDeActualizacion() {
       )}
 
       {estado.paso === 'listo' && (
-        <p className="text-marca-900">Actualizado. El programa se está reiniciando…</p>
+        <p className="text-marca-900">
+          Bajado. El programa se va a cerrar solo para instalar, y vuelve a abrirse en unos
+          segundos.
+        </p>
       )}
 
       {estado.paso === 'falló' && (
