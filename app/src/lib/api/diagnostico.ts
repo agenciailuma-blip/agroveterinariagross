@@ -47,6 +47,10 @@ export async function correrDiagnostico(datos: {
   usuario: string | null
   sinSubir: number
   ultimaSync: Date | null
+  /** La impresora elegida en esta terminal, con el nombre que le da Windows. */
+  impresoraElegida: string | null
+  /** Las que Windows informa en esta PC. Vacía desde el navegador. */
+  impresorasInstaladas: string[]
   impresoraHost: string | null
   impresoraPuerto: number
 }): Promise<Diagnostico> {
@@ -58,7 +62,7 @@ export async function correrDiagnostico(datos: {
     estado: enEscritorio ? 'ok' : 'aviso',
     detalle: enEscritorio
       ? 'Sí, esto es el programa de escritorio.'
-      : 'No: esto es el navegador. Anda igual, pero sin impresión directa a la Hasar.',
+      : 'No: esto es el navegador. Anda igual, pero sin impresión directa a la del mostrador.',
     queHacer: enEscritorio
       ? undefined
       : 'Para el mostrador hay que usar el programa instalado, no la página web.',
@@ -184,28 +188,54 @@ export async function correrDiagnostico(datos: {
       : 'Todavía no sincronizó en esta sesión.',
   })
 
-  // ── 6. Impresora del mostrador ──
+  /*
+    ── 6. Impresora del mostrador ──
+
+    Lo que más importa acá no es que haya un nombre guardado, sino que ese
+    nombre siga existiendo en ESTA PC. Es la falla que se va a ver en el
+    local: la impresora la comparte la máquina de la caja, así que si esa
+    está apagada, el nombre guardado en un mostrador deja de existir y el
+    ticket no sale — sin que nada lo haya anunciado antes.
+  */
+  const elegida = datos.impresoraElegida?.trim()
+
   if (!enEscritorio) {
     puntos.push({
       nombre: 'Impresora del mostrador',
       estado: 'aviso',
-      detalle: 'No se puede probar desde el navegador.',
+      detalle: 'No se puede mirar desde el navegador.',
       queHacer: 'Abrir el programa instalado y repetir el diagnóstico.',
     })
-  } else if (!datos.impresoraHost?.trim()) {
+  } else if (elegida) {
+    const instalada = datos.impresorasInstaladas.includes(elegida)
     puntos.push({
       nombre: 'Impresora del mostrador',
-      estado: 'falla',
-      detalle: 'No hay dirección de impresora cargada.',
+      estado: instalada ? 'ok' : 'falla',
+      detalle: instalada
+        ? `«${elegida}», instalada en esta PC.`
+        : `«${elegida}» está guardada, pero Windows no la tiene en esta PC. ` +
+          (datos.impresorasInstaladas.length
+            ? `Acá ve: ${datos.impresorasInstaladas.join(', ')}.`
+            : 'Acá no ve ninguna impresora.'),
+      queHacer: instalada
+        ? 'Para saber si sale el papel de verdad, usá "Imprimir una prueba" en Configuración.'
+        : 'Fijate que la impresora esté prendida y que esté encendida la PC que la comparte. Después volvé a elegirla en Configuración → Impresora del mostrador.',
+    })
+  } else if (datos.impresoraHost?.trim()) {
+    puntos.push({
+      nombre: 'Impresora del mostrador',
+      estado: 'aviso',
+      detalle: `Sin impresora de Windows elegida: va a intentar por red, a ${datos.impresoraHost}:${datos.impresoraPuerto}.`,
       queHacer:
-        'Cargarla en Configuración → Impresora del mostrador. Hace falta la IP que tiene la impresora en la red del local.',
+        'Las impresoras de Gross están conectadas por USB, no por red. Elegí la de Windows en Configuración → Impresora del mostrador.',
     })
   } else {
     puntos.push({
       nombre: 'Impresora del mostrador',
-      estado: 'ok',
-      detalle: `Configurada en ${datos.impresoraHost}:${datos.impresoraPuerto}.`,
-      queHacer: 'Para saber si contesta de verdad, usá "Imprimir prueba" ahí abajo.',
+      estado: 'falla',
+      detalle: 'Esta máquina no tiene impresora de tickets elegida.',
+      queHacer:
+        'Configuración → Impresora del mostrador, y elegirla de la lista. En la caja es «POS80 Printer».',
     })
   }
 

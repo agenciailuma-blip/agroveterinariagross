@@ -19,28 +19,24 @@ Lo que dice la etiqueta y por qué importa:
 - **"IMPRESOR TERMICO"**, no "impresor fiscal". Es una impresora de tickets, así que **ESC/POS es el protocolo correcto y el circuito construido sirve tal cual**. Era el único riesgo de la instalación que podía ser un rediseño, y quedó descartado.
 - **`-3I-`** son tres interfaces: USB, RS232 y una tercera que empieza con "E" —cortada en la foto— casi con seguridad **Ethernet**. Tiene puerto de red.
 
-### 🔴 CONFIRMADO EL 07/09: USB a la caja, compartida a las demás
+### ✅ CONFIRMADO EL 07/09: USB a la caja, compartida a las demás
 
-Lucas confirmó cómo están conectadas: **la Hasar va por USB a la caja, y las otras PC la usan por red.**
+Es **impresora compartida de Windows**, no una impresora con IP propia: la POS80 va por USB a la caja y las otras PC la usan desde ahí.
 
-Eso casi con seguridad significa **impresora compartida de Windows** (`\\CAJA\Hasar`), no una impresora con IP propia. Es el esquema habitual y hay que confirmarlo en la reunión.
+Eso dejó sin uso el camino por red que tenía el sistema —no hay ninguna IP que poner— y por eso el 09/09 se construyó el camino por **impresora de Windows**: la caja imprime a la local por USB, las demás a la compartida, **las dos por nombre y con el mismo mecanismo**. Dejó de ser "más cómodo" y pasó a ser el único que sirve para cómo está armado el local.
 
-**Consecuencia directa: el sistema hoy no puede imprimir en ninguna de las dos.** El programa abre una conexión TCP contra una IP de impresora, y en este esquema **no hay ninguna IP que poner**.
+### ✅ Los datos de las impresoras — traídos el 07/09, y el camino ya construido
 
-**Y también: el camino por impresora de Windows resuelve las dos de una vez.** La caja imprime a la local por USB; las demás, a la compartida. Las dos por nombre, con el mismo mecanismo. Deja de ser "más cómodo" y pasa a ser **el único que sirve para cómo está armado el local**.
+Las fotos de la visita (en [`referencias/el-local/`](referencias/el-local/)) contestaron todo:
 
-### 📋 Los datos a traer de la reunión
-
-Con esto se puede hacer el camino nuevo con información real en vez de suposiciones. **En cada PC**, Panel de control → Dispositivos e impresoras → clic derecho en la Hasar → Propiedades de impresora:
-
-| Dónde | Qué anotar |
+| Dónde | Qué hay |
 |---|---|
-| **En la caja** (la del USB) | El **nombre exacto** de la impresora, tal cual aparece · la pestaña **Puertos** (debería decir `USB001`) · el **controlador** que usa, en la pestaña Opciones avanzadas |
-| **En otra PC** | Cómo aparece: `\\NOMBRE-PC\Impresora` (compartida) o una IP · el nombre exacto · el controlador |
+| **En la caja** | **`POS80 Printer`** · puerto **USB** (`USB00x`) · controlador **`POS80ENG`** · formato de datos **RAW** |
+| **En los mostradores** | **`POS80 Printer(2)` en `DESKTOP-O4R9STD`** — la misma, compartida desde la caja |
 
-Una foto de cada pantalla alcanza. Lo que más importa es **el nombre exacto y el controlador**: si el controlador es "Generic / Text Only", los bytes pasan tal cual y es el caso fácil; si es el propio de Hasar, hay que probar que no los reinterprete.
+Lo que confirma: **no es un controlador fiscal**, es una térmica de 80 mm común, así que **ESC/POS es correcto**. Y el formato **RAW** es la pieza clave: Windows le pasa a la impresora exactamente los bytes que se le den, sin traducirlos, que es lo que permite mandarle ESC/POS por la cola de impresión en vez de por red.
 
-> **El trabajo que falta**, para dimensionarlo: mandarle los bytes a una impresora instalada de Windows, elegida de una lista por nombre. Cubre el USB de la caja y la compartida de las demás con un solo camino, y saca la IP de la configuración. Alrededor de un día, y no se puede verificar sin la impresora delante. **No está hecho.**
+> **El camino por impresora de Windows está construido desde el 09/09.** La impresora se elige de una lista en Configuración —no se escribe— y se guarda por terminal, porque la misma POS80 se llama distinto en cada PC. Lo único que falta es apretar el botón con el papel puesto: ver el **Paso 5**.
 
 ### 🟢 Dos cajas, dos Hasar
 
@@ -56,42 +52,20 @@ Con lo confirmado el 07/09, la de la caja va por USB. Falta ver en la reunión c
 
 ---
 
-## 1-bis. Cómo saber la IP sin ejecutar ningún comando
+## 1-bis. La IP de la impresora ya no hace falta
 
-Todo con clics. **El primer camino contesta las dos preguntas de una vez** —si está por USB o por red, y cuál es la IP— así que empezá por ahí.
+Estaba acá cómo averiguarla sin ejecutar comandos. **Ya no se necesita:** la impresión va por la cola de Windows, eligiendo la impresora de una lista por nombre. No hay IP que cargar en ninguna PC.
 
-### A · La pestaña Puertos de Windows ← empezar acá
-
-1. Menú de inicio → escribir **Panel de control** → **Dispositivos e impresoras**.
-   *(En Windows 11: Configuración → Bluetooth y dispositivos → Impresoras y escáneres.)*
-2. Clic derecho en la Hasar → **Propiedades de impresora**.
-3. Pestaña **Puertos**. Mirar cuál está tildado:
-
-| Lo que dice el puerto | Qué significa |
-|---|---|
-| `USB001`, `USB002`… | Está por **USB**. No tiene IP, y hoy no podemos imprimir desde el sistema |
-| `192.168.x.x` o similar | **Esa es la IP.** Copiala tal cual |
-| `IP_192.168.x.x` | Lo mismo: la IP es lo que va después del guion bajo |
-
-Si la columna no se ve entera, se ensancha arrastrando el borde. Una foto de esa pantalla alcanza.
-
-### B · La hoja de configuración de la impresora
-
-Apagarla y prenderla **manteniendo apretado el botón de avance de papel**. Suele imprimir una hoja con su configuración, y ahí figura la IP. Una foto de la hoja sirve.
-
-### C · El router
-
-Entrar a la administración del router (suele ser `192.168.0.1` o `192.168.1.1` en el navegador) y buscar la lista de equipos conectados. La impresora aparece por nombre o por marca.
-
-> ⚠️ **Si la IP la reparte el router automáticamente, puede cambiar** — y el día que cambie, imprimir deja de andar sin ningún aviso claro. Si van por red, conviene fijarla. Es otro argumento a favor de resolver el camino por USB.
+Y era, además, el camino frágil: una IP que reparte el router automáticamente **cambia**, y el día que cambia imprimir deja de andar sin ningún aviso claro.
 
 ---
 
 ## 2. Lo que tiene que estar listo de nuestro lado
 
-- [x] **Versión 0.2.0 publicada el 07/09** en Cloudflare. Sube sola con `npm --prefix app run escritorio:publicar` (**no** `npm run build` — ver la advertencia de ESTADO).
-- [ ] El instalador para las 4 PC: `app/dist/actualizaciones/sistema-gross-0.2.0-setup.exe`. También se puede bajar de
-      `https://gross-sistema.pages.dev/actualizaciones/sistema-gross-0.2.0-setup.exe`
+- [x] **Versión 0.2.2 publicada el 09/09** en Cloudflare. Sube sola con `npm --prefix app run escritorio:publicar` (**no** `npm run build` — ver la advertencia de ESTADO).
+- [ ] **Publicar la versión con la impresión por impresora de Windows**, que se construyó el 09/09 y todavía no está publicada. Sin eso, en el local no hay lista de impresoras para elegir.
+- [ ] El instalador para las 4 PC, de la versión que se publique. Se baja de
+      `https://gross-sistema.pages.dev/actualizaciones/` — el nombre del archivo lleva el número de versión.
 - [ ] **Cargar el logo** en Configuración → Datos del emisor. Sin logo, los remitos y presupuestos salen sin nada que identifique al comercio, porque ya no llevan los datos del emisor.
 - [ ] Las terminales creadas en el sistema, con su prefijo y —la caja— con su punto de venta de ARCA.
 - [ ] Saber los PIN de los operadores que van a usar las PC.
@@ -130,7 +104,7 @@ Lucas pega el texto en el chat. Ahí se ve, de una sola vez:
 - si la caja tiene punto de venta de ARCA,
 - cuántos productos bajó a la máquina,
 - si hay operaciones sin subir,
-- si la impresora está configurada.
+- **si la impresora elegida existe de verdad en esa PC** — no sólo si hay un nombre guardado. Si la compartida no aparece porque la PC de la caja está apagada, lo dice ahí y no cinco minutos después con un cliente adelante.
 
 **Cada punto que falla trae escrito qué hacer.** Se resuelven en ese orden y se vuelve a correr.
 
@@ -140,21 +114,24 @@ Si el diagnóstico dijo que falta: **Ventas** → elegir cuál es esta máquina.
 
 ✅ **Sale bien si:** el diagnóstico ahora dice el nombre de la terminal y su prefijo.
 
-### Paso 5 · La impresora — **SALTEAR HOY**
+### Paso 5 · La impresora — **ahora sí, y es de dos minutos**
 
-Confirmado que están por USB y compartidas, **el sistema no puede imprimir todavía**: espera una IP y acá no hay ninguna. Este paso no se hace.
+**Configuración → Impresora del mostrador.** Hay un desplegable con las impresoras que tiene instaladas **esa** computadora. Se elige la que corresponde, se aprieta **Guardar**, y después **Imprimir una prueba**.
 
-Lo que sí conviene hacer en su lugar: **sacar los datos de la tabla del punto 1** (nombre exacto, puerto y controlador, en la caja y en otra PC). Con eso se construye el camino por impresora de Windows.
-
-Mientras tanto el comprobante se imprime **desde el navegador** a cualquier impresora, incluida ésta: el botón "Imprimir" de la pantalla del comprobante usa el diálogo de Windows y no depende de nada de esto.
-
-Si están por red: **Configuración → Impresora del mostrador.** Se carga la IP y el puerto (9100 salvo que la hoja de configuración diga otro) y se aprieta **Imprimir prueba**.
+| En qué PC | Qué elegir |
+|---|---|
+| La caja | `POS80 Printer` |
+| Los mostradores | `POS80 Printer(2)` — la compartida, aparece con el nombre del equipo de la caja |
 
 ✅ **Sale bien si:** sale un papel que dice "Si estás leyendo esto, la impresora está bien configurada".
 
-❌ **Si no sale nada:** o la IP está mal, o la impresora no está encendida, o no escucha en ese puerto. El modelo es el correcto, así que no es eso.
+❌ **Si la impresora no está en la lista:** apretar **Actualizar la lista** con la impresora prendida. Si es la compartida, la PC de la caja tiene que estar encendida — es de ella. Si sigue sin aparecer, no está instalada en esa PC y eso se arregla en Windows, no en el sistema.
 
-> **Cada caja se configura con la IP de SU impresora.** Son dos puestos con una Hasar cada uno.
+❌ **Si sale un papel con símbolos raros:** el controlador no está en RAW. Se corrige en Windows: propiedades de impresora → Opciones avanzadas → formato de datos → RAW. En el relevamiento del 07/09 ya estaba en RAW.
+
+> **Se guarda por terminal, así que hay que hacerlo en cada PC.** No es una vez para todo el local: el nombre de la impresora es distinto en cada máquina, y por eso cada una elige la suya. Se hace mientras esa PC está delante, que es cuando se puede ver la lista de verdad.
+
+> **Si esto falla, nadie queda sin comprobante.** El botón "Imprimir" de la pantalla del comprobante sigue usando el diálogo de Windows y no depende de nada de esto.
 
 ### Paso 6 · Una venta de punta a punta
 
@@ -188,32 +165,25 @@ Si están por red: **Configuración → Impresora del mostrador.** Se carga la I
 
 > **Lo que sí necesita internet a propósito:** abrir y cerrar la caja. Si Lucas prueba eso sin conexión, el sistema lo va a rechazar y **está bien**: arquear con la mitad de las ventas sin registrar produce una diferencia que después alguien tiene que explicar.
 
-### Paso 8 · La actualización sola — ⚠️ **NO PROBAR HOY**
+### Paso 8 · La actualización sola — ⚠️ **el arreglo está publicado pero sin probar de punta a punta**
 
-**El actualizador tiene un problema conocido desde el 07/09. No lo uses en la sesión.**
-
-Al apretar **Actualizar ahora** aparece:
+**El problema, del 07/09.** Al apretar **Actualizar ahora** aparecía:
 
 > *Error abriendo archivo para escritura: `…\Sistema Gross\sistema-gross.exe`*
 > *Presione abortar…, reintentar…, u omitir…*
 
-**Qué es.** El instalador no llega a reemplazar el programa porque el programa todavía lo tiene abierto. El aviso de versión nueva sí aparece y el instalador sí arranca; falla el último paso.
+El instalador no llegaba a reemplazar el programa porque el programa todavía lo tenía abierto. No rompía nada: apretando *Omitir* todo quedaba en la versión anterior, coherente.
 
-**Qué NO es.** No rompe nada. Si se aprieta *Omitir*, no se instala nada y todo queda en la versión anterior, coherente — la interfaz va embebida en el `.exe`, así que si ese archivo no se reemplaza, no cambió nada.
+**El arreglo, en la 0.2.2 (09/09).** Un gancho propio del instalador ([`instalador.nsh`](../app/src-tauri/instalador.nsh)) que corre **antes** que todo: intenta abrir el `.exe`, espera hasta 10 segundos, y si sigue tomado mata lo que quedó. El chequeo que trae Tauri no alcanzaba porque busca el proceso **por nombre** y los procesos hijos de WebView2 —que son los que retienen el archivo— se llaman distinto.
 
-**Cómo actualizar mientras tanto**, y es lo que hay que hacer hoy:
+⚠️ **Sigue sin verificarse.** El 09/09 se actualizó una PC a la 0.2.2, pero desinstalando la versión vieja primero, así que **el camino del actualizador no se recorrió**. Está verificado que el gancho compila y queda dentro del instalador; no que resuelva el archivo tomado.
 
-1. **Cerrar el programa del todo** (que no quede ninguna ventana abierta).
-2. Ejecutar a mano el instalador de la versión nueva.
+**Lo que se hace en la sesión**, hasta que alguna vez se pruebe:
 
-Sin el programa corriendo no hay archivo bloqueado y entra limpio.
+1. **Desinstalar** la versión que esté.
+2. Bajar el instalador nuevo y ejecutarlo.
 
-> **Hoy no molesta:** las 4 PC se instalan de cero con el `.exe`, y ese camino no pasa por el actualizador. El problema aparece recién cuando se quiera publicar una corrección más adelante.
-
-**Pendiente de investigar** — con tiempo y pudiendo reproducirlo, no a las apuradas:
-- Reproducir con una versión de prueba y ver en qué punto exacto falla.
-- Probar el gancho `on_before_exit` que documenta Tauri, que es el pensado para esto.
-- Confirmar que funcione **dos veces seguidas** antes de darlo por bueno.
+> **Cuándo importa de verdad.** Hoy no: con la PC delante, desinstalar e instalar es un minuto. Importa **después del 26/10**, cuando haya que hacer llegar una corrección a 4 PC sin ir hasta Oberá. Ese día el actualizador es el único camino, así que conviene probarlo una vez antes — con la próxima versión, en una sola PC, sin desinstalar nada.
 
 ---
 
@@ -221,11 +191,11 @@ Sin el programa corriendo no hay archivo bloqueado y entra limpio.
 
 1. Subir el número en `app/src-tauri/tauri.conf.json`.
 2. `npm --prefix app run escritorio:publicar` — compila, firma **y sube solo a Cloudflare**. Ya no hay que arrastrar nada.
-3. En cada PC: **cerrar el programa** y ejecutar a mano el instalador nuevo.
+3. En cada PC: **desinstalar** y ejecutar el instalador nuevo. (Apretar "Actualizar ahora" *debería* funcionar desde la 0.2.2, pero eso todavía no se probó — ver paso 8.)
 
 > ⚠️ **Correr eso desde Git Bash, no desde PowerShell.** PowerShell tiene bloqueada la ejecución de scripts en esta máquina y `npm`/`npx` fallan con *"la ejecución de scripts está deshabilitada"*. Alternativa rápida: usar `npm.cmd` en vez de `npm`.
 
-> ⚠️ El paso 3 es a mano **hasta que se resuelva lo del actualizador** (ver paso 8). Cuando esté, vuelve a ser apretar "Actualizar ahora".
+> ⚠️ El paso 3 es a mano **hasta que el actualizador esté probado de verdad** (ver paso 8). Cuando lo esté, vuelve a ser apretar "Actualizar ahora".
 
 > ⚠️ **Nunca subir un `dist` hecho con `npm run build`.** Le falta la carpeta de actualizaciones y las 4 PC dejan de recibir correcciones sin ningún error visible. Si pasa, adentro de `dist` queda un archivo `NO-SUBIR-ESTA-CARPETA.txt` avisando.
 
@@ -240,15 +210,15 @@ Sin el programa corriendo no hay archivo bloqueado y entra limpio.
 | Acentos raros en el ticket | Codificación | Corregido: va en latin1 |
 | ARCA rechaza con 10015 / 10243 | El CUIT del cliente no existe en los padrones | Es del dato del cliente, no del sistema. Corregir el CUIT |
 | ARCA rechaza con 10016 | La numeración se desfasó | Se corrige sola en el siguiente intento |
-| "Error abriendo archivo para escritura: sistema-gross.exe" | El actualizador no puede reemplazar el programa mientras corre | Omitir, cerrar el programa y ejecutar el instalador a mano. Ver paso 8 |
+| "Error abriendo archivo para escritura: sistema-gross.exe" | El actualizador no puede reemplazar el programa mientras corre | Debería estar arreglado en la 0.2.2. Si vuelve a aparecer: Omitir, desinstalar y ejecutar el instalador a mano. Ver paso 8 |
+| La impresora elegida no está en la lista de esa PC | Suele ser la compartida: la PC de la caja está apagada, o la impresora | Prender lo que falte y apretar "Actualizar la lista". El diagnóstico también lo dice, con el nombre |
 | `npm` o `npx` fallan con "ejecución de scripts deshabilitada" | Política de PowerShell | Usar Git Bash, o `npm.cmd` / `npx.cmd` |
 
 ---
 
 ## 6. Lo que NO se resuelve en esta sesión
 
-- **La impresión por USB**, si resulta que están así conectadas. No está construido: es alrededor de un día de trabajo y hay que decidirlo.
-- **El actualizador automático** — ver paso 8. Hasta que se arregle, cada corrección se instala a mano con el programa cerrado.
+- **El actualizador automático** — ver paso 8. El arreglo está publicado pero sin probar de punta a punta; hasta entonces, cada corrección se instala desinstalando primero.
 - **El punto de venta del régimen CAEA** — trámite en el portal de ARCA. Sin eso no hay contingencia.
 - **El certificado de producción** — hoy todo corre contra homologación. Los comprobantes emitidos **no son válidos** hasta que esté.
 - **La sincronización por red local** — si se corta internet, las terminales no se hablan entre sí. Una venta armada en el mostrador no llega a la caja hasta que vuelva la conexión. Está en el plan, va al final.

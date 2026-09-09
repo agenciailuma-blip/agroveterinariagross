@@ -6,6 +6,7 @@ import { useSync } from '@/lib/local/SyncProvider'
 import { comoTexto, correrDiagnostico } from '@/lib/api/diagnostico'
 import type { Diagnostico, Estado } from '@/lib/api/diagnostico'
 import { CLAVES_IMPRESORA, obtenerTextos } from '@/lib/api/configuracion'
+import { listarImpresoras } from '@/lib/escritorio'
 
 /*
   El diagnóstico de esta terminal.
@@ -40,7 +41,13 @@ export default function DiagnosticoTerminal() {
 
   const correr = useMutation({
     mutationFn: async () => {
-      const config = await obtenerTextos(CLAVES_IMPRESORA)
+      // Las dos preguntas van juntas: qué impresora de red hay cargada
+      // para el comercio, y qué impresoras tiene Windows en esta PC. La
+      // segunda es la que dice si la elegida sigue existiendo.
+      const [config, instaladas] = await Promise.all([
+        obtenerTextos(CLAVES_IMPRESORA),
+        listarImpresoras().catch(() => [] as string[]),
+      ])
       return correrDiagnostico({
         terminal: terminal
           ? {
@@ -53,6 +60,8 @@ export default function DiagnosticoTerminal() {
         usuario: perfil?.nombre ?? null,
         sinSubir,
         ultimaSync,
+        impresoraElegida: terminal?.impresora_windows ?? null,
+        impresorasInstaladas: instaladas,
         impresoraHost: config['comercio.impresora_host'] ?? null,
         impresoraPuerto: Number(config['comercio.impresora_puerto']) || 9100,
       })

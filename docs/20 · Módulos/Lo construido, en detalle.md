@@ -137,16 +137,22 @@ El entorno de esta máquina ya estaba a medias: MSVC 14.51 y el SDK de Windows 1
 
 *Permisos mínimos.* `capabilities/default.json` arranca con lo básico más dos permisos, cada uno con su motivo escrito. Todo lo que se agregue después va a ser porque una pantalla lo necesita.
 
-### ✅ 1h. Impresión directa en el mostrador (03/09)
+### ✅ 1h. Impresión directa en el mostrador (03/09, rehecho el 09/09)
 
-El alcance dice *"Impresión en la Hasar P-HAS-181 **por red**, con QR de ARCA"*. Eso define la forma: la impresora está en la red del local escuchando en un puerto, y el programa le manda el ticket ya armado.
+El alcance decía *"Impresión en la Hasar P-HAS-181 **por red**, con QR de ARCA"*, y así se construyó primero: contra una dirección y un puerto. **El relevamiento del 07/09 mostró que la realidad del local es otra.** No hay ninguna Hasar de red: hay una **impresora térmica POS80 conectada por USB** a la PC de la caja y compartida desde ahí para los mostradores, con el controlador `POS80ENG` en formato **RAW**.
 
-**Es la razón principal por la que el sistema se empaqueta.** Una página web no puede abrir una conexión de red contra un aparato del local; el programa instalado sí.
+**Lo que se salvó y lo que cambió.** ESC/POS era el protocolo correcto —todo `escpos.ts` sirvió tal cual— y los importes también. Lo que no servía era el transporte. Ahora el ticket sale por la **cola de impresión de Windows**, eligiendo la impresora por nombre.
 
-- Comando en Rust ([`src-tauri/src/impresora.rs`](../app/src-tauri/src/impresora.rs)) que abre la conexión y manda los bytes. Espera 5 segundos y se rinde: si la impresora está apagada, el cajero tiene que enterarse **ahora**, con el cliente adelante, no después de medio minuto con la pantalla trabada.
+**Es la razón principal por la que el sistema se empaqueta.** Una página web no puede mandarle bytes crudos a una impresora del local; el programa instalado sí.
+
+- Dos comandos nuevos en Rust ([`src-tauri/src/impresora.rs`](../app/src-tauri/src/impresora.rs)): uno le pregunta a Windows qué impresoras hay instaladas en esa PC, y el otro le manda el ticket a una de ellas como trabajo **RAW** — que es lo que hace que Windows le pase los bytes a la impresora sin traducirlos, y por eso se le puede mandar ESC/POS por la cola en vez de por red.
+- **La impresora se elige de una lista, no se escribe.** Es la decisión que salió de la reunión, y no es comodidad: los nombres reales no se adivinan. En la caja es `POS80 Printer`; en un mostrador, la misma, es `POS80 Printer(2)` colgada de `DESKTOP-O4R9STD`. Un nombre tipeado a mano se guarda sin protestar y falla recién el día que hay que entregarle un comprobante a alguien.
+- **El nombre se guarda por terminal, no para todo el comercio** (`terminal.impresora_windows`). La impresora es un dato de la máquina, y la terminal ya *es* la máquina. Además la fila entera viaja al almacenamiento local al elegirla, así que el nombre está disponible sin internet — que es justo cuando el mostrador más necesita imprimir.
+- **Una sola regla decide por dónde sale** ([`lib/comprobante/destino.ts`](../app/src/lib/comprobante/destino.ts)): primero la impresora de Windows de esta terminal, después la de red del comercio, y si no hay ninguna, el diálogo de impresión de siempre. La usan la caja, el remito y la prueba de Configuración: si cada pantalla decidiera por su cuenta, la prueba saldría por un camino y el ticket de verdad por el otro.
+- **El camino de red no se borró.** No sirve en ninguna de las dos cajas de Gross, pero es el único posible si algún día ponen una impresora de red, y sacarlo no gana nada. Quedó en Configuración, en una sección plegada que dice que Gross no lo usa.
+- El **diagnóstico de la terminal** ahora compara el nombre guardado con lo que Windows informa en esa PC. Es la falla que va a aparecer en el local: si la máquina de la caja está apagada, la compartida deja de existir para los mostradores y el ticket no sale, sin que nada lo hubiera anunciado antes. El texto que se copia y se pega en el chat dice qué impresora falta y cuáles ve la PC.
 - El ticket se arma en ESC/POS ([`lib/comprobante/escpos.ts`](../app/src/lib/comprobante/escpos.ts)), con el QR dibujado por la propia impresora —sale nítido y rápido, mucho mejor que mandarlo como imagen— y el corte de papel al final.
-- Sección **Impresora del mostrador** en Configuración, con dirección, puerto y un botón para imprimir una prueba.
-- Botón **Imprimir en el mostrador** en el comprobante, al lado del de siempre. Si falla, lo dice y ofrece imprimir por el navegador: una impresora apagada no puede dejar a nadie sin comprobante.
+- Botón **Imprimir en el mostrador** en el comprobante, al lado del de siempre. Si falla, lo dice y ofrece imprimir por el diálogo de Windows: una impresora apagada no puede dejar a nadie sin comprobante.
 
 **Los importes salen de `presentacionDe()`**, el mismo lugar del que salen los del ticket en pantalla y los de la hoja A4. Si cada formato los calculara por su lado, el día que se toque uno los tres dejarían de coincidir.
 
@@ -154,7 +160,9 @@ El alcance dice *"Impresión en la Hasar P-HAS-181 **por red**, con QR de ARCA"*
 
 Uno de esos casos merece mención: **los acentos van en latin1, no en UTF-8**, que es lo que entienden estas impresoras. Con la codificación equivocada, "Bagó" sale impreso "BagÃ³" en un comprobante fiscal.
 
-⚠️ **Sin verificar con la impresora delante.** Falta confirmar con Lucas el modelo exacto y que responda ESC/POS por el puerto 9100. Si la Hasar resultara ser un controlador fiscal en vez de una impresora de tickets, el protocolo es otro — pero eso además chocaría con la factura electrónica, que ya numera y autoriza por su cuenta.
+**Qué se pudo verificar sin la impresora delante (09/09).** La POS80 está en Oberá, no en la máquina donde se programa. Así que se verificó lo que sí se puede, y no es poco: que la lista de impresoras de Windows se lea bien —13 en la PC de desarrollo, ninguna cortada ni con basura adentro— y, la que importa, que **cada nombre que devuelve la lista sea un nombre que Windows después acepta al abrirla**. Es exactamente la falla que el desplegable existe para evitar. Se sumaron 7 pruebas de la regla de destino, y las pruebas nuevas se rompieron a propósito para ver que fallan: sin el cero al final del texto UTF-16, Windows no encuentra ninguna impresora; con la prioridad invertida, una PC con la POS80 elegida se iría por una IP vieja.
+
+⚠️ **Falta el papel, y sólo eso.** Lo único que no se puede verificar desde acá es que la POS80 imprima el ticket. Es una prueba de dos minutos en el local: Configuración → Impresora del mostrador → elegir `POS80 Printer` → *Imprimir una prueba*.
 
 ### ⚠️ Trampa: `target="_blank"` no existe adentro de Tauri
 

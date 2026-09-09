@@ -1,3 +1,5 @@
+import type { Destino } from '@/lib/comprobante/destino'
+
 /*
   Las dos formas en que corre el mismo sistema.
 
@@ -77,17 +79,33 @@ export function abrirNoFiscal(id: string): Promise<void> {
 }
 
 /*
+  Qué impresoras tiene instaladas ESTA computadora.
+
+  Se le pregunta a Windows en vez de escribir el nombre a mano porque los
+  nombres reales no se adivinan: en la caja de Gross la POS80 se llama
+  «POS80 Printer» y en los mostradores, la misma, «POS80 Printer(2)».
+
+  Desde el navegador la lista viene vacía y no es un error: ninguna
+  página web puede preguntarle al sistema qué impresoras hay. La pantalla
+  lo explica en lugar de mostrar una falla.
+*/
+export async function listarImpresoras(): Promise<string[]> {
+  if (!enEscritorio) return []
+  const { invoke } = await import('@tauri-apps/api/core')
+  return invoke<string[]>('listar_impresoras')
+}
+
+/*
   Mandarle el ticket a la impresora del mostrador.
 
   Sólo existe adentro del programa instalado: una página web no puede
-  abrir una conexión de red contra una impresora del local, y esa es
-  justamente la razón principal por la que el sistema se empaqueta.
+  mandarle bytes crudos a una impresora del local, y esa es justamente la
+  razón principal por la que el sistema se empaqueta.
+
+  Por dónde sale lo decide destinoDeImpresion(), no esta función: acá
+  sólo se transporta lo que ya se decidió.
 */
-export async function imprimirEnLaHasar(
-  datos: Uint8Array,
-  host: string,
-  puerto: number,
-): Promise<void> {
+export async function imprimirTicket(datos: Uint8Array, destino: Destino): Promise<void> {
   if (!enEscritorio) {
     throw new Error(
       'La impresión directa sólo funciona en el programa instalado. Desde el navegador, usá Imprimir.',
@@ -96,5 +114,12 @@ export async function imprimirEnLaHasar(
   const { invoke } = await import('@tauri-apps/api/core')
   // Se manda como lista de números: es lo que viaja bien entre la
   // ventana y el programa, sin que nadie tenga que interpretar nada.
-  await invoke('imprimir_en_red', { host, puerto, datos: Array.from(datos) })
+  const bytes = Array.from(datos)
+
+  if (destino.via === 'windows') {
+    await invoke('imprimir_por_windows', { impresora: destino.impresora, datos: bytes })
+    return
+  }
+
+  await invoke('imprimir_en_red', { host: destino.host, puerto: destino.puerto, datos: bytes })
 }

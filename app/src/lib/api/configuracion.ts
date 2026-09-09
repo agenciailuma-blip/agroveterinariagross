@@ -90,17 +90,37 @@ export const CLAVES_EMISOR = [
 ] as const
 
 /*
-  La impresora del mostrador.
+  La impresora de red del comercio.
 
   Aparte de los datos del emisor a propósito: no es un dato fiscal, es
   un dato de la instalación de cada local. Si mañana cambian el router,
   esto cambia y el encabezado de la factura no.
+
+  Ojo con qué guarda esto y qué no: acá vive la impresora de RED, que es
+  una sola para todo el comercio. La impresora de Windows —la que usa
+  Gross— es de cada máquina y vive en su terminal, porque la misma POS80
+  se llama distinto en cada PC.
 */
 export const CLAVES_IMPRESORA = [
   'comercio.impresora_host',
   'comercio.impresora_puerto',
   'comercio.nombre_fantasia',
 ] as const
+
+/*
+  Qué impresora de Windows usa una terminal.
+
+  Se guarda el nombre elegido de la lista que informa Windows en esa PC,
+  nunca uno escrito a mano. Vacío quiere decir «esta máquina no imprime
+  tickets», y entonces el comprobante sale por el diálogo de impresión.
+*/
+export async function guardarImpresoraDeLaTerminal(terminalId: string, impresora: string) {
+  const { error } = await supabase
+    .from('terminal')
+    .update({ impresora_windows: impresora.trim() || null })
+    .eq('id', terminalId)
+  if (error) throw new Error(error.message)
+}
 
 export async function obtenerTextos(claves: readonly string[]): Promise<Record<string, string>> {
   const { data, error } = await supabase

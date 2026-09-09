@@ -12,31 +12,42 @@ estado: en curso
 
 ## Lo primero de todo
 
-🔴 **Actualizar UNA PC a la 0.2.2 desde el programa y ver si el instalador ya no falla.** Está publicada en Cloudflare desde el 09/09. Ver abajo.
+🔴 **Publicar la versión con la impresión por impresora de Windows, y probarla en el local con el papel puesto.** Es lo último que traba el mostrador. El código está hecho y probado hasta donde se puede probar sin la impresora delante; la prueba que falta es de dos minutos, con la PC de la caja adelante.
 
-✅ Todo el trabajo del 08 y 09/09 está commiteado en `main`, en tres commits: el arreglo del instalador, las dos tandas de pedidos de Lucas más proveedores y el Excel del contador, y la reorganización de la documentación.
+🟡 **El actualizador sigue sin probarse de punta a punta.** La 0.2.2 entró bien, pero desinstalando la versión vieja primero, así que **el arreglo del archivo tomado no se ejercitó**. Hoy no molesta: en el local se desinstala e instala con la máquina delante. Molesta **después del 26/10**, cuando una corrección tenga que llegar a las 4 PC sin viajar a Oberá. Conviene probarlo una vez con la próxima versión, en una sola PC, sin desinstalar nada.
 
 ---
 
 ## Lo último que pasó — 9 de septiembre
 
-**Se publicó la 0.2.2 a Cloudflare**, firmada y con el arreglo del instalador adentro.
+**Se construyó la impresión por impresora de Windows**, que era lo único que trababa el mostrador, y antes de eso **se publicó la 0.2.2** con el arreglo del instalador adentro.
 
-### 🔴 Lo que hay que hacer YA, y es una prueba, no código
+### La impresión, como se la contás a Lucas
 
-**Actualizar UNA PC desde el programa y ver si funciona.** No las cuatro: una.
+> La impresora se elige de una lista, como cuando imprimís desde el Word, y **cada computadora elige la suya**. El ticket sale por la cola de impresión de Windows y no por la red, porque la POS80 está enchufada por USB a la caja y compartida desde ahí para los mostradores.
 
-- El arreglo viaja **adentro del instalador 0.2.2**, así que aplica en esta misma actualización.
-- Está verificado que **compila** y que queda en el lugar correcto del instalador. **No está verificado que funcione**: para eso hace falta un archivo realmente tomado por el programa.
-- Si anda, recién ahí avisarle a Lucas que actualice las demás.
+**Qué quedó hecho:**
+
+- Windows le dice al programa qué impresoras tiene instaladas **esa** PC, y el ticket se le manda como trabajo **RAW** — que es lo que hace que los bytes de ESC/POS lleguen sin que nadie los traduzca. Todo lo que ya estaba armado del ticket sirvió tal cual.
+- **El nombre se guarda por terminal**, no para todo el comercio: la misma impresora es `POS80 Printer` en la caja y `POS80 Printer(2)` en los mostradores. Viaja con la terminal al almacenamiento local, así que un ticket sale igual con internet cortado.
+- **Se elige de un desplegable, no se escribe.** Un nombre tipeado a mano se guarda sin protestar y falla el día que hay que entregarle un comprobante a alguien.
+- Una sola regla decide por dónde sale el ticket, y la usan la caja, el remito y la prueba de Configuración. Si cada pantalla decidiera sola, la prueba saldría por un camino y el ticket de verdad por el otro.
+- **El diagnóstico compara la impresora guardada con lo que Windows ve en esa PC.** Es la falla que va a aparecer en el local: si la máquina de la caja está apagada, la compartida deja de existir en los mostradores y el ticket no sale sin que nada lo avise antes.
+- El camino por red no se borró: quedó plegado en Configuración, por si algún día ponen una impresora de red.
+
+**Qué se verificó, y qué no.** Se verificó que la lista de impresoras se lea bien —13 en esta PC, ninguna cortada— y, la que importa, que **cada nombre que devuelve la lista sea uno que Windows después acepta**; las pruebas nuevas se rompieron a propósito para ver que fallan. ⚠️ **Falta el papel:** que la POS80 imprima el ticket sólo se puede ver en Oberá. Es apretar un botón: Configuración → Impresora del mostrador → elegir de la lista → *Imprimir una prueba*.
+
+### La 0.2.2 y el instalador
 
 **Qué se arregló y por qué fallaba.** El actualizador cierra la app y después lanza el instalador. Tauri ya tiene un chequeo propio (`CheckIfAppIsRunning`) pero busca el proceso **por nombre**: como la app ya se cerró, no encuentra nada y sigue de largo sin esperar. Mientras tanto los procesos hijos de WebView2 —que se llaman distinto— todavía tienen el `.exe` abierto. El gancho nuevo ([`app/src-tauri/instalador.nsh`](../app/src-tauri/instalador.nsh)) corre **antes** y no pregunta por nombres: intenta abrir el archivo, espera hasta 10 segundos, y si sigue tomado mata lo que quedó.
+
+⚠️ **La 0.2.2 quedó instalada, pero desinstalando primero**, así que el gancho no se ejercitó: está verificado que compila y que va adentro del instalador, no que resuelva el archivo tomado. Ver *Lo primero de todo*.
 
 🟡 **SmartScreen:** es esperable que **no** aparezca actualizando desde el programa —el aviso lo dispara la marca de web que pone el navegador al descargar, y el actualizador no la pone—. No está confirmado. Sacarlo de verdad necesita un certificado de firma de código, que es una compra anual.
 
 ## Lo que sigue, en orden
 
-1. 🔴 **Impresión por impresora de Windows.** Lo único que traba el mostrador. Ya no le falta información: las fotos del 07/09 trajeron el nombre (`POS80 Printer`), el controlador (`POS80ENG`) y el formato (**RAW**, que es lo que permite mandarle ESC/POS por la cola de Windows). En las otras PC es `POS80 Printer(2)` en `DESKTOP-O4R9STD`. La pantalla de Configuración **tiene que listar las impresoras instaladas**, no pedir el nombre escrito.
+1. 🔴 **Probar la impresión en el local, con la impresora delante.** El código está: lo que falta es el papel. Antes hay que publicar la versión — hoy lo construido no está publicado.
 2. 🔴 **CAEA** — falta el trámite, no el código.
 3. **Métricas de venta en Inicio** — lo último visible que falta de V1-A.
 4. **Reservar el concepto de depósito** en el modelo de stock. ⚠️ Subió de prioridad: el 09/09 se descubrió que **ya usan al menos cinco depósitos** en OBTech, uno de ellos "Fraccionamiento". Ver [`obtech-como-piso.md`](obtech-como-piso.md).
@@ -69,6 +80,7 @@ Está andando y verificado. Si algo de acá se rompe, es una regresión:
 - **`networkMode: 'always'`** en React Query. Sacarlo cuelga el mostrador entero sin conexión.
 - **El límite de 12 s** en `supabase.ts`.
 - **`aumentar_precios` y `revertir_aumento` son SECURITY DEFINER a propósito.** No agregarles política de insert: el registro que existe para deshacer un error no puede ser editable por fuera del mecanismo que lo deshace.
+- **La impresora se guarda por terminal, no en la configuración del comercio.** Volverla a un solo valor para todo el local deja tres de las cuatro PC imprimiendo a un nombre que en su lista no existe. Y el nombre se elige de la lista de Windows: escribirlo a mano falla en silencio.
 
 ## Cómo arrancar
 
@@ -92,9 +104,11 @@ Queda en `http://localhost:5173`.
 
 **Proveedores y el contador.** Ficha de proveedor, **ajuste** de precios en masa por proveedor y rubro —sube y baja, `7` y `-8`, con deshacer exacto— y la exportación mensual de ventas a Excel.
 
+**La impresión del mostrador, rehecha.** Del camino por red —que no servía en ninguna de las dos cajas— al camino por la cola de Windows, con la impresora elegida de una lista y guardada por terminal. Es el punto 1 de la reunión del 07/09.
+
 **Documentación.** Se partió `ESTADO.md` (766 líneas) en `AHORA.md` + cuatro notas, sin perder una línea. Las 40 imágenes se movieron a `referencias/`.
 
-📊 **16 de 24 pedidos de Lucas hechos** · 135 pruebas verdes · 58 migraciones.
+📊 **16 de 24 pedidos de Lucas hechos** · 142 pruebas verdes en la app y 5 en el programa · 61 migraciones.
 
 ---
 

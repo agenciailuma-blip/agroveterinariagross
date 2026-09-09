@@ -5,8 +5,10 @@ import TicketNoFiscal from '@/components/TicketNoFiscal'
 import { LEYENDA_NO_FISCAL, numeroNoFiscal, obtenerNoFiscalCompleto } from '@/lib/api/noFiscal'
 import type { NoFiscalCompleto } from '@/lib/api/noFiscal'
 import { ticketNoFiscalEscPos } from '@/lib/comprobante/escposNoFiscal'
+import { destinoDeImpresion } from '@/lib/comprobante/destino'
 import { fechaCorta } from '@/lib/comprobante/presentacion'
-import { enEscritorio, imprimirEnLaHasar } from '@/lib/escritorio'
+import { enEscritorio, imprimirTicket } from '@/lib/escritorio'
+import { useTerminal } from '@/lib/terminal'
 import { moneda, numero } from '@/lib/tipos'
 
 /*
@@ -31,6 +33,9 @@ function formatoGuardado(): Formato {
 
 export default function NoFiscalImprimible() {
   const { id } = useParams<{ id: string }>()
+  // La impresora sale de la terminal, que es la máquina. Guardada
+  // localmente, así que un remito se imprime igual sin internet.
+  const { terminal } = useTerminal()
   const [formato, setFormato] = useState<Formato>(formatoGuardado)
   const [errorImpresora, setErrorImpresora] = useState<string | null>(null)
 
@@ -52,11 +57,9 @@ export default function NoFiscalImprimible() {
 
   const imprimirDirecto = useMutation({
     mutationFn: async () => {
-      await imprimirEnLaHasar(
-        ticketNoFiscalEscPos(d!),
-        d!.emisor.impresora_host ?? '',
-        Number(d!.emisor.impresora_puerto) || 9100,
-      )
+      const destino = destinoDeImpresion(terminal, d!.emisor)
+      if (!destino) throw new Error('Esta computadora todavía no tiene impresora del mostrador.')
+      await imprimirTicket(ticketNoFiscalEscPos(d!), destino)
     },
     onSuccess: () => setErrorImpresora(null),
     onError: (e) =>
@@ -75,6 +78,10 @@ export default function NoFiscalImprimible() {
         </Link>
       </div>
     )
+
+  // Por dónde saldría el ticket en esta máquina. Sin impresora
+  // configurada queda el diálogo de impresión, que nunca puede faltar.
+  const destino = destinoDeImpresion(terminal, d.emisor)
 
   return (
     <div className="min-h-full bg-piedra-100 py-6 print:bg-white print:py-0">
@@ -104,7 +111,7 @@ export default function NoFiscalImprimible() {
               Hoja A4
             </button>
           </div>
-          {enEscritorio && !!d.emisor.impresora_host?.trim() && (
+          {enEscritorio && !!destino && (
             <button
               onClick={() => imprimirDirecto.mutate()}
               disabled={imprimirDirecto.isPending}

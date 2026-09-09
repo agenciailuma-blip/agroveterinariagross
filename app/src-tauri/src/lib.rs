@@ -16,7 +16,15 @@ pub fn run() {
         // significaria ir maquina por maquina con un pendrive.
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
-        .invoke_handler(tauri::generate_handler![impresora::imprimir_en_red])
+        // Las tres cosas que la ventana puede pedir: que impresoras hay
+        // instaladas en esta PC, mandarle un ticket a una de ellas por la
+        // cola de Windows, y mandarlo por red. Lo que no se registra
+        // aca, la ventana lo llama y no pasa absolutamente nada.
+        .invoke_handler(tauri::generate_handler![
+            impresora::listar_impresoras,
+            impresora::imprimir_por_windows,
+            impresora::imprimir_en_red
+        ])
         .run(tauri::generate_context!())
         .expect("No se pudo abrir la ventana del sistema");
 }

@@ -7,6 +7,13 @@ export interface Terminal {
   tipo: 'caja' | 'mostrador' | 'oficina'
   prefijo: string | null
   punto_venta_id: string | null
+  /*
+    La impresora de tickets de ESTA máquina, con el nombre exacto que le
+    da Windows. Viaja con la terminal —y no en la configuración del
+    comercio— porque la misma POS80 se llama «POS80 Printer» en la caja y
+    «POS80 Printer(2)» en los mostradores.
+  */
+  impresora_windows: string | null
 }
 
 const CLAVE = 'gross.terminal'
@@ -80,7 +87,7 @@ export function useTerminal() {
     async function cargar() {
       const { data, error } = await supabase
         .from('terminal')
-        .select('id, nombre, tipo, prefijo, punto_venta_id')
+        .select('id, nombre, tipo, prefijo, punto_venta_id, impresora_windows')
         .eq('activo', true)
         .is('eliminado_en', null)
         .order('nombre')

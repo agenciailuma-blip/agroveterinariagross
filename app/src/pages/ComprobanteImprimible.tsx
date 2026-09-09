@@ -7,8 +7,10 @@ import type { ComprobanteCompleto } from '@/lib/api/comprobante'
 import { urlQrComprobante } from '@/lib/arca/qr'
 import TicketComprobante from '@/components/TicketComprobante'
 import { ticketEscPos } from '@/lib/comprobante/escpos'
-import { enEscritorio, imprimirEnLaHasar } from '@/lib/escritorio'
+import { destinoDeImpresion } from '@/lib/comprobante/destino'
+import { enEscritorio, imprimirTicket } from '@/lib/escritorio'
 import { presentacionDe } from '@/lib/comprobante/presentacion'
+import { useTerminal } from '@/lib/terminal'
 import { moneda, numero } from '@/lib/tipos'
 
 /*
@@ -46,6 +48,10 @@ function formatoGuardado(): Formato {
 export default function ComprobanteImprimible() {
   const { id } = useParams<{ id: string }>()
   const qc = useQueryClient()
+  // La impresora del mostrador es de la máquina, así que viaja con la
+  // terminal. Se lee de lo guardado localmente: acá no hace falta pedirle
+  // nada al servidor, que es lo que permite imprimir sin internet.
+  const { terminal } = useTerminal()
   const [qr, setQr] = useState<string | null>(null)
   // La dirección del QR, aparte de la imagen: la impresora dibuja el
   // suyo a partir del texto, no de la imagen.
@@ -112,13 +118,9 @@ export default function ComprobanteImprimible() {
   const imprimirDirecto = useMutation({
     mutationFn: async () => {
       if (!c) return
-      const host = c.emisor.impresora_host?.trim()
-      if (!host) throw new Error('Todavía no está cargada la impresora del mostrador.')
-      await imprimirEnLaHasar(
-        ticketEscPos(c, urlQr),
-        host,
-        Number(c.emisor.impresora_puerto) || 9100,
-      )
+      const destino = destinoDeImpresion(terminal, c.emisor)
+      if (!destino) throw new Error('Esta computadora todavía no tiene impresora del mostrador.')
+      await imprimirTicket(ticketEscPos(c, urlQr), destino)
     },
     onSuccess: () => {
       setErrorImpresora(null)
@@ -151,6 +153,11 @@ export default function ComprobanteImprimible() {
 
   const faltanDatos = !c.emisor.ingresos_brutos || !c.emisor.inicio_actividades
 
+  // Por dónde saldría el ticket en esta máquina. Sin impresora
+  // configurada el botón no aparece y queda el diálogo de impresión, que
+  // es el camino que nunca puede faltar.
+  const destino = destinoDeImpresion(terminal, c.emisor)
+
   return (
     <div className="min-h-full bg-piedra-100 py-6 print:bg-white print:py-0">
       {/* Barra de acciones: no sale impresa */}
@@ -182,7 +189,7 @@ export default function ComprobanteImprimible() {
               Impreso {c.impresiones} {c.impresiones === 1 ? 'vez' : 'veces'}
             </span>
           )}
-          {enEscritorio && !!c.emisor.impresora_host?.trim() && (
+          {enEscritorio && !!destino && (
             <button
               onClick={() => imprimirDirecto.mutate()}
               disabled={!c.cae || imprimirDirecto.isPending}

@@ -23,6 +23,12 @@ tauri-plugin-process = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
+# Sólo para hablarle a la cola de impresión de Windows, que es por donde
+# sale el ticket del mostrador. Es la misma versión que ya usa Tauri por
+# dentro, así que no agrega nada al instalador.
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.61", features = ["Win32_Graphics_Printing"] }
+
 # El instalador pesa bastante menos y arranca más rápido optimizando
 # para tamaño. En una PC de mostrador eso se nota más que unos
 # milisegundos de cálculo, que acá no hay: el trabajo pesado lo hace la
