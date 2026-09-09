@@ -12,7 +12,7 @@ estado: en curso
 
 ## Lo primero de todo
 
-🔴 **Publicar la versión con la impresión por impresora de Windows, y probarla en el local con el papel puesto.** Es lo último que traba el mostrador. El código está hecho y probado hasta donde se puede probar sin la impresora delante; la prueba que falta es de dos minutos, con la PC de la caja adelante.
+🔴 **Probar la impresión en el local, con el papel puesto.** Es lo último que traba el mostrador. Está **publicada en la 0.2.3** desde el 09/09 y probada hasta donde se puede probar sin la impresora delante; la prueba que falta es de dos minutos, con la PC de la caja adelante: Configuración → Impresora del mostrador → elegir de la lista → *Imprimir una prueba*. En **cada** PC, porque cada una elige la suya.
 
 🟡 **El actualizador sigue sin probarse de punta a punta.** La 0.2.2 entró bien, pero desinstalando la versión vieja primero, así que **el arreglo del archivo tomado no se ejercitó**. Hoy no molesta: en el local se desinstala e instala con la máquina delante. Molesta **después del 26/10**, cuando una corrección tenga que llegar a las 4 PC sin viajar a Oberá. Conviene probarlo una vez con la próxima versión, en una sola PC, sin desinstalar nada.
 
@@ -20,7 +20,7 @@ estado: en curso
 
 ## Lo último que pasó — 9 de septiembre
 
-**Se construyó la impresión por impresora de Windows**, que era lo único que trababa el mostrador, y antes de eso **se publicó la 0.2.2** con el arreglo del instalador adentro.
+**Se construyó la impresión por impresora de Windows**, que era lo único que trababa el mostrador, y **se publicó en la 0.2.3**. Antes, en el mismo día, salió la 0.2.2 con el arreglo del instalador adentro.
 
 ### La impresión, como se la contás a Lucas
 
@@ -47,7 +47,7 @@ estado: en curso
 
 ## Lo que sigue, en orden
 
-1. 🔴 **Probar la impresión en el local, con la impresora delante.** El código está: lo que falta es el papel. Antes hay que publicar la versión — hoy lo construido no está publicado.
+1. 🔴 **Probar la impresión en el local, con la impresora delante.** El código está publicado en la 0.2.3: lo que falta es el papel.
 2. 🔴 **CAEA** — falta el trámite, no el código.
 3. **Métricas de venta en Inicio** — lo último visible que falta de V1-A.
 4. **Reservar el concepto de depósito** en el modelo de stock. ⚠️ Subió de prioridad: el 09/09 se descubrió que **ya usan al menos cinco depósitos** en OBTech, uno de ellos "Fraccionamiento". Ver [`obtech-como-piso.md`](obtech-como-piso.md).

@@ -62,10 +62,9 @@ Y era, además, el camino frágil: una IP que reparte el router automáticamente
 
 ## 2. Lo que tiene que estar listo de nuestro lado
 
-- [x] **Versión 0.2.2 publicada el 09/09** en Cloudflare. Sube sola con `npm --prefix app run escritorio:publicar` (**no** `npm run build` — ver la advertencia de ESTADO).
-- [ ] **Publicar la versión con la impresión por impresora de Windows**, que se construyó el 09/09 y todavía no está publicada. Sin eso, en el local no hay lista de impresoras para elegir.
-- [ ] El instalador para las 4 PC, de la versión que se publique. Se baja de
-      `https://gross-sistema.pages.dev/actualizaciones/` — el nombre del archivo lleva el número de versión.
+- [x] **Versión 0.2.3 publicada el 09/09** en Cloudflare, **con la impresión por impresora de Windows adentro**. Sube sola con `npm --prefix app run escritorio:publicar` desde Git Bash (**no** `npm run build` — ver la advertencia de más abajo).
+- [ ] El instalador para las 4 PC:
+      `https://gross-sistema.pages.dev/actualizaciones/sistema-gross-0.2.3-setup.exe`
 - [ ] **Cargar el logo** en Configuración → Datos del emisor. Sin logo, los remitos y presupuestos salen sin nada que identifique al comercio, porque ya no llevan los datos del emisor.
 - [ ] Las terminales creadas en el sistema, con su prefijo y —la caja— con su punto de venta de ARCA.
 - [ ] Saber los PIN de los operadores que van a usar las PC.
