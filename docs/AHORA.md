@@ -1,5 +1,5 @@
 ---
-actualizado: 2026-09-09
+actualizado: 2026-09-10
 estado: en curso
 ---
 
@@ -18,24 +18,23 @@ estado: en curso
 
 ---
 
-## Lo último que pasó — 9 de septiembre
+## Lo último que pasó — 10 de septiembre
+
+**Las métricas de venta en Inicio**, que era lo último visible que le faltaba a V1-A. Al abrir el sistema se ve cuánto se vendió **hoy**, en los **últimos 7 días** y en el **mes**, qué fue **lo más vendido** y **cuánto vendió cada uno**. Antes había que ir a Facturación y sumar a ojo.
+
+Tres cosas que no se ven pero definen si el número está bien:
+
+- **El día es el de Oberá, no el del servidor**, que vive en UTC. Sin eso, todo lo cobrado después de las nueve de la noche aparecería como vendido mañana — el cajero cierra la caja y la última hora ya figura en el total del día siguiente. Verificado contra la base: a las 22:00 del 8, la versión ingenua decía 0 ventas y la buena decía las 2 que había.
+- **Sólo cuentan las cobradas**, por el momento en que se cobraron. Un borrador o una venta esperando en la caja todavía no es plata, y una anulada dejó de serlo.
+- **Cada uno ve lo suyo.** Quien no tiene permiso para ver todas las ventas recibe únicamente las de él, y entonces el título dice *"Tus ventas"* en vez de *"Ventas del local"*: un número propio presentado como si fuera el del mostrador entero no es un número incompleto, es uno equivocado.
+
+## Lo que pasó el 9 de septiembre
 
 **Se construyó la impresión por impresora de Windows**, que era lo único que trababa el mostrador, y **se publicó en la 0.2.3**. Antes, en el mismo día, salió la 0.2.2 con el arreglo del instalador adentro.
 
-### La impresión, como se la contás a Lucas
+> **Como se lo contás a Lucas:** la impresora se elige de una lista, como cuando imprimís desde el Word, y **cada computadora elige la suya**. El ticket sale por la cola de impresión de Windows y no por la red, porque la POS80 está enchufada por USB a la caja y compartida desde ahí para los mostradores.
 
-> La impresora se elige de una lista, como cuando imprimís desde el Word, y **cada computadora elige la suya**. El ticket sale por la cola de impresión de Windows y no por la red, porque la POS80 está enchufada por USB a la caja y compartida desde ahí para los mostradores.
-
-**Qué quedó hecho:**
-
-- Windows le dice al programa qué impresoras tiene instaladas **esa** PC, y el ticket se le manda como trabajo **RAW** — que es lo que hace que los bytes de ESC/POS lleguen sin que nadie los traduzca. Todo lo que ya estaba armado del ticket sirvió tal cual.
-- **El nombre se guarda por terminal**, no para todo el comercio: la misma impresora es `POS80 Printer` en la caja y `POS80 Printer(2)` en los mostradores. Viaja con la terminal al almacenamiento local, así que un ticket sale igual con internet cortado.
-- **Se elige de un desplegable, no se escribe.** Un nombre tipeado a mano se guarda sin protestar y falla el día que hay que entregarle un comprobante a alguien.
-- Una sola regla decide por dónde sale el ticket, y la usan la caja, el remito y la prueba de Configuración. Si cada pantalla decidiera sola, la prueba saldría por un camino y el ticket de verdad por el otro.
-- **El diagnóstico compara la impresora guardada con lo que Windows ve en esa PC.** Es la falla que va a aparecer en el local: si la máquina de la caja está apagada, la compartida deja de existir en los mostradores y el ticket no sale sin que nada lo avise antes.
-- El camino por red no se borró: quedó plegado en Configuración, por si algún día ponen una impresora de red.
-
-**Qué se verificó, y qué no.** Se verificó que la lista de impresoras se lea bien —13 en esta PC, ninguna cortada— y, la que importa, que **cada nombre que devuelve la lista sea uno que Windows después acepta**; las pruebas nuevas se rompieron a propósito para ver que fallan. ⚠️ **Falta el papel:** que la POS80 imprima el ticket sólo se puede ver en Oberá. Es apretar un botón: Configuración → Impresora del mostrador → elegir de la lista → *Imprimir una prueba*.
+El detalle completo —por qué el nombre se guarda por terminal, qué hace el diagnóstico, qué se verificó sin la impresora delante— está en [[Lo construido, en detalle]]. ⚠️ **Falta el papel:** que la POS80 imprima el ticket sólo se puede ver en Oberá.
 
 ### La 0.2.2 y el instalador
 
@@ -49,8 +48,8 @@ estado: en curso
 
 1. 🔴 **Probar la impresión en el local, con la impresora delante.** El código está publicado en la 0.2.3: lo que falta es el papel.
 2. 🔴 **CAEA** — falta el trámite, no el código.
-3. **Métricas de venta en Inicio** — lo último visible que falta de V1-A.
-4. **Reservar el concepto de depósito** en el modelo de stock. ⚠️ Subió de prioridad: el 09/09 se descubrió que **ya usan al menos cinco depósitos** en OBTech, uno de ellos "Fraccionamiento". Ver [`obtech-como-piso.md`](obtech-como-piso.md).
+3. **Reservar el concepto de depósito** en el modelo de stock. ⚠️ Subió de prioridad: el 09/09 se descubrió que **ya usan al menos cinco depósitos** en OBTech, uno de ellos "Fraccionamiento". Ver [`obtech-como-piso.md`](obtech-como-piso.md).
+4. **Cargar la factura de compra** (y con eso el IVA Compras). 🟠 Está en V1-B y **conviene subirlo a V1-A**: es lo único de la lista con una fecha que no manejamos. Si OBTech se corta el 26/10 y V1-B llega cinco semanas después, la presentación de IVA de octubre cae en el medio y la hace el contador a mano. Ver [`compras-e-iva.md`](compras-e-iva.md).
 5. **Sincronización por red local** y **cifrado de la base local**.
 6. **Todo con teclado** — lo último antes del 26/10, decidido con Lucas.
 
@@ -108,7 +107,7 @@ Queda en `http://localhost:5173`.
 
 **Documentación.** Se partió `ESTADO.md` (766 líneas) en `AHORA.md` + cuatro notas, sin perder una línea. Las 40 imágenes se movieron a `referencias/`.
 
-📊 **16 de 24 pedidos de Lucas hechos** · 142 pruebas verdes en la app y 5 en el programa · 61 migraciones.
+📊 **16 de 24 pedidos de Lucas hechos** · 148 pruebas verdes en la app y 5 en el programa · 62 migraciones.
 
 ---
 

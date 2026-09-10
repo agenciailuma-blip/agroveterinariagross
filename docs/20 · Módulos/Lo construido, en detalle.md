@@ -432,8 +432,26 @@ Al cobrar se emite la factura sola y aparece un aviso con el CAE y el botón **I
 
 Cuando esté la Hasar conectada por Tauri, ese paso desaparece: imprime directo.
 
+### ✅ 2c. Las métricas de venta en Inicio (10/09)
+
+Lo último visible que le faltaba a V1-A. Al abrir el sistema, arriba de todo: cuánto se vendió **hoy**, en los **últimos 7 días** y en el **mes en curso**, **lo más vendido** del mes y **cuánto vendió cada uno**. Antes había que entrar a Facturación y sumar a ojo.
+
+**Sale de una sola función** ([`metricas_de_venta`](../../supabase/migrations/20260910100000_metricas_de_venta_en_inicio.sql)) y no de cinco consultas: Inicio es la primera pantalla que se abre, varias veces por día y en cuatro máquinas.
+
+**Las tres decisiones que definen si el número está bien:**
+
+- **El día es el de Oberá, no el del servidor.** La base guarda los momentos en UTC y el servidor vive en UTC. Sin convertir, todo lo cobrado después de las 21:00 contaría como del día siguiente: el cajero cierra la caja y las ventas de la última hora ya figuran en el total de mañana. **Verificado contra la base real:** preguntando a las 22:00 del 8 de septiembre, la versión ingenua en UTC devuelve 0 ventas y la buena devuelve las 2 que hubo. Lo mismo con el mes: a las 22:00 del 31 de agosto, el mes en curso sigue siendo agosto.
+- **Sólo cuentan las cobradas, por el momento en que se cobraron.** Un borrador o una venta esperando en la caja todavía no es plata, y una anulada dejó de serlo. Es el mismo criterio con el que el mostrador contesta "¿cuánto hicimos hoy?".
+- **Cada uno ve lo suyo.** La función es `security invoker`, así que las mismas políticas que gobiernan la tabla de ventas gobiernan estos números: quien no tiene `ventas.ver_todas` recibe únicamente las suyas. Por eso la respuesta dice **con qué alcance se calculó** y el título cambia a *"Tus ventas"*. Un número propio presentado como si fuera el del local no es un número incompleto: es uno equivocado, y nadie tendría forma de notarlo.
+
+**Detalles que se ven poco y se notan:** las etiquetas dicen *"últimos 7 días"* y no *"esta semana"*, porque el lunes a la mañana son dos cosas muy distintas; un día sin ventas se lee "sin ventas todavía" y no un cero suelto; y *"lo más vendido"* se agrupa por la foto de texto de la línea, así que también cuentan las líneas escritas a mano, que son ventas igual.
+
+**Verificado contra la base real (10/09):** los tres períodos, los más vendidos y el total por vendedor cuadran con las 26 ventas cobradas que hay cargadas — la suma por vendedor da exactamente el total del mes. Seis pruebas nuevas cubren la parte que la base no puede cubrir: de quién son los números y cómo se leen. Se rompieron a propósito para ver que fallan.
+
+De paso se sacó de Inicio la tarjeta *"Estado del proyecto"*, que era de la primera semana y seguía diciendo que faltaban el punto de venta y la conexión con ARCA.
+
 ### 🟡 3. Pantallas que faltan
-Reportes. *(El panel de comprobantes con semáforo, la configuración general y el inventario por sectores ya están hechos.)*
+Reportes. *(El panel de comprobantes con semáforo, la configuración general, el inventario por sectores y las métricas de Inicio ya están hechos.)*
 
 ### ✅ 4. Importador del Excel — hecho, esperando la planilla
 

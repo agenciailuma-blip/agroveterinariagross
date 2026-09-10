@@ -1,6 +1,6 @@
 # Los pedidos de Lucas — qué está hecho y qué falta
 
-**Al 9 de septiembre de 2026.**
+**Al 10 de septiembre de 2026.**
 **Para qué sirve:** un solo lugar donde mirar los **24 puntos del documento del 03/09** y los **pedidos de la visita del 07/09**, con su estado real. Es el papel para llevar a la próxima reunión.
 
 **Fuentes:** [`sugerencias-lucas-2026-09.md`](sugerencias-lucas-2026-09.md) (los 24 puntos clasificados) y [`reunion-lucas-2026-09-07.md`](reunion-lucas-2026-09-07.md) (la visita al local).
@@ -138,9 +138,9 @@ No sale de sus listas, pero está comprometido y entra antes del corte. Se anota
 
 | | Qué | Por qué importa |
 |---|---|---|
-| 🔴 | **Impresión por la impresora de Windows** | **Lo único que traba el mostrador hoy.** Las fotos del 07/09 trajeron todo lo que faltaba saber. Es lo próximo que se hace |
-| 🔴 | **El actualizador automático** | Falla al reemplazar el programa porque el programa lo tiene abierto. Hasta resolverlo, **cada corrección hay que instalarla a mano con el programa cerrado** |
-| 🟡 | **Métricas de venta en Inicio** | Lo último visible que falta de V1-A: del día, de la semana, del mes, más vendidos, por vendedor |
+| ✅ | **Impresión por la impresora de Windows** | Hecha el 09/09 y publicada en la 0.2.3. Se elige de una lista y se guarda por terminal. **Falta el papel:** probarla en el local, que son dos minutos |
+| 🟡 | **El actualizador automático** | Arreglado en la 0.2.2, **pero todavía sin probar de punta a punta**: la actualización se hizo desinstalando primero. Mientras tanto, cada corrección se instala desinstalando |
+| ✅ | **Métricas de venta en Inicio** | Hechas el 10/09: hoy, últimos 7 días, mes, lo más vendido y cuánto vendió cada uno. Era lo último visible que faltaba de V1-A |
 | 🟡 | **Sincronización por red local** | Sin esto, "el mostrador sigue funcionando sin internet" se cumple a medias: una venta armada por un vendedor no llega a la caja hasta que vuelva la conexión |
 | 🔴 | **Cifrado de la base local** | Comprometido en el alcance §1 y exigido por la Ley 25.326. La base local guarda datos de clientes en claro |
 | 🟡 | **Devoluciones parciales y nota de débito** | Hoy la devolución es de la venta entera: si el cliente devuelve 1 de 3, hay que anular todo y rehacer |
