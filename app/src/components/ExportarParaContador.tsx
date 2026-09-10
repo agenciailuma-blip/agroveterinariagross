@@ -1,8 +1,16 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { aCsv, totales, ventasParaElContador } from '@/lib/api/libroIva'
+import {
+  aCsv,
+  percepcionesACsv,
+  percepcionesParaRentas,
+  totales,
+  totalesDePercepciones,
+  ventasParaElContador,
+} from '@/lib/api/libroIva'
 import { descargarCsv } from '@/lib/api/noFiscal'
 import { moneda, numero } from '@/lib/tipos'
+import { boton } from '@/estilos'
 
 /*
   ─────────────────────────────────────────────────────────────
@@ -49,9 +57,33 @@ export default function ExportarParaContador() {
 
   const t = filas.data ? totales(filas.data) : null
 
+  /*
+    Las percepciones van en su propio archivo.
+
+    Gross es agente de percepción de IIBB en Misiones —régimen 14, no de
+    retención— y lo que se presenta ante Rentas es el detalle de lo
+    percibido: una fila por percepción, con su base y a quién se le
+    hizo. En el de ventas la percepción es un total por comprobante,
+    que es lo que un libro de IVA necesita y no lo que pide Rentas.
+  */
+  const percepciones = useQuery({
+    queryKey: ['percepciones-rentas', desde, hasta],
+    queryFn: () => percepcionesParaRentas(desde, hasta),
+  })
+
+  const p = percepciones.data ? totalesDePercepciones(percepciones.data) : null
+
   function bajar() {
     if (!filas.data?.length) return
     descargarCsv(`ventas-${anio}-${String(mes).padStart(2, '0')}.csv`, aCsv(filas.data))
+  }
+
+  function bajarPercepciones() {
+    if (!percepciones.data?.length) return
+    descargarCsv(
+      `percepciones-iibb-${anio}-${String(mes).padStart(2, '0')}.csv`,
+      percepcionesACsv(percepciones.data),
+    )
   }
 
   // Desde 2026, que es cuando arranca el sistema. Ofrecer 1990 sería
@@ -131,6 +163,46 @@ export default function ExportarParaContador() {
           </p>
         </div>
       )}
+
+      {/*
+        El segundo archivo del mes. Va en la misma pantalla y no en otra
+        porque se hacen juntos, el mismo día y para la misma persona.
+      */}
+      <div className="mt-5 border-t border-borde pt-4">
+        <h3 className="text-sm font-medium text-tinta">Percepciones de IIBB — Misiones</h3>
+        <p className="mt-1 text-sm text-piedra-500">
+          El detalle de lo percibido en el mes, que es lo que se declara ante Rentas. Gross es
+          agente de <strong>percepción</strong>, no de retención: no emite comprobantes de
+          retención.
+        </p>
+
+        {percepciones.isPending ? (
+          <p className="mt-3 text-sm text-piedra-500">Buscando…</p>
+        ) : !percepciones.data?.length ? (
+          <p className="mt-3 rounded-lg bg-piedra-50 px-3 py-2.5 text-sm text-piedra-600 ring-1 ring-borde">
+            No se percibió nada en {MESES[mes - 1]} de {anio}.
+          </p>
+        ) : (
+          <>
+            <div className="mt-3 rounded-lg bg-piedra-50 p-3 ring-1 ring-borde">
+              <dl className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm sm:grid-cols-4">
+                <Dato k="Percepciones" v={numero.format(p!.percepciones)} />
+                <Dato k="Clientes" v={numero.format(p!.clientes)} />
+                <Dato k="Base imponible" v={moneda.format(p!.base)} />
+                <Dato k="Percibido" v={moneda.format(p!.percibido)} />
+              </dl>
+              <p className="mt-2 border-t border-borde pt-2 text-xs text-piedra-500">
+                Una fila por percepción, con el CUIT del cliente, la base y la alícuota. Las notas
+                de crédito devuelven la percepción y por eso restan.
+              </p>
+            </div>
+
+            <button onClick={bajarPercepciones} className={`mt-3 ${boton.principal}`}>
+              Bajar las percepciones
+            </button>
+          </>
+        )}
+      </div>
     </div>
   )
 }

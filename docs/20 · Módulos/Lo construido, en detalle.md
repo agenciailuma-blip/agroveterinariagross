@@ -487,6 +487,26 @@ Ahora hay un solo lugar donde están definidos ([`estilos.ts`](../../app/src/est
 
 **El menú se achica a sólo íconos**, con un botón abajo de todo. La decisión se guarda **en la computadora y no en el usuario**: la PC de la caja tiene un monitor chico y necesita el espacio para la venta; la de la oficina no. Achicado, el nombre de cada sección aparece al pasar el mouse — sin eso habría que aprenderse quince íconos.
 
+### ✅ 12a. Las percepciones de IIBB, para Rentas (10/09)
+
+Segundo archivo en **Facturación → Ventas para el contador**: el detalle de lo percibido en el mes, una fila por percepción con el CUIT del cliente, la base, la alícuota y el importe.
+
+**Salió de una pregunta que se contestó sola con lo que ya estaba escrito.** Francisco preguntó si Gross usa las pantallas de *retención de IIBB* de OBTech: no sabía, pero sí sabía que **lo necesitan para el contador** y que hoy es manual.
+
+**No son retenciones.** El contador confirmó por escrito —y está en la nota regulatoria— que Gross es **agente de percepción** de IIBB en Misiones, **régimen 14** (RG DGR 012/93), número de agente = su CUIT, alícuota 3,31%. **No es agente de retención**, así que no practica retenciones ni emite comprobantes de retención. Lo que sí presenta todos los meses es el detalle de lo percibido.
+
+> Construir "comprobantes de retención" porque la pantalla de OBTech se llama así habría sido construir lo que no es. Son dos regímenes que se parecen en el nombre y en nada más.
+
+**No hizo falta tocar la base:** `comprobante_tributo` guarda cada percepción con su base y su alícuota desde agosto, y el comprobante tiene el CUIT, la fecha y el número.
+
+**Por qué es un archivo aparte y no una columna más:** el de ventas lleva la percepción como un total por comprobante, que es lo que un libro de IVA necesita. Rentas pide otra cosa — una fila por percepción, con la base sobre la que se calculó y a quién se le hizo.
+
+**La regla que se probó aparte, porque se equivoca en silencio:** la nota de crédito **devuelve** la percepción y por lo tanto resta. La base guarda los importes siempre positivos y el signo lo pone el tipo de comprobante. Si no se aplicara, la declaración diría que se percibió el doble — y esa diferencia se paga.
+
+> La primera versión de esa prueba no servía: armaba las filas a mano con importes ya negativos, así que probaba la suma y no la regla. Se sacó la regla a una función aparte y recién ahí la prueba empezó a fallar cuando se rompe el signo a propósito.
+
+⚠️ **Falta confirmar el formato, no el contenido.** Se entrega en Excel, igual que el de ventas, porque la presentación la hace el contador. El archivo oficial de la aplicación de Rentas no se produce: hacerlo sin tenerlo confirmado sería adivinar un ancho de campo.
+
 ### ✅ 11a. La factura de compra (10/09)
 
 Pantalla **Compras**, entre Proveedores y Ventas. Se carga la cabecera de la factura que emitió el proveedor: quién, cuál, cuándo, el **desglose por alícuota de IVA** y las percepciones. **Sin líneas de producto.**

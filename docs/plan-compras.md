@@ -25,7 +25,7 @@ estado: propuesta — falta la decisión de Lucas
 
 ---
 
-## Las cuatro piezas que faltan
+## Las piezas que faltan
 
 ### A · La cuenta corriente del proveedor 🔴
 
@@ -59,13 +59,17 @@ estado: propuesta — falta la decisión de Lucas
 
 > ⚠️ **Ojo con una condición que puso Lucas y que no hay que perder** (audio 3): tiene que poder hacerse **junto con la factura o por separado**. *"Si la misma persona que carga las facturas del stock es la misma que hace el IVA compras, carga todo de una"*; si son dos personas, cada una usa su parte. Lo que ya construimos respeta eso: la factura se carga sola, y las líneas serían un paso aparte que se puede hacer después y desde otra máquina.
 
-### C · Las retenciones de IIBB ❓
+### C · Las retenciones de IIBB → ✅ **resuelto el 10/09, y no eran retenciones**
 
-**Qué es:** OBTech tiene dos pantallas para esto y no sabemos si las usan.
+**Lo que dijo Francisco:** no sabe si usan esas pantallas de OBTech, pero **sabe que lo necesitan para pasárselo al contador**, y que hoy eso es manual y lleva tiempo.
 
-**Lo que sí sabemos:** Gross es **agente de percepción** de IIBB en Misiones, régimen 14 — eso ya está construido y es del lado de las ventas. Las pantallas de OBTech dicen **retención**, que es otra cosa y va del lado de las compras.
+**Lo que dice lo que ya estaba documentado**, y cambia qué hay que construir: el contador confirmó por escrito que **Gross es agente de percepción de IIBB en Misiones —régimen 14, RG DGR 012/93— y NO de retención.** O sea que Gross **no practica retenciones y no tiene comprobantes de retención que emitir**. Lo que sí tiene todos los meses es una presentación ante Rentas con **el detalle de lo percibido**.
 
-👉 **Es una pregunta antes que una tarea.** Si no las usan, se cierra en un minuto. Si las usan, hay que ver qué régimen es.
+> Es la diferencia entre dos regímenes que se parecen en el nombre y no en nada más. Construir "comprobantes de retención" porque la pantalla de OBTech se llama así habría sido construir lo que no es.
+
+✅ **Hecho el 10/09.** En Facturación → Ventas para el contador hay un segundo archivo: **Percepciones de IIBB**, una fila por percepción con el CUIT del cliente, la base, la alícuota y lo percibido. No hizo falta tocar la base: el dato se guarda desde agosto.
+
+⚠️ **Lo que queda por confirmar es el formato, no el contenido:** se entrega en Excel, igual que el de ventas, porque **la presentación la hace el contador**. Producir el archivo oficial de la aplicación de Rentas sin tenerlo confirmado sería adivinar un ancho de campo.
 
 ### D · La columna "Centro de Costo" ❓
 
@@ -83,7 +87,7 @@ Es la única que desaparece sin reemplazo el día del corte, es la más barata d
 
 **Queda para después: la pieza B**, la entrada de mercadería por la factura. No porque no importe, sino porque **tiene un reemplazo que ya funciona** —Stock— y porque las decisiones que arrastra conviene tomarlas sin la fecha encima. Es más caro apurarla mal que hacerla en noviembre.
 
-**C y D son preguntas, no tareas.** Las dos se contestan en la misma reunión.
+**D es una pregunta, no una tarea**, y se contesta en la misma reunión. **C ya está resuelta y construida.**
 
 > **El argumento para Lucas, en una línea:** *"Cargar la factura ya lo tenés. Lo que falta antes del corte es saber cuánto le debés a cada proveedor, porque eso es lo único que el 27 de octubre no vas a poder hacer en ningún lado."*
 
@@ -102,7 +106,7 @@ Es la única que desaparece sin reemplazo el día del corte, es la más barata d
 ## Las preguntas, juntas y cortas
 
 1. ¿Le llevan la cuenta a cada proveedor en OBTech —cuánto le deben— o eso lo miran en otro lado?
-2. Las pantallas de **retención de IIBB** de OBTech, ¿las usan?
+2. ~~Las pantallas de retención de IIBB, ¿las usan?~~ → **Resuelto: no son retenciones.** Lo que hay que confirmar ahora es más chico: **¿qué columnas quiere el contador** en el archivo de percepciones, y le sirve en Excel?
 3. En la grilla del IVA de compras, la columna **Centro de Costo**: ¿elegís algo ahí o la dejás como viene?
 4. ~~¿Reciben cheques?~~ → **Contestado: sí, en las dos direcciones.** Lo que abre está en [`cheques.md`](cheques.md), con cuatro preguntas nuevas que sí hay que hacerle.
 

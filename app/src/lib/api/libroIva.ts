@@ -234,7 +234,7 @@ const COLUMNAS: { clave: keyof FilaLibroIva; titulo: string }[] = [
   Es el mismo criterio que ya usa la exportación de comprobantes no
   fiscales, y está probado.
 */
-export function aCsv(filas: FilaLibroIva[]): string {
+function armarCsv<T>(filas: T[], columnas: { clave: keyof T; titulo: string }[]): string {
   const escapar = (v: unknown): string => {
     if (v === null || v === undefined) return ''
     if (typeof v === 'number') return String(v).replace('.', ',')
@@ -242,9 +242,165 @@ export function aCsv(filas: FilaLibroIva[]): string {
     return /[";\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
   }
 
-  const encabezado = COLUMNAS.map((c) => c.titulo).join(';')
-  const cuerpo = filas.map((f) => COLUMNAS.map((c) => escapar(f[c.clave])).join(';'))
+  const encabezado = columnas.map((c) => c.titulo).join(';')
+  const cuerpo = filas.map((f) => columnas.map((c) => escapar(f[c.clave])).join(';'))
   return [encabezado, ...cuerpo].join('\n')
+}
+
+export function aCsv(filas: FilaLibroIva[]): string {
+  return armarCsv(filas, COLUMNAS)
+}
+
+/*
+  ─────────────────────────────────────────────────────────────
+  Las percepciones de IIBB, para la presentación ante Rentas
+
+  ─── POR QUÉ ES UN ARCHIVO APARTE Y NO UNA COLUMNA MÁS ───
+
+  El de arriba es el de VENTAS y lleva la percepción como un total por
+  comprobante, que es lo que un libro de IVA necesita. Lo que Rentas
+  pide es otra cosa: **una fila por percepción**, con la base sobre la
+  que se calculó, la alícuota aplicada y a quién se le percibió.
+
+  Gross es **agente de percepción** de IIBB en Misiones —régimen 14, RG
+  DGR 012/93, número de agente = su CUIT— y eso lo confirmó el contador
+  por escrito. **No es agente de retención**, así que no practica
+  retenciones y no hay comprobantes de retención que emitir. La
+  distinción importa porque son dos regímenes con dos presentaciones
+  distintas, y confundirlos manda a construir lo que no es.
+
+  ─── LO QUE NO SE HACE ACÁ, A PROPÓSITO ───
+
+  No se produce el archivo con el formato oficial de la aplicación de
+  Rentas. Es el mismo criterio que con el libro de IVA: **lo presenta el
+  contador**, y lo que necesita de Gross es el detalle en algo que abra
+  en Excel. Producir un formato oficial sin tenerlo confirmado sería
+  adivinar un ancho de campo.
+  ─────────────────────────────────────────────────────────────
+*/
+
+export interface FilaPercepcion {
+  /** +1 en una factura, −1 en una nota de crédito. Ya viene aplicado. */
+  signo: number
+  fecha: string
+  tipo: string
+  punto_venta: number
+  numero: number
+  cliente: string
+  documento: string | null
+  concepto: string
+  base_imponible: number
+  alicuota: number | null
+  importe: number
+}
+
+export interface CrudoTributo {
+  descripcion: string | null
+  base_imponible: number | string
+  alicuota: number | string | null
+  importe: number | string
+  comprobante: {
+    fecha: string
+    numero: number
+    receptor_nombre: string
+    receptor_documento: string | null
+    tipo: { descripcion: string; signo: number } | { descripcion: string; signo: number }[]
+    punto: { numero: number } | { numero: number }[]
+  } | null
+}
+
+/*
+  Una percepción, como va en el archivo.
+
+  Está afuera de la consulta para poder probar la regla del signo sin
+  una base de datos de por medio: **la nota de crédito devuelve la
+  percepción, así que resta**. Si sumara en positivo, la declaración
+  diría que se percibió más de lo que se percibió — y esa diferencia se
+  paga.
+
+  Los importes llegan siempre positivos de la base; el signo lo pone el
+  tipo de comprobante. Es la misma decisión que en las compras: dos
+  formas de representar lo mismo terminan contradiciéndose.
+*/
+export function comoFilaDePercepcion(t: CrudoTributo): FilaPercepcion {
+  const c = t.comprobante!
+  const tipo = uno(c.tipo)
+  const punto = uno(c.punto)
+  const signo = tipo?.signo ?? 1
+
+  return {
+    signo,
+    fecha: c.fecha,
+    tipo: tipo?.descripcion ?? '',
+    punto_venta: punto?.numero ?? 0,
+    numero: c.numero,
+    cliente: c.receptor_nombre,
+    documento: c.receptor_documento,
+    concepto: t.descripcion ?? 'Percepción de IIBB',
+    base_imponible: signo * Number(t.base_imponible),
+    alicuota: t.alicuota === null ? null : Number(t.alicuota),
+    importe: signo * Number(t.importe),
+  }
+}
+
+export async function percepcionesParaRentas(
+  desde: string,
+  hasta: string,
+): Promise<FilaPercepcion[]> {
+  const { data, error } = await supabase
+    .from('comprobante_tributo')
+    .select(
+      `descripcion, base_imponible, alicuota, importe,
+       comprobante:comprobante_id!inner(
+         fecha, numero, receptor_nombre, receptor_documento, estado,
+         tipo:tipo_comprobante_id(descripcion, signo),
+         punto:punto_venta_id(numero)
+       )`,
+    )
+    .gte('comprobante.fecha', desde)
+    .lte('comprobante.fecha', hasta)
+    .in('comprobante.estado', ['autorizado', 'contingencia', 'informado'])
+
+  if (error) throw new Error(error.message)
+
+  const filas = ((data ?? []) as unknown as CrudoTributo[])
+    .filter((t) => t.comprobante)
+    .map(comoFilaDePercepcion)
+
+  // El orden lo pone la pantalla y no la base: la consulta filtra por
+  // una tabla embebida y el orden por esa tabla no viaja.
+  return filas.sort(
+    (a, b) => a.fecha.localeCompare(b.fecha) || a.punto_venta - b.punto_venta || a.numero - b.numero,
+  )
+}
+
+const COLUMNAS_PERCEPCION: { clave: keyof FilaPercepcion; titulo: string }[] = [
+  { clave: 'fecha', titulo: 'Fecha' },
+  { clave: 'tipo', titulo: 'Tipo de comprobante' },
+  { clave: 'signo', titulo: 'Signo' },
+  { clave: 'punto_venta', titulo: 'Punto de venta' },
+  { clave: 'numero', titulo: 'Número' },
+  { clave: 'cliente', titulo: 'Cliente percibido' },
+  { clave: 'documento', titulo: 'CUIT / DNI' },
+  { clave: 'concepto', titulo: 'Concepto' },
+  { clave: 'base_imponible', titulo: 'Base imponible' },
+  { clave: 'alicuota', titulo: 'Alícuota %' },
+  { clave: 'importe', titulo: 'Percibido' },
+]
+
+export function percepcionesACsv(filas: FilaPercepcion[]): string {
+  return armarCsv(filas, COLUMNAS_PERCEPCION)
+}
+
+export function totalesDePercepciones(filas: FilaPercepcion[]) {
+  return {
+    percepciones: filas.length,
+    // Los clientes se cuentan por documento: es lo que identifica al
+    // percibido en la presentación, no el nombre.
+    clientes: new Set(filas.map((f) => f.documento ?? f.cliente)).size,
+    base: filas.reduce((s, f) => s + f.base_imponible, 0),
+    percibido: filas.reduce((s, f) => s + f.importe, 0),
+  }
 }
 
 /** Los totales del período, para poder controlar el archivo de un vistazo. */
