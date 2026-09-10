@@ -318,6 +318,26 @@ Descubierto el 21/08 al construir lo anterior. **Las 4 PC sólo se hablan a trav
 
 ✅ **Decidido el 21/08: la sincronización por red local entra a V1**, no queda para V2. El razonamiento del usuario: lo comprometido con el cliente es que el mostrador siga funcionando sin internet, y sin esto se cumple a medias. Va **al final de V1**, después de todo lo demás, porque es lo único que puede esperar sin bloquear el corte del 26 de octubre. Incorporado al alcance como punto 2-bis en [`alcance-v1.md`](alcance-v1.md).
 
+### 🟡 2c. La red del local — el transporte, hecho (10/09)
+
+Primera mitad del punto 2-bis del alcance. **Lo que está hecho es el camino; lo que falta es mandar la venta por él.**
+
+**La decisión de fondo, que ya está en [[10 · Las decisiones que no se revisan]]:** una terminal escucha —la de la caja— y las demás le hablan. No es una red de pares. El negocio ya tiene un lugar donde todo converge.
+
+**Qué quedó construido** ([`red_local.rs`](../../app/src-tauri/src/red_local.rs)):
+
+- La terminal de la caja **abre un punto de encuentro** en el puerto 8737 y avisa a la ventana cada vez que le llega algo.
+- Las demás **le hablan**: una línea de JSON va, una línea de JSON vuelve.
+- **No es HTTP a propósito.** Los dos extremos son nuestros y el mensaje es uno solo por conexión. HTTP traería encabezados, keep-alive y codificación por trozos para no usar nada de eso, y cada una de esas cosas es una forma de equivocarse.
+- **Hay una clave compartida.** El local puede tener wifi para clientes; cualquiera parado en la vereda no tiene por qué poder mandarle ventas a la caja. La clave viaja sola con el resto de la configuración cuando la terminal sincroniza, así que no hay nada que configurar a mano.
+- El puerto **no se configura**: un puerto configurable es un campo más que puede quedar distinto en una de las cuatro máquinas, y el síntoma sería "a veces no llega la venta".
+
+**Probado de punta a punta, con un punto de encuentro de verdad levantado en la prueba:** contesta que está, las operaciones llegan enteras —y los importes llegan como números, no como texto, que es como se pierde un centavo—, rechaza a quien no sabe la clave **y además no le entrega nada**, y cuando la caja está apagada lo dice en castellano diciendo qué mirar. Las cuatro se rompieron a propósito para ver que fallan.
+
+⚠️ **Lo que falta, y es la otra mitad:** enganchar esto a la cola de operaciones. Hoy el camino existe y nadie lo usa todavía. Falta que el mostrador, cuando no llega a internet, le mande sus operaciones pendientes a la caja; que la caja las guarde y le muestre la venta al cajero; y que las dos las suban cuando vuelva la conexión — lo que es seguro porque los id los genera la terminal.
+
+⚠️ **Y un detalle de instalación que hay que saber antes de ir:** la primera vez que la caja abra el punto de encuentro, **Windows va a preguntar si permite que el programa se comunique en redes privadas**. Hay que decir que sí. Es una sola vez y sólo en la máquina de la caja.
+
 ### ✅ 3b. Toma de inventario por sectores — hecha (24/08)
 
 Pantalla **Inventario**. Se abre una toma por sector, se cuenta escaneando (el foco vuelve solo al buscador después de cada Enter, que sobre 3.000 productos es lo que hace la diferencia), y al cerrar se generan los ajustes de stock.

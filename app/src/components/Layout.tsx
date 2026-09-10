@@ -226,17 +226,24 @@ export default function Layout() {
         </nav>
 
         <div className="border-t border-white/10 p-3">
-          <button
-            onClick={alternarMenu}
-            title={colapsado ? 'Agrandar el menú' : 'Achicar el menú'}
-            aria-label={colapsado ? 'Agrandar el menú' : 'Achicar el menú'}
-            className={`mb-2 flex w-full items-center gap-3 rounded-lg py-2 text-sm text-marca-200/80 transition-colors hover:bg-white/10 hover:text-white ${
-              colapsado ? 'justify-center px-2' : 'px-3'
-            }`}
-          >
-            <Icono d={colapsado ? FLECHA_DERECHA : FLECHA_IZQUIERDA} />
-            {!colapsado && 'Achicar el menú'}
-          </button>
+          {/*
+            Sólo el ícono, sin texto.
+
+            Es un control del que lo usa, no algo que haya que explicar
+            en cada pantalla: una vez que se sabe qué hace, el cartel
+            estorba todos los días. Se va a usar sobre todo en tablet,
+            donde el ancho es lo que falta.
+          */}
+          <div className={`mb-2 flex ${colapsado ? 'justify-center' : 'justify-end'}`}>
+            <button
+              onClick={alternarMenu}
+              title={colapsado ? 'Agrandar el menú' : 'Achicar el menú'}
+              aria-label={colapsado ? 'Agrandar el menú' : 'Achicar el menú'}
+              className="rounded-lg p-2 text-marca-200/70 transition-colors hover:bg-white/10 hover:text-white"
+            >
+              <Icono d={colapsado ? FLECHA_DERECHA : FLECHA_IZQUIERDA} />
+            </button>
+          </div>
 
           {!colapsado && (
             <>

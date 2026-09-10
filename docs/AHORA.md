@@ -20,13 +20,17 @@ estado: en curso
 
 ## Lo último que pasó — 10 de septiembre
 
+**Arrancó la sincronización por red local, y está a mitad de camino.** Está hecho **el camino**: la terminal de la caja abre un punto de encuentro en la red del local y las demás le hablan. Falta **mandar la venta por él**.
+
+> **La decisión de fondo:** cuando no hay internet, las terminales no se buscan entre todas — una escucha, la de la caja, y las demás le hablan. El negocio ya tiene un lugar donde todo converge. Está anotada en [[10 · Las decisiones que no se revisan]] con su porqué.
+>
+> Probado con un punto de encuentro de verdad levantado en la prueba: las operaciones llegan enteras, los importes llegan como números y no como texto, y quien no sabe la clave del local no sólo recibe un no — **no le entregan nada**.
+>
+> ⚠️ **Para el día de la instalación:** la primera vez, Windows va a preguntar si permite que el programa se comunique en redes privadas. Hay que decir que sí, una sola vez, en la máquina de la caja.
+
 **Se puede cargar la factura de compra.** Decisión de Francisco: sube a V1-A, porque el 26/10 Gross deja OBTech y OBTech es donde carga sus facturas hoy — *"sino queda el hueco el 26"*. Pantalla **Compras**, entre Proveedores y Ventas.
 
-- Se carga lo que dice el papel: proveedor, tipo, punto de venta y número, fecha, **desglose por alícuota de IVA** y percepciones. **Sin líneas de producto:** la recepción de mercadería es la parte grande y sigue en V1-B.
-- **El IVA se sugiere solo al escribir el neto, y se puede corregir: manda el papel.** Una factura real trae un peso de diferencia por redondeo, y si el sistema insistiera con su cuenta, el total no cerraría con el del proveedor.
-- **El total no se carga: se arma solo** con lo que se fue cargando, para compararlo con el del papel antes de guardar. Es la única comprobación que hace la persona.
-- **La misma factura no entra dos veces**, y el aviso dice cuál es.
-- La factura entera —cabecera, alícuotas y percepciones— se guarda en una sola transacción: en tres viajes, un corte en el segundo dejaría una factura con cero de IVA, y eso no se ve mirando la lista.
+Se carga lo que dice el papel —proveedor, tipo, número, fecha, desglose por alícuota y percepciones— **sin líneas de producto**: la recepción de mercadería es la parte grande y sigue en V1-B. El IVA se sugiere al escribir el neto y se puede corregir, porque manda el papel; el total se arma solo para compararlo antes de guardar; y la misma factura no entra dos veces. El detalle está en [[Lo construido, en detalle]].
 
 ⚠️ **Ojo con el argumento que NO hay que volver a usar:** no es que el contador necesite estas facturas para el IVA. Las baja de Mis Comprobantes de ARCA — se corrigió el 09/09 y está en [`compras-e-iva.md`](compras-e-iva.md). Lo que el contador espera de este sistema es el Excel de ventas.
 
@@ -36,21 +40,13 @@ estado: en curso
 
 **Los depósitos se administran desde Configuración**, y cada movimiento de stock ya guarda en cuál ocurrió.
 
-> **El dato que faltaba, aclarado el 10/09:** hoy hay **uno** y en breve son **dos**, porque abre el segundo local. **Los cinco de OBTech no son referencia** — bien pueden ser los que ese sistema trae de fábrica, y nadie confirmó que los usen. Con eso, reservar el concepto no alcanzaba: hay que poder dar de alta, nombrar y elegir el principal, como cualquier otra sección.
+> **El dato que faltaba:** hoy hay **uno** y en breve son **dos**, porque abre el segundo local. **Los cinco de OBTech no son referencia.** Lo que sigue en V1-B es el módulo —mover mercadería entre depósitos y ver el stock separado—: poder nombrarlos no es lo mismo que poder mover entre ellos.
 >
-> Lo que **sigue en V1-B es el módulo**: mover mercadería entre depósitos y ver el stock separado por depósito. Poder nombrarlos no es lo mismo que poder mover entre ellos.
->
-> **El principal no se puede desactivar**, y no es una regla de pantalla: sin principal, el próximo movimiento de stock —o sea, la próxima venta— fallaría con un error que no menciona depósitos por ningún lado. La base lo rechaza; para dar de baja uno, primero se elige otro.
->
-> Verificado contra la base: las 61 filas del histórico quedaron con su depósito, los 28 saldos siguen cuadrando exactamente con el libro, un movimiento nuevo sin depósito recibe el principal, y **el libro sigue siendo inmutable**.
+> **El principal no se puede desactivar**, y lo impide la base: sin principal, la próxima venta fallaría con un error que no menciona depósitos por ningún lado.
 
 **Las métricas de venta en Inicio**, que era lo último visible que le faltaba a V1-A. Al abrir el sistema se ve cuánto se vendió **hoy**, en los **últimos 7 días** y en el **mes**, qué fue **lo más vendido** y **cuánto vendió cada uno**. Antes había que ir a Facturación y sumar a ojo.
 
-Tres cosas que no se ven pero definen si el número está bien:
-
-- **El día es el de Oberá, no el del servidor**, que vive en UTC. Sin eso, todo lo cobrado después de las nueve de la noche aparecería como vendido mañana — el cajero cierra la caja y la última hora ya figura en el total del día siguiente. Verificado contra la base: a las 22:00 del 8, la versión ingenua decía 0 ventas y la buena decía las 2 que había.
-- **Sólo cuentan las cobradas**, por el momento en que se cobraron. Un borrador o una venta esperando en la caja todavía no es plata, y una anulada dejó de serlo.
-- **Cada uno ve lo suyo.** Quien no tiene permiso para ver todas las ventas recibe únicamente las de él, y entonces el título dice *"Tus ventas"* en vez de *"Ventas del local"*: un número propio presentado como si fuera el del mostrador entero no es un número incompleto, es uno equivocado.
+> Tres cosas que no se ven pero definen si el número está bien: **el día es el de Oberá y no el del servidor** —sin eso, lo cobrado después de las nueve figura como vendido mañana—, **sólo cuentan las cobradas**, y **cada uno ve lo suyo**: quien no puede ver todas las ventas lee *"Tus ventas"* en vez de *"Ventas del local"*.
 
 ## Lo que pasó el 9 de septiembre
 
@@ -68,10 +64,11 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 
 1. 🔴 **Probar la impresión en el local, con la impresora delante.** El código está publicado en la 0.2.3: lo que falta es el papel.
 2. 🔴 **CAEA** — falta el trámite, no el código.
-3. **Sincronización por red local** y **cifrado de la base local**.
-4. **Devoluciones parciales** — hoy hay que anular la venta entera y rehacerla.
-5. **Reportes** — la única pantalla de V1-A que todavía no existe.
-6. **Todo con teclado** — lo último antes del 26/10, decidido con Lucas.
+3. **Sincronización por red local — la segunda mitad.** El camino está hecho y probado; falta que la venta viaje por él. Ver [[Lo construido, en detalle]].
+4. **Cifrado de la base local.**
+5. **Devoluciones parciales** — hoy hay que anular la venta entera y rehacerla.
+6. **Reportes** — la única pantalla de V1-A que todavía no existe.
+7. **Todo con teclado y la versión móvil** — lo último antes del 26/10, decidido con Lucas. En el celular el menú va a ser una hamburguesa; el achicado de ahora es para tablet.
 
 ## Lo que está bloqueado, y por quién
 
@@ -130,7 +127,7 @@ Queda en `http://localhost:5173`.
 
 **Documentación.** Se partió `ESTADO.md` (766 líneas) en `AHORA.md` + cuatro notas, sin perder una línea. Las 40 imágenes se movieron a `referencias/`.
 
-📊 **16 de 24 pedidos de Lucas hechos** · 162 pruebas verdes en la app y 5 en el programa · 66 migraciones.
+📊 **16 de 24 pedidos de Lucas hechos** · 162 pruebas verdes en la app y 9 en el programa · 66 migraciones.
 
 ---
 

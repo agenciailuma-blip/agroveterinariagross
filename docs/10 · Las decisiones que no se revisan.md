@@ -39,5 +39,12 @@ Los vendedores no facturan, así que alcanza con uno. Conviene dar de alta un se
 ### El precio que se cotiza es el de tarjeta
 El efectivo se presenta como descuento. Es marketing, pero define qué número lee el vendedor en voz alta: si dice el de contado y la caja cobra más, queda pegado con el cliente adelante.
 
+### Sin internet, la caja es el punto de encuentro *(decidido el 10/09)*
+Cuando se corta la conexión, las terminales no se buscan entre todas: **una escucha —la de la caja— y las demás le hablan**. No es una red de pares porque no hace falta que lo sea: el negocio ya tiene un lugar donde todo converge, que es donde la venta se cobra. Cuatro terminales buscándose entre sí serían seis relaciones que mantener y un problema de "quién tiene la verdad" que acá no existe.
+
+Lo que viaja son **las mismas operaciones que van a Supabase, sin traducir**, con el id que generó la terminal. Si una termina llegando dos veces —una por la red del local y otra por internet— la segunda choca contra la clave primaria y se descarta sola. Es la misma propiedad que hace seguro reenviar, usada de nuevo.
+
+**La consecuencia operativa hay que decirla:** la PC de la caja tiene que estar prendida. Ya lo estaba —es donde se cobra—, pero ahora las otras dependen de ella cuando no hay internet.
+
 ---
 
