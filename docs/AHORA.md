@@ -62,6 +62,8 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 
 🟡 **SmartScreen:** es esperable que **no** aparezca actualizando desde el programa —lo dispara la marca de web que pone el navegador al descargar, y el actualizador no la pone—. Sin confirmar. Sacarlo de verdad necesita un certificado de firma de código, que es una compra anual.
 
+> 📋 **Para la reunión hay un plan aparte de toda la sección Compras**, con lo que falta, cuánto cuesta cada pieza y qué pasa si no entra: [`plan-compras.md`](plan-compras.md).
+
 ## Lo que sigue, en orden
 
 1. 🔴 **Probar la impresión en el local, con la impresora delante.** El código está publicado en la 0.2.3: lo que falta es el papel.
@@ -83,7 +85,7 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 | **¿Reciben cheques?** | Lucas | 🟡 Nuevo del 09/09 — **no está en el alcance** |
 | **¿Cómo se llama el segundo local?** | Lucas | 🟢 Se carga en Configuración → Depósitos cuando abra. Los cinco de OBTech quedaron descartados como referencia |
 | ~~Las **fotos de cómo cargan facturas de compra**~~ | Lucas | ✅ Llegaron el 10/09, con tres audios. Análisis en [`compras-e-iva.md`](compras-e-iva.md) |
-| **¿La cuenta corriente de proveedores entra al alcance?** | Lucas | 🔴 **Nuevo del 10/09.** Le llevan el saldo a cada proveedor en OBTech —órdenes de pago, resumen de cuenta— y eso no está en V1 ni en V1-B. El 26/10 lo pierden |
+| **¿La cuenta corriente de proveedores entra al alcance?** | Lucas | 🔴 Hay plan con tamaños: [`plan-compras.md`](plan-compras.md). Son cuatro preguntas de cinco minutos |
 | Qué **columnas** quiere el contador en el Excel | Contador | 🟡 Ya se exporta con lo estándar |
 
 → La lista completa está en [[Pendientes con terceros]].
