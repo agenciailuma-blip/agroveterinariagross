@@ -20,6 +20,12 @@ estado: en curso
 
 ## Lo último que pasó — 10 de septiembre
 
+**Se reservó el concepto de depósito** en el libro de stock. No se ve en ninguna pantalla y no cambia nada de lo que anda: cada movimiento ahora dice **en qué depósito ocurrió**, y si no lo dice, se completa solo con el principal (hoy, "Local"). El módulo de depósitos sigue siendo de V1-B.
+
+> **Por qué ahora:** el libro de movimientos es inmutable y es la verdad del stock. Un movimiento escrito hoy sin depósito es uno al que hay que inventarle uno en diciembre, cuando el histórico no sean 61 filas sino el año entero — y ya sabemos, por las capturas de OBTech, que los depósitos van a ser al menos cinco. Costó una migración; ponerlo después costaba migrar el histórico entero.
+>
+> Verificado contra la base: las 61 filas quedaron con su depósito, los 28 saldos siguen cuadrando exactamente con el libro, un movimiento nuevo sin depósito recibe el principal, y **el libro sigue siendo inmutable** — se probó que rechaza una edición, que es lo que había que no romper.
+
 **Las métricas de venta en Inicio**, que era lo último visible que le faltaba a V1-A. Al abrir el sistema se ve cuánto se vendió **hoy**, en los **últimos 7 días** y en el **mes**, qué fue **lo más vendido** y **cuánto vendió cada uno**. Antes había que ir a Facturación y sumar a ojo.
 
 Tres cosas que no se ven pero definen si el número está bien:
@@ -48,9 +54,9 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 
 1. 🔴 **Probar la impresión en el local, con la impresora delante.** El código está publicado en la 0.2.3: lo que falta es el papel.
 2. 🔴 **CAEA** — falta el trámite, no el código.
-3. **Reservar el concepto de depósito** en el modelo de stock. ⚠️ Subió de prioridad: el 09/09 se descubrió que **ya usan al menos cinco depósitos** en OBTech, uno de ellos "Fraccionamiento". Ver [`obtech-como-piso.md`](obtech-como-piso.md).
-4. **Cargar la factura de compra** (y con eso el IVA Compras). 🟠 Está en V1-B y **conviene subirlo a V1-A**: es lo único de la lista con una fecha que no manejamos. Si OBTech se corta el 26/10 y V1-B llega cinco semanas después, la presentación de IVA de octubre cae en el medio y la hace el contador a mano. Ver [`compras-e-iva.md`](compras-e-iva.md).
-5. **Sincronización por red local** y **cifrado de la base local**.
+3. **Cargar la factura de compra** (y con eso el IVA Compras). 🟠 Está en V1-B y **conviene subirlo a V1-A**: es lo único de la lista con una fecha que no manejamos. Si OBTech se corta el 26/10 y V1-B llega cinco semanas después, la presentación de IVA de octubre cae en el medio y la hace el contador a mano. **Es una decisión, no una tarea.** Ver [`compras-e-iva.md`](compras-e-iva.md).
+4. **Sincronización por red local** y **cifrado de la base local**.
+5. **Devoluciones parciales** — hoy hay que anular la venta entera y rehacerla.
 6. **Todo con teclado** — lo último antes del 26/10, decidido con Lucas.
 
 ## Lo que está bloqueado, y por quién
@@ -79,6 +85,7 @@ Está andando y verificado. Si algo de acá se rompe, es una regresión:
 - **`networkMode: 'always'`** en React Query. Sacarlo cuelga el mostrador entero sin conexión.
 - **El límite de 12 s** en `supabase.ts`.
 - **`aumentar_precios` y `revertir_aumento` son SECURITY DEFINER a propósito.** No agregarles política de insert: el registro que existe para deshacer un error no puede ser editable por fuera del mecanismo que lo deshace.
+- **El disparador que completa el depósito del movimiento.** Sacarlo obliga a que los dieciséis lugares que escriben en el libro de stock manden el depósito, y el que se olvide no falla al compilar: falla al vender.
 - **La impresora se guarda por terminal, no en la configuración del comercio.** Volverla a un solo valor para todo el local deja tres de las cuatro PC imprimiendo a un nombre que en su lista no existe. Y el nombre se elige de la lista de Windows: escribirlo a mano falla en silencio.
 
 ## Cómo arrancar
@@ -107,7 +114,7 @@ Queda en `http://localhost:5173`.
 
 **Documentación.** Se partió `ESTADO.md` (766 líneas) en `AHORA.md` + cuatro notas, sin perder una línea. Las 40 imágenes se movieron a `referencias/`.
 
-📊 **16 de 24 pedidos de Lucas hechos** · 148 pruebas verdes en la app y 5 en el programa · 62 migraciones.
+📊 **16 de 24 pedidos de Lucas hechos** · 148 pruebas verdes en la app y 5 en el programa · 63 migraciones.
 
 ---
 

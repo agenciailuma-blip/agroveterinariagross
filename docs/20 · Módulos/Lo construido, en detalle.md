@@ -450,6 +450,24 @@ Lo último visible que le faltaba a V1-A. Al abrir el sistema, arriba de todo: c
 
 De paso se sacó de Inicio la tarjeta *"Estado del proyecto"*, que era de la primera semana y seguía diciendo que faltaban el punto de venta y la conexión con ARCA.
 
+### ✅ 3c. El concepto de depósito, reservado (10/09)
+
+El módulo de depósitos —altas, transferencias, saldo por depósito— sigue siendo de V1-B. Lo que entró ahora es sólo el lugar donde va a apoyarse: **cada movimiento del libro de stock dice en qué depósito ocurrió** ([migración](../../supabase/migrations/20260910110000_reservar_el_concepto_de_deposito.sql)).
+
+**Por qué antes del módulo.** El libro de movimientos es inmutable y es la verdad del stock — el saldo es una foto derivada que se reconstruye de cero cuando haga falta. Por eso alcanza con reservar el concepto **en el libro**: lo que se escriba de acá en adelante ya sabe dónde pasó. Un movimiento escrito hoy sin depósito es uno al que hay que inventarle uno en diciembre, cuando el histórico no sean 61 filas sino el año entero de un local que factura todos los días, y cuando ya se sepa que los depósitos son al menos cinco.
+
+**Qué no cambió: nada de lo que se ve.** El saldo se sigue calculando sumando todos los movimientos del producto, sin separar por depósito. `stock_saldo`, su disparador y `vista_stock` quedaron intactos. Y ninguno de los dieciséis lugares que escriben en el libro tuvo que enterarse de la columna nueva: **si el movimiento llega sin depósito, un disparador le pone el principal**. Ahí estaba el riesgo real de esta migración —tocar los caminos que hoy andan— y se evitó entero.
+
+**El fraccionamiento no se copió como depósito.** En OBTech, abrir una bolsa para vender suelto se registra como una transferencia al depósito "FRACCIONAMIENTO". Acá eso ya existe como lo que es: un tipo de movimiento (`apertura`). Queda anotado porque al migrar los datos de OBTech hay que saber que ese "depósito" no es un lugar.
+
+**Verificado contra la base real, y lo que importaba era no romper:**
+
+- Las 61 filas del histórico quedaron con su depósito, y la columna pasó a ser obligatoria recién después del relleno.
+- Los 28 saldos siguen cuadrando **exactamente** con la suma del libro.
+- Un movimiento nuevo insertado como los inserta hoy el sistema —sin decir depósito— recibe el principal.
+- **El libro sigue siendo inmutable.** El relleno obligó a apagar ese disparador por el rato exacto que duró, y se comprobó después que volvió a estar encendido: una edición de un movimiento vuelve a ser rechazada con su mensaje de siempre.
+- Sin depósito principal, un movimiento **falla ruidoso** en vez de entrar sin depósito. Se probó dejando el principal en falso a propósito: un libro a medias es peor que una operación que no se completa, porque el agujero aparece meses después.
+
 ### 🟡 3. Pantallas que faltan
 Reportes. *(El panel de comprobantes con semáforo, la configuración general, el inventario por sectores y las métricas de Inicio ya están hechos.)*
 

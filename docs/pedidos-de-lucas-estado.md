@@ -12,7 +12,7 @@
 | | Cantidad |
 |---|---|
 | ✅ **Hechos** | **16 de 24** |
-| 🔜 Faltan **antes del 26/10** (V1-A) | 2 |
+| 🔜 Faltan **antes del 26/10** (V1-A) | 1 |
 | 🔜 Van a **V1-B** (arranca al día siguiente del corte) | 3 |
 | 🔜 Backlog **V2 / V3** | 3 |
 | ❓ **Esperan una definición de Lucas** | 1 |
@@ -46,7 +46,7 @@ Todos se pueden mostrar en pantalla.
 
 ---
 
-## 🔜 Lo que falta antes del 26 de octubre — 2 puntos
+## 🔜 Lo que falta antes del 26 de octubre — 1 punto
 
 Esto es lo que todavía se le debe a Lucas dentro de V1-A.
 
@@ -54,11 +54,11 @@ Esto es lo que todavía se le debe a Lucas dentro de V1-A.
 
 Él mismo lo puso **para lo último antes del 26/10**, y coincido: es de lo que más va a cambiar la velocidad del mostrador, pero tiene que hacerse cuando las pantallas ya no se muevan. Rehacer los atajos tres veces es tirar el trabajo.
 
-### 3 · Reservar el concepto de depósito *(la mitad chica de un punto de V1-B)*
+### ✅ 3 · El concepto de depósito quedó reservado (10/09)
 
-Los depósitos y transferencias van a **V1-B** — decidido el 04/09, porque hoy tienen uno solo.
+Los depósitos y transferencias siguen yendo a **V1-B**. Lo que se hizo el 10/09 es la mitad chica y urgente: **cada movimiento del libro de stock ya dice en qué depósito ocurrió**, y se completa solo con el principal mientras no haya pantalla.
 
-⚠️ **Pero conviene reservar el concepto en el modelo de stock ahora**, aunque haya un solo depósito y no se vea en ninguna pantalla. Son unas horas hoy contra tocar **cada movimiento histórico** en diciembre, cuando abra el segundo local.
+No se ve en ningún lado y no cambió nada de lo que anda. Era ahora o migrar el histórico entero en diciembre — con al menos cinco depósitos, no uno.
 
 ---
 

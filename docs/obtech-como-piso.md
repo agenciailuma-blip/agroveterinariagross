@@ -98,6 +98,8 @@ Eso no es un depósito más. Es **cómo se registra hoy el fraccionamiento**, qu
 
 > **Qué hacer:** no cambia que el módulo de depósitos vaya a V1-B. **Sí refuerza, y mucho, la decisión de reservar el concepto ahora** — que ya estaba anotada como pendiente de V1-A. Agregarlo después obliga a tocar cada movimiento histórico, y ahora sabemos que el histórico va a tener al menos cinco depósitos que migrar, no uno.
 
+> ✅ **Reservado el 10/09.** Cada movimiento del libro de stock ya dice en qué depósito ocurrió, y se completa solo con el principal mientras no haya pantalla. Ninguna pantalla cambió. El módulo sigue en V1-B, y el fraccionamiento **no** se copió como depósito: acá ya es un tipo de movimiento (`apertura`), que es lo que de verdad es.
+
 ⚠️ **Y hay que preguntarle a Lucas cuáles son los cinco.** Los números 1 y 5 están a la vista; los del medio no.
 
 ### 🟡 2 · Bancos y cheques no está en el alcance
