@@ -57,6 +57,17 @@ const MENU: ItemMenu[] = [
     icono: 'M3 3h2l.4 2M7 13h10l4-8H5.4M16 16a2 2 0 100 4 2 2 0 000-4zM8 18a2 2 0 11-4 0 2 2 0 014 0z',
   },
   {
+    /*
+      Compras va pegado a Proveedores porque es lo que se hace con ellos:
+      llega la factura del proveedor y se carga. Es lo que hoy hacen en
+      OBTech y desde el 26/10 no van a tener dónde.
+    */
+    a: '/compras',
+    etiqueta: 'Compras',
+    permiso: 'compras.ver',
+    icono: 'M9 12h6m-6 4h6M9 8h6M5 21h14a1 1 0 001-1V6.4L16.6 3H6a1 1 0 00-1 1v16a1 1 0 001 1z',
+  },
+  {
     a: '/ventas',
     etiqueta: 'Ventas',
     permiso: 'ventas.crear',

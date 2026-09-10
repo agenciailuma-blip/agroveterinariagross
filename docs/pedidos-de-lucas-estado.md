@@ -71,7 +71,7 @@ V1-B arranca al día siguiente del corte. **No es alcance nuevo: ya estaba firma
 | # | Lo que pidió | Dónde entra |
 |---|---|---|
 | 11 *(parte)* | **IVA Ventas** | 🟠 **Está construido en un 90% y hoy figura en V1-B sin razón técnica.** Los datos se guardan bien desde agosto (`comprobante`, `comprobante_alicuota`, `comprobante_tributo`). Falta una consulta y una exportación |
-| 1 *(parte)*, 11 *(parte)* | **Cargar la factura de compra** y el **IVA Compras** | 🟠 **Candidato a subir a V1-A.** Necesita la ficha de proveedor, que ya entra en V1-A por los puntos 4 y 5. **No necesita las líneas de la factura**: al contador le importa el neto y el IVA por alícuota, no qué productos traía |
+| 1 *(parte)* | **Cargar la factura de compra** | ✅ **Hecho el 10/09 y movido a V1-A.** Pantalla Compras: proveedor, tipo, número, fecha, desglose por alícuota y percepciones, sin líneas. El motivo del cambio no fue el contador —él las baja de ARCA— sino que el 26/10 se corta OBTech, que es donde las cargan hoy |
 | 1 *(parte)*, 6, 10 | **Recepción de mercadería**, órdenes de compra, costos por proveedor | ✅ **Queda en V1-B**, como estaba. Es la parte grande y la que necesita decisiones que todavía no se tomaron |
 
 > Su frase *"una cosa es cargar facturas y otra es subir stock"* es exactamente la distinción, **llevada hasta el final**: la **recepción** de mercadería mueve stock y es cara; la **factura de compra** registra el IVA y es barata. Él ya había visto la diferencia — lo que faltaba era usarla para partir el trabajo.

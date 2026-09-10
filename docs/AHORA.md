@@ -20,6 +20,16 @@ estado: en curso
 
 ## Lo último que pasó — 10 de septiembre
 
+**Se puede cargar la factura de compra.** Decisión de Francisco: sube a V1-A, porque el 26/10 Gross deja OBTech y OBTech es donde carga sus facturas hoy — *"sino queda el hueco el 26"*. Pantalla **Compras**, entre Proveedores y Ventas.
+
+- Se carga lo que dice el papel: proveedor, tipo, punto de venta y número, fecha, **desglose por alícuota de IVA** y percepciones. **Sin líneas de producto:** la recepción de mercadería es la parte grande y sigue en V1-B.
+- **El IVA se sugiere solo al escribir el neto, y se puede corregir: manda el papel.** Una factura real trae un peso de diferencia por redondeo, y si el sistema insistiera con su cuenta, el total no cerraría con el del proveedor.
+- **El total no se carga: se arma solo** con lo que se fue cargando, para compararlo con el del papel antes de guardar. Es la única comprobación que hace la persona.
+- **La misma factura no entra dos veces**, y el aviso dice cuál es.
+- La factura entera —cabecera, alícuotas y percepciones— se guarda en una sola transacción: en tres viajes, un corte en el segundo dejaría una factura con cero de IVA, y eso no se ve mirando la lista.
+
+⚠️ **Ojo con el argumento que NO hay que volver a usar:** no es que el contador necesite estas facturas para el IVA. Las baja de Mis Comprobantes de ARCA — se corrigió el 09/09 y está en [`compras-e-iva.md`](compras-e-iva.md). Lo que el contador espera de este sistema es el Excel de ventas.
+
 **Se reservó el concepto de depósito** en el libro de stock. No se ve en ninguna pantalla y no cambia nada de lo que anda: cada movimiento ahora dice **en qué depósito ocurrió**, y si no lo dice, se completa solo con el principal (hoy, "Local"). El módulo de depósitos sigue siendo de V1-B.
 
 > **Por qué ahora:** el libro de movimientos es inmutable y es la verdad del stock. Un movimiento escrito hoy sin depósito es uno al que hay que inventarle uno en diciembre, cuando el histórico no sean 61 filas sino el año entero — y ya sabemos, por las capturas de OBTech, que los depósitos van a ser al menos cinco. Costó una migración; ponerlo después costaba migrar el histórico entero.
@@ -42,21 +52,17 @@ Tres cosas que no se ven pero definen si el número está bien:
 
 El detalle completo —por qué el nombre se guarda por terminal, qué hace el diagnóstico, qué se verificó sin la impresora delante— está en [[Lo construido, en detalle]]. ⚠️ **Falta el papel:** que la POS80 imprima el ticket sólo se puede ver en Oberá.
 
-### La 0.2.2 y el instalador
+**Y la 0.2.2, con el arreglo del instalador**: un gancho propio que espera a que el `.exe` se suelte antes de reemplazarlo, porque el chequeo que trae Tauri busca el proceso por nombre y los hijos de WebView2 se llaman distinto. El detalle está en el paso 8 de [`instalacion-en-el-local.md`](instalacion-en-el-local.md). ⚠️ Sin probar de punta a punta — ver *Lo primero de todo*.
 
-**Qué se arregló y por qué fallaba.** El actualizador cierra la app y después lanza el instalador. Tauri ya tiene un chequeo propio (`CheckIfAppIsRunning`) pero busca el proceso **por nombre**: como la app ya se cerró, no encuentra nada y sigue de largo sin esperar. Mientras tanto los procesos hijos de WebView2 —que se llaman distinto— todavía tienen el `.exe` abierto. El gancho nuevo ([`app/src-tauri/instalador.nsh`](../app/src-tauri/instalador.nsh)) corre **antes** y no pregunta por nombres: intenta abrir el archivo, espera hasta 10 segundos, y si sigue tomado mata lo que quedó.
-
-⚠️ **La 0.2.2 quedó instalada, pero desinstalando primero**, así que el gancho no se ejercitó: está verificado que compila y que va adentro del instalador, no que resuelva el archivo tomado. Ver *Lo primero de todo*.
-
-🟡 **SmartScreen:** es esperable que **no** aparezca actualizando desde el programa —el aviso lo dispara la marca de web que pone el navegador al descargar, y el actualizador no la pone—. No está confirmado. Sacarlo de verdad necesita un certificado de firma de código, que es una compra anual.
+🟡 **SmartScreen:** es esperable que **no** aparezca actualizando desde el programa —lo dispara la marca de web que pone el navegador al descargar, y el actualizador no la pone—. Sin confirmar. Sacarlo de verdad necesita un certificado de firma de código, que es una compra anual.
 
 ## Lo que sigue, en orden
 
 1. 🔴 **Probar la impresión en el local, con la impresora delante.** El código está publicado en la 0.2.3: lo que falta es el papel.
 2. 🔴 **CAEA** — falta el trámite, no el código.
-3. **Cargar la factura de compra** (y con eso el IVA Compras). 🟠 Está en V1-B y **conviene subirlo a V1-A**: es lo único de la lista con una fecha que no manejamos. Si OBTech se corta el 26/10 y V1-B llega cinco semanas después, la presentación de IVA de octubre cae en el medio y la hace el contador a mano. **Es una decisión, no una tarea.** Ver [`compras-e-iva.md`](compras-e-iva.md).
-4. **Sincronización por red local** y **cifrado de la base local**.
-5. **Devoluciones parciales** — hoy hay que anular la venta entera y rehacerla.
+3. **Sincronización por red local** y **cifrado de la base local**.
+4. **Devoluciones parciales** — hoy hay que anular la venta entera y rehacerla.
+5. **Reportes** — la única pantalla de V1-A que todavía no existe.
 6. **Todo con teclado** — lo último antes del 26/10, decidido con Lucas.
 
 ## Lo que está bloqueado, y por quién
@@ -70,7 +76,7 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 | Qué es un **"comprobante de percepción"** | Lucas | 🟡 Sin definir desde el 03/09 |
 | **¿Reciben cheques?** | Lucas | 🟡 Nuevo del 09/09 — **no está en el alcance** |
 | **¿Cuáles son los cinco depósitos?** | Lucas | 🟡 Nuevo del 09/09 |
-| Las **fotos de cómo cargan facturas de compra** | Lucas | 🟡 Las mandó y no están en el repo |
+| Las **fotos de cómo cargan facturas de compra** | Lucas | 🔴 Subió: la pantalla ya está hecha y sirven para ver si falta algún campo |
 | Qué **columnas** quiere el contador en el Excel | Contador | 🟡 Ya se exporta con lo estándar |
 
 → La lista completa está en [[Pendientes con terceros]].
@@ -85,6 +91,7 @@ Está andando y verificado. Si algo de acá se rompe, es una regresión:
 - **`networkMode: 'always'`** en React Query. Sacarlo cuelga el mostrador entero sin conexión.
 - **El límite de 12 s** en `supabase.ts`.
 - **`aumentar_precios` y `revertir_aumento` son SECURITY DEFINER a propósito.** No agregarles política de insert: el registro que existe para deshacer un error no puede ser editable por fuera del mecanismo que lo deshace.
+- **La factura de compra no tiene líneas de producto, y es a propósito.** Agregárselas no es "completar la pantalla": es abrir la recepción de mercadería, que necesita emparejar códigos del proveedor con los nuestros y decidir qué pasa con los costos. Eso es V1-B.
 - **El disparador que completa el depósito del movimiento.** Sacarlo obliga a que los dieciséis lugares que escriben en el libro de stock manden el depósito, y el que se olvide no falla al compilar: falla al vender.
 - **La impresora se guarda por terminal, no en la configuración del comercio.** Volverla a un solo valor para todo el local deja tres de las cuatro PC imprimiendo a un nombre que en su lista no existe. Y el nombre se elige de la lista de Windows: escribirlo a mano falla en silencio.
 
@@ -114,7 +121,7 @@ Queda en `http://localhost:5173`.
 
 **Documentación.** Se partió `ESTADO.md` (766 líneas) en `AHORA.md` + cuatro notas, sin perder una línea. Las 40 imágenes se movieron a `referencias/`.
 
-📊 **16 de 24 pedidos de Lucas hechos** · 148 pruebas verdes en la app y 5 en el programa · 63 migraciones.
+📊 **16 de 24 pedidos de Lucas hechos** · 162 pruebas verdes en la app y 5 en el programa · 65 migraciones.
 
 ---
 

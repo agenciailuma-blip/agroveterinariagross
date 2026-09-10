@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { verificarPin } from '@/lib/api/ventas'
 import type { Operador } from '@/lib/api/ventas'
+import { enCastellano } from '@/lib/errores'
 
 const CLAVE = 'gross.operador'
+
 /*
   Minutos de inactividad tras los cuales hay que volver a poner el PIN.
 
@@ -97,7 +99,7 @@ export function IdentificarOperador({
           setPin('')
         }
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'No se pudo verificar.')
+        setError(enCastellano(e, 'No se pudo verificar.'))
         setPin('')
       } finally {
         setVerificando(false)

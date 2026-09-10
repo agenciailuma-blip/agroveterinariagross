@@ -175,10 +175,10 @@ Un producto puede pertenecer a varios ejes a la vez. Esto es lo que después hab
 
 ## 11. Compras a proveedores
 
-- Ficha de proveedor
+- Ficha de proveedor → ✅ **hecha el 09/09, en V1-A** (entró por los puntos 4 y 5 de Lucas)
+- Registro de facturas de compra → ✅ **hecho el 10/09, movido a V1-A** (ver abajo)
 - Órdenes de compra
 - Recepción de mercadería con ingreso automático de stock
-- Registro de facturas de compra
 - Costos y márgenes por producto
 - **Umbrales de stock por proveedor**
 
@@ -205,6 +205,14 @@ Un producto puede pertenecer a varios ejes a la vez. Esto es lo que después hab
 > ⚠️ Y es **lo único del alcance con una fecha externa**: el IVA se presenta todos los meses. El criterio de admisión de V1-B —*"el negocio funciona un mes sin ello"*— vale para el resto de este bloque, pero acá hay un tercero con un vencimiento.
 >
 > **Pendiente de decisión de Lucas.** Análisis completo en [`compras-e-iva.md`](compras-e-iva.md).
+
+> ✅ **DECIDIDO EL 10/09 — la pieza A sube a V1-A y ya está construida.**
+>
+> Se puede cargar la factura de compra: proveedor, tipo, punto de venta y número, fecha, desglose por alícuota de IVA y percepciones. **Sin líneas de producto.**
+>
+> **El motivo no es el que decía el análisis original.** El contador **no** necesita estas facturas —las baja de Mis Comprobantes de ARCA, como se corrigió el 09/09—. El motivo es otro y es del negocio: **el 26/10 Gross deja OBTech, que es donde carga sus facturas de compra hoy.** Sin esto, desde ese día no tendrían dónde registrarlas, y las compras siguen entrando igual.
+>
+> **La pieza C sigue en V1-B**, entera y por las mismas razones: recepción de mercadería, líneas, stock y costos.
 
 ## 13. Sincronización con la tienda online
 

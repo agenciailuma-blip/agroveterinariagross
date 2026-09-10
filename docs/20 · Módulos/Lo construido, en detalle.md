@@ -450,6 +450,30 @@ Lo último visible que le faltaba a V1-A. Al abrir el sistema, arriba de todo: c
 
 De paso se sacó de Inicio la tarjeta *"Estado del proyecto"*, que era de la primera semana y seguía diciendo que faltaban el punto de venta y la conexión con ARCA.
 
+### ✅ 11a. La factura de compra (10/09)
+
+Pantalla **Compras**, entre Proveedores y Ventas. Se carga la cabecera de la factura que emitió el proveedor: quién, cuál, cuándo, el **desglose por alícuota de IVA** y las percepciones. **Sin líneas de producto.**
+
+**Por qué subió a V1-A**, decidido el 10/09: el 26/10 Gross deja OBTech, que es donde carga sus facturas de compra hoy. Sin esto, desde ese día no hay dónde registrarlas — y las compras siguen entrando igual.
+
+⚠️ **El otro argumento no vale y no hay que volver a usarlo.** No es que el contador necesite estas facturas para el IVA: las baja de *Mis Comprobantes* de ARCA. Se corrigió el 09/09 en [`compras-e-iva.md`](../compras-e-iva.md) y quedó escrito arriba de la migración, porque es de las cosas que vuelven.
+
+**Las tablas no se inventaron.** `compra`, `compra_alicuota` y `compra_tributo` son el espejo de `comprobante`, `comprobante_alicuota` y `comprobante_tributo`, que ya funcionan y ya pasaron por ARCA. Donde allá hay receptor, acá hay proveedor.
+
+**Las decisiones que se ven poco:**
+
+- **El total no se carga: es la suma.** Es una columna generada, y los subtotales los mantienen disparadores desde el detalle — el mismo mecanismo que mantiene los totales de una venta desde sus líneas. Así la cabecera **no puede** discrepar con su propio detalle. La pantalla calcula el mismo número mientras se carga, para compararlo con el papel antes de guardar: es la única comprobación que hace la persona.
+- **El IVA se sugiere, no se impone.** Al escribir el neto se completa solo, y se puede corregir. Manda el papel: una factura real trae un peso de diferencia por redondeo, y si el sistema insistiera con su cuenta, el total no cerraría con el del proveedor.
+- **La misma factura no entra dos veces** (proveedor + tipo + punto de venta + número), y el aviso dice cuál: quien la está cargando tiene el papel en la mano y necesita saber si es esa misma.
+- **Todo en una transacción.** Cabecera, alícuotas y percepciones se guardan con una sola llamada (`registrar_compra`). En tres viajes, un corte en el segundo dejaría una factura cargada con cero de IVA, y eso no se nota mirando la lista.
+- **La Factura C se puede cargar aunque esté marcada como inactiva.** El `activo` de `tipo_comprobante` significa *"de los que Gross emite"*, y una compra es la dirección contraria: Gross no emite C —es responsable inscripto— pero la recibe de cualquier proveedor monotributista. Filtrar por `activo` habría dejado esas facturas sin poder cargarse.
+- **Baja lógica con motivo**, como todo lo que documenta plata. La factura deja de contar pero no desaparece.
+- Los permisos ya existían desde el primer día: `compras.ver` y `compras.registrar`, en Administrador y Encargado. No hubo que crear ninguno.
+
+**Verificado de punta a punta el 10/09**, contra la base real y con la pantalla abierta: se cargó una Factura A 0003-00045678 de Bagó por $100.000 + $21.000 de IVA, el IVA se autocompletó al escribir el neto, el total dio $121.000 antes de guardar, y quedó en la base con esos mismos números y con el usuario que la cargó. La factura de prueba se borró después. También se comprobó que la misma factura dos veces se rechaza con su mensaje, y que un importe imposible **deshace todo** en vez de dejar la cabecera sin detalle.
+
+> **Un hallazgo de usarlo:** ese último caso mostraba en pantalla *"numeric field overflow"*. Ahora los errores del sistema pasan por [`lib/errores.ts`](../../app/src/lib/errores.ts), que los dice en castellano y con qué hacer. Es la misma familia del *"tauri localhost dice"* que Lucas marcó el 07/09.
+
 ### ✅ 3c. El concepto de depósito, reservado (10/09)
 
 El módulo de depósitos —altas, transferencias, saldo por depósito— sigue siendo de V1-B. Lo que entró ahora es sólo el lugar donde va a apoyarse: **cada movimiento del libro de stock dice en qué depósito ocurrió** ([migración](../../supabase/migrations/20260910110000_reservar_el_concepto_de_deposito.sql)).

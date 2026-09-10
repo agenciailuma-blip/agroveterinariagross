@@ -1,5 +1,17 @@
 # Facturas de compra y Libro de IVA
 
+> # ✅ RESUELTO EL 10/09 — la carga de facturas de compra está hecha
+>
+> **La decisión la tomó Francisco: sube a V1-A**, y quedó construida el mismo día. Se carga la cabecera —proveedor, tipo, punto de venta y número, fecha, desglose por alícuota y percepciones— sin líneas de producto. Pantalla **Compras**, entre Proveedores y Ventas.
+>
+> **El motivo que la sube NO es el del análisis de abajo.** Ese decía "el contador la necesita para el IVA", y la corrección del 09/09 ya lo había desmentido: el contador las baja de Mis Comprobantes de ARCA.
+>
+> El motivo verdadero es del negocio y tiene la misma fecha: **el 26/10 Gross deja OBTech, que es donde hoy carga sus facturas de compra.** Sin esto, desde ese día no hay dónde registrarlas — *"sino queda el hueco el 26"*, en palabras de Francisco.
+>
+> **La pieza C —recepción de mercadería, líneas, stock y costos— sigue entera en V1-B.**
+>
+> Lo que sigue pendiente de terceros: las **fotos de cómo cargan las facturas hoy**, para saber si falta algún campo que usan, y **qué columnas quiere el contador** en el Excel de ventas.
+
 **9 de septiembre de 2026.**
 **Por qué existe este documento:** porque el pedido estaba en el alcance pero **reducido a dos renglones sin ningún porqué**, y eso lo volvió invisible. Francisco lo notó el 09/09. Este archivo lo desarma y propone qué hacer.
 
