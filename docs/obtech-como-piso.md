@@ -71,7 +71,8 @@ Ordenado por lo que más se nota.
 | **Depósitos y transferencias entre depósitos** | 🔴 **Lo usan HOY.** Ver abajo — es el hallazgo que cambia una decisión |
 | **IVA compras y ventas** | ✅ La exportación de ventas está (09/09). Compras las baja el contador de ARCA |
 | **Órdenes de compra y de pago** | V1-B — Compras a proveedores |
-| **Bancos y cheques** | ❌ **No está en ningún lado del alcance.** Ver abajo |
+| **Cheques** | 🔴 **Confirmado el 10/09: los usan en las dos direcciones.** Alcance nuevo: [`cheques.md`](cheques.md) |
+| **Bancos** | ❌ No está en el alcance y nadie lo pidió |
 | **Etiquetas** (menú propio en Tauros) | ❌ No previsto. Impresión de etiquetas de góndola con precio |
 | **Reparto y hoja de ruta** | 🟡 Tenemos los remitos; la hoja de ruta no. Lucas la mencionó como "optimización con IA", que es otra cosa |
 | **Ventas en cuotas / financiación** | ✅ Cuotas con recargo por medio de pago |
@@ -104,7 +105,7 @@ Eso no es un depósito más. Es **cómo se registra hoy el fraccionamiento**, qu
 
 ~~⚠️ Y hay que preguntarle a Lucas cuáles son los cinco.~~ → **Contestado el 10/09: no hace falta.** Hoy usan uno, en breve dos, y los cinco de la captura no son referencia. Lo que se carga cuando abra el segundo local es su nombre, en Configuración → Depósitos.
 
-### 🟡 2 · Bancos y cheques no está en el alcance
+### 🔴 2 · Los cheques no estaban en el alcance, y los usan
 
 Tauros tiene *Banco* como menú propio, y *"Cajas y tesorería: aperturas, cierres, movimientos, bancos y cheques"*.
 
@@ -112,7 +113,9 @@ Tauros tiene *Banco* como menú propio, y *"Cajas y tesorería: aperturas, cierr
 
 Para una agroveterinaria que vende a productores, los cheques son un medio de pago habitual. Si Gross los recibe, hoy los estaría anotando fuera del sistema.
 
-👉 **Pregunta directa para Lucas:** *"¿Reciben cheques? ¿Los cargan en OBTech?"* Es de las pocas cosas que pueden ser un agujero real y no un pendiente conocido.
+👉 ~~Pregunta directa para Lucas.~~ → ✅ **Contestado por Francisco el 10/09: sí, reciben cheques y le pagan a proveedores con cheque.**
+
+**Era un agujero real, y quedó confirmado.** El análisis, las tres piezas y lo que propongo están en [`cheques.md`](cheques.md). De paso destraba el *"calendario de recibos"* que Lucas pidió el 10/08 y que quedó sin contestar justamente porque no se sabía si eran cheques.
 
 ---
 

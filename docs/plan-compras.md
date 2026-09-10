@@ -42,6 +42,8 @@ estado: propuesta — falta la decisión de Lucas
 - El pago: contra qué facturas se imputa.
 - El resumen de cuenta de un proveedor, que es lo que se mira antes de pagarle.
 
+> 🔴 **Y desde el 10/09 arrastra una cosa más: le pagan con cheque.** Francisco lo confirmó. La pantalla de pago tiene que poder entregar un cheque —propio o endosado— y eso obliga a que los cheques existan primero. Está desarrollado aparte en [`cheques.md`](cheques.md), porque además cruza las ventas: **también los reciben**.
+
 ### B · La entrada de mercadería por la factura 🟠
 
 **Qué es:** que al cargar la factura se puedan cargar también sus líneas, y que eso ingrese el stock y actualice los costos.
@@ -91,7 +93,9 @@ Es la única que desaparece sin reemplazo el día del corte, es la más barata d
 
 - **Órdenes de compra.** Están en nuestro alcance de V1-B, pero **no están en el menú de OBTech**: hoy no las usan. No hay nada que reemplazar.
 - **Centro de costos como módulo contable** (imputar gastos por área y reportarlos). Eso es V2 y sigue siéndolo, sea cual sea la respuesta de la pieza D.
-- **Bancos y cheques.** No está en ningún lado de nuestro alcance y OBTech lo tiene. Es una pregunta abierta desde el 09/09 y **no es parte de Compras**, pero se cruza: si a un proveedor se le paga con cheque, el pago de la pieza A necesita saberlo.
+- **Bancos.** Conciliación bancaria, movimientos de banco. OBTech lo tiene como menú propio y nadie lo pidió.
+
+> ⚠️ **Los cheques ya no son una pregunta: son un hecho.** Contestado el 10/09 — los reciben y le pagan a proveedores con ellos. Dejó de ser "lo que no entra" y pasó a ser alcance a decidir, con su propio documento: [`cheques.md`](cheques.md).
 
 ---
 
@@ -100,6 +104,6 @@ Es la única que desaparece sin reemplazo el día del corte, es la más barata d
 1. ¿Le llevan la cuenta a cada proveedor en OBTech —cuánto le deben— o eso lo miran en otro lado?
 2. Las pantallas de **retención de IIBB** de OBTech, ¿las usan?
 3. En la grilla del IVA de compras, la columna **Centro de Costo**: ¿elegís algo ahí o la dejás como viene?
-4. ¿Reciben **cheques**? ¿Les pagan a proveedores con cheque?
+4. ~~¿Reciben cheques?~~ → **Contestado: sí, en las dos direcciones.** Lo que abre está en [`cheques.md`](cheques.md), con cuatro preguntas nuevas que sí hay que hacerle.
 
-→ Las cuatro caben en cinco minutos de reunión y **las cuatro cambian el tamaño de lo que sigue**.
+→ Las tres que quedan caben en cinco minutos de reunión y **las tres cambian el tamaño de lo que sigue**.

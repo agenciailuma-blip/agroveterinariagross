@@ -82,7 +82,7 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 | **Certificado de producción** de ARCA | Lucas | 🔴 |
 | **Dónde se cobra la percepción de IIBB** | Lucas | 🔴 Bloquea el cobro a mayoristas |
 | Qué es un **"comprobante de percepción"** | Lucas | 🟡 Sin definir desde el 03/09 |
-| **¿Reciben cheques?** | Lucas | 🟡 Nuevo del 09/09 — **no está en el alcance** |
+| ~~¿Reciben cheques?~~ | — | ✅ **Contestado el 10/09: sí, y también le pagan a proveedores con cheque.** Es alcance nuevo y no está en ningún lado: [`cheques.md`](cheques.md) |
 | **¿Cómo se llama el segundo local?** | Lucas | 🟢 Se carga en Configuración → Depósitos cuando abra. Los cinco de OBTech quedaron descartados como referencia |
 | ~~Las **fotos de cómo cargan facturas de compra**~~ | Lucas | ✅ Llegaron el 10/09, con tres audios. Análisis en [`compras-e-iva.md`](compras-e-iva.md) |
 | **¿La cuenta corriente de proveedores entra al alcance?** | Lucas | 🔴 Hay plan con tamaños: [`plan-compras.md`](plan-compras.md). Son cuatro preguntas de cinco minutos |
