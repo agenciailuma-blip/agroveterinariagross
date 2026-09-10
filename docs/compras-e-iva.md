@@ -42,7 +42,18 @@ Y la cabecera tiene tres campos que nosotros no tenemos: **Fecha de vencimiento*
 
 > *"Esta es la parte de comprobante de compras, la de abajo de centro de costo. Esa nunca la vi ni sé para qué la ocupa."*
 
-**El centro de costos no se usa.** Está en el sistema, aparece en las dos pantallas, y quien las usa todos los días no sabe para qué sirve. Queda confirmado que **no se copia**: ya estaba en el backlog de V2 y ahí se queda.
+⚠️ **Esta frase se leyó mal la primera vez, y la corrección importa.** Acá se anotó que "el centro de costos no se usa y no se copia". **Está equivocado.** En el audio Lucas arranca diciendo que nunca lo vio, **se corrige a continuación** —*"me parece que este centro de costo está relacionado con la de impuestos… la parte de abajo del centro de costo es la misma que la registración de IVA compras"*— y en los dos audios siguientes explica que sí lo usa y cómo.
+
+**Lo que hay que separar son dos cosas que se llaman parecido:**
+
+| | Qué es | Estado |
+|---|---|---|
+| **"El centro de costos"**, como lo nombra Lucas | La **grilla de abajo** de la pantalla: el desglose por alícuota. Es la misma que la pantalla de *Registración IVA Compras* — él mismo lo dice | ✅ **Se usa, y es lo que construimos el 10/09** |
+| **La columna "Centro de Costo"** de esa grilla | Una dimensión contable por línea: a qué área se imputa el gasto | ❓ Es lo que dice no haber visto nunca. **Sin confirmar** |
+
+👉 **Lo que queda por preguntarle, y es una sola pregunta:** cuando carga esa grilla, ¿elige algo en la columna *Centro de Costo*, o la deja como viene? Si la deja, no hay nada que construir. Si elige, es un dato por línea que hoy no guardamos, y hay que saber qué opciones usa.
+
+**Lo que sí quedó claro es qué quiere ver en nuestro sistema**, y está en el audio 3: poder cargar la factura **y abajo el desglose**, o **ir directamente al desglose**. Los dos caminos, porque a veces es la misma persona y a veces son dos.
 
 > *"¿Yo puedo cargar directamente la factura y abajo ya registrar el IVA compras, o directamente ir a registrar el IVA compras?"*
 > *"Si la misma persona que carga las facturas del stock es la misma que hace el IVA compras, carga todo de una. En cambio, si… otra persona es la que carga el ingreso de stock, la que carga el stock utilizaría la parte del proveedor… y la persona que carga el IVA compras utilizaría solamente el centro de costos del IVA compras."*

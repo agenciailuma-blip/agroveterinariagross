@@ -14,6 +14,13 @@ export interface Terminal {
     «POS80 Printer(2)» en los mostradores.
   */
   impresora_windows: string | null
+  /*
+    Si esta máquina es la que escucha a las demás cuando no hay
+    internet. Viaja con la terminal —y no en la configuración del
+    comercio— porque es una propiedad de la máquina, igual que la
+    impresora, y porque tiene que estar disponible sin conexión.
+  */
+  es_punto_de_encuentro: boolean
 }
 
 const CLAVE = 'gross.terminal'
@@ -87,7 +94,7 @@ export function useTerminal() {
     async function cargar() {
       const { data, error } = await supabase
         .from('terminal')
-        .select('id, nombre, tipo, prefijo, punto_venta_id, impresora_windows')
+        .select('id, nombre, tipo, prefijo, punto_venta_id, impresora_windows, es_punto_de_encuentro')
         .eq('activo', true)
         .is('eliminado_en', null)
         .order('nombre')

@@ -309,6 +309,18 @@ export interface OperacionPendiente {
   intentos: number
   ultimo_error: string | null
   estado: EstadoOperacion
+  /*
+    Cuándo se le entregó al punto de encuentro del local.
+
+    No reemplaza a la subida a Supabase: la operación sigue en la cola
+    hasta que llega al servidor. Esto sólo evita volver a mandarle lo
+    mismo a la caja en cada vuelta.
+
+    Va sin índice a propósito, así no hace falta subir la versión de la
+    base local — y una versión nueva en una terminal desconectada es
+    justo lo que no conviene el día de la instalación.
+  */
+  entregado_en?: string | null
 }
 
 class BaseLocal extends Dexie {

@@ -4,6 +4,9 @@ import { liveQuery } from 'dexie'
 import { db } from '@/lib/local/db'
 import { hayDatosLocales } from '@/lib/local/consultas'
 import { pendientes, recuperarHuerfanas, sincronizar } from '@/lib/local/sync'
+import { entregarALaCaja, guardarLoQueLlego, ponerseAEscuchar } from '@/lib/local/red'
+import type { MensajeDelLocal } from '@/lib/local/red'
+import { alLlegarDeLaRed, cerrarPuntoDeEncuentro, enEscritorio } from '@/lib/escritorio'
 import { useConexion } from '@/lib/useConexion'
 import { useTerminal } from '@/lib/terminal'
 import { supabase } from '@/lib/supabase'
@@ -16,6 +19,8 @@ interface EstadoSync {
   sinSubir: number
   error: string | null
   enLinea: boolean
+  /** Esta terminal es la que escucha a las demás, y está escuchando. */
+  escuchando: boolean
   sincronizar: () => Promise<void>
 }
 
@@ -32,6 +37,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   const [ultimaSync, setUltimaSync] = useState<Date | null>(null)
   const [sinSubir, setSinSubir] = useState(0)
   const [error, setError] = useState<string | null>(null)
+  const [escuchando, setEscuchando] = useState(false)
   const corriendo = useRef(false)
 
   const enLinea = conexion === 'en_linea'
@@ -126,6 +132,84 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(timer)
   }, [enLinea, correr])
 
+  /*
+    ─────────────────────────────────────────────────────────────
+    La red del local
+
+    Todo lo de acá abajo corre JUSTAMENTE cuando lo de arriba no puede:
+    sin internet. Es lo que hace que la venta que arma un vendedor
+    llegue igual a la caja, que es lo único que faltaba para que "el
+    mostrador funciona sin conexión" se cumpla entero.
+    ─────────────────────────────────────────────────────────────
+  */
+
+  // La terminal de la caja se pone a escuchar y queda escuchando: no
+  // depende de que haya o no internet, porque el día que se corte no
+  // hay quien la prenda.
+  useEffect(() => {
+    if (!enEscritorio || !terminal?.es_punto_de_encuentro) return
+
+    let vigente = true
+    ponerseAEscuchar()
+      .then(() => {
+        if (vigente) setEscuchando(true)
+      })
+      .catch((e) => {
+        // No se pisa el error de sincronización: son dos cosas
+        // distintas y el de arriba es más urgente.
+        console.error('No se pudo abrir el punto de encuentro:', e)
+        if (vigente) setEscuchando(false)
+      })
+
+    return () => {
+      vigente = false
+      void cerrarPuntoDeEncuentro()
+      setEscuchando(false)
+    }
+  }, [terminal])
+
+  // Y atiende lo que le mandan las demás.
+  useEffect(() => {
+    if (!enEscritorio || !terminal?.es_punto_de_encuentro) return
+
+    let soltar: (() => void) | null = null
+    let vigente = true
+
+    alLlegarDeLaRed((mensaje) => {
+      void guardarLoQueLlego(mensaje as MensajeDelLocal)
+    }).then((f) => {
+      if (vigente) soltar = f
+      else f()
+    })
+
+    return () => {
+      vigente = false
+      soltar?.()
+    }
+  }, [terminal])
+
+  /*
+    Los mostradores le entregan a la caja lo que todavía no pudieron
+    subir. Se intenta siempre, con o sin internet: con conexión no hay
+    nada pendiente y no cuesta nada, y sin conexión es el único camino.
+
+    Un fallo acá no se muestra en pantalla. Que la caja esté apagada es
+    normal —de noche, por ejemplo— y no es algo que el vendedor tenga
+    que resolver: la venta ya está guardada y va a subir igual cuando
+    vuelva internet.
+  */
+  useEffect(() => {
+    if (!enEscritorio || !terminal || terminal.es_punto_de_encuentro) return
+
+    const entregar = () => {
+      entregarALaCaja(terminal).catch(() => {})
+    }
+
+    entregar()
+    const timer = setInterval(entregar, INTERVALO_MS)
+    return () => clearInterval(timer)
+  }, [terminal])
+
   // Al volver la conexión se sincroniza enseguida: lo que se vendió sin
   // internet no puede quedar esperando al próximo ciclo.
   useEffect(() => {
@@ -137,8 +221,8 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   }, [correr])
 
   const valor = useMemo(
-    () => ({ listo, sincronizando, ultimaSync, sinSubir, error, enLinea, sincronizar: correr }),
-    [listo, sincronizando, ultimaSync, sinSubir, error, enLinea, correr],
+    () => ({ listo, sincronizando, ultimaSync, sinSubir, error, enLinea, escuchando, sincronizar: correr }),
+    [listo, sincronizando, ultimaSync, sinSubir, error, enLinea, escuchando, correr],
   )
 
   return <Contexto value={valor}>{children}</Contexto>

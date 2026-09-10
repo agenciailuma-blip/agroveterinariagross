@@ -20,13 +20,13 @@ estado: en curso
 
 ## Lo último que pasó — 10 de septiembre
 
-**Arrancó la sincronización por red local, y está a mitad de camino.** Está hecho **el camino**: la terminal de la caja abre un punto de encuentro en la red del local y las demás le hablan. Falta **mandar la venta por él**.
+**La venta llega a la caja sin internet.** Es el punto 2-bis del alcance, entero: la terminal de la caja escucha, los mostradores le entregan lo que no pudieron subir, y el cajero ve la venta como si nada.
 
-> **La decisión de fondo:** cuando no hay internet, las terminales no se buscan entre todas — una escucha, la de la caja, y las demás le hablan. El negocio ya tiene un lugar donde todo converge. Está anotada en [[10 · Las decisiones que no se revisan]] con su porqué.
+> **La decisión de fondo:** las terminales no se buscan entre todas — una escucha, la de la caja, y las demás le hablan. El negocio ya tiene un lugar donde todo converge. Está en [[10 · Las decisiones que no se revisan]] con su porqué.
 >
-> Probado con un punto de encuentro de verdad levantado en la prueba: las operaciones llegan enteras, los importes llegan como números y no como texto, y quien no sabe la clave del local no sólo recibe un no — **no le entregan nada**.
+> **Las dos suben lo mismo, y es a propósito:** si la máquina del mostrador no vuelve a encenderse, la venta sube igual desde la caja. La segunda copia choca contra la clave primaria y se descarta sola. **Nadie configura una IP:** la caja publica el nombre de su computadora y las demás la buscan por ahí.
 >
-> ⚠️ **Para el día de la instalación:** la primera vez, Windows va a preguntar si permite que el programa se comunique en redes privadas. Hay que decir que sí, una sola vez, en la máquina de la caja.
+> ⚠️ **Falta probarlo con dos máquinas de verdad** — sólo se puede en el local. Y la primera vez, **Windows va a preguntar si permite que el programa se comunique en redes privadas**: hay que decir que sí, una sola vez, en la máquina de la caja.
 
 **Se puede cargar la factura de compra.** Decisión de Francisco: sube a V1-A, porque el 26/10 Gross deja OBTech y OBTech es donde carga sus facturas hoy — *"sino queda el hueco el 26"*. Pantalla **Compras**, entre Proveedores y Ventas.
 
@@ -34,7 +34,9 @@ Se carga lo que dice el papel —proveedor, tipo, número, fecha, desglose por a
 
 ⚠️ **Ojo con el argumento que NO hay que volver a usar:** no es que el contador necesite estas facturas para el IVA. Las baja de Mis Comprobantes de ARCA — se corrigió el 09/09 y está en [`compras-e-iva.md`](compras-e-iva.md). Lo que el contador espera de este sistema es el Excel de ventas.
 
-**Llegaron las fotos de cómo lo hacen hoy**, con tres audios de Lucas. Confirman la partición que hicimos —la factura y la mercadería a veces las carga la misma persona y a veces dos distintas— y descartan el *centro de costos*, que está en OBTech y que Lucas nunca usó. De ahí salió que las percepciones se elijan de una lista. **Y abren un hueco nuevo, el de la tabla de abajo: la cuenta corriente de proveedores.**
+**Llegaron las fotos de cómo lo hacen hoy**, con tres audios de Lucas. Confirman la partición que hicimos —la factura y la mercadería a veces las carga la misma persona y a veces dos distintas— y de ahí salió que las percepciones se elijan de una lista. **Y abren un hueco nuevo, el de la tabla de abajo: la cuenta corriente de proveedores.**
+
+> ⚠️ **Corregido al volver a escuchar los audios:** acá decía que Lucas "nunca usó el centro de costos". **Mal leído.** En el audio arranca diciendo eso y se corrige enseguida: *"centro de costos"* es como él llama a **la grilla del desglose de IVA**, que sí usa y que es justamente lo que se construyó. Lo que queda sin confirmar es la **columna** con ese nombre. La pregunta exacta está en [`compras-e-iva.md`](compras-e-iva.md).
 
 **Coherencia visual y menú achicable.** Los botones de Productos usaban el gris de Tailwind y el magenta invertido; ahora hay un solo lugar donde están definidos ([`estilos.ts`](../app/src/estilos.ts)) y el gris es el de la identidad de Gross en todo el sistema. Y el menú se puede achicar a sólo íconos, con la decisión guardada **por computadora**: la caja tiene un monitor chico y la oficina no.
 
@@ -64,11 +66,10 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 
 1. 🔴 **Probar la impresión en el local, con la impresora delante.** El código está publicado en la 0.2.3: lo que falta es el papel.
 2. 🔴 **CAEA** — falta el trámite, no el código.
-3. **Sincronización por red local — la segunda mitad.** El camino está hecho y probado; falta que la venta viaje por él. Ver [[Lo construido, en detalle]].
-4. **Cifrado de la base local.**
-5. **Devoluciones parciales** — hoy hay que anular la venta entera y rehacerla.
-6. **Reportes** — la única pantalla de V1-A que todavía no existe.
-7. **Todo con teclado y la versión móvil** — lo último antes del 26/10, decidido con Lucas. En el celular el menú va a ser una hamburguesa; el achicado de ahora es para tablet.
+3. **Cifrado de la base local.**
+4. **Devoluciones parciales** — hoy hay que anular la venta entera y rehacerla.
+5. **Reportes** — la única pantalla de V1-A que todavía no existe.
+6. **Todo con teclado y la versión móvil** — lo último antes del 26/10, decidido con Lucas. En el celular el menú va a ser una hamburguesa; el achicado de ahora es para tablet.
 
 ## Lo que está bloqueado, y por quién
 
@@ -127,7 +128,7 @@ Queda en `http://localhost:5173`.
 
 **Documentación.** Se partió `ESTADO.md` (766 líneas) en `AHORA.md` + cuatro notas, sin perder una línea. Las 40 imágenes se movieron a `referencias/`.
 
-📊 **16 de 24 pedidos de Lucas hechos** · 162 pruebas verdes en la app y 9 en el programa · 66 migraciones.
+📊 **16 de 24 pedidos de Lucas hechos** · 168 pruebas verdes en la app y 9 en el programa · 68 migraciones.
 
 ---
 

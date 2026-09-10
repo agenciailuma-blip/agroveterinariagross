@@ -318,9 +318,9 @@ Descubierto el 21/08 al construir lo anterior. **Las 4 PC sólo se hablan a trav
 
 ✅ **Decidido el 21/08: la sincronización por red local entra a V1**, no queda para V2. El razonamiento del usuario: lo comprometido con el cliente es que el mostrador siga funcionando sin internet, y sin esto se cumple a medias. Va **al final de V1**, después de todo lo demás, porque es lo único que puede esperar sin bloquear el corte del 26 de octubre. Incorporado al alcance como punto 2-bis en [`alcance-v1.md`](alcance-v1.md).
 
-### 🟡 2c. La red del local — el transporte, hecho (10/09)
+### ✅ 2c. La red del local — la venta llega a la caja sin internet (10/09)
 
-Primera mitad del punto 2-bis del alcance. **Lo que está hecho es el camino; lo que falta es mandar la venta por él.**
+El punto 2-bis del alcance, entero: el camino y la venta viajando por él. ⚠️ **Falta probarlo con dos máquinas de verdad**, que es algo que sólo se puede hacer en el local.
 
 **La decisión de fondo, que ya está en [[10 · Las decisiones que no se revisan]]:** una terminal escucha —la de la caja— y las demás le hablan. No es una red de pares. El negocio ya tiene un lugar donde todo converge.
 
@@ -334,7 +334,16 @@ Primera mitad del punto 2-bis del alcance. **Lo que está hecho es el camino; lo
 
 **Probado de punta a punta, con un punto de encuentro de verdad levantado en la prueba:** contesta que está, las operaciones llegan enteras —y los importes llegan como números, no como texto, que es como se pierde un centavo—, rechaza a quien no sabe la clave **y además no le entrega nada**, y cuando la caja está apagada lo dice en castellano diciendo qué mirar. Las cuatro se rompieron a propósito para ver que fallan.
 
-⚠️ **Lo que falta, y es la otra mitad:** enganchar esto a la cola de operaciones. Hoy el camino existe y nadie lo usa todavía. Falta que el mostrador, cuando no llega a internet, le mande sus operaciones pendientes a la caja; que la caja las guarde y le muestre la venta al cajero; y que las dos las suban cuando vuelva la conexión — lo que es seguro porque los id los genera la terminal.
+✅ **La otra mitad, hecha el mismo día.** El mostrador le entrega a la caja lo que todavía no pudo subir; la caja lo guarda, le muestra la venta al cajero y lo pone en su propia cola para subirlo. **Las dos lo suben**, y es a propósito: si la máquina del mostrador no vuelve a encenderse, la venta sube igual desde la caja. La segunda copia choca contra la clave primaria y se descarta sola.
+
+**Nadie configura una dirección IP.** La terminal que escucha publica sola el nombre que tiene esa computadora en Windows, y las demás la buscan por ese nombre. Una IP la reparte el router y cambia; el nombre no. Y en el local los nombres ya se resuelven entre máquinas — la impresora compartida se llama justamente «POS80 Printer(2) en DESKTOP-O4R9STD».
+
+**Dos reglas de las que se equivocan en silencio, probadas aparte** ([`lib/local/red.ts`](../../app/src/lib/local/red.ts)):
+
+- **Una venta que esta caja ya cobró no se resucita.** El mostrador reenvía sus operaciones —para él siguen pendientes hasta llegar al servidor— y traerla de vuelta la pondría otra vez en la pantalla del cajero, con la plata ya cobrada. Es el mismo peligro que ya tenía la cola y la misma respuesta.
+- **Lo que no viene a cobrarse no aparece en la cola de la caja**, pero viaja igual para subir. Un presupuesto o un remito no son algo que el cajero tenga que cobrar.
+
+**En Configuración hay una sección para el día de la instalación**: quién escucha, con qué nombre se la encuentra, si está escuchando ahora, y un botón para probar la conexión desde un mostrador.
 
 ⚠️ **Y un detalle de instalación que hay que saber antes de ir:** la primera vez que la caja abra el punto de encuentro, **Windows va a preguntar si permite que el programa se comunique en redes privadas**. Hay que decir que sí. Es una sola vez y sólo en la máquina de la caja.
 

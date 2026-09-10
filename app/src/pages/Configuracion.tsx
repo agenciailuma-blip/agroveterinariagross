@@ -4,6 +4,7 @@ import { useAuth } from '@/auth/AuthProvider'
 import DiagnosticoTerminal from '@/components/DiagnosticoTerminal'
 import DatosDelEmisor from '@/components/DatosDelEmisor'
 import Depositos from '@/components/Depositos'
+import RedDelLocal from '@/components/RedDelLocal'
 import ImpresoraDelMostrador from '@/components/ImpresoraDelMostrador'
 import RitmoDelMostrador from '@/components/RitmoDelMostrador'
 import {
@@ -161,6 +162,8 @@ export default function Configuracion() {
       <DatosDelEmisor />
 
       <ImpresoraDelMostrador />
+
+      <RedDelLocal />
 
       <PuntosDeVenta />
 

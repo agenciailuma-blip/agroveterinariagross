@@ -223,6 +223,22 @@ pub fn abrir_punto_de_encuentro(app: AppHandle, clave: String, puerto: Option<u1
     Ok(puerto)
 }
 
+/*
+  Cómo se llama esta computadora en la red del local.
+
+  La terminal que escucha lo guarda en la configuración para que las
+  otras sepan a quién hablarle. Se usa el nombre y no la dirección IP
+  porque la IP la reparte el router y cambia sola; el nombre no. Y
+  porque en el local ya se resuelven los nombres entre máquinas: la
+  impresora compartida se llama «POS80 Printer(2) en DESKTOP-O4R9STD».
+*/
+#[tauri::command]
+pub fn nombre_de_esta_computadora() -> String {
+    std::env::var("COMPUTERNAME")
+        .or_else(|_| std::env::var("HOSTNAME"))
+        .unwrap_or_else(|_| "localhost".to_string())
+}
+
 #[tauri::command]
 pub fn cerrar_punto_de_encuentro() -> Result<(), String> {
     let mut guardia = ESCUCHA.lock().map_err(|_| "La escucha quedó en mal estado.")?;

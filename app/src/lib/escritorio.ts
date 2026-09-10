@@ -79,6 +79,66 @@ export function abrirNoFiscal(id: string): Promise<void> {
 }
 
 /*
+  ─────────────────────────────────────────────────────────────
+  La red del local
+
+  Sólo existe adentro del programa instalado. Una página web no puede
+  escuchar conexiones ni abrir una contra otra computadora, y esa es la
+  otra mitad de la razón por la que el sistema se empaqueta.
+  ─────────────────────────────────────────────────────────────
+*/
+
+export interface RespuestaDelLocal {
+  ok: boolean
+  detalle: string
+}
+
+/** Cómo se llama esta computadora en la red. Vacío en el navegador. */
+export async function nombreDeEstaComputadora(): Promise<string> {
+  if (!enEscritorio) return ''
+  const { invoke } = await import('@tauri-apps/api/core')
+  return invoke<string>('nombre_de_esta_computadora')
+}
+
+/** Ponerse a escuchar a las otras terminales. Devuelve el puerto. */
+export async function abrirPuntoDeEncuentro(clave: string): Promise<number> {
+  if (!enEscritorio) throw new Error('El punto de encuentro sólo existe en el programa instalado.')
+  const { invoke } = await import('@tauri-apps/api/core')
+  return invoke<number>('abrir_punto_de_encuentro', { clave })
+}
+
+export async function cerrarPuntoDeEncuentro(): Promise<void> {
+  if (!enEscritorio) return
+  const { invoke } = await import('@tauri-apps/api/core')
+  await invoke('cerrar_punto_de_encuentro')
+}
+
+/*
+  Avisar cuando llega algo de otra terminal.
+
+  Devuelve cómo dejar de escuchar, para que la pantalla que lo enganchó
+  lo suelte al desmontarse: dos oyentes guardarían la misma venta dos
+  veces.
+*/
+export async function alLlegarDeLaRed(
+  atender: (mensaje: unknown) => void,
+): Promise<() => void> {
+  if (!enEscritorio) return () => {}
+  const { listen } = await import('@tauri-apps/api/event')
+  const soltar = await listen('operaciones-de-la-red', (e) => atender(e.payload))
+  return soltar
+}
+
+export async function hablarConLaCaja(
+  host: string,
+  mensaje: string,
+): Promise<RespuestaDelLocal> {
+  if (!enEscritorio) throw new Error('Hablar con la caja sólo funciona en el programa instalado.')
+  const { invoke } = await import('@tauri-apps/api/core')
+  return invoke<RespuestaDelLocal>('hablar_con_la_caja', { host, mensaje })
+}
+
+/*
   Qué impresoras tiene instaladas ESTA computadora.
 
   Se le pregunta a Windows en vez de escribir el nombre a mano porque los

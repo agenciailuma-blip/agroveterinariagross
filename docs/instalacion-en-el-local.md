@@ -132,6 +132,20 @@ Si el diagnóstico dijo que falta: **Ventas** → elegir cuál es esta máquina.
 
 > **Si esto falla, nadie queda sin comprobante.** El botón "Imprimir" de la pantalla del comprobante sigue usando el diálogo de Windows y no depende de nada de esto.
 
+### Paso 5-bis · La red del local — se hace UNA vez, en la caja
+
+**Configuración → La red del local → "Que escuche esta computadora"**, en la PC de la caja.
+
+⚠️ **Windows va a preguntar si permite que el programa se comunique en redes privadas. Hay que decir que sí.** Si se dice que no, esa computadora no puede escuchar y ninguna otra va a poder mandarle nada — y el síntoma aparece recién el día que se corte internet.
+
+✅ **Sale bien si:** en esa misma pantalla, "Escuchando ahora" dice **Sí**, y aparece el nombre de la computadora.
+
+Después, en **cada mostrador**: misma pantalla → **Probar la conexión**. Tiene que contestar *"Acá está la caja"*.
+
+❌ **Si no contesta:** la PC de la caja está apagada, el sistema no está abierto ahí, o se le dijo que no al aviso de Windows. Ese aviso se puede volver a habilitar en el Firewall de Windows, en "Permitir que una aplicación se comunique a través del Firewall".
+
+> **Para qué sirve, en una frase:** sin esto, cuando se corta internet la venta que arma un vendedor **no tiene cómo llegar a la caja**. Con esto, llega igual.
+
 ### Paso 6 · Una venta de punta a punta
 
 1. **Ventas** → escanear o buscar un producto → **Enviar a caja**.

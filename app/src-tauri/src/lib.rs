@@ -27,7 +27,8 @@ pub fn run() {
             // que hace que la venta del mostrador llegue a la caja.
             red_local::abrir_punto_de_encuentro,
             red_local::cerrar_punto_de_encuentro,
-            red_local::hablar_con_la_caja
+            red_local::hablar_con_la_caja,
+            red_local::nombre_de_esta_computadora
         ])
         .run(tauri::generate_context!())
         .expect("No se pudo abrir la ventana del sistema");
