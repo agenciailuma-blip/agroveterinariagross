@@ -10,6 +10,7 @@ import { destinoDeImpresion } from '@/lib/comprobante/destino'
 import { ticketDePrueba } from '@/lib/comprobante/escpos'
 import { enEscritorio, imprimirTicket, listarImpresoras } from '@/lib/escritorio'
 import { useTerminal } from '@/lib/terminal'
+import { boton, campo } from '@/estilos'
 
 /*
   Qué impresora usa el mostrador de ESTA computadora.
@@ -27,8 +28,6 @@ import { useTerminal } from '@/lib/terminal'
   sistema qué impresoras tiene.
 */
 
-const claseInput =
-  'w-full rounded-lg border border-borde px-2.5 py-1.5 text-sm text-tinta outline-none focus:border-marca-500 focus:ring-2 focus:ring-marca-500/20'
 
 export default function ImpresoraDelMostrador() {
   const qc = useQueryClient()
@@ -157,13 +156,13 @@ export default function ImpresoraDelMostrador() {
         <>
           <div className="mt-4 flex flex-wrap items-end gap-3">
             <label className="block min-w-64 flex-1">
-              <span className="mb-1 block text-xs font-medium text-slate-600">
+              <span className="mb-1 block text-xs font-medium text-piedra-600">
                 Impresora de {terminal.nombre}
               </span>
               <select
                 value={elegida}
                 onChange={(e) => setElegida(e.target.value)}
-                className={claseInput}
+                className={campo}
               >
                 <option value="">— Ninguna: imprimir desde el diálogo de Windows —</option>
                 {lista.map((n) => (
@@ -180,7 +179,7 @@ export default function ImpresoraDelMostrador() {
             <button
               onClick={() => impresoras.refetch()}
               disabled={impresoras.isFetching}
-              className="rounded-lg px-3 py-2 text-sm font-medium text-marca-700 ring-1 ring-borde hover:bg-marca-50 disabled:opacity-40"
+              className={boton.secundario}
             >
               {impresoras.isFetching ? 'Buscando…' : 'Actualizar la lista'}
             </button>
@@ -211,7 +210,7 @@ export default function ImpresoraDelMostrador() {
             <button
               onClick={() => guardar.mutate()}
               disabled={guardar.isPending}
-              className="rounded-lg bg-marca-700 px-4 py-2 text-sm font-medium text-white hover:bg-marca-600 disabled:opacity-40"
+              className={boton.principal}
             >
               {guardar.isPending ? 'Guardando…' : 'Guardar'}
             </button>
@@ -219,7 +218,7 @@ export default function ImpresoraDelMostrador() {
             <button
               onClick={() => probar.mutate()}
               disabled={!destino || probar.isPending}
-              className="rounded-lg px-3 py-2 text-sm font-medium text-marca-700 ring-1 ring-borde hover:bg-marca-50 disabled:opacity-40"
+              className={boton.secundario}
             >
               {probar.isPending ? 'Imprimiendo…' : 'Imprimir una prueba'}
             </button>
@@ -254,29 +253,29 @@ export default function ImpresoraDelMostrador() {
 
         <div className="mt-3 flex flex-wrap items-end gap-3">
           <label className="block min-w-56 flex-1">
-            <span className="mb-1 block text-xs font-medium text-slate-600">
+            <span className="mb-1 block text-xs font-medium text-piedra-600">
               Dirección en la red del local
             </span>
             <input
               value={host}
               onChange={(e) => setHost(e.target.value)}
               placeholder="192.168.1.50"
-              className={claseInput}
+              className={campo}
             />
           </label>
           <label className="block w-28">
-            <span className="mb-1 block text-xs font-medium text-slate-600">Puerto</span>
+            <span className="mb-1 block text-xs font-medium text-piedra-600">Puerto</span>
             <input
               value={puerto}
               onChange={(e) => setPuerto(e.target.value)}
               inputMode="numeric"
-              className={claseInput}
+              className={campo}
             />
           </label>
           <button
             onClick={() => guardarRed.mutate()}
             disabled={guardarRed.isPending}
-            className="rounded-lg px-3 py-2 text-sm font-medium text-marca-700 ring-1 ring-borde hover:bg-marca-50 disabled:opacity-40"
+            className={boton.secundario}
           >
             {guardarRed.isPending ? 'Guardando…' : 'Guardar la de red'}
           </button>

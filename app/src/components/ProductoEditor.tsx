@@ -4,6 +4,7 @@ import { UNIDADES } from '@/lib/api/catalogo'
 import type { Referencia, ProductoDetalle, Referencias } from '@/lib/api/catalogo'
 import { ChipsConAlta, SelectConAlta } from '@/components/SelectConAlta'
 import { numero } from '@/lib/tipos'
+import { boton } from '@/estilos'
 
 export interface EstadoFormulario {
   campos: Partial<ProductoDetalle>
@@ -57,21 +58,21 @@ function Campo({
 }) {
   return (
     <label className={`block ${ancho}`}>
-      <span className="mb-1 block text-xs font-medium text-slate-600">{etiqueta}</span>
+      <span className="mb-1 block text-xs font-medium text-piedra-600">{etiqueta}</span>
       {children}
-      {ayuda && <span className="mt-1 block text-xs text-slate-400">{ayuda}</span>}
+      {ayuda && <span className="mt-1 block text-xs text-piedra-400">{ayuda}</span>}
     </label>
   )
 }
 
 const claseInput =
-  'w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm text-slate-900 outline-none focus:border-marca-500 focus:ring-2 focus:ring-marca-500/20'
+  'w-full rounded-lg border border-borde px-2.5 py-1.5 text-sm text-tinta outline-none focus:border-marca-500 focus:ring-2 focus:ring-marca-500/20'
 
 function Seccion({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
-    <fieldset className="border-t border-slate-200 pt-4">
+    <fieldset className="border-t border-borde pt-4">
       <legend className="sr-only">{titulo}</legend>
-      <h3 className="mb-3 text-xs font-semibold tracking-wide text-slate-400 uppercase">
+      <h3 className="mb-3 text-xs font-semibold tracking-wide text-piedra-400 uppercase">
         {titulo}
       </h3>
       <div className="grid grid-cols-4 gap-3">{children}</div>
@@ -145,13 +146,13 @@ export default function ProductoEditor({
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
-        <h2 className="font-semibold text-slate-900">
+      <div className="flex items-center justify-between border-b border-borde px-5 py-3">
+        <h2 className="font-semibold text-tinta">
           {esNuevo ? 'Nuevo producto' : estado.campos.nombre_interno || 'Producto'}
         </h2>
         <button
           onClick={onCancelar}
-          className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+          className="rounded-lg p-1.5 text-piedra-400 hover:bg-piedra-100 hover:text-piedra-600"
           aria-label="Cerrar"
         >
           <svg className="size-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -355,7 +356,7 @@ export default function ProductoEditor({
 
         <Seccion titulo="Stock">
           <Campo etiqueta="En el sistema">
-            <div className="rounded-lg bg-slate-100 px-2.5 py-1.5 text-right text-sm tabular-nums text-slate-600">
+            <div className="rounded-lg bg-piedra-100 px-2.5 py-1.5 text-right text-sm tabular-nums text-piedra-600">
               {numero.format(stockActual)}
             </div>
           </Campo>
@@ -397,11 +398,11 @@ export default function ProductoEditor({
             me quedan? y ¿a partir de cuántos me avisás? son la misma
             conversación.
           */}
-          <div className="col-span-4 rounded-lg bg-slate-50 p-3 ring-1 ring-slate-200">
+          <div className="col-span-4 rounded-lg bg-piedra-50 p-3 ring-1 ring-borde">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-xs font-medium text-slate-600">Avisarme cuando queden pocos</p>
+              <p className="text-xs font-medium text-piedra-600">Avisarme cuando queden pocos</p>
               {puedeUmbrales && (
-                <label className="flex items-center gap-2 text-xs text-slate-500">
+                <label className="flex items-center gap-2 text-xs text-piedra-500">
                   <input
                     type="checkbox"
                     checked={estado.umbral.propio}
@@ -411,7 +412,7 @@ export default function ProductoEditor({
                         umbral: { ...estado.umbral, propio: e.target.checked },
                       })
                     }
-                    className="size-3.5 rounded border-slate-300 accent-marca-700"
+                    className="size-3.5 rounded border-borde accent-marca-700"
                   />
                   Poner un aviso propio para este producto
                 </label>
@@ -458,7 +459,7 @@ export default function ProductoEditor({
                 vacío daría a entender que no hay ninguno, y sí lo hay:
                 el de su categoría o el general.
               */
-              <p className="mt-2 text-xs text-slate-500">
+              <p className="mt-2 text-xs text-piedra-500">
                 Hoy avisa con <strong>{estado.umbral.bajo || 'sin definir'}</strong> (bajo) y{' '}
                 <strong>{estado.umbral.critico || 'sin definir'}</strong> (crítico)
                 {estado.umbral.propio
@@ -557,7 +558,7 @@ export default function ProductoEditor({
               {estado.codigosBarra.map((c) => (
                 <span
                   key={c}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 py-1 pr-1 pl-2.5 font-mono text-xs text-slate-700"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-piedra-100 py-1 pr-1 pl-2.5 font-mono text-xs text-piedra-700"
                 >
                   {c}
                   <button
@@ -568,7 +569,7 @@ export default function ProductoEditor({
                         codigosBarra: estado.codigosBarra.filter((x) => x !== c),
                       })
                     }
-                    className="rounded p-0.5 text-slate-400 hover:bg-slate-200 hover:text-slate-700"
+                    className="rounded p-0.5 text-piedra-400 hover:bg-piedra-200 hover:text-piedra-700"
                     aria-label={`Quitar ${c}`}
                   >
                     <svg className="size-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
@@ -582,43 +583,43 @@ export default function ProductoEditor({
         </Seccion>
 
         <Seccion titulo="Trazabilidad y normativa">
-          <label className="col-span-2 flex items-center gap-2 text-sm text-slate-700">
+          <label className="col-span-2 flex items-center gap-2 text-sm text-piedra-700">
             <input
               type="checkbox"
               checked={estado.campos.es_producto_veterinario ?? false}
               onChange={(e) => set({ es_producto_veterinario: e.target.checked })}
-              className="size-4 rounded border-slate-300 text-marca-600 focus:ring-marca-500"
+              className="size-4 rounded border-borde text-marca-600 focus:ring-marca-500"
             />
             Producto veterinario
           </label>
-          <label className="col-span-2 flex items-center gap-2 text-sm text-slate-700">
+          <label className="col-span-2 flex items-center gap-2 text-sm text-piedra-700">
             <input
               type="checkbox"
               checked={estado.campos.requiere_receta ?? false}
               onChange={(e) => set({ requiere_receta: e.target.checked })}
-              className="size-4 rounded border-slate-300 text-marca-600 focus:ring-marca-500"
+              className="size-4 rounded border-borde text-marca-600 focus:ring-marca-500"
             />
             Requiere receta
           </label>
-          <label className="col-span-2 flex items-center gap-2 text-sm text-slate-700">
+          <label className="col-span-2 flex items-center gap-2 text-sm text-piedra-700">
             <input
               type="checkbox"
               checked={estado.campos.es_fitosanitario ?? false}
               onChange={(e) => set({ es_fitosanitario: e.target.checked })}
-              className="size-4 rounded border-slate-300 text-marca-600 focus:ring-marca-500"
+              className="size-4 rounded border-borde text-marca-600 focus:ring-marca-500"
             />
             Fitosanitario
           </label>
-          <label className="col-span-2 flex items-center gap-2 text-sm text-slate-700">
+          <label className="col-span-2 flex items-center gap-2 text-sm text-piedra-700">
             <input
               type="checkbox"
               checked={estado.campos.controla_vencimiento ?? false}
               onChange={(e) => set({ controla_vencimiento: e.target.checked })}
-              className="size-4 rounded border-slate-300 text-marca-600 focus:ring-marca-500"
+              className="size-4 rounded border-borde text-marca-600 focus:ring-marca-500"
             />
             Controla vencimiento
           </label>
-          <p className="col-span-4 text-xs text-slate-400">
+          <p className="col-span-4 text-xs text-piedra-400">
             Estas marcas todavía no cambian nada en la operación. Se cargan ahora para no tener que
             revisar 3.000 productos de nuevo cuando SENASA defina el mecanismo de SIGTRAZAVET.
           </p>
@@ -631,18 +632,18 @@ export default function ProductoEditor({
         </p>
       )}
 
-      <div className="flex items-center gap-2 border-t border-slate-200 bg-slate-50 px-5 py-3">
+      <div className="flex items-center gap-2 border-t border-borde bg-piedra-50 px-5 py-3">
         <button
           onClick={() => onGuardar(true, true)}
           disabled={guardando || umbralInvalido}
-          className="flex-1 rounded-lg bg-marca-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-marca-700 disabled:opacity-60"
+          className={`flex-1 ${boton.principal}`}
         >
           {guardando ? 'Guardando…' : 'Revisado y siguiente'}
         </button>
         <button
           onClick={() => onGuardar(false, false)}
           disabled={guardando || umbralInvalido}
-          className="rounded-lg bg-white px-4 py-2.5 text-sm font-medium text-slate-700 ring-1 ring-slate-300 hover:bg-slate-100 disabled:opacity-60"
+          className={boton.secundario}
         >
           Guardar
         </button>
@@ -652,7 +653,7 @@ export default function ProductoEditor({
           <button
             onClick={onDarDeBaja}
             disabled={guardando || umbralInvalido}
-            className="ml-auto rounded-lg px-3 py-2.5 text-sm font-medium text-slate-500 hover:bg-red-50 hover:text-red-700 disabled:opacity-60"
+            className="ml-auto rounded-lg px-3 py-2.5 text-sm font-medium text-piedra-500 hover:bg-red-50 hover:text-red-700 disabled:opacity-60"
           >
             Dar de baja
           </button>

@@ -64,8 +64,8 @@ function Ruteo() {
 
   if (cargando) {
     return (
-      <div className="grid min-h-full place-items-center bg-slate-100">
-        <p className="text-sm text-slate-500">Cargando…</p>
+      <div className="grid min-h-full place-items-center bg-piedra-100">
+        <p className="text-sm text-piedra-500">Cargando…</p>
       </div>
     )
   }
@@ -75,7 +75,7 @@ function Ruteo() {
   // Hay sesión pero el usuario no está habilitado en el sistema.
   if (!perfil) {
     return (
-      <div className="grid min-h-full place-items-center bg-slate-100 p-4">
+      <div className="grid min-h-full place-items-center bg-piedra-100 p-4">
         <div className="max-w-md rounded-xl bg-white p-6 text-center shadow-sm ring-1 ring-borde">
           <h1 className="font-semibold text-tinta">No podés entrar todavía</h1>
           <p className="mt-2 text-sm text-piedra-600">

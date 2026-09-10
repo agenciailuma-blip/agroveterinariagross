@@ -12,6 +12,71 @@
 >
 > Lo que sigue pendiente de terceros: las **fotos de cómo cargan las facturas hoy**, para saber si falta algún campo que usan, y **qué columnas quiere el contador** en el Excel de ventas.
 
+---
+
+## 📸 Las fotos y los audios de Lucas — 10 de septiembre
+
+Llegaron las fotos que faltaban, de cómo cargan las compras en OBTech, con tres audios de Lucas explicándolas. Esto es lo que dicen y qué se hace con cada cosa.
+
+### Lo que muestran las pantallas
+
+**El menú `Compras` de OBTech tiene siete entradas**, y sólo dos son las que construimos:
+
+| Entrada de OBTech | Estado acá |
+|---|---|
+| Proveedores | ✅ Hecho el 09/09 |
+| Registración de Comprobantes de Compras | ✅ Hecho el 10/09 (pantalla Compras) |
+| Consolidación de Saldos | ❌ No está |
+| Resumen de Ctas. Ctes. Proveedores | ❌ No está |
+| Órdenes de Pago | ❌ No está |
+| Comprobantes de Retención IIBB | ❌ No está |
+| Exportar Comprobantes de Retención IIBB | ❌ No está |
+
+🔴 **Las cuatro últimas son un bloque entero: la cuenta corriente con el proveedor.** No están en V1 ni en V1-B. Ver *"El hueco que abren estas fotos"*, abajo.
+
+**La pantalla de registración tiene dos grillas.** Arriba, los artículos con cantidad y costo — eso es recepción de mercadería, que es lo que mueve el stock. Abajo, una fila por alícuota con estas columnas: **Centro de Costo · Tipo de IVA · Neto · IVA · Imp. Int. · Exento · Percep. IVA · Ret. Gan. · IIBB**.
+
+Y la cabecera tiene tres campos que nosotros no tenemos: **Fecha de vencimiento**, **Mes para el proceso** y una marca de **"comprobante a cuenta corriente"**.
+
+### Lo que dijo Lucas, y por qué importa
+
+> *"Esta es la parte de comprobante de compras, la de abajo de centro de costo. Esa nunca la vi ni sé para qué la ocupa."*
+
+**El centro de costos no se usa.** Está en el sistema, aparece en las dos pantallas, y quien las usa todos los días no sabe para qué sirve. Queda confirmado que **no se copia**: ya estaba en el backlog de V2 y ahí se queda.
+
+> *"¿Yo puedo cargar directamente la factura y abajo ya registrar el IVA compras, o directamente ir a registrar el IVA compras?"*
+> *"Si la misma persona que carga las facturas del stock es la misma que hace el IVA compras, carga todo de una. En cambio, si… otra persona es la que carga el ingreso de stock, la que carga el stock utilizaría la parte del proveedor… y la persona que carga el IVA compras utilizaría solamente el centro de costos del IVA compras."*
+
+**Esto confirma la partición que ya hicimos, y le pone la condición que faltaba.** La factura y la mercadería son dos cosas que a veces hace la misma persona de una sola vez y a veces hacen dos personas por separado.
+
+👉 **Es un requisito de diseño para la recepción de mercadería de V1-B, y hay que anotarlo ahora:** cuando exista, tiene que poder hacerse **desde la factura ya cargada** (agregarle las líneas y que ingrese el stock) **o por separado**, sin obligar a que la misma persona haga las dos.
+
+> *"Si es una factura B, digamos, de un monotributista que me factura a mí, no voy a completar la parte de centro de costos abajo. Ni tampoco voy a cargar el IVA compras, porque no corresponde."*
+
+Coherente con lo que ya hace la pantalla: en una factura sin IVA discriminado, el desglose por alícuota simplemente no se carga. **No hay nada que cambiar**, y confirma que la Factura C tenía que poder cargarse (lo hace).
+
+### Qué se cambió con esto
+
+- **Las percepciones se eligen de una lista** —Percepción de IIBB, Percepción de IVA, Retención de Ganancias, Impuestos internos, y "Otro" para escribirlo— en vez de escribirse a mano. Son los conceptos que OBTech tiene como columnas fijas. Van como filas y no como columnas porque casi ninguna factura trae todas.
+
+### Lo que quedó pendiente de decidir
+
+| | Qué | Por qué no se hizo todavía |
+|---|---|---|
+| 🟡 | **Fecha de vencimiento** de la factura | Sirve para saber cuándo hay que pagarle al proveedor. Sin cuenta corriente de proveedores no tiene dónde apoyarse, así que va con ese bloque |
+| 🟡 | **Mes de imputación** ("mes para el proceso") | Sirve para imputar una factura de septiembre que se carga en octubre. Hoy la fecha del comprobante cubre el caso normal |
+| 🟡 | **"A cuenta corriente"** | Es la puerta al bloque de abajo |
+
+### 🔴 El hueco que abren estas fotos
+
+**Gross le lleva la cuenta corriente a sus proveedores en OBTech**: qué le debe a cada uno, órdenes de pago, saldos. Eso es la mitad del menú `Compras` y **no está en ningún lado de V1 ni de V1-B**: nunca se levantó como requisito.
+
+El 26/10 dejan OBTech. Desde ese día, **cargar la factura sí van a poder; saber cuánto le deben a Bagó, no.**
+
+No es una decisión de ingeniería: es de alcance, y hay que ponerla sobre la mesa con Lucas junto con el resto. La cuenta corriente de **clientes** ya existe y funciona, así que la de proveedores es su espejo — más barata que construirla de cero, pero no gratis.
+
+---
+
 **9 de septiembre de 2026.**
 **Por qué existe este documento:** porque el pedido estaba en el alcance pero **reducido a dos renglones sin ningún porqué**, y eso lo volvió invisible. Francisco lo notó el 09/09. Este archivo lo desarma y propone qué hacer.
 

@@ -450,6 +450,14 @@ Lo último visible que le faltaba a V1-A. Al abrir el sistema, arriba de todo: c
 
 De paso se sacó de Inicio la tarjeta *"Estado del proyecto"*, que era de la primera semana y seguía diciendo que faltaban el punto de venta y la conexión con ARCA.
 
+### ✅ Coherencia visual y menú achicable (10/09)
+
+**Los botones tenían dos familias sin querer.** Las mismas clases estaban copiadas a mano en más de cuarenta lugares y tres se habían desviado: *Nuevo producto* tenía el magenta invertido respecto de los otros treinta y nueve, y *Importar planilla* y *Dados de baja* usaban el gris de Tailwind (`slate`, azulado) en vez del de la identidad de Gross (`piedra`, sacado del `#d1e2e8` de la marca, que tira a verde). Puestos al lado del resto se leían como menos importantes de lo que son — que fue exactamente lo que se notó al mirarlos.
+
+Ahora hay un solo lugar donde están definidos ([`estilos.ts`](../../app/src/estilos.ts)), con la jerarquía escrita: principal, secundario, suave y peligro. Las tres pantallas que usaban `slate` pasaron al gris de la marca, y la barra de avance dejó de ser un magenta más claro que el botón principal: van del mismo color porque dicen lo mismo.
+
+**El menú se achica a sólo íconos**, con un botón abajo de todo. La decisión se guarda **en la computadora y no en el usuario**: la PC de la caja tiene un monitor chico y necesita el espacio para la venta; la de la oficina no. Achicado, el nombre de cada sección aparece al pasar el mouse — sin eso habría que aprenderse quince íconos.
+
 ### ✅ 11a. La factura de compra (10/09)
 
 Pantalla **Compras**, entre Proveedores y Ventas. Se carga la cabecera de la factura que emitió el proveedor: quién, cuál, cuándo, el **desglose por alícuota de IVA** y las percepciones. **Sin líneas de producto.**
@@ -474,11 +482,17 @@ Pantalla **Compras**, entre Proveedores y Ventas. Se carga la cabecera de la fac
 
 > **Un hallazgo de usarlo:** ese último caso mostraba en pantalla *"numeric field overflow"*. Ahora los errores del sistema pasan por [`lib/errores.ts`](../../app/src/lib/errores.ts), que los dice en castellano y con qué hacer. Es la misma familia del *"tauri localhost dice"* que Lucas marcó el 07/09.
 
-### ✅ 3c. El concepto de depósito, reservado (10/09)
+### ✅ 3c. Los depósitos: reservados y administrables (10/09)
 
-El módulo de depósitos —altas, transferencias, saldo por depósito— sigue siendo de V1-B. Lo que entró ahora es sólo el lugar donde va a apoyarse: **cada movimiento del libro de stock dice en qué depósito ocurrió** ([migración](../../supabase/migrations/20260910110000_reservar_el_concepto_de_deposito.sql)).
+**Cada movimiento del libro de stock dice en qué depósito ocurrió** ([migración](../../supabase/migrations/20260910110000_reservar_el_concepto_de_deposito.sql)), y hay una sección en **Configuración → Depósitos** para darlos de alta, renombrarlos, elegir el principal y darlos de baja ([migración](../../supabase/migrations/20260910140000_administrar_depositos.sql)).
 
-**Por qué antes del módulo.** El libro de movimientos es inmutable y es la verdad del stock — el saldo es una foto derivada que se reconstruye de cero cuando haga falta. Por eso alcanza con reservar el concepto **en el libro**: lo que se escriba de acá en adelante ya sabe dónde pasó. Un movimiento escrito hoy sin depósito es uno al que hay que inventarle uno en diciembre, cuando el histórico no sean 61 filas sino el año entero de un local que factura todos los días, y cuando ya se sepa que los depósitos son al menos cinco.
+**El módulo sigue en V1-B**: mover mercadería entre depósitos y ver el stock separado por depósito. Poder nombrarlos no es lo mismo que poder mover entre ellos, y la propia pantalla lo dice para que no se busque.
+
+**El dato que ordenó todo esto llegó el 10/09.** Hoy Gross tiene **un** depósito y en breve son **dos**, cuando abra el segundo local. Los cinco de OBTech **no son referencia** —pueden ser los que ese sistema trae de fábrica—, así que la primera versión de esta nota, que se apoyaba en ellos, quedó corregida. La conclusión no cambia; el argumento sí: se reserva por el segundo local, no por los cinco.
+
+**Por qué reservar antes del módulo.** El libro de movimientos es inmutable y es la verdad del stock — el saldo es una foto derivada que se reconstruye de cero cuando haga falta. Por eso alcanza con reservar el concepto **en el libro**: lo que se escriba de acá en adelante ya sabe dónde pasó. Un movimiento escrito hoy sin depósito es uno al que hay que inventarle uno el día que abra el segundo local.
+
+**El principal no se puede desactivar, y lo impide la base.** Sin principal, el disparador que completa los movimientos empieza a rechazar toda venta, con un error que no menciona depósitos por ningún lado. Para dar de baja uno, primero se elige otro. Y cambiar cuál es el principal va por una sola función (`marcar_deposito_principal`): son dos escrituras —apagar el anterior, prender el nuevo— y en dos viajes, un corte en el medio deja al local sin principal.
 
 **Qué no cambió: nada de lo que se ve.** El saldo se sigue calculando sumando todos los movimientos del producto, sin separar por depósito. `stock_saldo`, su disparador y `vista_stock` quedaron intactos. Y ninguno de los dieciséis lugares que escriben en el libro tuvo que enterarse de la columna nueva: **si el movimiento llega sin depósito, un disparador le pone el principal**. Ahí estaba el riesgo real de esta migración —tocar los caminos que hoy andan— y se evitó entero.
 

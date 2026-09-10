@@ -98,9 +98,11 @@ Eso no es un depósito más. Es **cómo se registra hoy el fraccionamiento**, qu
 
 > **Qué hacer:** no cambia que el módulo de depósitos vaya a V1-B. **Sí refuerza, y mucho, la decisión de reservar el concepto ahora** — que ya estaba anotada como pendiente de V1-A. Agregarlo después obliga a tocar cada movimiento histórico, y ahora sabemos que el histórico va a tener al menos cinco depósitos que migrar, no uno.
 
-> ✅ **Reservado el 10/09.** Cada movimiento del libro de stock ya dice en qué depósito ocurrió, y se completa solo con el principal mientras no haya pantalla. Ninguna pantalla cambió. El módulo sigue en V1-B, y el fraccionamiento **no** se copió como depósito: acá ya es un tipo de movimiento (`apertura`), que es lo que de verdad es.
+> ✅ **Reservado y después administrable, los dos el 10/09.** Cada movimiento del libro de stock ya dice en qué depósito ocurrió, y hay una sección en Configuración para darlos de alta, nombrarlos y elegir el principal. El módulo —transferencias y stock separado por depósito— sigue en V1-B. El fraccionamiento **no** se copió como depósito: acá ya es un tipo de movimiento (`apertura`), que es lo que de verdad es.
+>
+> ⚠️ **Y este hallazgo hay que leerlo con cuidado.** Francisco aclaró el 10/09 que **hoy Gross tiene un solo depósito** y que en breve son dos, cuando abra el segundo local. **Los cinco de OBTech no son referencia**: los números 1 y 5 que se ven en la captura bien pueden ser los que el sistema trae de fábrica, y nadie confirmó que estén en uso. La conclusión de reservar el concepto seguía siendo la correcta —por el segundo local, no por los cinco—, pero **el "ya usan al menos cinco" del título de arriba no está verificado.**
 
-⚠️ **Y hay que preguntarle a Lucas cuáles son los cinco.** Los números 1 y 5 están a la vista; los del medio no.
+~~⚠️ Y hay que preguntarle a Lucas cuáles son los cinco.~~ → **Contestado el 10/09: no hace falta.** Hoy usan uno, en breve dos, y los cinco de la captura no son referencia. Lo que se carga cuando abra el segundo local es su nombre, en Configuración → Depósitos.
 
 ### 🟡 2 · Bancos y cheques no está en el alcance
 

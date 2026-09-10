@@ -30,11 +30,19 @@ estado: en curso
 
 ⚠️ **Ojo con el argumento que NO hay que volver a usar:** no es que el contador necesite estas facturas para el IVA. Las baja de Mis Comprobantes de ARCA — se corrigió el 09/09 y está en [`compras-e-iva.md`](compras-e-iva.md). Lo que el contador espera de este sistema es el Excel de ventas.
 
-**Se reservó el concepto de depósito** en el libro de stock. No se ve en ninguna pantalla y no cambia nada de lo que anda: cada movimiento ahora dice **en qué depósito ocurrió**, y si no lo dice, se completa solo con el principal (hoy, "Local"). El módulo de depósitos sigue siendo de V1-B.
+**Llegaron las fotos de cómo lo hacen hoy**, con tres audios de Lucas. Confirman la partición que hicimos —la factura y la mercadería a veces las carga la misma persona y a veces dos distintas— y descartan el *centro de costos*, que está en OBTech y que Lucas nunca usó. De ahí salió que las percepciones se elijan de una lista. **Y abren un hueco nuevo, el de la tabla de abajo: la cuenta corriente de proveedores.**
 
-> **Por qué ahora:** el libro de movimientos es inmutable y es la verdad del stock. Un movimiento escrito hoy sin depósito es uno al que hay que inventarle uno en diciembre, cuando el histórico no sean 61 filas sino el año entero — y ya sabemos, por las capturas de OBTech, que los depósitos van a ser al menos cinco. Costó una migración; ponerlo después costaba migrar el histórico entero.
+**Coherencia visual y menú achicable.** Los botones de Productos usaban el gris de Tailwind y el magenta invertido; ahora hay un solo lugar donde están definidos ([`estilos.ts`](../app/src/estilos.ts)) y el gris es el de la identidad de Gross en todo el sistema. Y el menú se puede achicar a sólo íconos, con la decisión guardada **por computadora**: la caja tiene un monitor chico y la oficina no.
+
+**Los depósitos se administran desde Configuración**, y cada movimiento de stock ya guarda en cuál ocurrió.
+
+> **El dato que faltaba, aclarado el 10/09:** hoy hay **uno** y en breve son **dos**, porque abre el segundo local. **Los cinco de OBTech no son referencia** — bien pueden ser los que ese sistema trae de fábrica, y nadie confirmó que los usen. Con eso, reservar el concepto no alcanzaba: hay que poder dar de alta, nombrar y elegir el principal, como cualquier otra sección.
 >
-> Verificado contra la base: las 61 filas quedaron con su depósito, los 28 saldos siguen cuadrando exactamente con el libro, un movimiento nuevo sin depósito recibe el principal, y **el libro sigue siendo inmutable** — se probó que rechaza una edición, que es lo que había que no romper.
+> Lo que **sigue en V1-B es el módulo**: mover mercadería entre depósitos y ver el stock separado por depósito. Poder nombrarlos no es lo mismo que poder mover entre ellos.
+>
+> **El principal no se puede desactivar**, y no es una regla de pantalla: sin principal, el próximo movimiento de stock —o sea, la próxima venta— fallaría con un error que no menciona depósitos por ningún lado. La base lo rechaza; para dar de baja uno, primero se elige otro.
+>
+> Verificado contra la base: las 61 filas del histórico quedaron con su depósito, los 28 saldos siguen cuadrando exactamente con el libro, un movimiento nuevo sin depósito recibe el principal, y **el libro sigue siendo inmutable**.
 
 **Las métricas de venta en Inicio**, que era lo último visible que le faltaba a V1-A. Al abrir el sistema se ve cuánto se vendió **hoy**, en los **últimos 7 días** y en el **mes**, qué fue **lo más vendido** y **cuánto vendió cada uno**. Antes había que ir a Facturación y sumar a ojo.
 
@@ -75,8 +83,9 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 | **Dónde se cobra la percepción de IIBB** | Lucas | 🔴 Bloquea el cobro a mayoristas |
 | Qué es un **"comprobante de percepción"** | Lucas | 🟡 Sin definir desde el 03/09 |
 | **¿Reciben cheques?** | Lucas | 🟡 Nuevo del 09/09 — **no está en el alcance** |
-| **¿Cuáles son los cinco depósitos?** | Lucas | 🟡 Nuevo del 09/09 |
-| Las **fotos de cómo cargan facturas de compra** | Lucas | 🔴 Subió: la pantalla ya está hecha y sirven para ver si falta algún campo |
+| **¿Cómo se llama el segundo local?** | Lucas | 🟢 Se carga en Configuración → Depósitos cuando abra. Los cinco de OBTech quedaron descartados como referencia |
+| ~~Las **fotos de cómo cargan facturas de compra**~~ | Lucas | ✅ Llegaron el 10/09, con tres audios. Análisis en [`compras-e-iva.md`](compras-e-iva.md) |
+| **¿La cuenta corriente de proveedores entra al alcance?** | Lucas | 🔴 **Nuevo del 10/09.** Le llevan el saldo a cada proveedor en OBTech —órdenes de pago, resumen de cuenta— y eso no está en V1 ni en V1-B. El 26/10 lo pierden |
 | Qué **columnas** quiere el contador en el Excel | Contador | 🟡 Ya se exporta con lo estándar |
 
 → La lista completa está en [[Pendientes con terceros]].
@@ -121,7 +130,7 @@ Queda en `http://localhost:5173`.
 
 **Documentación.** Se partió `ESTADO.md` (766 líneas) en `AHORA.md` + cuatro notas, sin perder una línea. Las 40 imágenes se movieron a `referencias/`.
 
-📊 **16 de 24 pedidos de Lucas hechos** · 162 pruebas verdes en la app y 5 en el programa · 65 migraciones.
+📊 **16 de 24 pedidos de Lucas hechos** · 162 pruebas verdes en la app y 5 en el programa · 66 migraciones.
 
 ---
 

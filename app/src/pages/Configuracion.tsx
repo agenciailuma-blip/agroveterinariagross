@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/auth/AuthProvider'
 import DiagnosticoTerminal from '@/components/DiagnosticoTerminal'
 import DatosDelEmisor from '@/components/DatosDelEmisor'
+import Depositos from '@/components/Depositos'
 import ImpresoraDelMostrador from '@/components/ImpresoraDelMostrador'
 import RitmoDelMostrador from '@/components/RitmoDelMostrador'
 import {
@@ -163,6 +164,8 @@ export default function Configuracion() {
 
       <PuntosDeVenta />
 
+      <Depositos />
+
       <div className="rounded-xl bg-piedra-100 p-4 text-sm text-piedra-600">
         <p className="font-medium text-tinta">Sobre la exclusión por cliente</p>
         <p className="mt-1">
@@ -266,7 +269,7 @@ function PuntosDeVenta() {
 
       <div className="mt-4 flex flex-wrap items-end gap-2 border-t border-borde pt-4">
         <label className="block">
-          <span className="mb-1 block text-xs font-medium text-slate-600">Número</span>
+          <span className="mb-1 block text-xs font-medium text-piedra-600">Número</span>
           <input
             type="number"
             min={1}
@@ -276,7 +279,7 @@ function PuntosDeVenta() {
           />
         </label>
         <label className="block flex-1">
-          <span className="mb-1 block text-xs font-medium text-slate-600">Nombre</span>
+          <span className="mb-1 block text-xs font-medium text-piedra-600">Nombre</span>
           <input
             value={nuevo.nombre}
             onChange={(e) => setNuevo({ ...nuevo, nombre: e.target.value })}

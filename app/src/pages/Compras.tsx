@@ -16,6 +16,7 @@ import type { AlicuotaCargada, TributoCargado } from '@/lib/api/compras'
 import { listarProveedores } from '@/lib/api/proveedores'
 import { enCastellano } from '@/lib/errores'
 import { moneda } from '@/lib/tipos'
+import { boton, campo } from '@/estilos'
 
 /*
   Las facturas de compra.
@@ -30,10 +31,29 @@ import { moneda } from '@/lib/tipos'
   papel antes de guardar.
 */
 
-const claseInput =
-  'w-full rounded-lg border border-borde px-2.5 py-1.5 text-sm text-tinta outline-none focus:border-marca-500 focus:ring-2 focus:ring-marca-500/20'
 
 const hoy = () => new Date().toISOString().slice(0, 10)
+
+/*
+  Los conceptos que puede traer una factura de compra además del IVA.
+
+  Salen de la pantalla que usan hoy en OBTech, donde son columnas fijas:
+  Percep. IVA, Ing. Brutos, Ret. Ganancias e Impuestos Internos. Acá van
+  como lista y no como columnas porque no todas las facturas traen todo
+  —la mayoría no trae ninguna— y una fila por concepto se lee mejor que
+  seis columnas casi siempre vacías.
+
+  Se eligen de una lista por la misma razón que el motivo del descuento
+  en la caja: escrito a mano, "Perc. IIBB" y "Percepcion IIBB" son dos
+  cosas distintas para cualquier cuenta que se quiera hacer después.
+*/
+const CONCEPTOS_DE_TRIBUTO = [
+  'Percepción de IIBB',
+  'Percepción de IVA',
+  'Retención de Ganancias',
+  'Impuestos internos',
+  'Otro',
+] as const
 
 export default function Compras() {
   const { tienePermiso } = useAuth()
@@ -73,7 +93,7 @@ export default function Compras() {
         {tienePermiso('compras.registrar') && !cargando && (
           <button
             onClick={() => setCargando(true)}
-            className="rounded-lg bg-marca-700 px-4 py-2 text-sm font-medium text-white hover:bg-marca-600"
+            className={boton.principal}
           >
             Cargar factura
           </button>
@@ -274,11 +294,11 @@ function FormularioDeCompra({
       {/* ── Quién y cuál ── */}
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <label className="block lg:col-span-2">
-          <span className="mb-1 block text-xs font-medium text-slate-600">Proveedor</span>
+          <span className="mb-1 block text-xs font-medium text-piedra-600">Proveedor</span>
           <select
             value={proveedorId}
             onChange={(e) => setProveedorId(e.target.value)}
-            className={claseInput}
+            className={campo}
           >
             <option value="">— Elegí el proveedor —</option>
             {proveedores.data?.map((p) => (
@@ -290,11 +310,11 @@ function FormularioDeCompra({
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-xs font-medium text-slate-600">Comprobante</span>
+          <span className="mb-1 block text-xs font-medium text-piedra-600">Comprobante</span>
           <select
             value={tipoId}
             onChange={(e) => setTipoId(Number(e.target.value))}
-            className={claseInput}
+            className={campo}
           >
             {tipos.data?.map((t) => (
               <option key={t.id} value={t.id}>
@@ -305,46 +325,46 @@ function FormularioDeCompra({
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-xs font-medium text-slate-600">Punto de venta</span>
+          <span className="mb-1 block text-xs font-medium text-piedra-600">Punto de venta</span>
           <input
             value={puntoVenta}
             onChange={(e) => setPuntoVenta(e.target.value)}
             inputMode="numeric"
             placeholder="3"
-            className={claseInput}
+            className={campo}
           />
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-xs font-medium text-slate-600">Número</span>
+          <span className="mb-1 block text-xs font-medium text-piedra-600">Número</span>
           <input
             value={numero}
             onChange={(e) => setNumero(e.target.value)}
             inputMode="numeric"
             placeholder="45678"
-            className={claseInput}
+            className={campo}
           />
         </label>
       </div>
 
       <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <label className="block">
-          <span className="mb-1 block text-xs font-medium text-slate-600">Fecha</span>
+          <span className="mb-1 block text-xs font-medium text-piedra-600">Fecha</span>
           <input
             type="date"
             value={fecha}
             onChange={(e) => setFecha(e.target.value)}
-            className={claseInput}
+            className={campo}
           />
         </label>
         <label className="block lg:col-span-4">
-          <span className="mb-1 block text-xs font-medium text-slate-600">
+          <span className="mb-1 block text-xs font-medium text-piedra-600">
             Observaciones <span className="font-normal text-piedra-400">(opcional)</span>
           </span>
           <input
             value={observaciones}
             onChange={(e) => setObservaciones(e.target.value)}
-            className={claseInput}
+            className={campo}
           />
         </label>
       </div>
@@ -359,7 +379,7 @@ function FormularioDeCompra({
         {lineas.map((l, i) => (
           <div key={i} className="flex flex-wrap items-end gap-2">
             <label className="block w-28">
-              <span className="mb-1 block text-xs text-slate-600">Alícuota</span>
+              <span className="mb-1 block text-xs text-piedra-600">Alícuota</span>
               <select
                 value={l.alicuota_iva_id}
                 onChange={(e) => {
@@ -370,7 +390,7 @@ function FormularioDeCompra({
                     importe: ivaSugerido(l.base_imponible, p),
                   })
                 }}
-                className={claseInput}
+                className={campo}
               >
                 {alicuotas.data?.map((a) => (
                   <option key={a.id} value={a.id}>
@@ -381,7 +401,7 @@ function FormularioDeCompra({
             </label>
 
             <label className="block min-w-32 flex-1">
-              <span className="mb-1 block text-xs text-slate-600">Neto</span>
+              <span className="mb-1 block text-xs text-piedra-600">Neto</span>
               <input
                 value={l.base_imponible || ''}
                 onChange={(e) => {
@@ -390,17 +410,17 @@ function FormularioDeCompra({
                   cambiarLinea(i, { base_imponible: neto, importe: ivaSugerido(neto, p) })
                 }}
                 inputMode="decimal"
-                className={claseInput}
+                className={campo}
               />
             </label>
 
             <label className="block min-w-32 flex-1">
-              <span className="mb-1 block text-xs text-slate-600">IVA</span>
+              <span className="mb-1 block text-xs text-piedra-600">IVA</span>
               <input
                 value={l.importe || ''}
                 onChange={(e) => cambiarLinea(i, { importe: numeroDe(e.target.value) })}
                 inputMode="decimal"
-                className={claseInput}
+                className={campo}
               />
             </label>
 
@@ -427,25 +447,25 @@ function FormularioDeCompra({
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <label className="block">
-          <span className="mb-1 block text-xs font-medium text-slate-600">
+          <span className="mb-1 block text-xs font-medium text-piedra-600">
             No gravado <span className="font-normal text-piedra-400">(opcional)</span>
           </span>
           <input
             value={noGravado}
             onChange={(e) => setNoGravado(e.target.value)}
             inputMode="decimal"
-            className={claseInput}
+            className={campo}
           />
         </label>
         <label className="block">
-          <span className="mb-1 block text-xs font-medium text-slate-600">
+          <span className="mb-1 block text-xs font-medium text-piedra-600">
             Exento <span className="font-normal text-piedra-400">(opcional)</span>
           </span>
           <input
             value={exento}
             onChange={(e) => setExento(e.target.value)}
             inputMode="decimal"
-            className={claseInput}
+            className={campo}
           />
         </label>
       </div>
@@ -465,19 +485,46 @@ function FormularioDeCompra({
         {tributos.map((t, i) => (
           <div key={i} className="flex flex-wrap items-end gap-2">
             <label className="block min-w-48 flex-1">
-              <span className="mb-1 block text-xs text-slate-600">Concepto</span>
-              <input
-                value={t.descripcion}
-                onChange={(e) =>
-                  setTributos((ts) =>
-                    ts.map((x, j) => (i === j ? { ...x, descripcion: e.target.value } : x)),
-                  )
-                }
-                className={claseInput}
-              />
+              <span className="mb-1 block text-xs text-piedra-600">Concepto</span>
+              {/* "Otro" deja escribirlo, porque siempre aparece uno que
+                  no estaba en la lista — pero hay que elegirlo a
+                  propósito, no por costumbre. */}
+              {CONCEPTOS_DE_TRIBUTO.includes(t.descripcion as (typeof CONCEPTOS_DE_TRIBUTO)[number]) ? (
+                <select
+                  value={t.descripcion}
+                  onChange={(e) =>
+                    setTributos((ts) =>
+                      ts.map((x, j) =>
+                        i === j
+                          ? { ...x, descripcion: e.target.value === 'Otro' ? '' : e.target.value }
+                          : x,
+                      ),
+                    )
+                  }
+                  className={campo}
+                >
+                  {CONCEPTOS_DE_TRIBUTO.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  value={t.descripcion}
+                  onChange={(e) =>
+                    setTributos((ts) =>
+                      ts.map((x, j) => (i === j ? { ...x, descripcion: e.target.value } : x)),
+                    )
+                  }
+                  placeholder="¿Qué concepto es?"
+                  autoFocus
+                  className={campo}
+                />
+              )}
             </label>
             <label className="block min-w-32">
-              <span className="mb-1 block text-xs text-slate-600">Importe</span>
+              <span className="mb-1 block text-xs text-piedra-600">Importe</span>
               <input
                 value={t.importe || ''}
                 onChange={(e) =>
@@ -486,7 +533,7 @@ function FormularioDeCompra({
                   )
                 }
                 inputMode="decimal"
-                className={claseInput}
+                className={campo}
               />
             </label>
             <button
@@ -503,7 +550,7 @@ function FormularioDeCompra({
         onClick={() =>
           setTributos((ts) => [
             ...ts,
-            { descripcion: 'Percepción IIBB Misiones', base_imponible: 0, alicuota: null, importe: 0 },
+            { descripcion: CONCEPTOS_DE_TRIBUTO[0], base_imponible: 0, alicuota: null, importe: 0 },
           ])
         }
         className="mt-2 text-sm text-marca-700 hover:underline"
@@ -529,7 +576,7 @@ function FormularioDeCompra({
             }}
             disabled={falta || guardar.isPending}
             title={falta ? 'Faltan el proveedor, el número o los importes' : undefined}
-            className="rounded-lg bg-marca-700 px-4 py-2 text-sm font-medium text-white hover:bg-marca-600 disabled:opacity-40"
+            className={boton.principal}
           >
             {guardar.isPending ? 'Guardando…' : 'Guardar la factura'}
           </button>

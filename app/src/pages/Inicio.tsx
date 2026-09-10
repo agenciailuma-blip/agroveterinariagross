@@ -52,13 +52,13 @@ function Tarjeta({
   tamaño?: 'grande' | 'medio'
 }) {
   const tonos = {
-    neutro: 'text-slate-900',
+    neutro: 'text-tinta',
     alerta: 'text-amber-600',
     ok: 'text-marca-600',
   }
   return (
-    <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-      <p className="text-sm font-medium text-slate-500">{titulo}</p>
+    <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-borde">
+      <p className="text-sm font-medium text-piedra-500">{titulo}</p>
       <p
         className={`mt-2 font-semibold tabular-nums ${
           tamaño === 'grande' ? 'text-3xl' : 'text-2xl'
@@ -66,15 +66,15 @@ function Tarjeta({
       >
         {valor}
       </p>
-      {detalle && <p className="mt-1 text-xs text-slate-400">{detalle}</p>}
+      {detalle && <p className="mt-1 text-xs text-piedra-400">{detalle}</p>}
     </div>
   )
 }
 
 function Panel({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-      <h3 className="text-sm font-semibold text-slate-900">{titulo}</h3>
+    <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-borde">
+      <h3 className="text-sm font-semibold text-tinta">{titulo}</h3>
       {children}
     </div>
   )
@@ -97,7 +97,7 @@ function Ventas() {
 
   if (isError) {
     return (
-      <p className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-500 ring-1 ring-slate-200">
+      <p className="rounded-xl bg-piedra-50 px-4 py-3 text-sm text-piedra-500 ring-1 ring-borde">
         No se pudieron traer los números de venta: para esto hace falta conexión con el servidor.
         El mostrador sigue vendiendo y cobrando igual.
       </p>
@@ -115,11 +115,11 @@ function Ventas() {
   return (
     <section className="space-y-4">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-        <h2 className="text-sm font-semibold text-slate-900">
+        <h2 className="text-sm font-semibold text-tinta">
           {data ? tituloDeVentas(data.alcance) : 'Ventas'}
         </h2>
         {data?.alcance === 'propio' && (
-          <span className="text-xs text-slate-400">
+          <span className="text-xs text-piedra-400">
             Sólo las ventas en las que participaste
           </span>
         )}
@@ -141,7 +141,7 @@ function Ventas() {
         <div className="grid gap-4 lg:grid-cols-2">
           <Panel titulo="Lo más vendido del mes">
             {data.mas_vendidos.length === 0 ? (
-              <p className="mt-2 text-sm text-slate-400">Todavía no se vendió nada este mes.</p>
+              <p className="mt-2 text-sm text-piedra-400">Todavía no se vendió nada este mes.</p>
             ) : (
               <ul className="mt-3 space-y-2">
                 {data.mas_vendidos.map((p) => (
@@ -149,8 +149,8 @@ function Ventas() {
                     key={`${p.codigo}·${p.descripcion}`}
                     className="flex items-baseline justify-between gap-3"
                   >
-                    <span className="min-w-0 truncate text-sm text-slate-700">{p.descripcion}</span>
-                    <span className="shrink-0 text-xs tabular-nums text-slate-500">
+                    <span className="min-w-0 truncate text-sm text-piedra-700">{p.descripcion}</span>
+                    <span className="shrink-0 text-xs tabular-nums text-piedra-500">
                       {numero.format(p.cantidad)} unid. · {moneda.format(p.importe)}
                     </span>
                   </li>
@@ -169,8 +169,8 @@ function Ventas() {
               <ul className="mt-3 space-y-2">
                 {data.por_vendedor.map((v) => (
                   <li key={v.nombre} className="flex items-baseline justify-between gap-3">
-                    <span className="min-w-0 truncate text-sm text-slate-700">{v.nombre}</span>
-                    <span className="shrink-0 text-xs tabular-nums text-slate-500">
+                    <span className="min-w-0 truncate text-sm text-piedra-700">{v.nombre}</span>
+                    <span className="shrink-0 text-xs tabular-nums text-piedra-500">
                       {v.ventas === 1 ? '1 venta' : `${v.ventas} ventas`} ·{' '}
                       {moneda.format(v.total)}
                     </span>
@@ -200,10 +200,10 @@ export default function Inicio() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-semibold tracking-tight text-slate-900">
+        <h1 className="text-xl font-semibold tracking-tight text-tinta">
           {saludo}, {perfil?.nombre?.split(' ')[0]}
         </h1>
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-piedra-500">
           {new Date().toLocaleDateString('es-AR', {
             weekday: 'long',
             day: 'numeric',

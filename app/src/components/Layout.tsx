@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import AvisoDeActualizacion from '@/components/AvisoDeActualizacion'
 import { useAuth } from '@/auth/AuthProvider'
@@ -117,20 +118,86 @@ const MENU: ItemMenu[] = [
   },
 ]
 
+/*
+  El menú achicado a sólo íconos.
+
+  La decisión se guarda en esta computadora y no en el usuario: es una
+  preferencia de la pantalla que tiene adelante, no de la persona. La PC
+  de la caja tiene un monitor chico y el mostrador necesita el espacio
+  para la venta; la de la oficina, no. El mismo Lucas quiere una cosa en
+  una y otra en la otra.
+
+  Se lee una sola vez al arrancar. Si el almacenamiento está bloqueado
+  —pasa en algunos navegadores— arranca abierto, que es lo que no
+  sorprende a nadie.
+*/
+const CLAVE_MENU = 'gross.menu_colapsado'
+
+function menuGuardado(): boolean {
+  try {
+    return localStorage.getItem(CLAVE_MENU) === 'si'
+  } catch {
+    return false
+  }
+}
+
+const FLECHA_IZQUIERDA = 'M15.75 19.5L8.25 12l7.5-7.5'
+const FLECHA_DERECHA = 'M8.25 4.5l7.5 7.5-7.5 7.5'
+const SALIR =
+  'M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75'
+
+function Icono({ d, clase = 'size-5 shrink-0' }: { d: string; clase?: string }) {
+  return (
+    <svg
+      className={clase}
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.7}
+      stroke="currentColor"
+      aria-hidden
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d={d} />
+    </svg>
+  )
+}
+
 export default function Layout() {
   const { perfil, salir, tienePermiso } = useAuth()
+  const [colapsado, setColapsado] = useState(menuGuardado)
 
   const visibles = MENU.filter((i) => !i.permiso || tienePermiso(i.permiso))
 
+  function alternarMenu() {
+    setColapsado((antes) => {
+      const ahora = !antes
+      try {
+        localStorage.setItem(CLAVE_MENU, ahora ? 'si' : 'no')
+      } catch {
+        // Que no se pueda recordar la preferencia no impide usarla ahora.
+      }
+      return ahora
+    })
+  }
+
   return (
     <div className="flex h-full">
-      <aside className="flex w-60 shrink-0 flex-col bg-marca-950 text-marca-100">
-        <div className="flex items-center gap-3 border-b border-white/10 px-5 py-4">
+      <aside
+        className={`flex shrink-0 flex-col bg-marca-950 text-marca-100 transition-[width] duration-200 ${
+          colapsado ? 'w-16' : 'w-60'
+        }`}
+      >
+        <div
+          className={`flex items-center gap-3 border-b border-white/10 py-4 ${
+            colapsado ? 'justify-center px-2' : 'px-5'
+          }`}
+        >
           <img src="/marca/isotipo.svg" alt="" className="size-9 shrink-0 brightness-0 invert" />
-          <div className="min-w-0">
-            <p className="truncate text-sm font-medium text-white">Agroveterinaria Gross</p>
-            <p className="text-xs text-marca-300/70">Sistema de gestión</p>
-          </div>
+          {!colapsado && (
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium text-white">Agroveterinaria Gross</p>
+              <p className="text-xs text-marca-300/70">Sistema de gestión</p>
+            </div>
+          )}
         </div>
 
         <nav className="flex-1 space-y-0.5 p-3">
@@ -139,37 +206,53 @@ export default function Layout() {
               key={item.a}
               to={item.a}
               end={item.a === '/'}
+              /* Achicado, el nombre sólo existe al pasar el mouse por
+                 encima: sin esto habría que aprenderse quince íconos. */
+              title={colapsado ? item.etiqueta : undefined}
               className={({ isActive }) =>
-                `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                `flex items-center gap-3 rounded-lg py-2.5 text-sm font-medium transition-colors ${
+                  colapsado ? 'justify-center px-2' : 'px-3'
+                } ${
                   isActive
                     ? 'bg-marca-700 text-white'
                     : 'text-marca-200/80 hover:bg-white/10 hover:text-white'
                 }`
               }
             >
-              <svg
-                className="size-5 shrink-0"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.7}
-                stroke="currentColor"
-                aria-hidden
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d={item.icono} />
-              </svg>
-              {item.etiqueta}
+              <Icono d={item.icono} />
+              {!colapsado && item.etiqueta}
             </NavLink>
           ))}
         </nav>
 
         <div className="border-t border-white/10 p-3">
-          <p className="truncate px-2 text-sm font-medium text-white">{perfil?.nombre}</p>
-          <p className="truncate px-2 text-xs text-marca-300/70">{perfil?.rol}</p>
+          <button
+            onClick={alternarMenu}
+            title={colapsado ? 'Agrandar el menú' : 'Achicar el menú'}
+            aria-label={colapsado ? 'Agrandar el menú' : 'Achicar el menú'}
+            className={`mb-2 flex w-full items-center gap-3 rounded-lg py-2 text-sm text-marca-200/80 transition-colors hover:bg-white/10 hover:text-white ${
+              colapsado ? 'justify-center px-2' : 'px-3'
+            }`}
+          >
+            <Icono d={colapsado ? FLECHA_DERECHA : FLECHA_IZQUIERDA} />
+            {!colapsado && 'Achicar el menú'}
+          </button>
+
+          {!colapsado && (
+            <>
+              <p className="truncate px-2 text-sm font-medium text-white">{perfil?.nombre}</p>
+              <p className="truncate px-2 text-xs text-marca-300/70">{perfil?.rol}</p>
+            </>
+          )}
+
           <button
             onClick={salir}
-            className="mt-2 w-full rounded-lg px-2 py-1.5 text-left text-sm text-marca-200/80 transition-colors hover:bg-white/10 hover:text-white"
+            title={colapsado ? `Cerrar sesión de ${perfil?.nombre ?? ''}`.trim() : undefined}
+            className={`mt-2 flex w-full items-center gap-3 rounded-lg py-1.5 text-sm text-marca-200/80 transition-colors hover:bg-white/10 hover:text-white ${
+              colapsado ? 'justify-center px-2' : 'px-2 text-left'
+            }`}
           >
-            Cerrar sesión
+            {colapsado ? <Icono d={SALIR} /> : 'Cerrar sesión'}
           </button>
         </div>
       </aside>

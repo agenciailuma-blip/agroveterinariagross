@@ -123,7 +123,7 @@ export default function DatosDelEmisor() {
       <div className="mt-4 grid grid-cols-2 gap-3">
         {Object.keys(ETIQUETA).map((clave) => (
           <label key={clave} className="block">
-            <span className="mb-1 block text-xs font-medium text-slate-600">{ETIQUETA[clave]}</span>
+            <span className="mb-1 block text-xs font-medium text-piedra-600">{ETIQUETA[clave]}</span>
             <input
               value={campos[clave] ?? ''}
               onChange={(e) => setCampos({ ...campos, [clave]: e.target.value })}
@@ -142,7 +142,7 @@ export default function DatosDelEmisor() {
           )}
         </div>
         <div className="flex-1">
-          <span className="block text-xs font-medium text-slate-600">Logo</span>
+          <span className="block text-xs font-medium text-piedra-600">Logo</span>
           <p className="mt-0.5 text-xs text-piedra-400">
             Se imprime arriba del comprobante. Se achica solo; lo ideal es un PNG con fondo
             transparente.

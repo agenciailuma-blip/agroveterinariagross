@@ -17,6 +17,7 @@ import type { Campo, FilaImportada } from '@/lib/importacion/planilla'
 import { importarProductos } from '@/lib/api/importacion'
 import type { ResumenImportacion } from '@/lib/api/importacion'
 import { numero } from '@/lib/tipos'
+import { barraDeAvance } from '@/estilos'
 
 /*
   Importación del catálogo.
@@ -444,9 +445,9 @@ function Revision({
               {numero.format(avance.hechas)} de {numero.format(avance.total)}
             </span>
           </div>
-          <div className="h-2 overflow-hidden rounded-full bg-piedra-100">
+          <div className={barraDeAvance.fondo}>
             <div
-              className="h-full rounded-full bg-marca-500 transition-[width]"
+              className={barraDeAvance.relleno}
               style={{ width: `${Math.round((avance.hechas / Math.max(avance.total, 1)) * 100)}%` }}
             />
           </div>

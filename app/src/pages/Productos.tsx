@@ -17,6 +17,7 @@ import type { FilaListado, Referencias } from '@/lib/api/catalogo'
 import ProductoEditor from '@/components/ProductoEditor'
 import type { EstadoFormulario } from '@/components/ProductoEditor'
 import { ESTADO_STOCK, moneda, numero } from '@/lib/tipos'
+import { barraDeAvance, boton } from '@/estilos'
 
 const FORM_VACIO: EstadoFormulario = {
   campos: {
@@ -244,8 +245,8 @@ export default function Productos() {
     <div className="flex h-full flex-col gap-4">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight text-slate-900">Productos</h1>
-          <p className="text-sm text-slate-500">
+          <h1 className="text-xl font-semibold tracking-tight text-tinta">Productos</h1>
+          <p className="text-sm text-piedra-500">
             {listado.data ? `${numero.format(listado.data.total)} en el catálogo` : 'Cargando…'}
           </p>
         </div>
@@ -253,13 +254,13 @@ export default function Productos() {
           <div className="flex gap-2">
             <Link
               to="/productos/importar"
-              className="rounded-lg px-4 py-2 text-sm font-medium text-marca-700 ring-1 ring-slate-300 hover:bg-slate-50"
+              className={boton.secundario}
             >
               Importar planilla
             </Link>
             <button
               onClick={nuevo}
-              className="rounded-lg bg-marca-600 px-4 py-2 text-sm font-medium text-white hover:bg-marca-700"
+              className={boton.principal}
             >
               Nuevo producto
             </button>
@@ -273,17 +274,17 @@ export default function Productos() {
         organizar las jornadas.
       */}
       {avance.data && avance.data.total > 0 && (
-        <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+        <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-borde">
           <div className="mb-2 flex items-baseline justify-between text-sm">
-            <span className="font-medium text-slate-700">Avance de la carga</span>
-            <span className="tabular-nums text-slate-500">
+            <span className="font-medium text-piedra-700">Avance de la carga</span>
+            <span className="tabular-nums text-piedra-500">
               {numero.format(avance.data.revisados)} de {numero.format(avance.data.total)} revisados
               · {porcentaje}%
             </span>
           </div>
-          <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+          <div className={barraDeAvance.fondo}>
             <div
-              className="h-full rounded-full bg-marca-500 transition-[width] duration-500"
+              className={barraDeAvance.relleno}
               style={{ width: `${porcentaje}%` }}
             />
           </div>
@@ -293,7 +294,7 @@ export default function Productos() {
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative min-w-64 flex-1">
           <svg
-            className="pointer-events-none absolute top-1/2 left-3.5 size-5 -translate-y-1/2 text-slate-400"
+            className="pointer-events-none absolute top-1/2 left-3.5 size-5 -translate-y-1/2 text-piedra-400"
             fill="none"
             viewBox="0 0 24 24"
             strokeWidth={1.8}
@@ -308,16 +309,16 @@ export default function Productos() {
             value={texto}
             onChange={(e) => setTexto(e.target.value)}
             placeholder="Buscar por código, nombre o escanear un código de barra…"
-            className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pr-4 pl-11 text-slate-900 shadow-sm outline-none focus:border-marca-500 focus:ring-2 focus:ring-marca-500/20"
+            className="w-full rounded-xl border border-borde bg-white py-2.5 pr-4 pl-11 text-tinta shadow-sm outline-none focus:border-marca-500 focus:ring-2 focus:ring-marca-500/20"
           />
         </div>
         {!verBajas && (
-          <label className="flex cursor-pointer items-center gap-2 text-sm whitespace-nowrap text-slate-600">
+          <label className="flex cursor-pointer items-center gap-2 text-sm whitespace-nowrap text-piedra-600">
             <input
               type="checkbox"
               checked={soloSinRevisar}
               onChange={(e) => setSoloSinRevisar(e.target.checked)}
-              className="size-4 rounded border-slate-300 text-marca-600 focus:ring-marca-500"
+              className="size-4 rounded border-borde text-marca-600 focus:ring-marca-500"
             />
             Sólo sin revisar
           </label>
@@ -329,11 +330,7 @@ export default function Productos() {
               setMarcados(new Set())
               cerrar()
             }}
-            className={`rounded-lg px-3 py-2 text-sm font-medium whitespace-nowrap ring-1 ${
-              verBajas
-                ? 'bg-slate-700 text-white ring-slate-700'
-                : 'text-slate-600 ring-slate-300 hover:bg-slate-50'
-            }`}
+            className={`whitespace-nowrap ${verBajas ? boton.principal : boton.secundario}`}
           >
             {verBajas ? 'Ver el catálogo' : 'Dados de baja'}
           </button>
@@ -352,14 +349,14 @@ export default function Productos() {
         ruido, y sobre 3.000 productos la pantalla ya tiene bastante.
       */}
       {marcados.size > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-slate-800 px-4 py-2.5 text-white">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-piedra-800 px-4 py-2.5 text-white">
           <span className="text-sm">
             {marcados.size} {marcados.size === 1 ? 'seleccionado' : 'seleccionados'}
           </span>
           <div className="flex gap-2">
             <button
               onClick={() => setMarcados(new Set())}
-              className="rounded-lg px-3 py-1.5 text-sm text-slate-300 hover:bg-white/10"
+              className="rounded-lg px-3 py-1.5 text-sm text-piedra-300 hover:bg-white/10"
             >
               Quitar selección
             </button>
@@ -367,7 +364,7 @@ export default function Productos() {
               <button
                 onClick={() => restaurar.mutate([...marcados])}
                 disabled={restaurar.isPending}
-                className="rounded-lg bg-white px-4 py-1.5 text-sm font-medium text-slate-900 hover:bg-slate-100 disabled:opacity-50"
+                className="rounded-lg bg-white px-4 py-1.5 text-sm font-medium text-tinta hover:bg-piedra-100 disabled:opacity-50"
               >
                 {restaurar.isPending ? 'Restaurando…' : 'Restaurar'}
               </button>
@@ -395,10 +392,10 @@ export default function Productos() {
       )}
 
       <div className="flex min-h-0 flex-1 gap-4">
-        <div className="min-w-0 flex-1 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
+        <div className="min-w-0 flex-1 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-borde">
           <div className="h-full overflow-y-auto">
             <table className="w-full text-sm">
-              <thead className="sticky top-0 border-b border-slate-200 bg-slate-50 text-left text-xs tracking-wide text-slate-500 uppercase">
+              <thead className="sticky top-0 border-b border-borde bg-piedra-50 text-left text-xs tracking-wide text-piedra-500 uppercase">
                 <tr>
                   {puedeDarDeBaja && <th className="w-10 px-4 py-2.5" />}
                   <th className="px-4 py-2.5 font-medium">Código</th>
@@ -414,10 +411,10 @@ export default function Productos() {
                   )}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-piedra-100">
                 {(verBajas ? bajas.isPending : listado.isPending) && (
                   <tr>
-                    <td colSpan={6} className="px-4 py-12 text-center text-slate-400">
+                    <td colSpan={6} className="px-4 py-12 text-center text-piedra-400">
                       Buscando…
                     </td>
                   </tr>
@@ -425,7 +422,7 @@ export default function Productos() {
 
                 {verBajas && !bajas.isPending && bajas.data?.filas.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-4 py-12 text-center text-slate-400">
+                    <td colSpan={6} className="px-4 py-12 text-center text-piedra-400">
                       No hay productos dados de baja.
                     </td>
                   </tr>
@@ -433,7 +430,7 @@ export default function Productos() {
 
                 {!verBajas && !listado.isPending && listado.data?.filas.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-4 py-12 text-center text-slate-400">
+                    <td colSpan={6} className="px-4 py-12 text-center text-piedra-400">
                       {debounced
                         ? `No hay productos que coincidan con “${debounced}”.`
                         : 'Todavía no hay productos cargados. Van a llegar con la importación del listado.'}
@@ -443,23 +440,23 @@ export default function Productos() {
 
                 {verBajas &&
                   bajas.data?.filas.map((p) => (
-                    <tr key={p.id} className="hover:bg-slate-50">
+                    <tr key={p.id} className="hover:bg-piedra-50">
                       {puedeDarDeBaja && (
                         <td className="px-4 py-2.5">
                           <input
                             type="checkbox"
                             checked={marcados.has(p.id)}
                             onChange={() => alternarMarca(p.id)}
-                            className="size-4 rounded border-slate-300 text-marca-600 focus:ring-marca-500"
+                            className="size-4 rounded border-borde text-marca-600 focus:ring-marca-500"
                           />
                         </td>
                       )}
-                      <td className="px-4 py-2.5 font-mono text-xs text-slate-500">{p.codigo}</td>
-                      <td className="px-4 py-2.5 text-slate-600">{p.nombre_interno}</td>
-                      <td className="px-4 py-2.5 text-right tabular-nums text-slate-600">
+                      <td className="px-4 py-2.5 font-mono text-xs text-piedra-500">{p.codigo}</td>
+                      <td className="px-4 py-2.5 text-piedra-600">{p.nombre_interno}</td>
+                      <td className="px-4 py-2.5 text-right tabular-nums text-piedra-600">
                         {moneda.format(p.precio_venta)}
                       </td>
-                      <td className="px-4 py-2.5 text-xs text-slate-500">
+                      <td className="px-4 py-2.5 text-xs text-piedra-500">
                         {new Date(p.eliminado_en).toLocaleDateString('es-AR')}
                       </td>
                     </tr>
@@ -472,7 +469,7 @@ export default function Productos() {
                     return (
                       <tr
                         key={p.producto_id}
-                        className={activa ? 'bg-marca-50' : 'hover:bg-slate-50'}
+                        className={activa ? 'bg-marca-50' : 'hover:bg-piedra-50'}
                       >
                         {puedeDarDeBaja && (
                           <td className="px-4 py-2.5">
@@ -480,7 +477,7 @@ export default function Productos() {
                               type="checkbox"
                               checked={marcados.has(p.producto_id)}
                               onChange={() => alternarMarca(p.producto_id)}
-                              className="size-4 rounded border-slate-300 text-marca-600 focus:ring-marca-500"
+                              className="size-4 rounded border-borde text-marca-600 focus:ring-marca-500"
                             />
                           </td>
                         )}
@@ -493,7 +490,7 @@ export default function Productos() {
                             setCreando(false)
                             setSeleccionado(p.producto_id)
                           }}
-                          className="cursor-pointer px-4 py-2.5 font-mono text-xs text-slate-500"
+                          className="cursor-pointer px-4 py-2.5 font-mono text-xs text-piedra-500"
                         >
                           {p.codigo}
                         </td>
@@ -512,13 +509,13 @@ export default function Productos() {
                                 title="Sin revisar"
                               />
                             )}
-                            <span className="font-medium text-slate-900">{p.nombre_interno}</span>
+                            <span className="font-medium text-tinta">{p.nombre_interno}</span>
                           </div>
                         </td>
-                        <td className="px-4 py-2.5 text-right tabular-nums text-slate-900">
+                        <td className="px-4 py-2.5 text-right tabular-nums text-tinta">
                           {moneda.format(p.precio_venta)}
                         </td>
-                        <td className="px-4 py-2.5 text-right tabular-nums text-slate-700">
+                        <td className="px-4 py-2.5 text-right tabular-nums text-piedra-700">
                           {numero.format(p.cantidad)}
                         </td>
                         <td className="px-4 py-2.5">
@@ -535,7 +532,7 @@ export default function Productos() {
             </table>
 
             {!verBajas && listado.data && listado.data.total > listado.data.filas.length && (
-              <p className="border-t border-slate-200 bg-slate-50 px-4 py-2.5 text-center text-xs text-slate-500">
+              <p className="border-t border-borde bg-piedra-50 px-4 py-2.5 text-center text-xs text-piedra-500">
                 Mostrando {listado.data.filas.length} de {numero.format(listado.data.total)}. Afiná
                 la búsqueda para ver el resto.
               </p>
@@ -544,9 +541,9 @@ export default function Productos() {
         </div>
 
         {editorAbierto && referencias.data && (
-          <div className="w-[36rem] shrink-0 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
+          <div className="w-[36rem] shrink-0 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-borde">
             {detalle.isPending && !creando ? (
-              <p className="p-8 text-center text-sm text-slate-400">Cargando producto…</p>
+              <p className="p-8 text-center text-sm text-piedra-400">Cargando producto…</p>
             ) : (
               <ProductoEditor
                 referencias={referencias.data}
