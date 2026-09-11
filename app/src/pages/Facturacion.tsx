@@ -14,6 +14,7 @@ import {
 } from '@/lib/api/facturacion'
 import type { FilaComprobante, Semaforo, VentanaCae } from '@/lib/api/facturacion'
 import PanelContingencia from '@/components/PanelContingencia'
+import DevolucionParcial from '@/components/DevolucionParcial'
 import { emitirConCaea, estadoContingencia } from '@/lib/api/contingencia'
 import { moneda } from '@/lib/tipos'
 
@@ -32,6 +33,14 @@ export default function Facturacion() {
   const [filtro, setFiltro] = useState<'pendientes' | 'todos'>('pendientes')
   const [error, setError] = useState<string | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
+  /*
+    La venta que se esta devolviendo por partes.
+
+    Vive aca y no adentro de la fila porque el dialogo tiene que
+    sobrevivir a que la tabla se refresque: al volver de ARCA la lista se
+    vuelve a pedir, y un estado dentro de la fila se perderia a la mitad.
+  */
+  const [devolviendoParte, setDevolviendoParte] = useState<FilaComprobante | null>(null)
 
   const puedeVer = tienePermiso('facturacion.ver')
   const puedeEmitir = tienePermiso('facturacion.emitir')
@@ -291,6 +300,7 @@ export default function Facturacion() {
                   if (!motivo) return
                   porContingencia.mutate({ id: c.id, motivo })
                 }}
+                onDevolverParte={() => setDevolviendoParte(c)}
                 onDevolver={async () => {
                   if (!c.venta_id) return
                   const motivo = await pedirTexto({
@@ -315,6 +325,24 @@ export default function Facturacion() {
         La impresión en la Hasar todavía no está conectada: por eso los comprobantes autorizados
         quedan en amarillo (autorizado, sin imprimir).
       </p>
+
+      {devolviendoParte?.venta_id && (
+        <DevolucionParcial
+          ventaId={devolviendoParte.venta_id}
+          comprobante={devolviendoParte.comprobante}
+          cliente={devolviendoParte.receptor_nombre}
+          onCerrar={() => setDevolviendoParte(null)}
+          onListo={(mensaje, problema) => {
+            if (problema) {
+              setAviso(null)
+              setError(mensaje)
+            } else {
+              avisar(mensaje)
+            }
+            refrescar()
+          }}
+        />
+      )}
     </div>
   )
 }
@@ -356,6 +384,7 @@ function Fila({
   onReintentar,
   onContingencia,
   onDevolver,
+  onDevolverParte,
 }: {
   c: FilaComprobante
   puedeEmitir: boolean
@@ -365,6 +394,7 @@ function Fila({
   onReintentar: () => void
   onContingencia: () => void
   onDevolver: () => void
+  onDevolverParte: () => void
 }) {
   const puedeReintentar = c.estado === 'pendiente' || c.estado === 'rechazado'
   const ventana = c.ventana_cae && c.ventana_cae !== 'en_plazo' ? AVISO_VENTANA[c.ventana_cae] : null
@@ -377,6 +407,22 @@ function Fila({
     c.familia === 'factura' &&
     c.estado === 'autorizado' &&
     !c.tiene_nota_credito &&
+    !c.tiene_devoluciones_parciales &&
+    !!c.venta_id
+
+  /*
+    Devolver por partes sigue disponible mientras quede algo.
+
+    A diferencia de la devolución entera, ésta no se corta porque exista
+    una nota de crédito: cada devolución parcial emite la suya, y una
+    venta de tres bolsas puede tener tres. Lo que la corta es que no
+    quede mercadería sin devolver.
+  */
+  const puedeDevolverParte =
+    puedeEmitir &&
+    c.familia === 'factura' &&
+    c.estado === 'autorizado' &&
+    c.queda_por_devolver &&
     !!c.venta_id
 
   return (
@@ -461,8 +507,25 @@ function Fila({
             Devolver
           </button>
         )}
-        {c.tiene_nota_credito && (
+        {puedeDevolverParte && (
+          <button
+            onClick={onDevolverParte}
+            disabled={trabajando}
+            className="ml-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-piedra-500 ring-1 ring-borde hover:bg-marca-50 hover:text-marca-700 disabled:opacity-40"
+          >
+            Devolver parte
+          </button>
+        )}
+        {/*
+          «Devuelta» sólo cuando ya no queda nada. Con una devolución
+          parcial la factura tiene nota de crédito igual, y decir
+          «devuelta» ahí sería falso: volvió una bolsa de tres.
+        */}
+        {c.tiene_nota_credito && !c.queda_por_devolver && (
           <span className="ml-1.5 text-xs text-piedra-400">Devuelta</span>
+        )}
+        {c.tiene_devoluciones_parciales && c.queda_por_devolver && (
+          <span className="ml-1.5 text-xs text-piedra-400">Devuelta en parte</span>
         )}
       </td>
     </tr>

@@ -25,6 +25,16 @@ export interface FilaComprobante {
   intentos_fallidos: number
   ultimo_intento: string | null
   tiene_nota_credito: boolean
+  /* Si a esta venta ya le devolvieron algo por partes. */
+  tiene_devoluciones_parciales: boolean
+  /*
+    Si todavia queda mercaderia sin devolver.
+
+    Distingue una factura devuelta entera de una que tuvo una devolucion
+    parcial: las dos tienen nota de credito asociada, pero solo una sigue
+    admitiendo devoluciones.
+  */
+  queda_por_devolver: boolean
 }
 
 /** Venta cobrada que todavía no tiene comprobante. Es el caso más grave: ya se cobró. */

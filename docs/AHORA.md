@@ -12,7 +12,7 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Publicado: 0.3.0**, con Reportes adentro. Árbol limpio, todo commiteado y subido a Cloudflare. **202 pruebas verdes en la app y 9 en el programa**, 70 migraciones aplicadas.
+**Publicado: 0.3.0**, con Reportes adentro. **Devoluciones parciales están hechas pero sin publicar todavía.** **216 pruebas verdes en la app y 9 en el programa**, 74 migraciones aplicadas.
 
 ⚠️ **Lo que está construido pero NO verificado.** Un chat nuevo no puede darlo por probado:
 
@@ -60,6 +60,24 @@ Lo que trae, y lo que deliberadamente **no** trae:
 **El mes se compara por tramo y no contra el mes anterior entero.** Hoy es 11: comparar once días contra los treinta y uno de agosto haría que septiembre aparezca en baja todos los años, todos los meses, hasta el día 30. Se compara del 1 al 11 contra el 1 al 11, y **la pantalla dice contra qué días compara**, porque un "−12%" que no se puede rastrear no se discute con nadie.
 
 **Se probaron las pruebas rompiendo el código a propósito**, y una no aguantó: la que decía proteger el parseo de fechas de la zona horaria pasaba igual con el código roto, porque un redondeo que está para otra cosa tapaba las tres horas de diferencia. **Se corrigió el comentario en vez de fingir que la prueba servía.** Las otras tres roturas sí fueron atrapadas.
+
+**Y están las devoluciones parciales.** Hasta hoy devolver era todo o nada: el cliente traía una bolsa de tres y había que anular la venta entera y rehacerla.
+
+> **Cómo se lo contás a Lucas:** en Facturación, al lado de *Devolver*, ahora hay *Devolver parte*. Se abre la lista de lo que el cliente se llevó, se marca cuánto vuelve de cada cosa, y el total de lo que hay que devolverle se ve **antes** de confirmar. La venta no se anula: queda como está, con lo devuelto restado.
+>
+> **Se puede devolver varias veces**, porque el cliente puede traer una bolsa hoy y otra la semana que viene. Cada devolución saca su propia nota de crédito, y el sistema lleva la cuenta de cuánto queda: nadie puede devolver cuatro de tres.
+
+Tres decisiones que definen si los números salen bien:
+
+- **El IVA se calcula por alícuota, no sobre el total.** Devolver una bolsa de alimento (10,5%) y un collar (21%) son dos bases distintas; un promedio daría mal.
+- **La percepción de IIBB se prorratea, no se recalcula.** Si se recalculara, una devolución chica caería por debajo del mínimo de $24.000 y devolvería percepción cero, dejándole al cliente una percepción cobrada por mercadería que devolvió.
+- **Los importes se prorratean sobre lo que se cobró**, no sobre el precio de lista. Una línea con descuento tiene que devolver lo que el cliente pagó; con el precio de lista se le devolvería de más, y la diferencia sale del mostrador.
+
+🔴 **Y de paso se tapó un agujero que la devolución parcial abría.** Si alguien devolvía una bolsa y después anulaba la venta entera, el sistema reingresaba las tres —la anulación mira lo que salió por la venta y no descuenta lo que ya volvió—. **Ahora una venta con devoluciones parciales no se puede anular entera**, y el mensaje dice qué hacer en su lugar. Verificado: el stock queda con el +1 que corresponde, no con +2.
+
+> **El efectivo lo sigue entregando el cajero.** El sistema descuenta de la cuenta corriente la parte que estaba en cuenta y emite la nota de crédito, pero no abre la caja — el mismo criterio que ya tenía la anulación entera.
+
+**Se rompió el código a propósito otra vez**, y esta vez las tres roturas fueron atrapadas: prorratear sobre el precio de lista, sacar el redondeo al centavo y mirar lo vendido en vez de lo que queda.
 
 ## Lo que pasó el 10 de septiembre
 
@@ -114,7 +132,7 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 1. 🔴 **Probar la impresión en el local, con la impresora delante.** El código está publicado en la 0.2.3: lo que falta es el papel.
 2. 🔴 **CAEA** — falta el trámite, no el código.
 3. **Cifrado de la base local.**
-4. **Devoluciones parciales** — hoy hay que anular la venta entera y rehacerla.
+4. ~~**Devoluciones parciales**~~ ✅ **Hechas el 11/09.** Falta publicarlas.
 5. ~~**Reportes**~~ ✅ **Hecha y publicada el 11/09** en la 0.3.0.
 6. **Todo con teclado y la versión móvil** — lo último antes del 26/10, decidido con Lucas. En el celular el menú va a ser una hamburguesa; el achicado de ahora es para tablet.
 
@@ -164,6 +182,8 @@ Está andando y verificado. Si algo de acá se rompe, es una regresión:
 - **El disparador que completa el depósito del movimiento.** Sacarlo obliga a que los dieciséis lugares que escriben en el libro de stock manden el depósito, y el que se olvide no falla al compilar: falla al vender.
 - **En la red del local, las dos terminales suben lo mismo, y es a propósito.** La operación no sale de la cola del mostrador cuando se le entrega a la caja. Si una de las dos máquinas no vuelve a encenderse, la venta sube igual desde la otra; la copia que llega segunda choca contra la clave primaria y se descarta sola.
 - **Una venta que la caja ya cobró no se vuelve a guardar cuando el mostrador la reenvía.** Sin esa regla vuelve a la pantalla del cajero con la plata ya cobrada. Está en `loQueSeGuarda()`, con su prueba.
+- **Una venta con devoluciones parciales no se anula entera.** La anulación reingresa el stock mirando lo que salió por la venta y no descuenta lo que ya volvió: sacar esa restricción hace que una venta con una bolsa devuelta reingrese las tres.
+- **La percepción de IIBB de una devolución se prorratea, nunca se recalcula.** Recalcularla sobre el importe devuelto la hace caer bajo el mínimo no sujeto y devuelve cero, dejándole al cliente una percepción que no corresponde.
 - **Los pagos de cuenta corriente se imputan a la deuda más vieja primero.** Es lo que hace que la suma de los tramos de `vista_deuda_antiguedad` dé el saldo. Volver a sumar sólo las facturas —que es como estaba— hace que un cliente que ya pagó siga apareciendo como deudor vencido.
 - **Las métricas de venta se comparan por tramo del mes, no contra el mes anterior completo.** Cambiarlo deja el mes en curso en baja permanente hasta el día 30, todos los meses.
 - **La impresora se guarda por terminal, no en la configuración del comercio.** Volverla a un solo valor para todo el local deja tres de las cuatro PC imprimiendo a un nombre que en su lista no existe. Y el nombre se elige de la lista de Windows: escribirlo a mano falla en silencio.
