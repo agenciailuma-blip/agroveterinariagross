@@ -1,5 +1,5 @@
 ---
-actualizado: 2026-09-10
+actualizado: 2026-09-11
 estado: en curso
 ---
 
@@ -9,6 +9,19 @@ estado: en curso
 > Corte comprometido: **26 de octubre de 2026**, el día que Gross deja OBTech.
 
 ---
+
+## Dónde está todo, hoy
+
+**Publicado: 0.2.9.** Árbol limpio, todo commiteado y subido a Cloudflare. **173 pruebas verdes en la app y 9 en el programa**, 68 migraciones aplicadas.
+
+⚠️ **Lo que está construido pero NO verificado.** Un chat nuevo no puede darlo por probado:
+
+| Qué | Cómo se verifica |
+|---|---|
+| La impresión por impresora de Windows | Con el papel puesto, en el local. Dos minutos por PC |
+| La red del local con dos máquinas | En el local, Paso 5-bis del guion de instalación |
+| El actualizador de punta a punta | Apretando *Actualizar ahora* en una PC, sin desinstalar antes |
+| Las pantallas de **La red del local** y **Percepciones** | No se vieron renderizadas: se venció la sesión del navegador. Compilan y pasan tipos |
 
 ## Lo primero de todo
 
@@ -92,6 +105,19 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 
 → La lista completa está en [[Pendientes con terceros]].
 
+### Las preguntas para la próxima reunión, juntas
+
+Seis, y todas cambian el tamaño de algo. Están desarrolladas en sus documentos; acá van para no tener que buscarlas:
+
+1. ¿Le llevan **la cuenta a cada proveedor** en OBTech, o eso lo miran en otro lado? → [`plan-compras.md`](plan-compras.md)
+2. En la grilla del IVA de compras, la columna **Centro de Costo**: ¿elegís algo o la dejás como viene? → [`compras-e-iva.md`](compras-e-iva.md)
+3. Los cheques que reciben, **¿los depositan o se los endosan a proveedores?** → [`cheques.md`](cheques.md)
+4. **¿Emiten cheques propios**, o pagan sólo con cheques de terceros?
+5. **¿Hay cheques diferidos**, o son todos al día?
+6. El **"calendario de recibos"** que pediste el 10/08, ¿es lo de los cheques?
+
+Y dos para el contador: **qué columnas quiere** en los dos archivos, y si le sirven en Excel.
+
 ## Lo que NO hay que tocar
 
 Está andando y verificado. Si algo de acá se rompe, es una regresión:
@@ -104,6 +130,8 @@ Está andando y verificado. Si algo de acá se rompe, es una regresión:
 - **`aumentar_precios` y `revertir_aumento` son SECURITY DEFINER a propósito.** No agregarles política de insert: el registro que existe para deshacer un error no puede ser editable por fuera del mecanismo que lo deshace.
 - **La factura de compra no tiene líneas de producto, y es a propósito.** Agregárselas no es "completar la pantalla": es abrir la recepción de mercadería, que necesita emparejar códigos del proveedor con los nuestros y decidir qué pasa con los costos. Eso es V1-B.
 - **El disparador que completa el depósito del movimiento.** Sacarlo obliga a que los dieciséis lugares que escriben en el libro de stock manden el depósito, y el que se olvide no falla al compilar: falla al vender.
+- **En la red del local, las dos terminales suben lo mismo, y es a propósito.** La operación no sale de la cola del mostrador cuando se le entrega a la caja. Si una de las dos máquinas no vuelve a encenderse, la venta sube igual desde la otra; la copia que llega segunda choca contra la clave primaria y se descarta sola.
+- **Una venta que la caja ya cobró no se vuelve a guardar cuando el mostrador la reenvía.** Sin esa regla vuelve a la pantalla del cajero con la plata ya cobrada. Está en `loQueSeGuarda()`, con su prueba.
 - **La impresora se guarda por terminal, no en la configuración del comercio.** Volverla a un solo valor para todo el local deja tres de las cuatro PC imprimiendo a un nombre que en su lista no existe. Y el nombre se elige de la lista de Windows: escribirlo a mano falla en silencio.
 
 ## Cómo arrancar
