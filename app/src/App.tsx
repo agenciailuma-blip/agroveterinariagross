@@ -23,6 +23,7 @@ import ComprobanteImprimible from '@/pages/ComprobanteImprimible'
 import Remitos from '@/pages/Remitos'
 import NoFiscales from '@/pages/NoFiscales'
 import NoFiscalImprimible from '@/pages/NoFiscalImprimible'
+import Reportes from '@/pages/Reportes'
 
 /*
   networkMode: 'always' es lo más importante de esta configuración.
@@ -125,6 +126,7 @@ function Rutas() {
         <Route path="facturacion" element={<Facturacion />} />
         <Route path="remitos" element={<Remitos />} />
         <Route path="no-fiscales" element={<NoFiscales />} />
+        <Route path="reportes" element={<Reportes />} />
       </Route>
       {/*
         Fuera del Layout a propósito: el comprobante se imprime, y no

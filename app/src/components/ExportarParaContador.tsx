@@ -10,7 +10,7 @@ import {
 } from '@/lib/api/libroIva'
 import { descargarCsv } from '@/lib/api/noFiscal'
 import { moneda, numero } from '@/lib/tipos'
-import { boton } from '@/estilos'
+import { boton, campo, tarjeta } from '@/estilos'
 
 /*
   ─────────────────────────────────────────────────────────────
@@ -91,7 +91,7 @@ export default function ExportarParaContador() {
   const anios = Array.from({ length: hoy.getFullYear() - 2025 }, (_, i) => 2026 + i)
 
   return (
-    <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-borde">
+    <div className={`${tarjeta} p-5`}>
       <h2 className="font-medium text-tinta">Ventas para el contador</h2>
       <p className="mt-1 text-sm text-piedra-500">
         El archivo del mes, para mandarle. Las facturas de compra las baja él de ARCA.
@@ -103,7 +103,7 @@ export default function ExportarParaContador() {
           <select
             value={mes}
             onChange={(e) => setMes(Number(e.target.value))}
-            className={clase}
+            className={campo}
           >
             {MESES.map((m, i) => (
               <option key={m} value={i + 1}>
@@ -117,7 +117,7 @@ export default function ExportarParaContador() {
           <select
             value={anio}
             onChange={(e) => setAnio(Number(e.target.value))}
-            className={clase}
+            className={campo}
           >
             {anios.map((a) => (
               <option key={a} value={a}>
@@ -126,11 +126,7 @@ export default function ExportarParaContador() {
             ))}
           </select>
         </label>
-        <button
-          onClick={bajar}
-          disabled={!filas.data?.length}
-          className="rounded-lg bg-marca-700 px-4 py-2 text-sm font-medium text-white hover:bg-marca-600 disabled:opacity-40"
-        >
+        <button onClick={bajar} disabled={!filas.data?.length} className={boton.principal}>
           Bajar el Excel
         </button>
       </div>
@@ -215,6 +211,3 @@ function Dato({ k, v }: { k: string; v: string }) {
     </div>
   )
 }
-
-const clase =
-  'rounded-lg border border-borde bg-white px-3 py-2 text-sm text-tinta outline-none focus:border-marca-500'

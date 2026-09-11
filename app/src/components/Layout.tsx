@@ -105,6 +105,17 @@ const MENU: ItemMenu[] = [
     icono: 'M9 12h6m-6 4h6M9 8h2m-2 13h10a2 2 0 002-2V7.4L14.6 3H7a2 2 0 00-2 2v14a2 2 0 002 2z',
   },
   {
+    /*
+      Reportes cierra la parte de mirar y abre la de administrar: es lo
+      último que se consulta sobre el día y va justo antes de Usuarios y
+      Configuración, que son de otra clase de trabajo.
+    */
+    a: '/reportes',
+    etiqueta: 'Reportes',
+    permiso: 'reportes.ver',
+    icono: 'M3 3v18h18M7 17v-5m5 5V8m5 9v-3',
+  },
+  {
     a: '/usuarios',
     etiqueta: 'Usuarios',
     permiso: 'usuarios.gestionar',

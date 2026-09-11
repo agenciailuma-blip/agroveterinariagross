@@ -12,7 +12,7 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Publicado: 0.2.9.** Árbol limpio, todo commiteado y subido a Cloudflare. **173 pruebas verdes en la app y 9 en el programa**, 68 migraciones aplicadas.
+**Publicado: 0.2.9** (con Reportes sin publicar todavía). **202 pruebas verdes en la app**, 70 migraciones aplicadas.
 
 ⚠️ **Lo que está construido pero NO verificado.** Un chat nuevo no puede darlo por probado:
 
@@ -21,7 +21,13 @@ estado: en curso
 | La impresión por impresora de Windows | Con el papel puesto, en el local. Dos minutos por PC |
 | La red del local con dos máquinas | En el local, Paso 5-bis del guion de instalación |
 | El actualizador de punta a punta | Apretando *Actualizar ahora* en una PC, sin desinstalar antes |
-| Las pantallas de **La red del local** y **Percepciones** | No se vieron renderizadas: se venció la sesión del navegador. Compilan y pasan tipos |
+| ~~Las pantallas de **La red del local** y **Percepciones**~~ | ✅ **Vistas el 11/09.** Percepciones entera, con datos de agosto y el caso de la nota de crédito. De La red del local sólo se puede ver en el navegador el aviso de que hace falta el programa instalado: es así a propósito |
+
+🟡 **`cargo test` falla en esta máquina, y ya se sabe por qué: hay tres antivirus instalados.** Norton Security y Avast conviven con Windows Defender —que quedó desactivado, porque los otros dos le sacaron el control—. Cada `.exe` que el compilador crea lo intercepta el antivirus antes de que termine de escribirse, y el enlazador falla con `LNK1104`, «no se puede abrir el archivo». El archivo, efectivamente, no está: lo hicieron desaparecer.
+
+> **Por eso engaña:** el mensaje hace pensar que algo tiene tomado el ejecutable, y no hay nada tomado. Se descartaron una por una: espacio en disco, permisos, procesos abiertos, el reparto de trabajo del compilador y el modo release. **Las 9 pruebas pasan** —se corrieron hoy dos veces— pero hay que reintentar hasta que el antivirus deje pasar una.
+>
+> 🔧 **Se arregla en un minuto y no lo puede hacer el sistema:** agregar `app/src-tauri/target` a las exclusiones de Norton y de Avast. **Y conviene desinstalar dos de los tres**: tres antivirus a la vez se pisan entre ellos, no protegen más y hacen lenta la máquina.
 
 ## Lo primero de todo
 
@@ -31,7 +37,31 @@ estado: en curso
 
 ---
 
-## Lo último que pasó — 10 de septiembre
+## Lo último que pasó — 11 de septiembre
+
+**Está la pantalla de Reportes, la última de V1-A que faltaba.** Con eso, el punto 9 del alcance —«métricas simples»— queda cubierto entero.
+
+> **Salió mucho más barata de lo que parecía, y conviene saber por qué:** casi todo estaba construido en la base desde agosto y sin usar. El permiso `reportes.ver` ya existía y ya lo tenían Administrador y Encargado; la vista que reparte la deuda por antigüedad también. Lo que faltaba era la pantalla y **una sola cosa nueva de cálculo**: contra qué comparar las ventas.
+
+Lo que trae, y lo que deliberadamente **no** trae:
+
+- **Las ventas comparadas contra el período anterior.** El importe ya estaba en Inicio; lo que faltaba era poder leerlo. Ahora dice *"+631% que los 7 previos"*.
+- **Quién debe y desde hace cuánto**, que no estaba en ninguna pantalla. La ficha del cliente muestra un cliente por vez; nunca se veía el conjunto.
+- **El stock bajo y el estado de la facturación van como enlace**, no copiados. Ya son las pantallas de Stock y Facturación, con sus filtros. Dos lugares para mirar lo mismo terminan no coincidiendo.
+
+🔴 **Y apareció un error de plata que nadie había visto.** `vista_deuda_antiguedad` existía desde el principio y **ninguna pantalla la usaba**: al ponerla en Reportes salieron los números mal.
+
+> **Cómo se lo explicás a Lucas:** la cuenta que dice cuánto debe cada cliente sumaba las facturas y **no restaba los pagos**. Un cliente que debía $281.600 y los pagó enteros seguía figurando con $281.600 vencidos, con saldo cero en la misma fila. Si eso salía a la pantalla, Gross llamaba a reclamarle plata a alguien que ya había pagado.
+>
+> **Cómo se arregló:** los pagos se aplican a la deuda más vieja primero, que es como trabaja cualquier cuenta corriente y lo que espera un contador. Ahora **la suma de los tramos da exactamente el saldo** en los cinco clientes, y eso se puede verificar de un vistazo.
+>
+> El error estuvo escondido porque la vista se construyó junto con la cuenta corriente y nunca se llegó a mirar. **Es un argumento para mirar lo que está construido y no se usa**, no sólo para construir lo que falta.
+
+**El mes se compara por tramo y no contra el mes anterior entero.** Hoy es 11: comparar once días contra los treinta y uno de agosto haría que septiembre aparezca en baja todos los años, todos los meses, hasta el día 30. Se compara del 1 al 11 contra el 1 al 11, y **la pantalla dice contra qué días compara**, porque un "−12%" que no se puede rastrear no se discute con nadie.
+
+**Se probaron las pruebas rompiendo el código a propósito**, y una no aguantó: la que decía proteger el parseo de fechas de la zona horaria pasaba igual con el código roto, porque un redondeo que está para otra cosa tapaba las tres horas de diferencia. **Se corrigió el comentario en vez de fingir que la prueba servía.** Las otras tres roturas sí fueron atrapadas.
+
+## Lo que pasó el 10 de septiembre
 
 **La venta llega a la caja sin internet.** Es el punto 2-bis del alcance, entero: la terminal de la caja escucha, los mostradores le entregan lo que no pudieron subir, y el cajero ve la venta como si nada.
 
@@ -85,8 +115,10 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 2. 🔴 **CAEA** — falta el trámite, no el código.
 3. **Cifrado de la base local.**
 4. **Devoluciones parciales** — hoy hay que anular la venta entera y rehacerla.
-5. **Reportes** — la única pantalla de V1-A que todavía no existe.
+5. ~~**Reportes**~~ ✅ **Hecha el 11/09.** Falta publicarla en una versión nueva.
 6. **Todo con teclado y la versión móvil** — lo último antes del 26/10, decidido con Lucas. En el celular el menú va a ser una hamburguesa; el achicado de ahora es para tablet.
+
+> ✅ **Los desplegables de *Percepciones* ya usan el estilo común**, así que muestran el recuadro de foco como el resto del sistema — un paso menos para el punto 6. La pantalla tenía además el botón y la tarjeta escritos a mano; los tres ahora salen de [`estilos.ts`](../app/src/estilos.ts).
 
 ## Lo que está bloqueado, y por quién
 
@@ -132,6 +164,8 @@ Está andando y verificado. Si algo de acá se rompe, es una regresión:
 - **El disparador que completa el depósito del movimiento.** Sacarlo obliga a que los dieciséis lugares que escriben en el libro de stock manden el depósito, y el que se olvide no falla al compilar: falla al vender.
 - **En la red del local, las dos terminales suben lo mismo, y es a propósito.** La operación no sale de la cola del mostrador cuando se le entrega a la caja. Si una de las dos máquinas no vuelve a encenderse, la venta sube igual desde la otra; la copia que llega segunda choca contra la clave primaria y se descarta sola.
 - **Una venta que la caja ya cobró no se vuelve a guardar cuando el mostrador la reenvía.** Sin esa regla vuelve a la pantalla del cajero con la plata ya cobrada. Está en `loQueSeGuarda()`, con su prueba.
+- **Los pagos de cuenta corriente se imputan a la deuda más vieja primero.** Es lo que hace que la suma de los tramos de `vista_deuda_antiguedad` dé el saldo. Volver a sumar sólo las facturas —que es como estaba— hace que un cliente que ya pagó siga apareciendo como deudor vencido.
+- **Las métricas de venta se comparan por tramo del mes, no contra el mes anterior completo.** Cambiarlo deja el mes en curso en baja permanente hasta el día 30, todos los meses.
 - **La impresora se guarda por terminal, no en la configuración del comercio.** Volverla a un solo valor para todo el local deja tres de las cuatro PC imprimiendo a un nombre que en su lista no existe. Y el nombre se elige de la lista de Windows: escribirlo a mano falla en silencio.
 
 ## Cómo arrancar
@@ -160,7 +194,7 @@ Queda en `http://localhost:5173`.
 
 **Documentación.** Se partió `ESTADO.md` (766 líneas) en `AHORA.md` + cuatro notas, sin perder una línea. Las 40 imágenes se movieron a `referencias/`.
 
-📊 **16 de 24 pedidos de Lucas hechos** · 173 pruebas verdes en la app y 9 en el programa · 68 migraciones.
+📊 **16 de 24 pedidos de Lucas hechos** · 173 pruebas verdes en la app y 9 en el programa · 68 migraciones. *(Los números del 9 de septiembre; los de hoy están arriba.)*
 
 ---
 

@@ -31,6 +31,12 @@ export interface VentasPorVendedor {
   total: number
 }
 
+/** Del 1 al día de hoy, pero del mes pasado. Contra esto se compara el mes. */
+export interface TramoDelMesAnterior {
+  desde: string
+  hasta: string
+}
+
 export interface MetricasDeVenta {
   /** 'todo' si quien mira ve las ventas del local; 'propio' si sólo las suyas. */
   alcance: 'todo' | 'propio'
@@ -38,6 +44,10 @@ export interface MetricasDeVenta {
   hoy: Periodo
   semana: Periodo
   mes: Periodo
+  hoy_anterior: Periodo
+  semana_anterior: Periodo
+  mes_anterior: Periodo
+  tramo_del_mes_anterior: TramoDelMesAnterior
   mas_vendidos: MasVendido[]
   por_vendedor: VentasPorVendedor[]
 }
@@ -80,6 +90,116 @@ export function resumenDeVentas(m: MetricasDeVenta): TarjetaDeVenta[] {
     { titulo: 'Últimos 7 días', ...comoSeLee(m.semana) },
     { titulo: 'Este mes', ...comoSeLee(m.mes) },
   ]
+}
+
+/* ─────────────────────────────────────────────────────────────
+   La comparación contra el período anterior
+   ───────────────────────────────────────────────────────────── */
+
+export type Sentido = 'sube' | 'baja' | 'igual' | 'sin_base'
+
+export interface Comparacion {
+  sentido: Sentido
+  /** El cambio en porcentaje. `null` cuando no hay contra qué comparar. */
+  porcentaje: number | null
+  /** Lo que se lee debajo del importe. */
+  texto: string
+}
+
+/*
+  Cuánto cambió un período contra el anterior.
+
+  **El caso que obliga a que esto exista es el período anterior en cero.**
+  Dividir por cero da infinito, y un cartel que diga "+∞%" —o peor,
+  "+Infinity%"— arriba del número de ventas es exactamente la clase de
+  cosa que hace que nadie vuelva a confiar en la pantalla. Cuando no hay
+  base, no hay porcentaje: se dice que no había nada con qué comparar.
+
+  El umbral de medio punto es para no escribir "+0%", que se lee como un
+  error de cuentas. Por debajo de eso el período está igual, y eso es lo
+  que conviene decir.
+*/
+export function comparar(actual: number, anterior: number, contra: string): Comparacion {
+  if (anterior === 0) {
+    // «que» sirve para comparar —"+50% que ayer"— y sobra para constatar:
+    // "sin ventas que ayer" no es castellano.
+    return {
+      sentido: 'sin_base',
+      porcentaje: null,
+      texto: `sin ventas ${contra.replace(/^que /, '')}`,
+    }
+  }
+
+  const porcentaje = ((actual - anterior) / anterior) * 100
+
+  if (Math.abs(porcentaje) < 0.5) {
+    return { sentido: 'igual', porcentaje, texto: `igual ${contra}` }
+  }
+
+  const signo = porcentaje > 0 ? '+' : '−'
+  return {
+    sentido: porcentaje > 0 ? 'sube' : 'baja',
+    porcentaje,
+    texto: `${signo}${Math.abs(Math.round(porcentaje))}% ${contra}`,
+  }
+}
+
+/*
+  Las tres tarjetas, ahora con contra qué se están comparando.
+
+  Cada una dice el período de comparación con todas las letras. "Este
+  mes −12%" no se puede discutir con nadie si no aclara que los doce
+  puntos son contra los mismos días del mes pasado y no contra el mes
+  entero, que es lo que cualquiera supone.
+*/
+export interface TarjetaComparada extends TarjetaDeVenta {
+  comparacion: Comparacion
+}
+
+export function ventasComparadas(m: MetricasDeVenta): TarjetaComparada[] {
+  return [
+    {
+      titulo: 'Hoy',
+      ...comoSeLee(m.hoy),
+      comparacion: comparar(m.hoy.total, m.hoy_anterior.total, 'que ayer'),
+    },
+    {
+      titulo: 'Últimos 7 días',
+      ...comoSeLee(m.semana),
+      comparacion: comparar(m.semana.total, m.semana_anterior.total, 'que los 7 previos'),
+    },
+    {
+      titulo: 'Este mes',
+      ...comoSeLee(m.mes),
+      comparacion: comparar(
+        m.mes.total,
+        m.mes_anterior.total,
+        `que ${tramoEnPalabras(m.tramo_del_mes_anterior)}`,
+      ),
+    },
+  ]
+}
+
+/*
+  «el 1 al 11 de agosto», para escribirlo al lado del porcentaje.
+
+  Se arma con las fechas partidas a mano y no con `new Date(...)`: una
+  fecha suelta como "2026-08-01" se interpreta en UTC, y en Argentina eso
+  la corre al 31 de julio. El mes de la comparación aparecería equivocado
+  el primer día de cada mes.
+*/
+export function tramoEnPalabras(t: TramoDelMesAnterior): string {
+  const MESES = [
+    'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+    'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+  ]
+  const [, mesDesde, diaDesde] = t.desde.split('-').map(Number)
+  const [, , diaHasta] = t.hasta.split('-').map(Number)
+  const nombre = MESES[mesDesde - 1] ?? ''
+
+  return diaDesde === diaHasta
+    ? `el ${diaDesde} de ${nombre}`
+    : `el ${diaDesde} al ${diaHasta} de ${nombre}`
 }
 
 function comoSeLee(p: Periodo): { importe: string; detalle: string } {
