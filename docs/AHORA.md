@@ -12,7 +12,7 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Publicado: 0.2.9** (con Reportes sin publicar todavía). **202 pruebas verdes en la app**, 70 migraciones aplicadas.
+**Publicado: 0.3.0**, con Reportes adentro. Árbol limpio, todo commiteado y subido a Cloudflare. **202 pruebas verdes en la app y 9 en el programa**, 70 migraciones aplicadas.
 
 ⚠️ **Lo que está construido pero NO verificado.** Un chat nuevo no puede darlo por probado:
 
@@ -115,7 +115,7 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 2. 🔴 **CAEA** — falta el trámite, no el código.
 3. **Cifrado de la base local.**
 4. **Devoluciones parciales** — hoy hay que anular la venta entera y rehacerla.
-5. ~~**Reportes**~~ ✅ **Hecha el 11/09.** Falta publicarla en una versión nueva.
+5. ~~**Reportes**~~ ✅ **Hecha y publicada el 11/09** en la 0.3.0.
 6. **Todo con teclado y la versión móvil** — lo último antes del 26/10, decidido con Lucas. En el celular el menú va a ser una hamburguesa; el achicado de ahora es para tablet.
 
 > ✅ **Los desplegables de *Percepciones* ya usan el estilo común**, así que muestran el recuadro de foco como el resto del sistema — un paso menos para el punto 6. La pantalla tenía además el botón y la tarjeta escritos a mano; los tres ahora salen de [`estilos.ts`](../app/src/estilos.ts).
