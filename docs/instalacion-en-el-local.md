@@ -62,9 +62,10 @@ Y era, además, el camino frágil: una IP que reparte el router automáticamente
 
 ## 2. Lo que tiene que estar listo de nuestro lado
 
-- [x] **Versión 0.2.3 publicada el 09/09** en Cloudflare, **con la impresión por impresora de Windows adentro**. Sube sola con `npm --prefix app run escritorio:publicar` desde Git Bash (**no** `npm run build` — ver la advertencia de más abajo).
-- [ ] El instalador para las 4 PC:
-      `https://gross-sistema.pages.dev/actualizaciones/sistema-gross-0.2.3-setup.exe`
+- [x] **Versión 0.4.1 publicada el 14/09** en Cloudflare. Trae todo lo anterior —impresión por impresora de Windows, red del local, Reportes, devoluciones parciales, resumen de cuenta corriente— más **la base local cifrada** y **la versión para el celular**. Sube sola con `npm --prefix app run escritorio:publicar` desde Git Bash (**no** `npm run build` — ver la advertencia de más abajo).
+- [ ] El instalador para las 4 PC (verificado que responde, 14/09):
+      `https://gross-sistema.pages.dev/actualizaciones/sistema-gross-0.4.1-setup.exe`
+- [ ] **Instalar limpio**, no encima de lo que haya: ver el **paso 9** antes de desinstalar nada.
 - [ ] **Cargar el logo** en Configuración → Datos del emisor. Sin logo, los remitos y presupuestos salen sin nada que identifique al comercio, porque ya no llevan los datos del emisor.
 - [ ] Las terminales creadas en el sistema, con su prefijo y —la caja— con su punto de venta de ARCA.
 - [ ] Saber los PIN de los operadores que van a usar las PC.
@@ -154,9 +155,9 @@ Después, en **cada mostrador**: misma pantalla → **Probar la conexión**. Tie
 
 ✅ **Sale bien si:** el comprobante sale con número, CAE y QR.
 
-### Paso 7 · Cortar internet ← lo que nunca se probó
+### Paso 7 · Cortar internet ← lo que falta probar entero
 
-**Este es el paso que más importa y el que nunca hicimos en una máquina real.**
+**Este es el paso que más importa.** El 07/09 se probó en el local una parte —facturar sin conexión: la factura queda pendiente y sale sola al volver internet, y funcionó—. **El recorrido completo, con dos máquinas, nunca se hizo.**
 
 1. Desconectar el wifi o el cable de la PC.
 2. Armar una venta y mandarla a caja.
@@ -174,7 +175,13 @@ Después, en **cada mostrador**: misma pantalla → **Probar la conexión**. Tie
 - Se puede **emitir un remito** desde la pantalla de Remitos.
 - Los dos salen con su número, y ese número no se repite cuando vuelve la conexión.
 
-> Es lo último que se construyó y **nunca se probó con internet cortado de verdad**. Si algo va a fallar hoy, lo más probable es que sea acá. Vale la pena hacerlo con tiempo y mirar el contador de "sin subir" antes y después.
+**Y desde el 10/09, lo más importante de todo — con dos máquinas** (necesita el paso 5-bis hecho):
+- Cortar internet en **el mostrador y en la caja**.
+- En el mostrador, armar una venta y **Enviar a caja**.
+- ✅ **Sale bien si** la venta **aparece en la pantalla de la caja**, sin internet, y se puede cobrar.
+- Al volver internet, la venta sube **una sola vez**, aunque la hayan subido las dos máquinas.
+
+> **Si algo va a fallar hoy, lo más probable es que sea acá**, y sobre todo la venta que viaja del mostrador a la caja: está construida y probada con pruebas automáticas, pero **nunca con dos PC reales**. Vale la pena hacerlo con tiempo y mirar el contador de "sin subir" antes y después, en las dos máquinas.
 
 > **Lo que sí necesita internet a propósito:** abrir y cerrar la caja. Si Lucas prueba eso sin conexión, el sistema lo va a rechazar y **está bien**: arquear con la mitad de las ventas sin registrar produce una diferencia que después alguien tiene que explicar.
 
@@ -198,7 +205,7 @@ El instalador no llegaba a reemplazar el programa porque el programa todavía lo
 
 > **Cuándo importa de verdad.** Hoy no: con la PC delante, desinstalar e instalar es un minuto. Importa **después del 26/10**, cuando haya que hacer llegar una corrección a 4 PC sin ir hasta Oberá. Ese día el actualizador es el único camino, así que conviene probarlo una vez antes — con la próxima versión, en una sola PC, sin desinstalar nada.
 
-### Paso 9 · La versión con la base cifrada (0.4.0) — **instalar limpio aunque ya se haya actualizado sola**
+### Paso 9 · La versión con la base cifrada (desde la 0.4.0) — **instalar limpio aunque ya se haya actualizado sola**
 
 Desde la 0.4.0 los datos de clientes que guarda cada PC —nombre, documento, domicilio de entrega— quedan cifrados. La llave la guarda Windows, en el **Administrador de credenciales**, con el nombre *Sistema Gross - base local*.
 
@@ -211,7 +218,7 @@ Desde la 0.4.0 los datos de clientes que guarda cada PC —nombre, documento, do
 1. **Que no quede nada sin subir.** Configuración → *Diagnóstico de esta terminal*: tiene que decir **0 pendientes**. Si hay pendientes, conectar a internet y esperar a que suban. **No seguir con pendientes**: esas ventas sólo existen en esa PC.
 2. **Desinstalar** el programa.
 3. **Borrar la carpeta de datos**, si quedó: `%LOCALAPPDATA%r.iluma.gross` (se pega en la barra del Explorador). Ahí vivía la base vieja, con los nombres en claro.
-4. **Instalar la 0.4.0** y entrar.
+4. **Instalar la 0.4.1** (la última publicada) y entrar.
 5. **Volver a asignar la terminal** (Paso 4) y **elegir la impresora** (Paso 5): vivían en esa carpeta.
 6. Esperar la primera sincronización. **Comprobar la llave:** en Windows, *Administrador de credenciales* → *Credenciales de Windows* → tiene que aparecer **Sistema Gross - base local**.
 
@@ -219,7 +226,7 @@ Desde la 0.4.0 los datos de clientes que guarda cada PC —nombre, documento, do
 >
 > **Si alguna vez aparece el aviso rojo** *"Esta computadora no puede abrir sus datos guardados"*: casi siempre es que se entró a Windows con otra cuenta. Volver a la de siempre lo resuelve.
 
-**De paso, la prueba del actualizador** (Paso 8): antes de desinstalar, mirar en *Diagnóstico* qué versión tiene cada PC. Si alguna ya dice **0.4.0** sin que nadie la haya instalado a mano, el actualizador funcionó —y el arreglo del archivo tomado de la 0.2.2 queda probado—. Anotar cuáles sí y cuáles no.
+**De paso, la prueba del actualizador** (Paso 8): antes de desinstalar, mirar en *Diagnóstico* qué versión tiene cada PC. Si alguna ya dice **0.4.0 o 0.4.1** sin que nadie la haya instalado a mano, el actualizador funcionó —y el arreglo del archivo tomado de la 0.2.2 queda probado—. Anotar cuáles sí y cuáles no.
 
 ---
 
@@ -268,4 +275,5 @@ Queda un ícono violeta con el isotipo de Gross y se abre como aplicación, sin 
 - **El actualizador automático** — ver paso 8. El arreglo está publicado pero sin probar de punta a punta; hasta entonces, cada corrección se instala desinstalando primero.
 - **El punto de venta del régimen CAEA** — trámite en el portal de ARCA. Sin eso no hay contingencia.
 - **El certificado de producción** — hoy todo corre contra homologación. Los comprobantes emitidos **no son válidos** hasta que esté.
-- **La sincronización por red local** — si se corta internet, las terminales no se hablan entre sí. Una venta armada en el mostrador no llega a la caja hasta que vuelva la conexión. Está en el plan, va al final.
+- ~~**La sincronización por red local**~~ — **hecha el 10/09** (paso 5-bis). Sin internet, la venta del mostrador le llega a la caja por la red del local. Lo que falta es probarla con dos PC reales: paso 7.
+- **Probar la versión del celular en un teléfono de verdad** — paso 10.

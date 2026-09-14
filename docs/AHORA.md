@@ -12,7 +12,7 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Publicado: 0.4.0** (14/09), con Reportes, devoluciones parciales, el resumen de cuenta corriente y la base local cifrada. **Falta instalarla limpia en el local esta semana** —la hace Francisco a mano, borrando los datos con 0 pendientes: [paso 9](instalacion-en-el-local.md). **248 pruebas verdes en la app y 11 en el programa**, 75 migraciones aplicadas.
+**Publicado: 0.4.1** (14/09), con Reportes, devoluciones parciales, el resumen de cuenta corriente, la base local cifrada y la versión para el celular. **Falta instalarla limpia en el local esta semana** —la hace Francisco a mano, borrando los datos con 0 pendientes: [paso 9](instalacion-en-el-local.md). **248 pruebas verdes en la app y 11 en el programa**, 75 migraciones aplicadas.
 
 ⚠️ **Lo que está construido pero NO verificado.** Un chat nuevo no puede darlo por probado:
 
@@ -180,7 +180,7 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 3. ~~**Cifrado de la base local.**~~ ✅ **Hecho y publicado el 14/09 (0.4.0).** Se instala limpio, PC por PC, esta semana: [paso 9 del guion](instalacion-en-el-local.md).
 4. ~~**Devoluciones parciales**~~ ✅ **Hechas el 11/09 y publicadas el 14/09** en la 0.3.1.
 5. ~~**Reportes**~~ ✅ **Hecha y publicada el 11/09** en la 0.3.0.
-6. ~~**La versión móvil**~~ ✅ **Hecha el 14/09, sin publicar.** Lo prometido en la primera reunión: *consultar stock, ver reportes o pasar un precio desde el depósito*; vender sigue siendo en la PC con el lector. Cómo se instala en el celular: [paso 10](instalacion-en-el-local.md). **Falta probarla en un teléfono de verdad.**
+6. ~~**La versión móvil**~~ ✅ **Hecha y publicada el 14/09 (0.4.1).** Lo prometido en la primera reunión: *consultar stock, ver reportes o pasar un precio desde el depósito*; vender sigue siendo en la PC con el lector. Cómo se instala en el celular: [paso 10](instalacion-en-el-local.md). **Falta probarla en un teléfono de verdad.**
 7. **Todo con teclado** — **en espera**: Gross tiene que confirmar qué atajos prefiere. Cuando se haga, van definidos en un solo lugar del código y Configuración los **muestra** en una lista; que se puedan editar por PC, sólo si lo piden (cada máquina con teclas distintas complica capacitar y dar soporte).
 
 > ✅ **Los desplegables de *Percepciones* ya usan el estilo común**, así que muestran el recuadro de foco como el resto del sistema — un paso menos para el punto 6. La pantalla tenía además el botón y la tarjeta escritos a mano; los tres ahora salen de [`estilos.ts`](../app/src/estilos.ts).

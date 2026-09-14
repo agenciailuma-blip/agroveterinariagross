@@ -132,6 +132,7 @@ Se mudó a **[`10 · Las decisiones que no se revisan.md`](10%20·%20Las%20decis
 | Módulo | Base | Pantalla | Notas |
 |---|---|---|---|
 | Usuarios, roles y permisos | ✅ | ✅ | 33 permisos, 4 roles |
+| **Registro de auditoría** | 🟡 | ❌ | ⚠️ Revisado el 14/09: la tabla `auditoria` existe desde el principio pero **está vacía y nada escribe en ella**. Lo sensible sí deja rastro en su propia tabla —quién cambió un precio, quién anuló, cada movimiento de stock con usuario—, pero no hay un registro central. Comprometido en el alcance §1 |
 | **Cifrado de la base local** | ✅ | 🟡 | Hecho el 14/09 (0.4.0). Nombre, documento, domicilio y operaciones pendientes, cifrados con AES-GCM; la llave la guarda Windows. **Falta instalarlo limpio en las 4 PC** — ver paso 9 de `instalacion-en-el-local.md` |
 | Catálogo y clasificación | ✅ | ✅ | Facetada, copiada de la tienda |
 | Dar de baja productos | ✅ | ✅ | De a uno y en masa, con restaurar. Baja lógica: **se revocó el borrado físico** |
@@ -142,21 +143,22 @@ Se mudó a **[`10 · Las decisiones que no se revisan.md`](10%20·%20Las%20decis
 | Punto de venta | ✅ | ✅ | Con PIN y offline |
 | Caja, cobro y arqueo | ✅ | ✅ | Cobra sin conexión. Preselecciona el medio que anotó el vendedor y deja el comprobante a un clic |
 | Clientes y cuenta corriente | ✅ | ✅ | Cobranza integrada a la caja |
-| Anulación y devolución | ✅ | ✅ | Botón "Devolver" en Facturación: reingresa stock, saca la deuda y emite la nota de crédito |
-| Sincronización offline | ✅ | ✅ | Lectura, venta y cobro. ⚠️ Sólo contra el servidor: las terminales no se hablan entre sí sin internet |
+| Anulación y devolución | ✅ | ✅ | "Devolver" (entera) y, desde el 11/09, **"Devolver parte"** en Facturación: reingresa stock, saca la deuda y emite la nota de crédito. **Falta la nota de débito** |
+| Sincronización offline | ✅ | ✅ | Lectura, venta y cobro. **Desde el 10/09 también entre las PC del local sin internet** (la caja escucha, los mostradores le entregan). Falta probarlo con dos PC reales |
 | Canales de venta | ✅ | — | Diseñado, se enciende en V1-B |
 | **Facturación ARCA** | ✅ | ✅ | Emite CAE real en homologación, con pantalla y enganchada al cobro. Falta impresión |
 | **Contingencia CAEA** | ✅ | 🟡 | Circuito completo construido y probado contra la base. **Bloqueado por un trámite**: ARCA exige un punto de venta del régimen CAEA (error 15003) |
 | **Comprobantes no fiscales y remitos** | ✅ | ✅ | Presupuesto, remito e interno con numeración propia. La caja elige antes de cobrar. Remito **sin precios**, **de cero** y con la opción de **no descontar stock**; **línea libre** sin producto del catálogo |
-| Compras a proveedores | ❌ | ❌ | V1-B — órdenes, recepción de mercadería, costos históricos. **El proveedor mínimo ya está** |
+| Compras a proveedores | 🟡 | 🟡 | **La factura de compra se carga desde el 10/09** (subió a V1-A). Queda en V1-B: órdenes, recepción de mercadería con stock, costos. Sin definir: cuenta corriente de proveedores y cheques |
 | **Stock** | ✅ | ✅ | Pantalla propia desde el 08/09: ordenada por urgencia, con el umbral editable en la ficha del producto |
 | **Proveedores** | ✅ | ✅ | Ficha mínima + campo en el producto + **ajuste masivo de precios** por proveedor y rubro —sube y baja—, con deshacer |
 | **Ventas para el contador** | ✅ | ✅ | Exportación mensual a Excel, una fila por alícuota. **El Libro de IVA lo arma el contador**, y las compras las baja de ARCA |
-| Métricas de Inicio | ✅ | 🟡 | Muestra productos, alertas, comprobantes y terminales. **Faltan las de venta**: del día/semana/mes, más vendidos, por vendedor |
-| Empaquetado Tauri (4 PC) | ✅ | 🟡 | **Instalador andando**, con actualizador propio. Falta probarlo en el local |
-| Impresión en la Hasar | ✅ | 🟡 | Construida: manda el ticket por red. **Falta la impresora delante** |
+| Métricas de Inicio y Reportes | ✅ | ✅ | Ventas del día, 7 días y mes (10/09), comparadas contra el período anterior y con la deuda por antigüedad en **Reportes** (11/09). Resumen de cuenta corriente en PDF (14/09) |
+| Empaquetado Tauri (4 PC) | ✅ | 🟡 | **Instalador andando**, con actualizador propio. Falta probar el actualizador de punta a punta |
+| Versión para el celular | ✅ | ✅ | 14/09: menú en panel, fichas a pantalla completa, íconos para instalarla. Falta probarla en un teléfono de verdad |
+| Impresión del ticket | ✅ | 🟡 | Por la cola de impresión de Windows, eligiendo la impresora de una lista en cada PC (09/09). **Falta probarla con el papel puesto** |
 
-**Números:** 58 migraciones · 58 tablas · 13 vistas · 158 políticas de seguridad · 69 funciones · 3 Edge Functions · 40 permisos · 135 pruebas automáticas.
+**Números al 08/09:** 58 migraciones · 58 tablas · 13 vistas · 158 políticas de seguridad · 69 funciones · 3 Edge Functions · 40 permisos · 135 pruebas automáticas. **Al 14/09:** 75 migraciones · 248 pruebas en la app y 11 en el programa.
 
 ---
 
