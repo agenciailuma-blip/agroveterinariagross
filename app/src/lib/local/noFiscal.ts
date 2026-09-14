@@ -1,5 +1,6 @@
 import { db } from '@/lib/local/db'
 import type { NoFiscalLineaLocal, NoFiscalLocal } from '@/lib/local/db'
+import { abrirCliente, abrirNoFiscal, sellarNoFiscal } from '@/lib/local/cifrado'
 
 /*
   ─────────────────────────────────────────────────────────────
@@ -44,7 +45,8 @@ export interface EmisionLocal {
 
 /** Los datos del receptor, como los ve la terminal. */
 async function receptorDe(clienteId: string) {
-  const c = await db.cliente.get(clienteId)
+  const guardado = await db.cliente.get(clienteId)
+  const c = guardado ? await abrirCliente(guardado) : undefined
   return {
     receptor_nombre: c?.nombre ?? 'Consumidor Final',
     receptor_documento: c?.numero_documento ?? null,
@@ -105,8 +107,10 @@ export async function emitirNoFiscalLocal(datos: EmisionLocal): Promise<NoFiscal
     importe: Math.round(Number(l.cantidad) * Number(l.precio_unitario) * 100) / 100,
   }))
 
+  // Se cifra antes: esperar el cifrado adentro cerraría la transacción.
+  const guardado = await sellarNoFiscal(doc)
   await db.transaction('rw', db.no_fiscal, db.no_fiscal_linea, async () => {
-    await db.no_fiscal.put(doc)
+    await db.no_fiscal.put(guardado)
     await db.no_fiscal_linea.bulkPut(lineasDoc)
   })
 
@@ -156,7 +160,8 @@ export async function emitirRemitoDirectoLocal(
 
   const ahora = new Date().toISOString()
   const receptor = await receptorDe(datos.clienteId)
-  const cliente = await db.cliente.get(datos.clienteId)
+  const guardadoCliente = await db.cliente.get(datos.clienteId)
+  const cliente = guardadoCliente ? await abrirCliente(guardadoCliente) : undefined
 
   const total =
     Math.round(
@@ -198,8 +203,10 @@ export async function emitirRemitoDirectoLocal(
     importe: Math.round(Number(l.cantidad) * Number(l.precio_unitario) * 100) / 100,
   }))
 
+  // Se cifra antes: esperar el cifrado adentro cerraría la transacción.
+  const guardado = await sellarNoFiscal(doc)
   await db.transaction('rw', db.no_fiscal, db.no_fiscal_linea, async () => {
-    await db.no_fiscal.put(doc)
+    await db.no_fiscal.put(guardado)
     await db.no_fiscal_linea.bulkPut(lineasDoc)
   })
 
@@ -208,8 +215,9 @@ export async function emitirRemitoDirectoLocal(
 
 /** El comprobante guardado en esta máquina, para imprimirlo sin conexión. */
 export async function obtenerNoFiscalLocal(id: string) {
-  const doc = await db.no_fiscal.get(id)
-  if (!doc) return null
+  const guardado = await db.no_fiscal.get(id)
+  if (!guardado) return null
+  const doc = await abrirNoFiscal(guardado)
 
   const lineas = await db.no_fiscal_linea
     .where('comprobante_no_fiscal_id')

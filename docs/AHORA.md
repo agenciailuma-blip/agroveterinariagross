@@ -12,7 +12,7 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Publicado: 0.3.1**, con Reportes y las devoluciones parciales adentro. **El resumen de cuenta corriente está hecho y sin publicar.** **230 pruebas verdes en la app y 9 en el programa**, 75 migraciones aplicadas.
+**Publicado: 0.3.1**, con Reportes y las devoluciones parciales adentro. **Hechos y sin publicar: el resumen de cuenta corriente y el cifrado de la base local (0.4.0).** **248 pruebas verdes en la app y 11 en el programa**, 75 migraciones aplicadas.
 
 ⚠️ **Lo que está construido pero NO verificado.** Un chat nuevo no puede darlo por probado:
 
@@ -50,6 +50,24 @@ estado: en curso
 Verificado contra la base: en los cinco clientes el saldo final del resumen es el de la ficha, la cuenta cierra a mano (anterior + debe − haber = final), y un período partido en dos encadena solo. Una cobranza del 31 a las 22:30 cae en ese mes y no en el siguiente. Se rompió el código a propósito de cinco maneras y las pruebas atraparon las cinco.
 
 🟡 **Lo del mail automático sigue sin decidir** (punto 17): el resumen y la factura se adjuntan a mano. Mandarlos solos necesita contratar un servicio de correo.
+
+**Y está el cifrado de la base local** (0.4.0, sin publicar). Era el punto 3 de la lista, comprometido en el alcance §1 y exigido por la Ley 25.326.
+
+> **Cómo se lo contás a Lucas:** para vender sin internet, cada PC guarda los clientes. Ahora los guarda cifrados: si alguien se lleva la computadora o copia la carpeta del programa, no puede leer ni un nombre. La llave la guarda Windows, atada a la cuenta de usuario de esa PC, así que copiar los archivos a otra máquina no sirve de nada. **No protege contra alguien sentado frente al sistema abierto**: para eso están el usuario y los PIN.
+
+Lo que se cifra: nombre, documento, la búsqueda de clientes (que es una copia del nombre), el nombre para llamar y las observaciones de la venta, todo lo del receptor y la entrega de los remitos, y **las operaciones pendientes enteras**. Lo que queda en claro —límites, saldos, importes— está atado a un código interno que sin el nombre no dice de quién es.
+
+Tres cosas que definen si esto sirve de verdad:
+
+- **Si la llave se pierde, el sistema frena y no crea otra.** Crear otra en silencio dejaría ilegibles para siempre las ventas que no subieron. Un *testigo* —una palabra conocida cifrada con la llave— distingue «primera vez» de «llave perdida». Arriba de todo aparece un aviso que dice qué hacer, y el botón para rehacer la base desde el servidor **sólo aparece si no hay ventas sin subir**.
+- **Lo que el mostrador le manda a la caja por la red del local viaja abierto**, porque cada PC tiene su propia llave: cifrado con la del mostrador, la caja no lo podría leer nunca. Era el error más fácil de cometer y el más difícil de ver —la venta no aparecía en la caja, sin ningún mensaje—, y tiene su prueba.
+- **Los campos cifrados tienen otro tipo en el código**, así el compilador marca cada lugar que intenta usarlos sin descifrar. Encontró 41. Y revisando a mano lo que el compilador no ve, aparecieron **dos lugares que guardaban el nombre para llamar y las observaciones en claro**, escondidos detrás de un `as never`.
+
+Verificado: las 2 pruebas nuevas del programa pasan contra el **Administrador de credenciales real de Windows**; el programa de escritorio, abierto en esta PC, **creó la credencial** *Sistema Gross - base local*; y en el navegador, la base vieja de las sesiones anteriores **se migró sola**: 8 clientes y 3 ventas, ninguno quedó legible, y la búsqueda, la cola de la caja y la sincronización siguen andando con los nombres descifrados. Siete roturas a propósito, las siete atrapadas.
+
+🔴 **Y apareció algo que cambia cómo se instala.** Migrando en el lugar, el motor de la base **no borra en el momento** lo que reemplaza: se comprobó que después de migrar los nombres seguían legibles en su archivo interno, y ahí se quedan hasta que el motor limpia solo, días después. **Por eso la 0.4.0 no se publica para el actualizador: se instala limpia, PC por PC**, borrando la carpeta de datos con 0 pendientes. El procedimiento está en el [paso 9](instalacion-en-el-local.md).
+
+> **Lo que queda afuera, dicho para no prometer de más:** la red del local sigue sin cifrar por el cable (es la red interna, con su clave), y el perfil del usuario que entra —nombre, mail y permisos, para poder entrar sin internet— sigue guardado en claro en el navegador. Son datos de los empleados, no de los clientes.
 
 ## Lo que pasó el 11 de septiembre
 
@@ -145,7 +163,7 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 
 1. 🔴 **Probar la impresión en el local, con la impresora delante.** El código está publicado en la 0.2.3: lo que falta es el papel.
 2. 🔴 **CAEA** — falta el trámite, no el código.
-3. **Cifrado de la base local.**
+3. ~~**Cifrado de la base local.**~~ ✅ **Hecho el 14/09 (0.4.0), sin instalar.** Se instala limpio, PC por PC: [paso 9 del guion](instalacion-en-el-local.md).
 4. ~~**Devoluciones parciales**~~ ✅ **Hechas el 11/09 y publicadas el 14/09** en la 0.3.1.
 5. ~~**Reportes**~~ ✅ **Hecha y publicada el 11/09** en la 0.3.0.
 6. **Todo con teclado y la versión móvil** — lo último antes del 26/10, decidido con Lucas. En el celular el menú va a ser una hamburguesa; el achicado de ahora es para tablet.
@@ -198,6 +216,9 @@ Está andando y verificado. Si algo de acá se rompe, es una regresión:
 - **Una venta que la caja ya cobró no se vuelve a guardar cuando el mostrador la reenvía.** Sin esa regla vuelve a la pantalla del cajero con la plata ya cobrada. Está en `loQueSeGuarda()`, con su prueba.
 - **Una venta con devoluciones parciales no se anula entera.** La anulación reingresa el stock mirando lo que salió por la venta y no descuenta lo que ya volvió: sacar esa restricción hace que una venta con una bolsa devuelta reingrese las tres.
 - **La percepción de IIBB de una devolución se prorratea, nunca se recalcula.** Recalcularla sobre el importe devuelto la hace caer bajo el mínimo no sujeto y devuelve cero, dejándole al cliente una percepción que no corresponde.
+- **Sin llave, la base local frena y no crea otra.** El testigo existe para eso. Crear una llave nueva cuando ya hay datos cifrados deja ilegibles para siempre las ventas que no subieron.
+- **Las operaciones viajan abiertas por la red del local.** Cada PC cifra con su propia llave; mandarlas cifradas deja a la caja sin poder leerlas, sin ningún error.
+- **Se cifra antes de abrir una transacción de Dexie, nunca adentro.** Esperar el cifrado con la transacción abierta la cierra sola y la escritura falla.
 - **Los pagos de cuenta corriente se imputan a la deuda más vieja primero.** Es lo que hace que la suma de los tramos de `vista_deuda_antiguedad` dé el saldo. Volver a sumar sólo las facturas —que es como estaba— hace que un cliente que ya pagó siga apareciendo como deudor vencido.
 - **Las métricas de venta se comparan por tramo del mes, no contra el mes anterior completo.** Cambiarlo deja el mes en curso en baja permanente hasta el día 30, todos los meses.
 - **La impresora se guarda por terminal, no en la configuración del comercio.** Volverla a un solo valor para todo el local deja tres de las cuatro PC imprimiendo a un nombre que en su lista no existe. Y el nombre se elige de la lista de Windows: escribirlo a mano falla en silencio.

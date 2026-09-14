@@ -9,6 +9,7 @@ import {
 } from '@/lib/local/consultas'
 import { encolar, subirPendientes } from '@/lib/local/sync'
 import { db } from '@/lib/local/db'
+import { sellarVenta } from '@/lib/local/cifrado'
 import { aplicarListaLocal } from '@/lib/local/caja'
 
 export interface Operador {
@@ -435,13 +436,18 @@ async function guardarVenta(
     Se descubrió el 07/09 probando el presupuesto sin conexión — el
     documento se arma sobre la venta, y la venta no estaba.
   */
-  await db.venta.put({
-    ...cabecera,
-    descuento_total: 0,
-    total: Math.round(lineas.reduce((s, l) => s + l.cantidad * l.precio_unitario, 0) * 100) / 100,
-    lista_precio_id: datos.listaPrecioId ?? null,
-    actualizado_en: ahora,
-  } as never)
+  // Cifrada antes de guardar: el nombre para llamar y las observaciones
+  // son de una persona.
+  await db.venta.put(
+    await sellarVenta({
+      ...cabecera,
+      observaciones: cabecera.observaciones ?? null,
+      descuento_total: 0,
+      total: Math.round(lineas.reduce((s, l) => s + l.cantidad * l.precio_unitario, 0) * 100) / 100,
+      lista_precio_id: datos.listaPrecioId ?? null,
+      actualizado_en: ahora,
+    }),
+  )
   await db.venta_linea.bulkPut(
     lineas.map((l) => ({ ...l, actualizado_en: ahora })) as never,
   )

@@ -1,5 +1,11 @@
 import { db } from '@/lib/local/db'
-import type { OperacionPendiente, VentaLineaLocal, VentaLocal } from '@/lib/local/db'
+import type {
+  OperacionAbierta,
+  OperacionPendiente,
+  VentaLineaLocal,
+  VentaLocal,
+} from '@/lib/local/db'
+import { cifrarObjeto, descifrarObjeto, sellarVenta } from '@/lib/local/cifrado'
 import {
   abrirPuntoDeEncuentro,
   enEscritorio,
@@ -29,12 +35,23 @@ import { supabase } from '@/lib/supabase'
   ─────────────────────────────────────────────────────────────
 */
 
-/** El mensaje tal como lo arma y lo lee el Rust. */
+/*
+  El mensaje tal como lo arma y lo lee el Rust.
+
+  Las operaciones viajan ABIERTAS. Cada PC cifra su base con su propia
+  llave, guardada en su propio Windows: una operación cifrada en el
+  mostrador sería ilegible para la caja. Se abren justo antes de mandar
+  y la caja las vuelve a cifrar con la suya al guardarlas.
+
+  Lo que protege el cifrado es el disco, no la red del local: por el
+  cable viajan en claro, como viajaban antes, dentro de la red interna
+  de Gross y con la clave del local.
+*/
 export interface MensajeDelLocal {
   clave: string
   tipo: 'salud' | 'operaciones'
   terminal: string
-  operaciones: OperacionPendiente[]
+  operaciones: OperacionAbierta[]
 }
 
 async function valorDeConfiguracion(clave: string): Promise<string> {
@@ -110,15 +127,15 @@ export async function ponerseAEscuchar(): Promise<{ puerto: number; nombre: stri
     clave primaria, que es exactamente para lo que existen esos id.
 */
 export function loQueSeGuarda(
-  llegan: OperacionPendiente[],
+  llegan: OperacionAbierta[],
   yaCobradasAca: Set<string>,
 ): {
   ventas: VentaLocal[]
   lineas: VentaLineaLocal[]
-  paraLaCola: OperacionPendiente[]
+  paraLaCola: OperacionAbierta[]
 } {
-  const esVenta = (o: OperacionPendiente) => o.tipo === 'insert' && o.tabla === 'venta'
-  const esLinea = (o: OperacionPendiente) => o.tipo === 'insert' && o.tabla === 'venta_linea'
+  const esVenta = (o: OperacionAbierta) => o.tipo === 'insert' && o.tabla === 'venta'
+  const esLinea = (o: OperacionAbierta) => o.tipo === 'insert' && o.tabla === 'venta_linea'
 
   const ventas = llegan
     .filter(esVenta)
@@ -152,14 +169,24 @@ export async function guardarLoQueLlego(mensaje: MensajeDelLocal): Promise<numbe
 
   const { ventas, lineas, paraLaCola } = loQueSeGuarda(llegan, cobradas)
 
-  if (ventas.length) await db.venta.bulkPut(ventas)
-  if (lineas.length) await db.venta_linea.bulkPut(lineas)
+  // Todo se cifra con la llave de esta PC antes de tocar la base.
+  const [ventasSelladas, colaSellada] = await Promise.all([
+    Promise.all(ventas.map(sellarVenta)),
+    Promise.all(
+      paraLaCola.map(async (o) => ({
+        ...o,
+        datos: await cifrarObjeto(o.datos),
+        estado: 'pendiente' as const,
+        // Llegaron por la red, así que para esta terminal ya están
+        // entregadas: no tiene a quién reenviárselas.
+        entregado_en: o.creado_en,
+      })),
+    ),
+  ])
 
-  // Llegaron por la red, así que para esta terminal ya están entregadas:
-  // no tiene a quién reenviárselas.
-  await db.outbox.bulkPut(
-    paraLaCola.map((o) => ({ ...o, estado: 'pendiente' as const, entregado_en: o.creado_en })),
-  )
+  if (ventasSelladas.length) await db.venta.bulkPut(ventasSelladas)
+  if (lineas.length) await db.venta_linea.bulkPut(lineas)
+  await db.outbox.bulkPut(colaSellada)
 
   return paraLaCola.length
 }
@@ -177,9 +204,25 @@ export async function guardarLoQueLlego(mensaje: MensajeDelLocal): Promise<numbe
   Se sigue guardando en la cola después de entregarlo: la caja lo va a
   subir, pero si esa máquina se apaga, esta también tiene que poder.
 */
-export function loQueFaltaEntregar(cola: OperacionPendiente[]): OperacionPendiente[] {
+export function loQueFaltaEntregar<T extends Pick<OperacionPendiente, 'entregado_en' | 'estado'>>(
+  cola: T[],
+): T[] {
   return cola.filter(
     (o) => !o.entregado_en && (o.estado === 'pendiente' || o.estado === 'error'),
+  )
+}
+
+/*
+  Lo que se le manda a la caja, ya abierto.
+
+  Separado del envío para poder probarlo sin el programa instalado: es la
+  parte que falla en silencio. Una operación mandada tal como está
+  guardada llegaría cifrada con la llave de ESTA PC, y la caja —que tiene
+  la suya— no podría leerla nunca.
+*/
+export async function operacionesParaLaCaja(cola: OperacionPendiente[]): Promise<OperacionAbierta[]> {
+  return Promise.all(
+    loQueFaltaEntregar(cola).map(async (o) => ({ ...o, datos: await descifrarObjeto(o.datos) })),
   )
 }
 
@@ -190,14 +233,17 @@ export async function entregarALaCaja(terminal: Terminal | null): Promise<number
   const [clave, direccion] = await Promise.all([claveDelLocal(), direccionDelPuntoDeEncuentro()])
   if (!clave || !direccion) return 0
 
-  const falta = loQueFaltaEntregar(await db.outbox.toArray())
+  const cola = await db.outbox.toArray()
+  const falta = loQueFaltaEntregar(cola)
   if (!falta.length) return 0
+
+  const abiertas = await operacionesParaLaCaja(cola)
 
   const mensaje: MensajeDelLocal = {
     clave,
     tipo: 'operaciones',
     terminal: terminal.nombre,
-    operaciones: falta,
+    operaciones: abiertas,
   }
 
   const r = await hablarConLaCaja(direccion, JSON.stringify(mensaje))

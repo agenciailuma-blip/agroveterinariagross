@@ -132,7 +132,7 @@ Se mudó a **[`10 · Las decisiones que no se revisan.md`](10%20·%20Las%20decis
 | Módulo | Base | Pantalla | Notas |
 |---|---|---|---|
 | Usuarios, roles y permisos | ✅ | ✅ | 33 permisos, 4 roles |
-| **Cifrado de la base local** | ❌ | — | ⚠️ Comprometido en el alcance §1 y exigido por Ley 25.326. La base local guarda `cliente` en claro |
+| **Cifrado de la base local** | ✅ | 🟡 | Hecho el 14/09 (0.4.0). Nombre, documento, domicilio y operaciones pendientes, cifrados con AES-GCM; la llave la guarda Windows. **Falta instalarlo limpio en las 4 PC** — ver paso 9 de `instalacion-en-el-local.md` |
 | Catálogo y clasificación | ✅ | ✅ | Facetada, copiada de la tienda |
 | Dar de baja productos | ✅ | ✅ | De a uno y en masa, con restaurar. Baja lógica: **se revocó el borrado físico** |
 | Importación de la planilla | ✅ | ✅ | Con mapeo de columnas. Falta el archivo de Lucas |

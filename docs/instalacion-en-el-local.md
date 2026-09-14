@@ -198,6 +198,27 @@ El instalador no llegaba a reemplazar el programa porque el programa todavía lo
 
 > **Cuándo importa de verdad.** Hoy no: con la PC delante, desinstalar e instalar es un minuto. Importa **después del 26/10**, cuando haya que hacer llegar una corrección a 4 PC sin ir hasta Oberá. Ese día el actualizador es el único camino, así que conviene probarlo una vez antes — con la próxima versión, en una sola PC, sin desinstalar nada.
 
+### Paso 9 · La versión con la base cifrada (0.4.0) — **instalar limpio, no actualizar**
+
+Desde la 0.4.0 los datos de clientes que guarda cada PC —nombre, documento, domicilio de entrega— quedan cifrados. La llave la guarda Windows, en el **Administrador de credenciales**, con el nombre *Sistema Gross - base local*.
+
+**Por qué esta versión se instala limpia y no con *Actualizar ahora*.** Actualizando, el programa cifra lo que ya tenía guardado y todo lo que lee y escribe queda cifrado. Pero el motor de la base (IndexedDB) **no borra en el momento** lo que reemplaza: lo va limpiando solo, a medida que el archivo crece. Durante días, los nombres viejos siguen dentro de sus archivos internos. Se comprobó el 14/09: después de migrar, los nombres de los clientes seguían legibles en el archivo de la base. Instalando limpio, la base arranca vacía y nada llega nunca en claro al disco.
+
+**En cada PC, con la caja cerrada:**
+
+1. **Que no quede nada sin subir.** Configuración → *Diagnóstico de esta terminal*: tiene que decir **0 pendientes**. Si hay pendientes, conectar a internet y esperar a que suban. **No seguir con pendientes**: esas ventas sólo existen en esa PC.
+2. **Desinstalar** el programa.
+3. **Borrar la carpeta de datos**, si quedó: `%LOCALAPPDATA%r.iluma.gross` (se pega en la barra del Explorador). Ahí vivía la base vieja, con los nombres en claro.
+4. **Instalar la 0.4.0** y entrar.
+5. **Volver a asignar la terminal** (Paso 4) y **elegir la impresora** (Paso 5): vivían en esa carpeta.
+6. Esperar la primera sincronización. **Comprobar la llave:** en Windows, *Administrador de credenciales* → *Credenciales de Windows* → tiene que aparecer **Sistema Gross - base local**.
+
+> ⚠️ **No borrar esa credencial.** Sin ella, la PC no puede abrir sus datos: el sistema lo avisa arriba de todo y ofrece rehacer la base desde el servidor, pero sólo si no hay ventas sin subir. Desinstalar y reinstalar el programa **no** la borra, y está bien que así sea.
+>
+> **Si alguna vez aparece el aviso rojo** *"Esta computadora no puede abrir sus datos guardados"*: casi siempre es que se entró a Windows con otra cuenta. Volver a la de siempre lo resuelve.
+
+**La prueba del actualizador** (Paso 8) queda para la versión siguiente: con esta conviene instalar limpio.
+
 ---
 
 ## 4. Si hay que corregir algo en el momento

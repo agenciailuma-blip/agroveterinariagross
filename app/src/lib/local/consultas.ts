@@ -1,4 +1,6 @@
 import { db, normalizar } from '@/lib/local/db'
+import type { ClienteLocal } from '@/lib/local/db'
+import { abrirCliente } from '@/lib/local/cifrado'
 import type { EstadoStock } from '@/lib/tipos'
 import type { ClienteVenta, ProductoVenta } from '@/lib/api/ventas'
 import type { ListaPrecio, MedioPago } from '@/lib/api/precios'
@@ -91,12 +93,39 @@ export async function buscarProductosLocal(texto: string): Promise<ProductoVenta
   )
 }
 
+/*
+  Los clientes, ya abiertos, guardados en memoria mientras no cambien.
+
+  El nombre está cifrado, así que buscar exige abrir la lista. Hacerlo en
+  cada tecla sería abrir miles de nombres por letra; se abre una vez y se
+  vuelve a abrir sólo si la tabla cambió.
+
+  Cómo se sabe si cambió sin abrir nada: cuántos clientes hay y cuál es la
+  última fecha de actualización. La sincronización trae cada cambio con
+  su fecha nueva, así que cualquier alta, baja o edición mueve alguno de
+  los dos.
+*/
+let clientesAbiertos: { huella: string; filas: ClienteLocal[] } | null = null
+
+async function clientesEnMemoria(): Promise<ClienteLocal[]> {
+  const [cuantos, ultimo] = await Promise.all([
+    db.cliente.count(),
+    db.cliente.orderBy('actualizado_en').last(),
+  ])
+  const huella = `${cuantos}|${ultimo?.actualizado_en ?? ''}`
+  if (clientesAbiertos?.huella === huella) return clientesAbiertos.filas
+
+  const guardados = await db.cliente.toArray()
+  const filas = await Promise.all(guardados.map(abrirCliente))
+  clientesAbiertos = { huella, filas }
+  return filas
+}
+
 export async function buscarClientesLocal(texto: string): Promise<ClienteVenta[]> {
   const patron = normalizar(texto.trim())
-  const filas = await db.cliente
+  const filas = (await clientesEnMemoria())
     .filter((c) => !c.eliminado_en && c.activo && (!patron || c.busqueda.includes(patron)))
-    .limit(15)
-    .toArray()
+    .slice(0, 15)
 
   return filas.map((c) => ({
     id: c.id,
@@ -111,8 +140,9 @@ export async function buscarClientesLocal(texto: string): Promise<ClienteVenta[]
 }
 
 export async function consumidorFinalLocal(): Promise<ClienteVenta | null> {
-  const c = await db.cliente.where('codigo').equals('CF').first()
-  if (!c) return null
+  const guardado = await db.cliente.where('codigo').equals('CF').first()
+  if (!guardado) return null
+  const c = await abrirCliente(guardado)
   return {
     id: c.id,
     codigo: c.codigo,

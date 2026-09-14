@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import AvisoDeActualizacion from '@/components/AvisoDeActualizacion'
+import AvisoBaseBloqueada from '@/components/AvisoBaseBloqueada'
 import { useAuth } from '@/auth/AuthProvider'
 import { IndicadorConexion } from '@/components/IndicadorConexion'
 
@@ -278,6 +279,7 @@ export default function Layout() {
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Va arriba de todo y ocupa una franja: avisa sin tapar nada. */}
         <AvisoDeActualizacion />
+        <AvisoBaseBloqueada />
         <header className="flex items-center justify-end gap-4 border-b border-borde bg-white px-6 py-3">
           <IndicadorConexion />
         </header>

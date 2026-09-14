@@ -10,6 +10,12 @@ import { alLlegarDeLaRed, cerrarPuntoDeEncuentro, enEscritorio } from '@/lib/esc
 import { useConexion } from '@/lib/useConexion'
 import { useTerminal } from '@/lib/terminal'
 import { supabase } from '@/lib/supabase'
+import {
+  BaseLocalBloqueada,
+  cifrarLoQueQuedoEnClaro,
+  obtenerLlave,
+  rehacerBaseLocal,
+} from '@/lib/local/cifrado'
 
 interface EstadoSync {
   /** Hay copia local utilizable: la terminal puede trabajar sin conexión. */
@@ -22,6 +28,10 @@ interface EstadoSync {
   /** Esta terminal es la que escucha a las demás, y está escuchando. */
   escuchando: boolean
   sincronizar: () => Promise<void>
+  /** La llave de la base local no aparece: sin ella no se puede leer ni vender. */
+  bloqueada: BaseLocalBloqueada | null
+  /** Rehace la base de esta PC desde el servidor. Se niega si hay operaciones sin subir. */
+  rehacer: () => Promise<void>
 }
 
 const Contexto = createContext<EstadoSync | null>(null)
@@ -38,6 +48,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   const [sinSubir, setSinSubir] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [escuchando, setEscuchando] = useState(false)
+  const [bloqueada, setBloqueada] = useState<BaseLocalBloqueada | null>(null)
   const corriendo = useRef(false)
 
   const enLinea = conexion === 'en_linea'
@@ -71,6 +82,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
         })
       }
     } catch (e) {
+      if (e instanceof BaseLocalBloqueada) setBloqueada(e)
       setError(e instanceof Error ? e.message : 'No se pudo sincronizar.')
     } finally {
       await refrescarPendientes()
@@ -93,6 +105,26 @@ export function SyncProvider({ children }: { children: ReactNode }) {
         // Lo que quedó a medio enviar en la sesión anterior vuelve a la
         // cola. Reenviar es seguro; perder una venta no.
         await recuperarHuerfanas()
+
+        /*
+          La llave, al arrancar y no cuando alguien busca un cliente.
+
+          Si no aparece, conviene saberlo antes de que haya un cliente
+          esperando en el mostrador, con un aviso que diga qué hacer.
+        */
+        try {
+          await obtenerLlave()
+          setBloqueada(null)
+          // Lo que las versiones anteriores dejaron en claro se cifra de
+          // fondo. Si falla, se reintenta la próxima vez que se abra.
+          void cifrarLoQueQuedoEnClaro().catch((e) =>
+            console.error('[base local] no se pudo terminar de cifrar', e),
+          )
+        } catch (e) {
+          if (e instanceof BaseLocalBloqueada) setBloqueada(e)
+          else throw e
+        }
+
         setListo(await hayDatosLocales())
         await refrescarPendientes()
       })
@@ -220,9 +252,28 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('online', alVolver)
   }, [correr])
 
+  const rehacer = useCallback(async () => {
+    await rehacerBaseLocal()
+    await obtenerLlave()
+    setBloqueada(null)
+    setListo(false)
+    await correr()
+  }, [correr])
+
   const valor = useMemo(
-    () => ({ listo, sincronizando, ultimaSync, sinSubir, error, enLinea, escuchando, sincronizar: correr }),
-    [listo, sincronizando, ultimaSync, sinSubir, error, enLinea, escuchando, correr],
+    () => ({
+      listo,
+      sincronizando,
+      ultimaSync,
+      sinSubir,
+      error,
+      enLinea,
+      escuchando,
+      sincronizar: correr,
+      bloqueada,
+      rehacer,
+    }),
+    [listo, sincronizando, ultimaSync, sinSubir, error, enLinea, escuchando, correr, bloqueada, rehacer],
   )
 
   return <Contexto value={valor}>{children}</Contexto>

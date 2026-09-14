@@ -1,5 +1,6 @@
 import Dexie from 'dexie'
 import type { EntityTable } from 'dexie'
+import type { Cifrado, Guardado } from '@/lib/local/cifrado'
 
 /*
   ─────────────────────────────────────────────────────────────
@@ -81,6 +82,9 @@ export interface ClienteLocal {
   eliminado_en: string | null
   busqueda: string
 }
+
+/** El cliente como queda en disco: nombre, documento y búsqueda, cifrados. */
+export type ClienteGuardado = Guardado<ClienteLocal, 'nombre' | 'numero_documento' | 'busqueda'>
 
 export interface ListaPrecioLocal {
   id: string
@@ -196,6 +200,9 @@ export interface VentaLocal {
   para eso el documento tiene que existir en esta máquina y no sólo en
   la bandeja de salida.
 */
+/** La venta de la cola como queda en disco. */
+export type VentaGuardada = Guardado<VentaLocal, 'nombre_para_llamar' | 'observaciones'>
+
 export interface NoFiscalLocal {
   id: string
   tipo_clave: string
@@ -233,6 +240,19 @@ export interface NoFiscalLocal {
   venta_codigo: string | null
   creado_en: string
 }
+
+/** El remito o presupuesto como queda en disco: todo lo del receptor y la entrega, cifrado. */
+export type NoFiscalGuardado = Guardado<
+  NoFiscalLocal,
+  | 'receptor_nombre'
+  | 'receptor_documento'
+  | 'receptor_domicilio'
+  | 'observaciones'
+  | 'entrega_domicilio'
+  | 'entrega_localidad'
+  | 'entrega_contacto'
+  | 'transportista'
+>
 
 export interface NoFiscalLineaLocal {
   id: string
@@ -283,7 +303,21 @@ export interface Contador {
   actualizado_en: string
 }
 
+/*
+  Lo que la base local necesita saber de su propio cifrado.
+
+  Hoy es una sola fila, el testigo: una palabra conocida cifrada con la
+  llave de estos datos. Ver `cifrado.ts`.
+*/
+export interface SeguridadLocal {
+  clave: string
+  valor: Cifrado
+}
+
 export type EstadoOperacion = 'pendiente' | 'enviando' | 'error'
+
+/** La operación con sus datos a la vista: en memoria y viajando por la red del local. */
+export type OperacionAbierta = Omit<OperacionPendiente, 'datos'> & { datos: Record<string, unknown> }
 
 /*
   Bandeja de salida.
@@ -303,7 +337,12 @@ export interface OperacionPendiente {
   orden: number
   tipo: 'insert' | 'rpc'
   tabla: string
-  datos: Record<string, unknown>
+  /*
+    Cifrado entero: una venta o un remito pendiente lleva el nombre, el
+    documento y a veces el domicilio del cliente. Se abre recién para
+    mandarlo al servidor o a la caja.
+  */
+  datos: Cifrado
   descripcion: string
   creado_en: string
   intentos: number
@@ -328,9 +367,9 @@ class BaseLocal extends Dexie {
   codigo_barra!: EntityTable<CodigoBarraLocal, 'id'>
   saldo!: EntityTable<SaldoLocal, 'producto_id'>
   umbral!: EntityTable<UmbralLocal, 'id'>
-  cliente!: EntityTable<ClienteLocal, 'id'>
+  cliente!: EntityTable<ClienteGuardado, 'id'>
   saldo_cuenta_corriente!: EntityTable<SaldoCuentaCorrienteLocal, 'cliente_id'>
-  venta!: EntityTable<VentaLocal, 'id'>
+  venta!: EntityTable<VentaGuardada, 'id'>
   venta_linea!: EntityTable<VentaLineaLocal, 'id'>
   lista_precio!: EntityTable<ListaPrecioLocal, 'id'>
   medio_pago!: EntityTable<MedioPagoLocal, 'id'>
@@ -339,9 +378,10 @@ class BaseLocal extends Dexie {
   referencia!: EntityTable<ReferenciaLocal, 'id'>
   cursor!: EntityTable<Cursor, 'tabla'>
   contador!: EntityTable<Contador, 'clave'>
-  no_fiscal!: EntityTable<NoFiscalLocal, 'id'>
+  no_fiscal!: EntityTable<NoFiscalGuardado, 'id'>
   no_fiscal_linea!: EntityTable<NoFiscalLineaLocal, 'id'>
   outbox!: EntityTable<OperacionPendiente, 'id'>
+  seguridad!: EntityTable<SeguridadLocal, 'clave'>
 
   constructor() {
     super('gross')
@@ -376,6 +416,22 @@ class BaseLocal extends Dexie {
     this.version(4).stores({
       no_fiscal: 'id, tipo_clave, venta_id, creado_en',
       no_fiscal_linea: 'id, comprobante_no_fiscal_id, orden',
+    })
+
+    /*
+      v5 — el testigo del cifrado.
+
+      Se evitaba subir la versión, y la razón sigue en pie: una terminal
+      con otra ventana abierta en la versión vieja se queda esperando.
+      Esta vez no hay forma de evitarlo —el testigo tiene que vivir con los
+      datos— y se hace de la manera más inofensiva posible: sólo se crea
+      una tabla vacía. No hay función de actualización que transforme
+      filas al abrir; los datos que quedaron en claro los cifra después,
+      de a poco y sin apuro, `cifrarLoQueQuedoEnClaro`. Si esa ventana
+      vieja traba la apertura, el aviso de `blocked` ya lo dice.
+    */
+    this.version(5).stores({
+      seguridad: 'clave',
     })
   }
 }

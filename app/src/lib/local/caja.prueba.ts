@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { db } from '@/lib/local/db'
+import { descifrarObjeto, sellarCliente } from '@/lib/local/cifrado'
 import {
   aplicarListaLocal,
   cobrarLocal,
@@ -57,7 +58,7 @@ async function sembrar(e: Escenario = {}) {
     db.outbox.clear(),
   ])
 
-  await db.cliente.put({
+  await db.cliente.put(await sellarCliente({
     id: CLIENTE,
     codigo: 'C1',
     nombre: 'Cliente de Prueba',
@@ -72,7 +73,7 @@ async function sembrar(e: Escenario = {}) {
     actualizado_en: AHORA,
     eliminado_en: null,
     busqueda: 'cliente de prueba',
-  })
+  }))
 
   await db.saldo_cuenta_corriente.put({
     cliente_id: CLIENTE,
@@ -279,7 +280,7 @@ describe('lo que se encola para el servidor', () => {
 
   it('la llamada lleva venta, caja y cajero', async () => {
     const rpc = await db.outbox.where('lote').equals(VENTA).and((o) => o.tipo === 'rpc').first()
-    expect(rpc?.datos).toEqual({
+    expect(await descifrarObjeto(rpc!.datos)).toEqual({
       p_venta_id: VENTA,
       p_caja_id: 'caja-1',
       p_cajero_id: 'u-1',
@@ -293,9 +294,10 @@ describe('lo que se encola para el servidor', () => {
   */
   it('el pago viaja con un id propio de la terminal', async () => {
     const pago = await db.outbox.where('lote').equals(VENTA).and((o) => o.tabla === 'venta_pago').first()
-    expect(pago?.datos.id).toMatch(/^[0-9a-f-]{36}$/)
-    expect(pago?.datos.venta_id).toBe(VENTA)
-    expect(pago?.datos.importe).toBe(1000)
+    const datos = await descifrarObjeto(pago!.datos)
+    expect(datos.id).toMatch(/^[0-9a-f-]{36}$/)
+    expect(datos.venta_id).toBe(VENTA)
+    expect(datos.importe).toBe(1000)
   })
 
   it('un cobro con varios medios encola un pago por cada uno', async () => {

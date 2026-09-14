@@ -1,6 +1,13 @@
 import { supabase } from '@/lib/supabase'
 import { db, normalizar } from '@/lib/local/db'
-import type { OperacionPendiente } from '@/lib/local/db'
+import type { ClienteLocal, OperacionAbierta, OperacionPendiente, VentaLocal } from '@/lib/local/db'
+import {
+  BaseLocalBloqueada,
+  cifrarObjeto,
+  descifrarObjeto,
+  sellarCliente,
+  sellarVenta,
+} from '@/lib/local/cifrado'
 
 /*
   ─────────────────────────────────────────────────────────────
@@ -29,8 +36,8 @@ interface Definicion {
   origen: string
   columnas: string
   clave?: string
-  /** Adapta la fila del servidor a la forma local. */
-  mapear?: (fila: Record<string, unknown>) => Record<string, unknown>
+  /** Adapta la fila del servidor a la forma local. Puede cifrar, por eso es asíncrona. */
+  mapear?: (fila: Record<string, unknown>) => Record<string, unknown> | Promise<Record<string, unknown>>
 }
 
 const MAESTROS: Definicion[] = [
@@ -60,10 +67,16 @@ const MAESTROS: Definicion[] = [
     origen: 'cliente',
     columnas:
       'id, codigo, nombre, numero_documento, condicion_iva_id, descuento_porcentaje, lista_precio_id, cuenta_corriente, limite_credito, dias_vencimiento, activo, actualizado_en, eliminado_en',
-    mapear: (f) => ({
-      ...f,
-      busqueda: normalizar(`${f.nombre ?? ''} ${f.numero_documento ?? ''} ${f.codigo ?? ''}`),
-    }),
+    /*
+      La búsqueda se arma con el nombre en claro y después se cifra junto
+      con él: es una copia del nombre, y dejarla legible sería dejar el
+      nombre legible con otro nombre de campo.
+    */
+    mapear: (f) =>
+      sellarCliente({
+        ...f,
+        busqueda: normalizar(`${f.nombre ?? ''} ${f.numero_documento ?? ''} ${f.codigo ?? ''}`),
+      } as unknown as ClienteLocal) as unknown as Promise<Record<string, unknown>>,
   },
   {
     tabla: 'lista_precio',
@@ -127,8 +140,10 @@ async function bajarTabla(def: Definicion) {
     const filas = (data ?? []) as unknown as Record<string, unknown>[]
     if (!filas.length) break
 
-    const tabla = db.table(def.tabla)
-    await tabla.bulkPut(filas.map((f) => (def.mapear ? def.mapear(f) : f)))
+    // Se adapta —y se cifra— antes de escribir: esperar el cifrado con la
+    // escritura ya empezada es lo que cierra las transacciones de IndexedDB.
+    const listas = await Promise.all(filas.map((f) => (def.mapear ? def.mapear(f) : f)))
+    await db.table(def.tabla).bulkPut(listas)
 
     cursor = String(filas[filas.length - 1].actualizado_en)
     total += filas.length
@@ -228,7 +243,7 @@ async function bajarColaCaja() {
     .limit(200)
 
   if (error) throw new Error(`cola de caja: ${error.message}`)
-  const enServidor = (data ?? []) as unknown as import('@/lib/local/db').VentaLocal[]
+  const enServidor = (data ?? []) as unknown as VentaLocal[]
 
   const locales = await db.venta.toArray()
   const lotesPendientes = new Set(
@@ -238,7 +253,9 @@ async function bajarColaCaja() {
   const { idsAGuardar, aBorrar } = conciliarCola(enServidor, locales, lotesPendientes)
 
   const aGuardar = enServidor.filter((v) => idsAGuardar.has(v.id))
-  if (aGuardar.length) await db.venta.bulkPut(aGuardar)
+  if (aGuardar.length) {
+    await db.venta.bulkPut(await Promise.all(aGuardar.map(sellarVenta)))
+  }
 
   if (aBorrar.length) {
     await db.venta.bulkDelete(aBorrar)
@@ -284,9 +301,14 @@ export async function bajarCambios() {
 
 export async function encolar(
   lote: string,
-  operaciones: Omit<OperacionPendiente, 'id' | 'lote' | 'orden' | 'creado_en' | 'intentos' | 'ultimo_error' | 'estado'>[],
+  operaciones: Omit<OperacionAbierta, 'id' | 'lote' | 'orden' | 'creado_en' | 'intentos' | 'ultimo_error' | 'estado'>[],
 ) {
   const ahora = new Date().toISOString()
+
+  // Cifrado primero, y recién después se toca la base.
+  const selladas = await Promise.all(
+    operaciones.map(async (op) => ({ ...op, datos: await cifrarObjeto(op.datos) })),
+  )
 
   /*
     El orden sigue donde quedó el lote, no vuelve a cero.
@@ -304,7 +326,7 @@ export async function encolar(
   const desde = previas.length ? Math.max(...previas.map((o) => o.orden)) + 1 : 0
 
   await db.outbox.bulkAdd(
-    operaciones.map((op, i) => ({
+    selladas.map((op, i) => ({
       ...op,
       id: crypto.randomUUID(),
       lote,
@@ -318,13 +340,15 @@ export async function encolar(
 }
 
 async function enviarOperacion(op: OperacionPendiente) {
+  const datos = await descifrarObjeto(op.datos)
+
   if (op.tipo === 'rpc') {
-    const { error } = await supabase.rpc(op.tabla, op.datos)
+    const { error } = await supabase.rpc(op.tabla, datos)
     if (error) throw new Error(error.message)
     return
   }
 
-  const { error } = await supabase.from(op.tabla).insert(op.datos)
+  const { error } = await supabase.from(op.tabla).insert(datos)
   if (!error) return
 
   // 23505 es clave duplicada: el registro ya había llegado en un intento
@@ -363,6 +387,16 @@ export async function subirPendientes() {
         await db.outbox.delete(op.id)
         enviadas++
       } catch (e) {
+        /*
+          Sin llave no se puede leer ninguna: marcar cada venta como
+          fallida sumaría intentos y mensajes que no dicen qué pasa. Se
+          devuelve como estaba y se para la subida entera, para que la
+          pantalla muestre el problema de verdad.
+        */
+        if (e instanceof BaseLocalBloqueada) {
+          await db.outbox.update(op.id, { estado: op.estado })
+          throw e
+        }
         await db.outbox.update(op.id, {
           estado: 'error',
           intentos: op.intentos + 1,

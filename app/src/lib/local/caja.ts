@@ -1,5 +1,6 @@
 import { db } from '@/lib/local/db'
 import { encolar } from '@/lib/local/sync'
+import { abrirCliente, abrirVenta } from '@/lib/local/cifrado'
 import type { VentaLineaLocal, VentaLocal } from '@/lib/local/db'
 
 /*
@@ -46,10 +47,18 @@ export interface VentaCola {
 }
 
 export async function listarColaLocal(): Promise<VentaCola[]> {
-  const ventas = await db.venta.where('estado').equals('en_caja').toArray()
+  const ventas = await Promise.all(
+    (await db.venta.where('estado').equals('en_caja').toArray()).map(abrirVenta),
+  )
   ventas.sort((a, b) => (a.enviada_caja_en ?? '').localeCompare(b.enviada_caja_en ?? ''))
 
-  const clientes = new Map((await db.cliente.toArray()).map((c) => [c.id, c.nombre]))
+  // Sólo se abren los clientes que tienen una venta en la cola: con la
+  // lista entera, cada refresco de la cola abriría todos los nombres.
+  const ids = [...new Set(ventas.map((v) => v.cliente_id))]
+  const guardados = (await db.cliente.bulkGet(ids)).filter((c) => c !== undefined)
+  const clientes = new Map(
+    (await Promise.all(guardados.map(abrirCliente))).map((c) => [c.id, c.nombre]),
+  )
 
   return ventas.map((v) => ({
     id: v.id,
@@ -108,13 +117,15 @@ export interface VentaCompletaLocal {
 }
 
 export async function obtenerVentaLocal(id: string): Promise<VentaCompletaLocal | null> {
-  const v = await db.venta.get(id)
-  if (!v) return null
+  const guardada = await db.venta.get(id)
+  if (!guardada) return null
+  const v = await abrirVenta(guardada)
 
   const lineas = await db.venta_linea.where('venta_id').equals(id).toArray()
   lineas.sort((a, b) => a.orden - b.orden)
 
-  const cliente = await db.cliente.get(v.cliente_id)
+  const guardado = await db.cliente.get(v.cliente_id)
+  const cliente = guardado ? await abrirCliente(guardado) : undefined
 
   return {
     id: v.id,
@@ -237,10 +248,11 @@ async function validarCobro(
 
   if (ctaCte <= 0) return
 
-  const cliente = await db.cliente.get(venta.cliente_id)
-  if (!cliente) {
+  const guardado = await db.cliente.get(venta.cliente_id)
+  if (!guardado) {
     throw new Error('El cliente no está en esta computadora, no se puede validar el crédito.')
   }
+  const cliente = await abrirCliente(guardado)
   if (!cliente.cuenta_corriente) {
     throw new Error(`El cliente ${cliente.nombre} no tiene cuenta corriente habilitada.`)
   }
@@ -273,8 +285,9 @@ export async function cobrarLocal(datos: {
   cajeroId: string
   pagos: PagoLocal[]
 }): Promise<void> {
-  const venta = await db.venta.get(datos.ventaId)
-  if (!venta) throw new Error('La venta no está en esta computadora.')
+  const guardada = await db.venta.get(datos.ventaId)
+  if (!guardada) throw new Error('La venta no está en esta computadora.')
+  const venta = await abrirVenta(guardada)
 
   const lineas = await db.venta_linea.where('venta_id').equals(datos.ventaId).toArray()
   await validarCobro(venta, lineas, datos.pagos)

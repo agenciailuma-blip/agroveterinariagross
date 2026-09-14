@@ -3,6 +3,7 @@ import { db } from '@/lib/local/db'
 import { emitirNoFiscalLocal, obtenerNoFiscalLocal } from '@/lib/local/noFiscal'
 import type { EmisionLocal } from '@/lib/local/noFiscal'
 import { alinearNumeroNoFiscal, reservarNumeroNoFiscal } from '@/lib/local/consultas'
+import { sellarCliente } from '@/lib/local/cifrado'
 
 /*
   ─────────────────────────────────────────────────────────────
@@ -33,7 +34,7 @@ async function sembrar() {
     db.configuracion.clear(),
   ])
 
-  await db.cliente.put({
+  await db.cliente.put(await sellarCliente({
     id: CLIENTE,
     codigo: 'C1',
     nombre: 'Granja Tres Colonias',
@@ -48,7 +49,7 @@ async function sembrar() {
     actualizado_en: AHORA,
     eliminado_en: null,
     busqueda: 'granja',
-  })
+  }))
 
   await db.configuracion.bulkPut([
     { clave: 'comercio.razon_social', valor: 'GROSS ERNESTO HUGO', actualizado_en: AHORA },

@@ -154,7 +154,7 @@ No sale de sus listas, pero está comprometido y entra antes del corte. Se anota
 | 🟡 | **El actualizador automático** | Arreglado en la 0.2.2, **pero todavía sin probar de punta a punta**: la actualización se hizo desinstalando primero. Mientras tanto, cada corrección se instala desinstalando |
 | ✅ | **Métricas de venta en Inicio** | Hechas el 10/09: hoy, últimos 7 días, mes, lo más vendido y cuánto vendió cada uno. Era lo último visible que faltaba de V1-A |
 | 🟡 | **Sincronización por red local** | Sin esto, "el mostrador sigue funcionando sin internet" se cumple a medias: una venta armada por un vendedor no llega a la caja hasta que vuelva la conexión |
-| 🔴 | **Cifrado de la base local** | Comprometido en el alcance §1 y exigido por la Ley 25.326. La base local guarda datos de clientes en claro |
+| 🟡 | **Cifrado de la base local** | Hecho el 14/09 en la 0.4.0: los datos de clientes que guarda cada PC quedan cifrados. **Falta instalarlo en el local, limpio** |
 | 🟡 | **Devoluciones parciales y nota de débito** | Hoy la devolución es de la venta entera: si el cliente devuelve 1 de 3, hay que anular todo y rehacer |
 | 🟡 | **Reportes** | La única pantalla de V1-A que no existe todavía |
 

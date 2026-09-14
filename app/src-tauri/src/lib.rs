@@ -1,4 +1,5 @@
 mod impresora;
+mod llave_local;
 mod red_local;
 
 /*
@@ -28,7 +29,11 @@ pub fn run() {
             red_local::abrir_punto_de_encuentro,
             red_local::cerrar_punto_de_encuentro,
             red_local::hablar_con_la_caja,
-            red_local::nombre_de_esta_computadora
+            red_local::nombre_de_esta_computadora,
+            // Los datos de clientes que quedan en la PC se guardan
+            // cifrados; la llave la custodia Windows, no la aplicación.
+            llave_local::leer_llave_base_local,
+            llave_local::guardar_llave_base_local
         ])
         .run(tauri::generate_context!())
         .expect("No se pudo abrir la ventana del sistema");

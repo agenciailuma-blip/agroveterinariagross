@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { loQueFaltaEntregar, loQueSeGuarda } from '@/lib/local/red'
-import type { OperacionPendiente } from '@/lib/local/db'
+import type { OperacionAbierta } from '@/lib/local/db'
 
 /*
   La venta que llega por la red del local.
@@ -11,7 +11,7 @@ import type { OperacionPendiente } from '@/lib/local/db'
   las dos formas de equivocarse cuestan plata.
 */
 
-function operacion(extra: Partial<OperacionPendiente> = {}): OperacionPendiente {
+function operacion(extra: Partial<OperacionAbierta> = {}): OperacionAbierta {
   return {
     id: crypto.randomUUID(),
     lote: 'v-1',

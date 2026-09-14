@@ -1,5 +1,7 @@
 import { supabase } from '@/lib/supabase'
 import { db } from '@/lib/local/db'
+import type { VentaLocal } from '@/lib/local/db'
+import { sellarVenta } from '@/lib/local/cifrado'
 import { encolar, subirPendientes } from '@/lib/local/sync'
 import {
   aplicarListaLocal,
@@ -396,7 +398,8 @@ async function asegurarVentaLocal(ventaId: string): Promise<void> {
     throw new Error(`No se pudo traer la venta: ${venta.error?.message ?? 'no existe'}`)
   }
 
-  await db.venta.put(venta.data as never)
+  // Cifrada: trae el nombre para llamar y las observaciones.
+  await db.venta.put(await sellarVenta(venta.data as unknown as VentaLocal))
   if (lineas.data?.length) await db.venta_linea.bulkPut(lineas.data as never)
 }
 
