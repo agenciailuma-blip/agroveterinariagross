@@ -198,11 +198,13 @@ El instalador no llegaba a reemplazar el programa porque el programa todavía lo
 
 > **Cuándo importa de verdad.** Hoy no: con la PC delante, desinstalar e instalar es un minuto. Importa **después del 26/10**, cuando haya que hacer llegar una corrección a 4 PC sin ir hasta Oberá. Ese día el actualizador es el único camino, así que conviene probarlo una vez antes — con la próxima versión, en una sola PC, sin desinstalar nada.
 
-### Paso 9 · La versión con la base cifrada (0.4.0) — **instalar limpio, no actualizar**
+### Paso 9 · La versión con la base cifrada (0.4.0) — **instalar limpio aunque ya se haya actualizado sola**
 
 Desde la 0.4.0 los datos de clientes que guarda cada PC —nombre, documento, domicilio de entrega— quedan cifrados. La llave la guarda Windows, en el **Administrador de credenciales**, con el nombre *Sistema Gross - base local*.
 
-**Por qué esta versión se instala limpia y no con *Actualizar ahora*.** Actualizando, el programa cifra lo que ya tenía guardado y todo lo que lee y escribe queda cifrado. Pero el motor de la base (IndexedDB) **no borra en el momento** lo que reemplaza: lo va limpiando solo, a medida que el archivo crece. Durante días, los nombres viejos siguen dentro de sus archivos internos. Se comprobó el 14/09: después de migrar, los nombres de los clientes seguían legibles en el archivo de la base. Instalando limpio, la base arranca vacía y nada llega nunca en claro al disco.
+**Publicada el 14/09.** Alguna PC puede haberse actualizado sola antes de la visita: está bien, funciona igual. **Pero se instala limpia de todas formas.**
+
+**Por qué.** Actualizando, el programa cifra lo que ya tenía guardado y todo lo que lee y escribe queda cifrado. Pero el motor de la base (IndexedDB) **no borra en el momento** lo que reemplaza: lo va limpiando solo, a medida que el archivo crece. Durante días, los nombres viejos siguen dentro de sus archivos internos. Se comprobó el 14/09: después de migrar, los nombres de los clientes seguían legibles en el archivo de la base. Instalando limpio, la base arranca vacía y nada llega nunca en claro al disco.
 
 **En cada PC, con la caja cerrada:**
 
@@ -217,7 +219,7 @@ Desde la 0.4.0 los datos de clientes que guarda cada PC —nombre, documento, do
 >
 > **Si alguna vez aparece el aviso rojo** *"Esta computadora no puede abrir sus datos guardados"*: casi siempre es que se entró a Windows con otra cuenta. Volver a la de siempre lo resuelve.
 
-**La prueba del actualizador** (Paso 8) queda para la versión siguiente: con esta conviene instalar limpio.
+**De paso, la prueba del actualizador** (Paso 8): antes de desinstalar, mirar en *Diagnóstico* qué versión tiene cada PC. Si alguna ya dice **0.4.0** sin que nadie la haya instalado a mano, el actualizador funcionó —y el arreglo del archivo tomado de la 0.2.2 queda probado—. Anotar cuáles sí y cuáles no.
 
 ---
 

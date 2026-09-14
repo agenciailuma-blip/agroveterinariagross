@@ -12,7 +12,7 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Publicado: 0.3.1**, con Reportes y las devoluciones parciales adentro. **Hechos y sin publicar: el resumen de cuenta corriente y el cifrado de la base local (0.4.0).** **248 pruebas verdes en la app y 11 en el programa**, 75 migraciones aplicadas.
+**Publicado: 0.4.0** (14/09), con Reportes, devoluciones parciales, el resumen de cuenta corriente y la base local cifrada. **Falta instalarla limpia en el local esta semana** —la hace Francisco a mano, borrando los datos con 0 pendientes: [paso 9](instalacion-en-el-local.md). **248 pruebas verdes en la app y 11 en el programa**, 75 migraciones aplicadas.
 
 ⚠️ **Lo que está construido pero NO verificado.** Un chat nuevo no puede darlo por probado:
 
@@ -65,7 +65,7 @@ Tres cosas que definen si esto sirve de verdad:
 
 Verificado: las 2 pruebas nuevas del programa pasan contra el **Administrador de credenciales real de Windows**; el programa de escritorio, abierto en esta PC, **creó la credencial** *Sistema Gross - base local*; y en el navegador, la base vieja de las sesiones anteriores **se migró sola**: 8 clientes y 3 ventas, ninguno quedó legible, y la búsqueda, la cola de la caja y la sincronización siguen andando con los nombres descifrados. Siete roturas a propósito, las siete atrapadas.
 
-🔴 **Y apareció algo que cambia cómo se instala.** Migrando en el lugar, el motor de la base **no borra en el momento** lo que reemplaza: se comprobó que después de migrar los nombres seguían legibles en su archivo interno, y ahí se quedan hasta que el motor limpia solo, días después. **Por eso la 0.4.0 no se publica para el actualizador: se instala limpia, PC por PC**, borrando la carpeta de datos con 0 pendientes. El procedimiento está en el [paso 9](instalacion-en-el-local.md).
+🔴 **Y apareció algo que cambia cómo se instala.** Migrando en el lugar, el motor de la base **no borra en el momento** lo que reemplaza: se comprobó que después de migrar los nombres seguían legibles en su archivo interno, y ahí se quedan hasta que el motor limpia solo, días después. **Por eso la 0.4.0, aunque está publicada, se instala limpia PC por PC**, borrando la carpeta de datos con 0 pendientes —Francisco la instala a mano esta semana—. El procedimiento está en el [paso 9](instalacion-en-el-local.md).
 
 > **Lo que queda afuera, dicho para no prometer de más:** la red del local sigue sin cifrar por el cable (es la red interna, con su clave), y el perfil del usuario que entra —nombre, mail y permisos, para poder entrar sin internet— sigue guardado en claro en el navegador. Son datos de los empleados, no de los clientes.
 
@@ -163,10 +163,11 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 
 1. 🔴 **Probar la impresión en el local, con la impresora delante.** El código está publicado en la 0.2.3: lo que falta es el papel.
 2. 🔴 **CAEA** — falta el trámite, no el código.
-3. ~~**Cifrado de la base local.**~~ ✅ **Hecho el 14/09 (0.4.0), sin instalar.** Se instala limpio, PC por PC: [paso 9 del guion](instalacion-en-el-local.md).
+3. ~~**Cifrado de la base local.**~~ ✅ **Hecho y publicado el 14/09 (0.4.0).** Se instala limpio, PC por PC, esta semana: [paso 9 del guion](instalacion-en-el-local.md).
 4. ~~**Devoluciones parciales**~~ ✅ **Hechas el 11/09 y publicadas el 14/09** en la 0.3.1.
 5. ~~**Reportes**~~ ✅ **Hecha y publicada el 11/09** en la 0.3.0.
-6. **Todo con teclado y la versión móvil** — lo último antes del 26/10, decidido con Lucas. En el celular el menú va a ser una hamburguesa; el achicado de ahora es para tablet.
+6. **La versión móvil** — en curso desde el 14/09. Lo prometido en la primera reunión: *consultar stock, ver reportes o pasar un precio desde el depósito*; vender sigue siendo en la PC con el lector.
+7. **Todo con teclado** — **en espera**: Gross tiene que confirmar qué atajos prefiere. Cuando se haga, van definidos en un solo lugar del código y Configuración los **muestra** en una lista; que se puedan editar por PC, sólo si lo piden (cada máquina con teclas distintas complica capacitar y dar soporte).
 
 > ✅ **Los desplegables de *Percepciones* ya usan el estilo común**, así que muestran el recuadro de foco como el resto del sistema — un paso menos para el punto 6. La pantalla tenía además el botón y la tarjeta escritos a mano; los tres ahora salen de [`estilos.ts`](../app/src/estilos.ts).
 
