@@ -168,14 +168,21 @@ export default function Stock() {
         </div>
       ) : (
         <div className="overflow-x-auto rounded-xl bg-white shadow-sm ring-1 ring-borde">
+          {/*
+            En el teléfono van tres columnas: qué es, cuánto queda y en qué
+            estado está. Es lo que se mira parado en el depósito. El umbral y
+            lo que costaría reponer aparecen desde tablet: con las cinco, en
+            un teléfono el encabezado se encimaba y la última quedaba fuera
+            de la pantalla.
+          */}
           <table className="w-full text-sm">
             <thead className="border-b border-borde bg-piedra-50 text-left text-xs tracking-wide text-piedra-500 uppercase">
               <tr>
                 <th className="px-4 py-2.5 font-medium">Producto</th>
                 <th className="py-2.5 text-right font-medium">Quedan</th>
-                <th className="py-2.5 text-right font-medium">Avisa en</th>
-                <th className="py-2.5 font-medium">Estado</th>
-                <th className="px-4 py-2.5 text-right font-medium">Reponer costaría</th>
+                <th className="hidden py-2.5 text-right font-medium sm:table-cell">Avisa en</th>
+                <th className="px-3 py-2.5 font-medium">Estado</th>
+                <th className="hidden px-4 py-2.5 text-right font-medium sm:table-cell">Reponer costaría</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-piedra-100">
@@ -200,17 +207,17 @@ export default function Stock() {
                       {numero.format(f.cantidad)}
                       <span className="ml-1 text-xs text-piedra-400">{f.unidad_medida}</span>
                     </td>
-                    <td className="py-2.5 text-right tabular-nums text-piedra-500">
+                    <td className="hidden py-2.5 text-right tabular-nums text-piedra-500 sm:table-cell">
                       {numero.format(f.umbral_bajo)}
                     </td>
-                    <td className="py-2.5">
+                    <td className="px-3 py-2.5">
                       <span
                         className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ring-1 ${e.clase}`}
                       >
                         {e.etiqueta}
                       </span>
                     </td>
-                    <td className="px-4 py-2.5 text-right tabular-nums text-piedra-600">
+                    <td className="hidden px-4 py-2.5 text-right tabular-nums text-piedra-600 sm:table-cell">
                       {costo === null ? (
                         <span className="text-xs text-piedra-300">sin costo cargado</span>
                       ) : (

@@ -75,7 +75,7 @@ function Seccion({ titulo, children }: { titulo: string; children: React.ReactNo
       <h3 className="mb-3 text-xs font-semibold tracking-wide text-piedra-400 uppercase">
         {titulo}
       </h3>
-      <div className="grid grid-cols-4 gap-3">{children}</div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">{children}</div>
     </fieldset>
   )
 }
@@ -183,7 +183,7 @@ export default function ProductoEditor({
               ))}
             </select>
           </Campo>
-          <Campo etiqueta="Nombre interno (el que ve el vendedor)" ancho="col-span-4">
+          <Campo etiqueta="Nombre interno (el que ve el vendedor)" ancho="col-span-2 sm:col-span-4">
             <input
               ref={refNombre}
               value={estado.campos.nombre_interno ?? ''}
@@ -192,7 +192,7 @@ export default function ProductoEditor({
               placeholder="ALIM BAL LIVRA 15KG"
             />
           </Campo>
-          <Campo etiqueta="Nombre público (el que ve el cliente en la tienda)" ancho="col-span-4">
+          <Campo etiqueta="Nombre público (el que ve el cliente en la tienda)" ancho="col-span-2 sm:col-span-4">
             <input
               value={estado.campos.nombre_publico ?? ''}
               onChange={(e) => set({ nombre_publico: e.target.value || null })}
@@ -207,7 +207,7 @@ export default function ProductoEditor({
           */}
           <Campo
             etiqueta="Descripción (la que va a la tienda web)"
-            ancho="col-span-4"
+            ancho="col-span-2 sm:col-span-4"
             ayuda="Para qué sirve, cómo se usa, qué trae. Se sincroniza con la tienda."
           >
             <textarea
@@ -284,7 +284,7 @@ export default function ProductoEditor({
             alguien decide.
           */}
           {margenReal !== null && (
-            <div className="col-span-4 flex flex-wrap items-center gap-x-5 gap-y-1 rounded-lg bg-piedra-50 px-3 py-2 text-xs">
+            <div className="col-span-2 sm:col-span-4 flex flex-wrap items-center gap-x-5 gap-y-1 rounded-lg bg-piedra-50 px-3 py-2 text-xs">
               <span className="text-piedra-600">
                 Margen real:{' '}
                 <strong className="text-tinta">{numero.format(margenReal)}%</strong> sobre costo
@@ -398,7 +398,7 @@ export default function ProductoEditor({
             me quedan? y ¿a partir de cuántos me avisás? son la misma
             conversación.
           */}
-          <div className="col-span-4 rounded-lg bg-piedra-50 p-3 ring-1 ring-borde">
+          <div className="col-span-2 sm:col-span-4 rounded-lg bg-piedra-50 p-3 ring-1 ring-borde">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-xs font-medium text-piedra-600">Avisarme cuando queden pocos</p>
               {puedeUmbrales && (
@@ -420,7 +420,7 @@ export default function ProductoEditor({
             </div>
 
             {estado.umbral.propio && puedeUmbrales ? (
-              <div className="mt-3 grid grid-cols-4 gap-3">
+              <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <Campo etiqueta="Stock bajo (amarillo)" ayuda="Hay que ir pidiendo">
                   <input
                     type="number"
@@ -480,7 +480,7 @@ export default function ProductoEditor({
           */}
           <Campo
             etiqueta="A quién se le compra"
-            ancho="col-span-4"
+            ancho="col-span-2 sm:col-span-4"
             ayuda="Permite aumentarle el precio a todos los productos de este proveedor de una sola vez, desde Proveedores."
           >
             <select
@@ -544,7 +544,7 @@ export default function ProductoEditor({
         </Seccion>
 
         <Seccion titulo="Códigos de barra">
-          <Campo etiqueta="Escaneá o tipeá y presioná Enter" ancho="col-span-4">
+          <Campo etiqueta="Escaneá o tipeá y presioná Enter" ancho="col-span-2 sm:col-span-4">
             <input
               value={codigoBarra}
               onChange={(e) => setCodigoBarra(e.target.value)}
@@ -554,7 +554,7 @@ export default function ProductoEditor({
             />
           </Campo>
           {estado.codigosBarra.length > 0 && (
-            <div className="col-span-4 flex flex-wrap gap-2">
+            <div className="col-span-2 sm:col-span-4 flex flex-wrap gap-2">
               {estado.codigosBarra.map((c) => (
                 <span
                   key={c}
@@ -619,7 +619,7 @@ export default function ProductoEditor({
             />
             Controla vencimiento
           </label>
-          <p className="col-span-4 text-xs text-piedra-400">
+          <p className="col-span-2 sm:col-span-4 text-xs text-piedra-400">
             Estas marcas todavía no cambian nada en la operación. Se cargan ahora para no tener que
             revisar 3.000 productos de nuevo cuando SENASA defina el mecanismo de SIGTRAZAVET.
           </p>

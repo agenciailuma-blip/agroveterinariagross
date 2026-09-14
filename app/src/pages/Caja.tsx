@@ -375,7 +375,7 @@ export default function Caja() {
 
   if (!operador)
     return (
-      <div className="-m-6 min-h-[calc(100vh-3.5rem)]">
+      <div className="-m-4 min-h-[calc(100vh-3.5rem)] md:-m-6">
         <IdentificarOperador terminalId={terminal.id} onIdentificado={identificar} />
       </div>
     )

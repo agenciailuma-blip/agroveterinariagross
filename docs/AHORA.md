@@ -69,6 +69,20 @@ Verificado: las 2 pruebas nuevas del programa pasan contra el **Administrador de
 
 > **Lo que queda afuera, dicho para no prometer de más:** la red del local sigue sin cifrar por el cable (es la red interna, con su clave), y el perfil del usuario que entra —nombre, mail y permisos, para poder entrar sin internet— sigue guardado en claro en el navegador. Son datos de los empleados, no de los clientes.
 
+**Y la versión móvil**, que era lo que seguía.
+
+> **Cómo se lo contás a Lucas:** desde el celular entra a la misma dirección y la agrega a la pantalla de inicio; queda un ícono de Gross y se abre como una aplicación. El menú se esconde en un botón arriba a la izquierda. Sirve para lo que le prometimos: mirar el stock, ver los reportes y cambiar un precio parado en el depósito. Vender sigue siendo en la PC.
+
+Lo que hubo que cambiar, porque la app estaba pensada para una pantalla ancha:
+
+- **El menú** ocupaba dos tercios del teléfono. Ahora es un panel que se abre con un botón y se cierra solo al elegir. En tablet y PC queda la barra de siempre.
+- **Tocar un producto o un cliente parecía no hacer nada**: la ficha se abría a la derecha de la lista, fuera de la pantalla. Ahora, en pantallas angostas, la ficha reemplaza a la lista. De paso se arregló en tablet, donde tampoco entraba.
+- **Las fichas** tenían los campos en cuatro columnas: el tipo de persona se leía «Pers». En el teléfono van en dos.
+- **Las tablas** muestran lo que se mira parado: en Stock, producto, cuánto queda y estado; en Productos, precio y stock con el código bajo el nombre; en la deuda de Reportes, cliente, vencido y **un teléfono que se toca para llamar**.
+- **El ícono**: había sólo un SVG, que el iPhone ignora. Ahora hay íconos PNG, uno adaptable para Android y el del iPhone. Y el color de la barra del teléfono era un verde viejo: ahora es el violeta de la marca.
+
+Verificado simulando un teléfono (375 px): las 16 pantallas entran de ancho, y se recorrieron a mano Stock, Productos con su ficha, Clientes y Reportes. En PC (1280 px) y tablet (768 px) todo queda como estaba, salvo la ficha en tablet, que ahora sí entra. ⚠️ **Falta probarla en un celular de verdad**, sobre todo la instalación.
+
 ## Lo que pasó el 11 de septiembre
 
 **Está la pantalla de Reportes, la última de V1-A que faltaba.** Con eso, el punto 9 del alcance —«métricas simples»— queda cubierto entero.
@@ -166,7 +180,7 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 3. ~~**Cifrado de la base local.**~~ ✅ **Hecho y publicado el 14/09 (0.4.0).** Se instala limpio, PC por PC, esta semana: [paso 9 del guion](instalacion-en-el-local.md).
 4. ~~**Devoluciones parciales**~~ ✅ **Hechas el 11/09 y publicadas el 14/09** en la 0.3.1.
 5. ~~**Reportes**~~ ✅ **Hecha y publicada el 11/09** en la 0.3.0.
-6. **La versión móvil** — en curso desde el 14/09. Lo prometido en la primera reunión: *consultar stock, ver reportes o pasar un precio desde el depósito*; vender sigue siendo en la PC con el lector.
+6. ~~**La versión móvil**~~ ✅ **Hecha el 14/09, sin publicar.** Lo prometido en la primera reunión: *consultar stock, ver reportes o pasar un precio desde el depósito*; vender sigue siendo en la PC con el lector. Cómo se instala en el celular: [paso 10](instalacion-en-el-local.md). **Falta probarla en un teléfono de verdad.**
 7. **Todo con teclado** — **en espera**: Gross tiene que confirmar qué atajos prefiere. Cuando se haga, van definidos en un solo lugar del código y Configuración los **muestra** en una lista; que se puedan editar por PC, sólo si lo piden (cada máquina con teclas distintas complica capacitar y dar soporte).
 
 > ✅ **Los desplegables de *Percepciones* ya usan el estilo común**, así que muestran el recuadro de foco como el resto del sistema — un paso menos para el punto 6. La pantalla tenía además el botón y la tarjeta escritos a mano; los tres ahora salen de [`estilos.ts`](../app/src/estilos.ts).

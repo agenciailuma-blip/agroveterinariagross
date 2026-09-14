@@ -223,6 +223,17 @@ Desde la 0.4.0 los datos de clientes que guarda cada PC —nombre, documento, do
 
 ---
 
+### Paso 10 · En el celular — para Lucas, o quien lo quiera
+
+No se instala nada desde una tienda: es la misma dirección web, agregada a la pantalla de inicio. Sirve para lo que se prometió en la primera reunión —**consultar stock, ver reportes, pasar un precio desde el depósito**—. Vender sigue siendo en la PC con el lector.
+
+- **Android (Chrome):** entrar a la dirección del sistema → menú de los tres puntos → **Instalar aplicación** (o *Agregar a la pantalla de inicio*).
+- **iPhone (Safari):** entrar a la dirección → botón **Compartir** → **Agregar a inicio**.
+
+Queda un ícono violeta con el isotipo de Gross y se abre como aplicación, sin la barra del navegador.
+
+⚠️ **Sin probar en un teléfono de verdad.** Se verificó simulando la pantalla de un teléfono y revisando que el instalable salga completo (manifiesto, íconos, ícono del iPhone), pero la instalación en sí se prueba con el celular en la mano.
+
 ## 4. Si hay que corregir algo en el momento
 
 1. Subir el número en `app/src-tauri/tauri.conf.json`.

@@ -273,8 +273,18 @@ export default function Productos() {
         trabaja contra este número: saber cuánto falta es lo que permite
         organizar las jornadas.
       */}
+      {/*
+        Mientras la ficha está abierta en una pantalla angosta, el avance y
+        el buscador se esconden: le dejaban a la ficha menos de media
+        pantalla del teléfono, justo cuando lo que se quiere es ver el
+        precio y guardarlo.
+      */}
       {avance.data && avance.data.total > 0 && (
-        <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-borde">
+        <div
+          className={`rounded-xl bg-white p-4 shadow-sm ring-1 ring-borde ${
+            editorAbierto ? 'hidden lg:block' : ''
+          }`}
+        >
           <div className="mb-2 flex items-baseline justify-between text-sm">
             <span className="font-medium text-piedra-700">Avance de la carga</span>
             <span className="tabular-nums text-piedra-500">
@@ -291,7 +301,7 @@ export default function Productos() {
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-3">
+      <div className={`flex-wrap items-center gap-3 ${editorAbierto ? 'hidden lg:flex' : 'flex'}`}>
         <div className="relative min-w-64 flex-1">
           <svg
             className="pointer-events-none absolute top-1/2 left-3.5 size-5 -translate-y-1/2 text-piedra-400"
@@ -391,14 +401,26 @@ export default function Productos() {
         </div>
       )}
 
+      {/*
+        La lista y la ficha, una al lado de la otra desde una pantalla ancha.
+
+        Por debajo —un teléfono, una tablet— la ficha de 36 rem no entra al
+        lado de la lista: se abría a la derecha, fuera de la pantalla, y
+        tocar un producto parecía no hacer nada. Ahí la ficha reemplaza a
+        la lista, y cerrarla la trae de vuelta.
+      */}
       <div className="flex min-h-0 flex-1 gap-4">
-        <div className="min-w-0 flex-1 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-borde">
+        <div
+          className={`min-w-0 flex-1 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-borde ${
+            editorAbierto ? 'hidden lg:block' : ''
+          }`}
+        >
           <div className="h-full overflow-y-auto">
             <table className="w-full text-sm">
               <thead className="sticky top-0 border-b border-borde bg-piedra-50 text-left text-xs tracking-wide text-piedra-500 uppercase">
                 <tr>
-                  {puedeDarDeBaja && <th className="w-10 px-4 py-2.5" />}
-                  <th className="px-4 py-2.5 font-medium">Código</th>
+                  {puedeDarDeBaja && <th className="hidden w-10 px-4 py-2.5 sm:table-cell" />}
+                  <th className="hidden px-4 py-2.5 font-medium sm:table-cell">Código</th>
                   <th className="px-4 py-2.5 font-medium">Producto</th>
                   <th className="px-4 py-2.5 text-right font-medium">Precio</th>
                   {verBajas ? (
@@ -406,7 +428,7 @@ export default function Productos() {
                   ) : (
                     <>
                       <th className="px-4 py-2.5 text-right font-medium">Stock</th>
-                      <th className="px-4 py-2.5 font-medium">Estado</th>
+                      <th className="hidden px-4 py-2.5 font-medium sm:table-cell">Estado</th>
                     </>
                   )}
                 </tr>
@@ -442,7 +464,7 @@ export default function Productos() {
                   bajas.data?.filas.map((p) => (
                     <tr key={p.id} className="hover:bg-piedra-50">
                       {puedeDarDeBaja && (
-                        <td className="px-4 py-2.5">
+                        <td className="hidden px-4 py-2.5 sm:table-cell">
                           <input
                             type="checkbox"
                             checked={marcados.has(p.id)}
@@ -451,8 +473,11 @@ export default function Productos() {
                           />
                         </td>
                       )}
-                      <td className="px-4 py-2.5 font-mono text-xs text-piedra-500">{p.codigo}</td>
-                      <td className="px-4 py-2.5 text-piedra-600">{p.nombre_interno}</td>
+                      <td className="hidden px-4 py-2.5 font-mono text-xs text-piedra-500 sm:table-cell">{p.codigo}</td>
+                      <td className="px-4 py-2.5 text-piedra-600">
+                        {p.nombre_interno}
+                        <p className="font-mono text-xs text-piedra-400 sm:hidden">{p.codigo}</p>
+                      </td>
                       <td className="px-4 py-2.5 text-right tabular-nums text-piedra-600">
                         {moneda.format(p.precio_venta)}
                       </td>
@@ -472,7 +497,7 @@ export default function Productos() {
                         className={activa ? 'bg-marca-50' : 'hover:bg-piedra-50'}
                       >
                         {puedeDarDeBaja && (
-                          <td className="px-4 py-2.5">
+                          <td className="hidden px-4 py-2.5 sm:table-cell">
                             <input
                               type="checkbox"
                               checked={marcados.has(p.producto_id)}
@@ -490,7 +515,7 @@ export default function Productos() {
                             setCreando(false)
                             setSeleccionado(p.producto_id)
                           }}
-                          className="cursor-pointer px-4 py-2.5 font-mono text-xs text-piedra-500"
+                          className="hidden cursor-pointer px-4 py-2.5 font-mono text-xs text-piedra-500 sm:table-cell"
                         >
                           {p.codigo}
                         </td>
@@ -511,6 +536,8 @@ export default function Productos() {
                             )}
                             <span className="font-medium text-tinta">{p.nombre_interno}</span>
                           </div>
+                          {/* Sin la columna del código, va debajo del nombre. */}
+                          <p className="font-mono text-xs text-piedra-400 sm:hidden">{p.codigo}</p>
                         </td>
                         <td className="px-4 py-2.5 text-right tabular-nums text-tinta">
                           {moneda.format(p.precio_venta)}
@@ -518,7 +545,7 @@ export default function Productos() {
                         <td className="px-4 py-2.5 text-right tabular-nums text-piedra-700">
                           {numero.format(p.cantidad)}
                         </td>
-                        <td className="px-4 py-2.5">
+                        <td className="hidden px-4 py-2.5 sm:table-cell">
                           <span
                             className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ring-1 ${estado.clase}`}
                           >
@@ -541,7 +568,7 @@ export default function Productos() {
         </div>
 
         {editorAbierto && referencias.data && (
-          <div className="w-[36rem] shrink-0 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-borde">
+          <div className="w-full overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-borde lg:w-[36rem] lg:shrink-0">
             {detalle.isPending && !creando ? (
               <p className="p-8 text-center text-sm text-piedra-400">Cargando producto…</p>
             ) : (

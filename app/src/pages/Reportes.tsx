@@ -201,14 +201,19 @@ function Deuda() {
           <div className={`${tarjeta} overflow-hidden`}>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
+                {/*
+                  En el teléfono: cliente, vencido y teléfono. Es lo que hace
+                  falta para llamar a quien debe, que es para lo que se mira
+                  esta tabla desde el celular. El resto aparece desde tablet.
+                */}
                 <thead>
                   <tr className="border-b border-borde text-left text-xs text-piedra-500">
                     <th className="px-4 py-2.5 font-medium">Cliente</th>
-                    <th className="px-4 py-2.5 text-right font-medium">Debe</th>
+                    <th className="hidden px-4 py-2.5 text-right font-medium sm:table-cell">Debe</th>
                     <th className="px-4 py-2.5 text-right font-medium">Vencido</th>
-                    <th className="px-4 py-2.5 text-right font-medium">Atraso</th>
+                    <th className="hidden px-4 py-2.5 text-right font-medium sm:table-cell">Atraso</th>
                     <th className="px-4 py-2.5 font-medium">Teléfono</th>
-                    <th className="px-4 py-2.5" />
+                    <th className="hidden px-4 py-2.5 sm:table-cell" />
                   </tr>
                 </thead>
                 <tbody>
@@ -243,7 +248,7 @@ function Fila({ f }: { f: DeudaDeCliente }) {
           </span>
         )}
       </td>
-      <td className="px-4 py-2.5 text-right tabular-nums text-tinta">{moneda.format(f.saldo)}</td>
+      <td className="hidden px-4 py-2.5 text-right tabular-nums text-tinta sm:table-cell">{moneda.format(f.saldo)}</td>
       <td
         className={`px-4 py-2.5 text-right tabular-nums ${
           u === 'grave' ? 'font-medium text-red-700' : u === 'vencido' ? 'text-amber-700' : 'text-piedra-400'
@@ -251,16 +256,25 @@ function Fila({ f }: { f: DeudaDeCliente }) {
       >
         {vencido > 0 ? moneda.format(vencido) : '—'}
       </td>
-      <td className="px-4 py-2.5 text-right tabular-nums text-piedra-600">
+      <td className="hidden px-4 py-2.5 text-right tabular-nums text-piedra-600 sm:table-cell">
         {atraso === null ? '—' : atraso === 1 ? '1 día' : `${numero.format(atraso)} días`}
       </td>
-      <td className="px-4 py-2.5 text-piedra-500">{f.telefono || '—'}</td>
+      <td className="px-4 py-2.5 text-piedra-500">
+        {/* Un enlace de teléfono: desde el celular, tocarlo ya llama. */}
+        {f.telefono ? (
+          <a href={`tel:${f.telefono.replace(/[^\d+]/g, '')}`} className="whitespace-nowrap hover:text-marca-700 hover:underline">
+            {f.telefono}
+          </a>
+        ) : (
+          '—'
+        )}
+      </td>
       {/*
         El resumen, a un clic de la fila. Es el uso que describió Lucas:
         a fin de mes mira quién no pagó y le manda el resumen, así que el
         camino corto sale de esta tabla y no de buscar al cliente.
       */}
-      <td className="px-4 py-2.5 text-right">
+      <td className="hidden px-4 py-2.5 text-right sm:table-cell">
         <Link
           to={`/cuenta-corriente/${f.cliente_id}`}
           className="text-xs font-medium text-marca-700 hover:underline"

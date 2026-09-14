@@ -157,10 +157,15 @@ export default function Clientes() {
         </label>
       </div>
 
+      {/*
+        La lista y la ficha, una al lado de la otra desde una pantalla ancha.
+        Por debajo, la ficha reemplaza a la lista: al lado no entraba y se
+        abría fuera de la pantalla. Cerrarla trae la lista de vuelta.
+      */}
       <div className="flex min-h-0 flex-1 gap-4">
         <div
           className={`overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-borde ${
-            abierto ? 'w-96 shrink-0' : 'flex-1'
+            abierto ? 'hidden w-96 shrink-0 lg:block' : 'flex-1'
           }`}
         >
           <div className="h-full overflow-y-auto">

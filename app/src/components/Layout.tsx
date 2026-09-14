@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { NavLink, Outlet } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import AvisoDeActualizacion from '@/components/AvisoDeActualizacion'
 import AvisoBaseBloqueada from '@/components/AvisoBaseBloqueada'
 import { useAuth } from '@/auth/AuthProvider'
@@ -154,6 +154,8 @@ function menuGuardado(): boolean {
 }
 
 const FLECHA_IZQUIERDA = 'M15.75 19.5L8.25 12l7.5-7.5'
+const HAMBURGUESA = 'M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5'
+const CRUZ = 'M6 18L18 6M6 6l12 12'
 const FLECHA_DERECHA = 'M8.25 4.5l7.5 7.5-7.5 7.5'
 const SALIR =
   'M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75'
@@ -173,11 +175,122 @@ function Icono({ d, clase = 'size-5 shrink-0' }: { d: string; clase?: string }) 
   )
 }
 
-export default function Layout() {
-  const { perfil, salir, tienePermiso } = useAuth()
-  const [colapsado, setColapsado] = useState(menuGuardado)
+/*
+  El contenido del menú, uno solo para los dos lugares donde aparece.
 
+  En la computadora es la barra de la izquierda; en el teléfono, un panel
+  que se abre encima de la pantalla. Si fueran dos menús escritos por
+  separado, el día que se agregue una pantalla nueva aparecería en uno y
+  no en el otro.
+*/
+function ContenidoMenu({
+  colapsado,
+  alternarMenu,
+  enTelefono = false,
+}: {
+  colapsado: boolean
+  alternarMenu?: () => void
+  enTelefono?: boolean
+}) {
+  const { perfil, salir, tienePermiso } = useAuth()
   const visibles = MENU.filter((i) => !i.permiso || tienePermiso(i.permiso))
+
+  return (
+    <>
+      <div
+        className={`flex items-center gap-3 border-b border-white/10 py-4 ${
+          colapsado ? 'justify-center px-2' : 'px-5'
+        }`}
+      >
+        <img src="/marca/isotipo.svg" alt="" className="size-9 shrink-0 brightness-0 invert" />
+        {!colapsado && (
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium text-white">Agroveterinaria Gross</p>
+            <p className="text-xs text-marca-300/70">Sistema de gestión</p>
+          </div>
+        )}
+      </div>
+
+      <nav className="flex-1 space-y-0.5 overflow-y-auto p-3">
+        {visibles.map((item) => (
+          <NavLink
+            key={item.a}
+            to={item.a}
+            end={item.a === '/'}
+            /* Achicado, el nombre sólo existe al pasar el mouse por
+               encima: sin esto habría que aprenderse quince íconos. */
+            title={colapsado ? item.etiqueta : undefined}
+            className={({ isActive }) =>
+              `flex items-center gap-3 rounded-lg text-sm font-medium transition-colors ${
+                // En el teléfono, cada renglón del alto de un dedo.
+                enTelefono ? 'py-3' : 'py-2.5'
+              } ${colapsado ? 'justify-center px-2' : 'px-3'} ${
+                isActive
+                  ? 'bg-marca-700 text-white'
+                  : 'text-marca-200/80 hover:bg-white/10 hover:text-white'
+              }`
+            }
+          >
+            <Icono d={item.icono} />
+            {!colapsado && item.etiqueta}
+          </NavLink>
+        ))}
+      </nav>
+
+      <div className="border-t border-white/10 p-3">
+        {/*
+          Sólo el ícono, sin texto.
+
+          Es un control del que lo usa, no algo que haya que explicar
+          en cada pantalla: una vez que se sabe qué hace, el cartel
+          estorba todos los días. Se va a usar sobre todo en tablet,
+          donde el ancho es lo que falta. En el teléfono no va: ahí el
+          menú se cierra solo.
+        */}
+        {alternarMenu && (
+          <div className={`mb-2 flex ${colapsado ? 'justify-center' : 'justify-end'}`}>
+            <button
+              onClick={alternarMenu}
+              title={colapsado ? 'Agrandar el menú' : 'Achicar el menú'}
+              aria-label={colapsado ? 'Agrandar el menú' : 'Achicar el menú'}
+              className="rounded-lg p-2 text-marca-200/70 transition-colors hover:bg-white/10 hover:text-white"
+            >
+              <Icono d={colapsado ? FLECHA_DERECHA : FLECHA_IZQUIERDA} />
+            </button>
+          </div>
+        )}
+
+        {!colapsado && (
+          <>
+            <p className="truncate px-2 text-sm font-medium text-white">{perfil?.nombre}</p>
+            <p className="truncate px-2 text-xs text-marca-300/70">{perfil?.rol}</p>
+          </>
+        )}
+
+        <button
+          onClick={salir}
+          title={colapsado ? `Cerrar sesión de ${perfil?.nombre ?? ''}`.trim() : undefined}
+          className={`mt-2 flex w-full items-center gap-3 rounded-lg py-1.5 text-sm text-marca-200/80 transition-colors hover:bg-white/10 hover:text-white ${
+            colapsado ? 'justify-center px-2' : 'px-2 text-left'
+          }`}
+        >
+          {colapsado ? <Icono d={SALIR} /> : 'Cerrar sesión'}
+        </button>
+      </div>
+    </>
+  )
+}
+
+export default function Layout() {
+  const [colapsado, setColapsado] = useState(menuGuardado)
+  const [abiertoEnTelefono, setAbiertoEnTelefono] = useState(false)
+  const { pathname } = useLocation()
+
+  // Elegir una pantalla cierra el menú del teléfono: si quedara abierto,
+  // taparía justo lo que se acaba de pedir.
+  useEffect(() => {
+    setAbiertoEnTelefono(false)
+  }, [pathname])
 
   function alternarMenu() {
     setColapsado((antes) => {
@@ -193,97 +306,69 @@ export default function Layout() {
 
   return (
     <div className="flex h-full">
+      {/*
+        La barra de la izquierda, desde tablet para arriba.
+
+        Por debajo de 768 píxeles —un teléfono— no entra: con el menú
+        abierto ocupaba dos tercios de la pantalla y la página quedaba
+        apretada en una franja. Ahí el menú es el panel de abajo.
+      */}
       <aside
-        className={`flex shrink-0 flex-col bg-marca-950 text-marca-100 transition-[width] duration-200 ${
+        className={`hidden shrink-0 flex-col bg-marca-950 text-marca-100 transition-[width] duration-200 md:flex ${
           colapsado ? 'w-16' : 'w-60'
         }`}
       >
-        <div
-          className={`flex items-center gap-3 border-b border-white/10 py-4 ${
-            colapsado ? 'justify-center px-2' : 'px-5'
-          }`}
-        >
-          <img src="/marca/isotipo.svg" alt="" className="size-9 shrink-0 brightness-0 invert" />
-          {!colapsado && (
-            <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-white">Agroveterinaria Gross</p>
-              <p className="text-xs text-marca-300/70">Sistema de gestión</p>
-            </div>
-          )}
-        </div>
-
-        <nav className="flex-1 space-y-0.5 p-3">
-          {visibles.map((item) => (
-            <NavLink
-              key={item.a}
-              to={item.a}
-              end={item.a === '/'}
-              /* Achicado, el nombre sólo existe al pasar el mouse por
-                 encima: sin esto habría que aprenderse quince íconos. */
-              title={colapsado ? item.etiqueta : undefined}
-              className={({ isActive }) =>
-                `flex items-center gap-3 rounded-lg py-2.5 text-sm font-medium transition-colors ${
-                  colapsado ? 'justify-center px-2' : 'px-3'
-                } ${
-                  isActive
-                    ? 'bg-marca-700 text-white'
-                    : 'text-marca-200/80 hover:bg-white/10 hover:text-white'
-                }`
-              }
-            >
-              <Icono d={item.icono} />
-              {!colapsado && item.etiqueta}
-            </NavLink>
-          ))}
-        </nav>
-
-        <div className="border-t border-white/10 p-3">
-          {/*
-            Sólo el ícono, sin texto.
-
-            Es un control del que lo usa, no algo que haya que explicar
-            en cada pantalla: una vez que se sabe qué hace, el cartel
-            estorba todos los días. Se va a usar sobre todo en tablet,
-            donde el ancho es lo que falta.
-          */}
-          <div className={`mb-2 flex ${colapsado ? 'justify-center' : 'justify-end'}`}>
-            <button
-              onClick={alternarMenu}
-              title={colapsado ? 'Agrandar el menú' : 'Achicar el menú'}
-              aria-label={colapsado ? 'Agrandar el menú' : 'Achicar el menú'}
-              className="rounded-lg p-2 text-marca-200/70 transition-colors hover:bg-white/10 hover:text-white"
-            >
-              <Icono d={colapsado ? FLECHA_DERECHA : FLECHA_IZQUIERDA} />
-            </button>
-          </div>
-
-          {!colapsado && (
-            <>
-              <p className="truncate px-2 text-sm font-medium text-white">{perfil?.nombre}</p>
-              <p className="truncate px-2 text-xs text-marca-300/70">{perfil?.rol}</p>
-            </>
-          )}
-
-          <button
-            onClick={salir}
-            title={colapsado ? `Cerrar sesión de ${perfil?.nombre ?? ''}`.trim() : undefined}
-            className={`mt-2 flex w-full items-center gap-3 rounded-lg py-1.5 text-sm text-marca-200/80 transition-colors hover:bg-white/10 hover:text-white ${
-              colapsado ? 'justify-center px-2' : 'px-2 text-left'
-            }`}
-          >
-            {colapsado ? <Icono d={SALIR} /> : 'Cerrar sesión'}
-          </button>
-        </div>
+        <ContenidoMenu colapsado={colapsado} alternarMenu={alternarMenu} />
       </aside>
+
+      {abiertoEnTelefono && (
+        <div
+          className="fixed inset-0 z-40 md:hidden"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Menú"
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') setAbiertoEnTelefono(false)
+          }}
+        >
+          {/* Tocar afuera cierra, como en cualquier aplicación del teléfono. */}
+          <button
+            aria-label="Cerrar el menú"
+            onClick={() => setAbiertoEnTelefono(false)}
+            className="absolute inset-0 bg-tinta/50"
+          />
+          <aside className="relative flex h-full w-72 max-w-[85%] flex-col bg-marca-950 text-marca-100 shadow-xl">
+            <button
+              onClick={() => setAbiertoEnTelefono(false)}
+              aria-label="Cerrar el menú"
+              className="absolute right-2 top-3 rounded-lg p-2 text-marca-200/70 hover:bg-white/10 hover:text-white"
+            >
+              <Icono d={CRUZ} />
+            </button>
+            <ContenidoMenu colapsado={false} enTelefono />
+          </aside>
+        </div>
+      )}
 
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Va arriba de todo y ocupa una franja: avisa sin tapar nada. */}
         <AvisoDeActualizacion />
         <AvisoBaseBloqueada />
-        <header className="flex items-center justify-end gap-4 border-b border-borde bg-white px-6 py-3">
+        <header className="flex items-center justify-between gap-3 border-b border-borde bg-white px-3 py-2 md:justify-end md:px-6 md:py-3">
+          <div className="flex min-w-0 items-center gap-2 md:hidden">
+            <button
+              onClick={() => setAbiertoEnTelefono(true)}
+              aria-label="Abrir el menú"
+              className="rounded-lg p-2 text-tinta hover:bg-piedra-100"
+            >
+              <Icono d={HAMBURGUESA} clase="size-6" />
+            </button>
+            <img src="/marca/isotipo.svg" alt="" className="size-7 shrink-0" />
+            <span className="truncate text-sm font-semibold text-tinta">Gross</span>
+          </div>
           <IndicadorConexion />
         </header>
-        <main className="flex-1 overflow-auto p-6">
+        <main className="flex-1 overflow-auto p-4 md:p-6">
           <Outlet />
         </main>
       </div>

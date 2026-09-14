@@ -133,7 +133,7 @@ export default function DatosDelEmisor() {
         ))}
       </div>
 
-      <div className="mt-4 flex items-start gap-4 border-t border-borde pt-4">
+      <div className="mt-4 flex flex-col gap-4 border-t border-borde pt-4 sm:flex-row sm:items-start">
         <div className="grid h-20 w-40 shrink-0 place-items-center rounded-lg bg-piedra-50 ring-1 ring-borde">
           {logo ? (
             <img src={logo} alt="Logo del comercio" className="max-h-16 max-w-36 object-contain" />
@@ -141,13 +141,13 @@ export default function DatosDelEmisor() {
             <span className="text-xs text-piedra-400">Sin logo</span>
           )}
         </div>
-        <div className="flex-1">
+        <div className="min-w-0 flex-1">
           <span className="block text-xs font-medium text-piedra-600">Logo</span>
           <p className="mt-0.5 text-xs text-piedra-400">
             Se imprime arriba del comprobante. Se achica solo; lo ideal es un PNG con fondo
             transparente.
           </p>
-          <div className="mt-2 flex items-center gap-2">
+          <div className="mt-2 flex flex-wrap items-center gap-2">
             <input
               type="file"
               accept="image/*"
@@ -155,7 +155,7 @@ export default function DatosDelEmisor() {
                 const f = e.target.files?.[0]
                 if (f) tomarLogo(f)
               }}
-              className="text-xs text-piedra-600 file:mr-2 file:rounded-lg file:border-0 file:bg-piedra-100 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-tinta"
+              className="max-w-full text-xs text-piedra-600 file:mr-2 file:rounded-lg file:border-0 file:bg-piedra-100 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-tinta"
             />
             {logo && (
               <button

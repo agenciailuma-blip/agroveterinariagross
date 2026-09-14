@@ -69,7 +69,7 @@ export default defineConfig({
     */
     ...(enTauri ? [] : [VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'marca/*.svg', 'fuentes/*.ttf'],
+      includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'marca/*.svg', 'fuentes/*.ttf'],
       manifest: {
         name: 'Agroveterinaria Gross · Sistema de gestión',
         short_name: 'Gross',
@@ -79,10 +79,24 @@ export default defineConfig({
         background_color: '#3d0134',
         display: 'standalone',
         start_url: '/',
-        icons: [{ src: '/favicon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' }],
+        /*
+          Íconos en PNG, además del SVG.
+
+          Con el SVG solo, Android instala un acceso directo pobre en vez
+          de la aplicación, y el iPhone ni lo mira: usa una captura de la
+          pantalla. El «maskable» tiene el isotipo más chico a propósito:
+          Android lo recorta en círculo o en gota según el teléfono, y con
+          el tamaño normal le comería los bordes al dibujo.
+        */
+        icons: [
+          { src: '/icono-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: '/icono-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: '/icono-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          { src: '/favicon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
+        ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,ttf}'],
+        globPatterns: ['**/*.{js,css,html,svg,ttf,png}'],
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         // Los datos NO se cachean acá: viven en la base local, que sabe
         // qué está fresco y qué falta subir. Cachear respuestas de la

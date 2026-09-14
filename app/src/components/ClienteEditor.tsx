@@ -23,6 +23,14 @@ function Campo({
   )
 }
 
+/*
+  Cuatro columnas desde tablet; dos en el teléfono.
+
+  Con cuatro en un teléfono, un campo de una columna medía menos de dos
+  centímetros: el tipo de persona se leía «Pers» y el número de documento
+  no entraba. Con dos, lo que ocupaba media fila pasa a ocuparla entera y
+  lo más chico queda a media pantalla.
+*/
 function Seccion({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
     <fieldset className="border-t border-borde pt-4">
@@ -30,7 +38,7 @@ function Seccion({ titulo, children }: { titulo: string; children: React.ReactNo
       <h3 className="mb-3 text-xs font-semibold tracking-wide text-piedra-400 uppercase">
         {titulo}
       </h3>
-      <div className="grid grid-cols-4 gap-3">{children}</div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">{children}</div>
     </fieldset>
   )
 }
@@ -77,7 +85,7 @@ export default function ClienteEditor({
             <option value="juridica">Empresa</option>
           </select>
         </Campo>
-        <Campo etiqueta="Nombre o razón social" ancho="col-span-4">
+        <Campo etiqueta="Nombre o razón social" ancho="col-span-2 sm:col-span-4">
           <input
             value={datos.nombre ?? ''}
             disabled={!puedeEditar}
@@ -130,7 +138,7 @@ export default function ClienteEditor({
         </Campo>
 
         {esResponsableInscripto && datos.tipo_documento_id !== 80 && (
-          <p className="col-span-4 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 ring-1 ring-amber-200">
+          <p className="col-span-2 sm:col-span-4 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 ring-1 ring-amber-200">
             Un Responsable Inscripto necesita CUIT. Con otro documento no se le puede emitir Factura
             A y ARCA la rechaza.
           </p>
@@ -148,7 +156,7 @@ export default function ClienteEditor({
           haga nada es mejor que que no esté.
         */}
         <>
-          <label className="col-span-4 flex items-start gap-2 text-sm text-tinta">
+          <label className="col-span-2 sm:col-span-4 flex items-start gap-2 text-sm text-tinta">
             <input
               type="checkbox"
               checked={datos.iibb_percepcion_excluido ?? false}
@@ -302,7 +310,7 @@ export default function ClienteEditor({
       </Seccion>
 
       <Seccion titulo="Cuenta corriente">
-        <label className="col-span-4 flex items-center gap-2 text-sm text-tinta">
+        <label className="col-span-2 sm:col-span-4 flex items-center gap-2 text-sm text-tinta">
           <input
             type="checkbox"
             checked={datos.cuenta_corriente ?? false}
@@ -348,7 +356,7 @@ export default function ClienteEditor({
       </Seccion>
 
       <Seccion titulo="Otros">
-        <Campo etiqueta="Observaciones" ancho="col-span-4">
+        <Campo etiqueta="Observaciones" ancho="col-span-2 sm:col-span-4">
           <textarea
             rows={2}
             value={datos.observaciones ?? ''}
@@ -357,7 +365,7 @@ export default function ClienteEditor({
             className={claseInput}
           />
         </Campo>
-        <label className="col-span-4 flex items-center gap-2 text-sm text-tinta">
+        <label className="col-span-2 sm:col-span-4 flex items-center gap-2 text-sm text-tinta">
           <input
             type="checkbox"
             checked={datos.activo ?? true}
