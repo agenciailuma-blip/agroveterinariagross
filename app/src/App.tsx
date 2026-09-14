@@ -24,6 +24,7 @@ import Remitos from '@/pages/Remitos'
 import NoFiscales from '@/pages/NoFiscales'
 import NoFiscalImprimible from '@/pages/NoFiscalImprimible'
 import Reportes from '@/pages/Reportes'
+import ResumenCuentaCorriente from '@/pages/ResumenCuentaCorriente'
 
 /*
   networkMode: 'always' es lo más importante de esta configuración.
@@ -134,6 +135,7 @@ function Rutas() {
       */}
       <Route path="comprobante/:id" element={<ComprobanteImprimible />} />
       <Route path="no-fiscal/:id" element={<NoFiscalImprimible />} />
+      <Route path="cuenta-corriente/:clienteId" element={<ResumenCuentaCorriente />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

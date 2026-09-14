@@ -208,6 +208,7 @@ function Deuda() {
                     <th className="px-4 py-2.5 text-right font-medium">Vencido</th>
                     <th className="px-4 py-2.5 text-right font-medium">Atraso</th>
                     <th className="px-4 py-2.5 font-medium">Teléfono</th>
+                    <th className="px-4 py-2.5" />
                   </tr>
                 </thead>
                 <tbody>
@@ -254,6 +255,19 @@ function Fila({ f }: { f: DeudaDeCliente }) {
         {atraso === null ? '—' : atraso === 1 ? '1 día' : `${numero.format(atraso)} días`}
       </td>
       <td className="px-4 py-2.5 text-piedra-500">{f.telefono || '—'}</td>
+      {/*
+        El resumen, a un clic de la fila. Es el uso que describió Lucas:
+        a fin de mes mira quién no pagó y le manda el resumen, así que el
+        camino corto sale de esta tabla y no de buscar al cliente.
+      */}
+      <td className="px-4 py-2.5 text-right">
+        <Link
+          to={`/cuenta-corriente/${f.cliente_id}`}
+          className="text-xs font-medium text-marca-700 hover:underline"
+        >
+          Resumen
+        </Link>
+      </td>
     </tr>
   )
 }

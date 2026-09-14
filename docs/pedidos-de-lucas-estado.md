@@ -1,6 +1,6 @@
 # Los pedidos de Lucas — qué está hecho y qué falta
 
-**Al 10 de septiembre de 2026.**
+**Al 14 de septiembre de 2026.**
 **Para qué sirve:** un solo lugar donde mirar los **24 puntos del documento del 03/09** y los **pedidos de la visita del 07/09**, con su estado real. Es el papel para llevar a la próxima reunión.
 
 **Fuentes:** [`sugerencias-lucas-2026-09.md`](sugerencias-lucas-2026-09.md) (los 24 puntos clasificados) y [`reunion-lucas-2026-09-07.md`](reunion-lucas-2026-09-07.md) (la visita al local).
@@ -109,6 +109,18 @@ Lucas quedó en consultarlo el 03/09 y todavía no volvió con la respuesta. **C
 Necesita un servicio de correo, que hoy no está contratado. **El trabajo en sí es chico** si se apoya en el circuito de facturación ya armado: el comprobante ya se genera y ya se puede imprimir a PDF.
 
 **Falta decidir dos cosas con Lucas:** si lo quiere para V1-A o V1-B, y desde qué dirección salen los mails.
+
+> **Lo volvió a mencionar el 14/09**, en el audio del resumen de cuenta corriente: *"cada vez que alguien viene a buscar en cuenta corriente, yo le mando la factura por mail, que sería la ideal"*. Confirma el uso —es para el cliente de cuenta corriente, no para el mostrador— pero **no cambia lo que falta decidir**. Mientras tanto se puede hacer a mano: la factura en A4 se guarda como PDF desde *Ver / Imprimir* y se adjunta al mail.
+
+---
+
+## ✅ Pedido del 14/09 — el resumen de cuenta corriente
+
+Audio de Lucas: *"que yo pueda generar un PDF con el resumen de cuentas corrientes… a fin de mes, si veo que no me pagaron, yo les mando el resumen"*.
+
+**Hecho el 14/09.** En la ficha del cliente, pestaña *Cuenta corriente* → **Resumen de cuenta (PDF)**. Y, para el caso que describió, desde **Reportes**: la tabla de quién debe tiene un enlace *Resumen* en cada cliente.
+
+Tiene la forma de un resumen bancario: saldo anterior, cada factura, cobranza y nota de crédito con el saldo que va quedando, y el saldo al cierre. Si llega hasta hoy, dice además cuánto de ese saldo está vencido y desde cuándo. Se elige el período —*Este mes*, *Mes pasado* o *Todo*— y se guarda como PDF con el nombre del cliente y el período ya puesto.
 
 ---
 

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ETIQUETA_MOVIMIENTO,
@@ -90,6 +91,18 @@ export default function CuentaCorriente({
           </p>
         </div>
       </div>
+
+      {/*
+        El resumen para mandarle al cliente. Va siempre, también con saldo
+        cero: un cliente que pagó todo puede pedir el detalle de lo que
+        compró y pagó en el mes.
+      */}
+      <Link
+        to={`/cuenta-corriente/${cliente.id}`}
+        className="inline-block rounded-lg px-4 py-2.5 text-sm font-medium text-marca-700 ring-1 ring-borde hover:bg-marca-50"
+      >
+        Resumen de cuenta (PDF)
+      </Link>
 
       {puedeCobrar && saldo > 0 && (
         <button

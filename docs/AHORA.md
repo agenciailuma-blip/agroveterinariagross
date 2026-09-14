@@ -12,7 +12,7 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Publicado: 0.3.1**, con Reportes y las devoluciones parciales adentro. **216 pruebas verdes en la app y 9 en el programa**, 74 migraciones aplicadas.
+**Publicado: 0.3.1**, con Reportes y las devoluciones parciales adentro. **El resumen de cuenta corriente está hecho y sin publicar.** **230 pruebas verdes en la app y 9 en el programa**, 75 migraciones aplicadas.
 
 ⚠️ **Lo que está construido pero NO verificado.** Un chat nuevo no puede darlo por probado:
 
@@ -37,7 +37,21 @@ estado: en curso
 
 ---
 
-## Lo último que pasó — 11 de septiembre
+## Lo último que pasó — 14 de septiembre
+
+**Se publicó la 0.3.1** con las devoluciones parciales, verificada en el sitio.
+
+**Y está el resumen de cuenta corriente**, que Lucas pidió en un audio esa misma mañana: el documento que le manda a fin de mes al cliente que no pagó. Detalle y cómo se usa en [`pedidos-de-lucas-estado.md`](pedidos-de-lucas-estado.md).
+
+> **Cómo se lo contás a Lucas:** en la ficha del cliente, o directo desde la tabla de quién debe en Reportes, hay un botón *Resumen*. Sale una hoja como la de un resumen del banco —saldo anterior, facturas, pagos y notas de crédito con el saldo renglón por renglón, y el saldo final—, se elige el mes y se guarda como PDF para adjuntarlo al mail. El archivo ya sale con el nombre del cliente.
+>
+> **Es una hoja que se guarda como PDF, igual que la factura en A4:** no hizo falta sumar una biblioteca ni un servicio, y lo que se ve en pantalla es lo que sale en el archivo.
+
+Verificado contra la base: en los cinco clientes el saldo final del resumen es el de la ficha, la cuenta cierra a mano (anterior + debe − haber = final), y un período partido en dos encadena solo. Una cobranza del 31 a las 22:30 cae en ese mes y no en el siguiente. Se rompió el código a propósito de cinco maneras y las pruebas atraparon las cinco.
+
+🟡 **Lo del mail automático sigue sin decidir** (punto 17): el resumen y la factura se adjuntan a mano. Mandarlos solos necesita contratar un servicio de correo.
+
+## Lo que pasó el 11 de septiembre
 
 **Está la pantalla de Reportes, la última de V1-A que faltaba.** Con eso, el punto 9 del alcance —«métricas simples»— queda cubierto entero.
 
