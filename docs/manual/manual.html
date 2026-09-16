@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<title>Manual del Sistema · Agroveterinaria Gross</title>
+<style>
+  @font-face { font-family: 'Ubuntu'; src: url('../../app/public/fuentes/Ubuntu-Regular.ttf') format('truetype'); font-weight: 400; }
+  @font-face { font-family: 'Ubuntu'; src: url('../../app/public/fuentes/Ubuntu-Medium.ttf') format('truetype'); font-weight: 500; }
+  @font-face { font-family: 'Ubuntu'; src: url('../../app/public/fuentes/Ubuntu-Bold.ttf') format('truetype'); font-weight: 700; }
+
+  :root {
+    --marca: #8d0b7b;
+    --profundo: #3d0134;
+    --verde: #64b32e;
+    --tinta: #1f2021;
+    --papel: #ffffff;
+    --claro: #f0f5f7;
+    --linea: #d1e2e8;
+    --gris: #554f59;
+  }
+
+  @page { size: A4; margin: 16mm 14mm 18mm 14mm; }
+  @page:first { margin: 0; }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Ubuntu', system-ui, sans-serif;
+    font-size: 10.2pt;
+    line-height: 1.5;
+    color: var(--tinta);
+    background: var(--papel);
+  }
+
+  /* ─── Portada ─── */
+  .portada {
+    position: relative;
+    height: 297mm;
+    background: linear-gradient(150deg, var(--profundo) 0%, #5a0550 55%, var(--marca) 100%);
+    color: #fff;
+    padding: 28mm 22mm;
+    overflow: hidden;
+    page-break-after: always;
+  }
+  .portada .trama {
+    position: absolute; right: -60mm; top: -20mm; width: 190mm; opacity: .07;
+  }
+  .portada .luz {
+    position: absolute; width: 150mm; height: 150mm; border-radius: 50%;
+    background: radial-gradient(circle, rgba(212,216,87,.28) 0%, rgba(212,216,87,0) 70%);
+    left: -50mm; bottom: -40mm;
+  }
+  .portada-contenido { position: relative; z-index: 2; height: 100%; display: flex; flex-direction: column; }
+  .portada img.logo { width: 92mm; filter: brightness(0) invert(1); }
+  .portada .bajada { margin-top: auto; }
+  .portada h1 {
+    font-size: 34pt; line-height: 1.08; margin: 0 0 6mm; font-weight: 700; letter-spacing: -.5pt;
+  }
+  .portada h1 span { display: block; font-weight: 400; opacity: .8; font-size: 20pt; letter-spacing: 0; }
+  .portada .linea-fina { width: 34mm; height: 2.5pt; background: var(--verde); margin: 0 0 6mm; }
+  .portada p { font-size: 11.5pt; max-width: 120mm; opacity: .92; margin: 0 0 3mm; }
+  .portada .pie { margin-top: 12mm; font-size: 9.5pt; opacity: .75; }
+
+  /* ─── Estructura ─── */
+  .hoja { padding: 0; }
+  h2.titulo-bloque {
+    font-size: 17pt; color: var(--profundo); margin: 0 0 1mm; font-weight: 700;
+    page-break-after: avoid;
+  }
+  .subrayado { width: 22mm; height: 2pt; background: var(--marca); margin-bottom: 5mm; }
+
+  section.pantalla {
+    page-break-inside: avoid;
+    margin-bottom: 7mm;
+    border: 1pt solid var(--linea);
+    border-radius: 3mm;
+    overflow: hidden;
+  }
+  section.pantalla > header {
+    background: var(--claro);
+    border-bottom: 1pt solid var(--linea);
+    padding: 3.2mm 4mm;
+    display: flex; align-items: baseline; gap: 3mm;
+  }
+  .numero {
+    background: var(--marca); color: #fff; font-weight: 700; font-size: 9pt;
+    width: 7mm; height: 7mm; border-radius: 50%; display: inline-flex;
+    align-items: center; justify-content: center; flex: 0 0 auto;
+  }
+  section.pantalla h3 { margin: 0; font-size: 12.5pt; color: var(--profundo); font-weight: 700; }
+  section.pantalla .lema { margin: 0; font-size: 9.5pt; color: var(--gris); }
+  .cuerpo { padding: 3.5mm 4mm 4mm; }
+
+  .campo { display: flex; gap: 4mm; padding: 2.2mm 0; border-bottom: .5pt dotted var(--linea); }
+  .campo:last-of-type { border-bottom: 0; }
+  .campo .etiqueta {
+    flex: 0 0 26mm; font-weight: 700; font-size: 8.6pt; color: var(--marca);
+    text-transform: uppercase; letter-spacing: .3pt; padding-top: .4mm;
+  }
+  .campo .valor { flex: 1; }
+  .campo .valor b { font-weight: 500; }
+
+  .nota {
+    margin-top: 3mm; padding: 2.8mm 3.5mm; background: #fbf4fa;
+    border-left: 2.5pt solid var(--marca); border-radius: 0 2mm 2mm 0; font-size: 9.3pt;
+  }
+  .nota.verde { background: #f3faee; border-left-color: var(--verde); }
+  .nota b { font-weight: 700; }
+
+  table.datos { width: 100%; border-collapse: collapse; margin-top: 2mm; font-size: 9.4pt; }
+  table.datos th {
+    text-align: left; background: var(--claro); color: var(--profundo);
+    font-size: 8.4pt; text-transform: uppercase; letter-spacing: .3pt;
+    padding: 2mm 3mm; border-bottom: 1pt solid var(--linea);
+  }
+  table.datos td { padding: 2mm 3mm; border-bottom: .5pt solid var(--linea); vertical-align: top; }
+  table.datos tr:last-child td { border-bottom: 0; }
+
+  ul.limpia { margin: 1.5mm 0 0; padding-left: 5mm; }
+  ul.limpia li { margin-bottom: 1.2mm; }
+
+  .indice ol { padding-left: 6mm; columns: 2; column-gap: 10mm; }
+  .indice li { margin-bottom: 1.6mm; break-inside: avoid; }
+
+  .cierre {
+    margin-top: 6mm; padding: 6mm; border-radius: 3mm;
+    background: linear-gradient(135deg, var(--profundo), var(--marca)); color: #fff;
+  }
+  .cierre h3 { margin: 0 0 2mm; font-size: 13pt; }
+  .cierre p { margin: 0 0 1.5mm; font-size: 9.6pt; opacity: .92; }
+
+  .pie-fijo {
+    position: fixed; bottom: -12mm; left: 0; right: 0;
+    font-size: 7.6pt; color: var(--gris); border-top: .5pt solid var(--linea);
+    padding-top: 1.5mm; display: flex; justify-content: space-between;
+  }
+  .salto { page-break-before: always; }
+</style>
+</head>
+<body>
+
+<div class="pie-fijo">
+  <span>Manual del Sistema · Agroveterinaria Gross</span>
+  <span>Septiembre de 2026</span>
+</div>
+
+<!-- ─────────── PORTADA ─────────── -->
+<div class="portada">
+  <img src="../../app/public/marca/pattern.svg" class="trama" alt="">
+  <div class="luz"></div>
+  <div class="portada-contenido">
+    <img src="../../app/public/marca/logo.svg" class="logo" alt="Agroveterinaria Gross">
+    <div class="bajada">
+      <div class="linea-fina"></div>
+      <h1>Manual del sistema<span>Cómo se usa, pantalla por pantalla</span></h1>
+      <p>Qué hay en cada sección, para qué sirve, qué se puede hacer y qué documentos salen de ahí.</p>
+      <p>Escrito para tenerlo al lado mientras se usa, y para entrenar a quien recién empieza.</p>
+      <div class="pie">
+        Septiembre de 2026 · Desarrollado por ILUMA para Agroveterinaria Gross
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────── CÓMO LEERLO + ÍNDICE ─────────── -->
+<div class="hoja">
+  <h2 class="titulo-bloque">Cómo leer este manual</h2>
+  <div class="subrayado"></div>
+
+  <p>Cada sección del sistema está explicada con las mismas cuatro preguntas, siempre en el mismo orden:</p>
+
+  <table class="datos">
+    <tr><th style="width:30mm">Para qué sirve</th><td>Qué problema resuelve esa pantalla y con qué lógica trabaja.</td></tr>
+    <tr><th>Qué veo</th><td>La información que muestra.</td></tr>
+    <tr><th>Qué hago</th><td>Las acciones que se pueden ejecutar ahí.</td></tr>
+    <tr><th>Qué exporto</th><td>Qué sale de esa pantalla, en papel o en archivo.</td></tr>
+  </table>
+
+  <div class="nota">
+    <b>Cada uno ve lo suyo.</b> Las secciones del menú aparecen según el permiso de cada usuario: un vendedor
+    no ve Facturación ni Usuarios; un cajero no ve Configuración. Los permisos se manejan desde <b>Usuarios</b>,
+    así que el menú de cada persona puede ser más corto que el de este manual.
+  </div>
+
+  <div class="indice" style="margin-top:7mm">
+    <h2 class="titulo-bloque">Las secciones</h2>
+    <div class="subrayado"></div>
+    <ol>
+      <li>Inicio</li>
+      <li>Productos</li>
+      <li>Stock</li>
+      <li>Inventario</li>
+      <li>Precios</li>
+      <li>Proveedores</li>
+      <li>Compras</li>
+      <li>Ventas · el mostrador</li>
+      <li>Caja</li>
+      <li>Clientes</li>
+      <li>Facturación</li>
+      <li>Remitos</li>
+      <li>Presupuestos</li>
+      <li>Reportes</li>
+      <li>Usuarios</li>
+      <li>Configuración</li>
+    </ol>
+    <p style="margin-top:4mm">Y al final: <b>qué se imprime y qué se exporta</b>, <b>trabajar sin internet</b>,
+    <b>desde el celular</b> y <b>cómo piensa el sistema</b>.</p>
+  </div>
+</div>
+
+<!-- ─────────── SECCIONES ─────────── -->
+<div class="hoja salto">
+  <h2 class="titulo-bloque">Las pantallas, una por una</h2>
+  <div class="subrayado"></div>
+
+  <section class="pantalla">
+    <header><span class="numero">1</span><div><h3>Inicio</h3><p class="lema">Lo que hay que mirar hoy, sin abrir nada.</p></div></header>
+    <div class="cuerpo">
+      <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Es el tablero que aparece al entrar. Contesta dos preguntas de un vistazo: <b>cómo viene la venta</b> y <b>hay algo que resolver</b>.</div></div>
+      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Cuánto se vendió <b>hoy</b>, en los <b>últimos 7 días</b> y en el <b>mes</b>, con la cantidad de ventas cobradas · <b>lo más vendido del mes</b> · <b>cuánto vendió cada uno</b> · productos en el catálogo · alertas de stock · comprobantes esperando resolución · terminales conectadas y si alguna quedó sin sincronizar.</div></div>
+      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Se mira. Cada número lleva a la pantalla que lo resuelve.</div></div>
+      <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">Nada.</div></div>
+      <div class="nota"><b>Cada uno ve sus propias ventas.</b> Quien no tiene permiso para ver todas lee <i>«Tus ventas»</i> en lugar de <i>«Ventas del local»</i>, y los números son sólo los suyos. Además, el día es el de Oberá: lo cobrado a las diez de la noche cuenta como hoy y no como mañana.</div>
+    </div>
+  </section>
+
+  <section class="pantalla">
+    <header><span class="numero">2</span><div><h3>Productos</h3><p class="lema">El catálogo. Donde se carga y se corrige todo lo que se vende.</p></div></header>
+    <div class="cuerpo">
+      <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Es la fuente de todo lo demás: de acá salen el precio que cobra la caja, el IVA que va en la factura y el stock que se descuenta.</div></div>
+      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">El listado con precio, stock y el semáforo (<i>En stock · Stock bajo · Crítico · Sobrevendido</i>) · el <b>avance de la carga</b>: cuántos productos ya se revisaron sobre el total.</div></div>
+      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Buscar por código, nombre o <b>escaneando</b> · abrir la ficha y editarla · crear uno nuevo · <b>importar la planilla de Excel</b> · dar de baja de a uno o en masa, y restaurar · filtrar por los que faltan revisar.</div></div>
+      <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">Nada desde acá.</div></div>
+
+      <p style="margin:3mm 0 1mm"><b>Lo que tiene la ficha del producto</b></p>
+      <ul class="limpia">
+        <li><b>Identificación</b> — código, unidad, nombre interno (el que ve el vendedor), nombre público (el que ve el cliente) y descripción.</li>
+        <li><b>Precio y rentabilidad</b> — precio de venta con IVA, costo, margen objetivo y el margen real que está dando, <b>sobre el costo y sobre la venta</b>, porque «margen» significa las dos cosas según quién lo diga.</li>
+        <li><b>Impuestos</b> — alícuota de IVA y rubro de ARCA.</li>
+        <li><b>Stock</b> — cuánto hay y el <b>aviso de stock bajo</b> en dos niveles. Si no se le pone uno propio, hereda el de su categoría o el general.</li>
+        <li><b>Proveedor</b> — a quién se le compra. Es lo que permite después subirle el precio a todo un laboratorio de una sola vez.</li>
+        <li><b>Clasificación</b> — rubro, marca, presentación, animal y etapa de vida.</li>
+        <li><b>Códigos de barra</b> — todos los que tenga, no uno solo.</li>
+        <li><b>Trazabilidad</b> — producto veterinario, requiere receta, fitosanitario, controla vencimiento.</li>
+      </ul>
+
+      <div class="nota"><b>Importar la planilla no duplica.</b> Acepta Excel y CSV. El sistema propone a qué campo corresponde cada columna y la persona confirma viendo un dato de ejemplo, porque los encabezados mienten: una columna que dice «Precio» puede tener el costo. Al reimportar reconoce por código y actualiza: una celda vacía no borra lo que había, un valor distinto sí lo pisa.</div>
+    </div>
+  </section>
+
+  <section class="pantalla">
+    <header><span class="numero">3</span><div><h3>Stock</h3><p class="lema">Qué hay que pedir.</p></div></header>
+    <div class="cuerpo">
+      <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">No es el catálogo con otra columna: arranca filtrado en lo que necesita una decisión, ordenado por urgencia y no por nombre.</div></div>
+      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Cuatro números arriba —sobrevendidos, críticos, bajos y en stock— y, por producto, cuánto queda, con cuánto avisa, en qué estado está y <b>cuánto costaría reponerlo</b> hasta el umbral.</div></div>
+      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Filtrar por estado · buscar · <b>copiar la lista</b> para pegarla en un WhatsApp al proveedor · saltar a contar inventario.</div></div>
+      <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">La lista de faltantes <b>al portapapeles</b>, en texto, lista para pegar.</div></div>
+    </div>
+  </section>
+
+  <section class="pantalla">
+    <header><span class="numero">4</span><div><h3>Inventario</h3><p class="lema">El conteo físico por sectores, con el local abierto.</p></div></header>
+    <div class="cuerpo">
+      <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Poner el número del sistema de acuerdo con lo que hay en la góndola, sin cerrar el local ni frenar la venta.</div></div>
+      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Las tomas abiertas, cerradas y anuladas. Por cada una: cuántos productos se contaron, cuántos tienen diferencia y <b>cuánto representa esa diferencia valorizada al costo</b>.</div></div>
+      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Abrir una toma por sector · <b>contar escaneando</b> (el foco vuelve solo al buscador después de cada Enter) · recontar un producto · anular la toma · <b>cerrarla</b>, que genera los ajustes.</div></div>
+      <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">Nada. El ajuste queda como movimiento de stock, con quién contó y cuándo.</div></div>
+      <div class="nota"><b>Se puede contar con el local abierto.</b> El ajuste usa la diferencia detectada <b>al momento de contar</b>, no al de cerrar: si se cuentan 10 a las 10 y a las 11 se vende 1, al cerrar queda 9 y no 10.</div>
+    </div>
+  </section>
+
+  <section class="pantalla">
+    <header><span class="numero">5</span><div><h3>Precios</h3><p class="lema">Cómo se arma el precio final según con qué paga el cliente.</p></div></header>
+    <div class="cuerpo">
+      <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Tener las listas y los medios de pago en un solo lugar, y poder crear listas nuevas sin depender de una actualización del programa.</div></div>
+      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Qué lista usa cada medio de pago y qué porcentaje aplica.</div></div>
+      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Crear, editar y dar de baja <b>listas</b> (Contado, Tarjeta…) con su ajuste · lo mismo con los <b>medios de pago</b>, cada uno atado a su lista · definir <b>cuotas y recargos</b> por medio.</div></div>
+      <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">Nada.</div></div>
+      <div class="nota"><b>El precio que se cotiza es el de tarjeta</b>, y el efectivo se presenta como descuento. No es estético: define qué número lee el vendedor en voz alta. Si dice el de contado y la caja cobra más, queda pegado con el cliente adelante.</div>
+    </div>
+  </section>
+
+  <section class="pantalla">
+    <header><span class="numero">6</span><div><h3>Proveedores</h3><p class="lema">A quién se le compra, y cómo cambiarle el precio a todo un laboratorio de una vez.</p></div></header>
+    <div class="cuerpo">
+      <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Cuando llega la lista nueva de un laboratorio, aplicar el aumento a todos sus productos en una operación, y poder volver atrás si el número salió mal.</div></div>
+      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Por proveedor: CUIT, contacto y <b>cuántos productos tiene asignados</b>, que es a cuántos les va a pegar un ajuste.</div></div>
+      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Crear, editar y dar de baja · <b>ajustar precios en masa</b> por proveedor y rubro · <b>deshacer</b> un ajuste.</div></div>
+      <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">Nada.</div></div>
+
+      <p style="margin:3mm 0 1mm"><b>El ajuste masivo, paso a paso</b></p>
+      <ul class="limpia">
+        <li>Se elige <b>proveedor</b> y/o <b>rubro</b>. Se pueden dejar los dos en «Todos», y ahí le pega al catálogo entero — pero exige escribir por qué.</li>
+        <li>El sistema dice <b>a cuántos productos les va a pegar antes de aplicar</b>. Si dice 1.800 cuando esperabas 40, algo se eligió mal.</li>
+        <li>Se pone el porcentaje: <b>7</b> sube un 7%, <b>−8</b> baja un 8%. Y si toca el precio de venta, el costo, o los dos.</li>
+      </ul>
+
+      <div class="nota verde"><b>Se puede deshacer, y eso es lo importante.</b> Un +70% tipeado donde iba +7% se descubre con el primer cliente. El sistema guarda el precio anterior de <b>cada</b> producto y abajo está el historial con el botón para volver atrás. Cada producto vuelve al precio exacto que tenía, y <b>lo que alguien corrigió a mano después se deja como está</b>: esa corrección es más nueva y más deliberada.</div>
+    </div>
+  </section>
+
+  <section class="pantalla">
+    <header><span class="numero">7</span><div><h3>Compras</h3><p class="lema">La factura que llega del proveedor, registrada.</p></div></header>
+    <div class="cuerpo">
+      <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Dejar registrado lo que dice el papel del proveedor: cuánto se le compró, con qué IVA y qué percepciones le cargaron.</div></div>
+      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Las facturas cargadas, con proveedor, tipo, número, fecha y total · al cargar una, el <b>total se arma solo</b> para compararlo con el papel antes de guardar.</div></div>
+      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Cargar una factura: proveedor, tipo, punto de venta y número, fecha, <b>desglose por alícuota de IVA</b> y percepciones · el IVA se sugiere al escribir el neto y se puede corregir, porque manda el papel.</div></div>
+      <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">Nada.</div></div>
+      <div class="nota"><b>La misma factura no entra dos veces.</b> El sistema la reconoce por proveedor, tipo y número, y avisa antes de duplicarla.</div>
+    </div>
+  </section>
+
+  <section class="pantalla">
+    <header><span class="numero">8</span><div><h3>Ventas · el mostrador</h3><p class="lema">Armar la venta y mandarla a la caja.</p></div></header>
+    <div class="cuerpo">
+      <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Es la pantalla donde más tiempo pasa el día: el vendedor atiende, arma la venta y se la pasa a la caja, sin dejar de atender.</div></div>
+      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">El detalle con precios y subtotal · <b>el total en efectivo y con tarjeta al mismo tiempo</b> · aviso si no hay stock suficiente · el borrador se conserva si la pantalla se refresca por accidente.</div></div>
+      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Identificarme con <b>PIN</b> · buscar o escanear productos · <b>escribir una línea que no está en el catálogo</b> · cambiar cantidades · <b>rebajar el precio de una línea</b>, por monto o por porcentaje · elegir el cliente · anticipar con qué va a pagar · <b>enviar a caja</b> o <b>hacer un presupuesto</b> · descartar la venta.</div></div>
+      <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">El <b>presupuesto impreso</b>, en ticket de 80 mm o en hoja A4.</div></div>
+
+      <p style="margin:3mm 0 1mm"><b>Tres cosas que conviene saber</b></p>
+      <ul class="limpia">
+        <li><b>El PIN se cierra al enviar la venta.</b> Cada vendedor vuelve a identificarse. No es una contraseña: es saber quién hizo qué. Sin esto, el primero que pone su PIN a la mañana queda como autor de todo lo que carga cualquiera.</li>
+        <li><b>Pide un nombre para llamar al cliente.</b> Se puede dejar vacío. Aparece en la cola de la caja, para llamar a la persona en vez de cantar un número.</li>
+        <li><b>Rebajar un precio pide motivo y PIN.</b> El motivo sale de una lista, para poder contarlos después. Y <b>quien pone el PIN queda como responsable de la rebaja</b>, que puede no ser el vendedor: es lo que permite que un encargado se acerque y autorice.</li>
+      </ul>
+
+      <div class="nota"><b>La línea escrita a mano</b> es para lo que se pide especialmente y se vende una vez: no crea nada en el catálogo y no mueve stock. Se le pregunta el IVA porque puede terminar en una factura. Si algo se vende dos veces, va al catálogo.</div>
+    </div>
+  </section>
+
+  <section class="pantalla">
+    <header><span class="numero">9</span><div><h3>Caja</h3><p class="lema">Cobra lo que el mostrador armó, y cierra el turno.</p></div></header>
+    <div class="cuerpo">
+      <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Separar al que atiende del que cobra: el vendedor sigue en el salón y la caja concentra la plata, la factura y la impresora.</div></div>
+      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">La cola de ventas esperando cobro, con el nombre para llamar a cada cliente · el detalle de la venta · el total actualizado según el medio de pago · el saldo de cuenta corriente del cliente y su límite · al cerrar, lo esperado contra lo declarado y <b>la diferencia</b>.</div></div>
+      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor"><b>Abrir la caja</b> con el monto inicial · elegir una venta de la cola · <b>corregirla</b> (quitar, cambiar cantidades, agregar) · elegir medio de pago y cuotas · <b>hacer un descuento</b> por porcentaje o llevando el total a un número, con motivo · elegir <b>con factura o sin factura</b> · <b>cobrar</b> · cobrar una cuenta corriente · <b>cerrar la caja</b> con el arqueo.</div></div>
+      <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">El <b>comprobante impreso</b> —factura, ticket no fiscal o comprobante interno— en ticket de 80 mm o A4.</div></div>
+
+      <div class="nota"><b>Al cobrar se factura solo.</b> El cajero no tiene que ir a otra pantalla: la factura se pide al confirmar el cobro y el comprobante queda listo para imprimir.</div>
+      <div class="nota"><b>«Sin factura» tiene permiso propio</b>, que no tienen ni el cajero ni el vendedor. Y a un Responsable Inscripto no se le ofrece: compra para descargar IVA.</div>
+    </div>
+  </section>
+
+  <section class="pantalla">
+    <header><span class="numero">10</span><div><h3>Clientes</h3><p class="lema">La ficha del cliente y su cuenta corriente.</p></div></header>
+    <div class="cuerpo">
+      <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Tener los datos con los que se factura y, para el que compra en cuenta, saber cuánto debe, desde cuándo y hasta cuánto puede seguir comprando.</div></div>
+      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Datos fiscales (condición de IVA, CUIT o DNI, domicilio) · <b>saldo actual</b>, límite de crédito y crédito disponible · los movimientos de la cuenta con su origen.</div></div>
+      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Buscar · crear y editar · definir si tiene <b>cuenta corriente</b> y con qué <b>límite</b> · fijarle un <b>descuento</b> propio y una lista de precios · cargar la <b>exclusión de percepción de IIBB</b> con su certificado y vigencia · <b>registrar una cobranza</b>.</div></div>
+      <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">El <b>resumen de cuenta corriente en PDF</b>, para mandarle al cliente.</div></div>
+
+      <div class="nota verde"><b>El resumen de cuenta</b> tiene la forma de un resumen del banco: saldo anterior, cada factura, pago y nota de crédito con el saldo que va quedando, y el saldo al cierre. Se elige el período —este mes, el mes pasado o todo— y se guarda como PDF con el nombre del cliente ya puesto, listo para adjuntar a un mail. Si el resumen llega hasta hoy, dice además cuánto de ese saldo está vencido y desde cuándo.</div>
+    </div>
+  </section>
+
+  <section class="pantalla">
+    <header><span class="numero">11</span><div><h3>Facturación</h3><p class="lema">El semáforo de todo lo que se le informa a ARCA.</p></div></header>
+    <div class="cuerpo">
+      <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Ver de un vistazo si todo lo que se cobró tiene su comprobante, y resolver lo que quedó en el camino.</div></div>
+      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">El semáforo por comprobante —autorizado e impreso, autorizado sin imprimir, esperando autorización, rechazado— · <b>el motivo exacto del rechazo</b> · el aviso de los días que quedan para pedir el código de autorización · y el <b>panel rojo</b> de ventas cobradas sin comprobante, que es el caso grave: la plata entró y falta el respaldo.</div></div>
+      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Pedir la autorización de un comprobante pendiente · <b>reintentar</b> los rechazados · <b>devolver una venta entera</b> · <b>devolver parte</b> de una venta · imprimir.</div></div>
+      <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">La <b>factura impresa</b> con QR de ARCA, en ticket u hoja A4 · el <b>Excel de ventas del mes</b> para el contador · el <b>archivo de percepciones de IIBB</b> del mes, para presentar ante Rentas.</div></div>
+
+      <p style="margin:3mm 0 1mm"><b>Devolver parte de una venta</b></p>
+      <ul class="limpia">
+        <li>Se abre la lista de lo que el cliente se llevó y se marca <b>cuánto vuelve de cada producto</b>. El total a devolver se ve antes de confirmar.</li>
+        <li>Vuelve el stock de lo marcado, se descuenta de la cuenta corriente la parte que estaba en cuenta y sale la <b>nota de crédito</b> por ese importe. La venta no se anula: queda con lo devuelto restado.</li>
+        <li><b>Se puede devolver varias veces</b>: una bolsa hoy y otra la semana que viene. El sistema lleva la cuenta de lo que queda y no deja devolver más de lo que se llevó.</li>
+      </ul>
+
+      <div class="nota"><b>El archivo para el contador</b> se baja de esta misma pantalla: se elige el mes y, antes de bajarlo, se ven los totales para controlar que el mes sea el correcto. Lleva <b>una fila por alícuota</b> —una factura con 21% y 10,5% ocupa dos renglones— y las notas de crédito van en negativo, así sumar la columna da el neto del mes.</div>
+    </div>
+  </section>
+
+  <section class="pantalla">
+    <header><span class="numero">12</span><div><h3>Remitos</h3><p class="lema">La mercadería que sale del local, con su comprobante de entrega.</p></div></header>
+    <div class="cuerpo">
+      <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Que lo que sale en la camioneta tenga un papel que alguien firma, y que el stock salga una sola vez.</div></div>
+      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor"><b>Entregado y sin cobrar</b>, arriba y en ámbar: mercadería que salió y plata que no entró, con cuántos días lleva · el listado con destino, transporte, si descontó stock y a qué venta corresponde.</div></div>
+      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Emitir un remito <b>desde una venta</b> · emitir uno <b>de cero</b>, eligiendo cliente y escribiendo las líneas · elegir <b>si descuenta stock o no</b> · imprimir · anular.</div></div>
+      <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">El <b>remito impreso</b>, en ticket u hoja A4, con espacio para «recibí conforme».</div></div>
+
+      <div class="nota"><b>En el remito no van precios</b>, sólo cantidades, y cierra con el <b>total de unidades</b>, que es lo que se cuenta al recibir. <b>El stock sale una sola vez:</b> si la venta ya se cobró, el remito sólo documenta el traslado; si todavía no, el remito descuenta y al cobrar la caja reconcilia — lo que vuelve en la camioneta reingresa solo.</div>
+      <div class="nota"><b>El remito que no descuenta</b> es para mercadería que todavía no entró al local: la que se pide especialmente para un cliente. Documenta el compromiso y no toca el inventario.</div>
+    </div>
+  </section>
+
+  <section class="pantalla">
+    <header><span class="numero">13</span><div><h3>Presupuestos</h3><p class="lema">El archivo de los comprobantes que numera Gross.</p></div></header>
+    <div class="cuerpo">
+      <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Tener juntos los papeles propios —presupuestos, remitos e internos— separados de los que numera y controla ARCA.</div></div>
+      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Número, fecha, cliente, total y estado, con los presupuestos <b>vencidos</b> marcados.</div></div>
+      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Filtrar por tipo · <b>mandar un presupuesto a la caja</b> para cobrarlo · imprimir · anular con motivo.</div></div>
+      <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">Un <b>archivo de Excel</b> con todo lo listado, preparado para que abra bien con la configuración local.</div></div>
+      <div class="nota">Un presupuesto <b>no se convierte en factura acá</b>: se manda a la cola de la caja y la factura sale al cobrarlo, por el camino de siempre. Tener dos caminos a la facturación sería tener dos lugares donde se decide lo mismo.</div>
+    </div>
+  </section>
+
+  <section class="pantalla">
+    <header><span class="numero">14</span><div><h3>Reportes</h3><p class="lema">Cómo viene el mes y quién tiene plata de Gross en la calle.</p></div></header>
+    <div class="cuerpo">
+      <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Mirar el negocio con tiempo, no de paso: la venta comparada contra el período anterior, y la deuda de los clientes junta, que en la ficha se ve de a un cliente por vez.</div></div>
+      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Ventas de hoy, de los últimos 7 días y del mes, cada una <b>comparada contra el período anterior</b> · cuánta plata hay en la calle, cuánta está vencida y cuánta por vencer · cuántos clientes pasaron su límite · y por cliente: cuánto debe, cuánto está vencido, cuántos días de atraso y su teléfono.</div></div>
+      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Mirar · entrar al <b>resumen de cuenta</b> de cualquier deudor con un clic · saltar a Stock o a Facturación.</div></div>
+      <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">Desde acá, el <b>resumen de cuenta corriente</b> de cada cliente.</div></div>
+      <div class="nota"><b>El mes se compara contra los mismos días del mes pasado</b>, no contra el mes entero: si hoy es 11, compara del 1 al 11 contra el 1 al 11. Y la pantalla dice contra qué días compara, para que el número se pueda discutir.</div>
+    </div>
+  </section>
+
+  <section class="pantalla">
+    <header><span class="numero">15</span><div><h3>Usuarios</h3><p class="lema">Quién entra, qué puede hacer y con qué PIN.</p></div></header>
+    <div class="cuerpo">
+      <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Que cada uno vea y pueda hacer lo de su puesto, y que toda operación quede con nombre y apellido.</div></div>
+      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Los usuarios, su rol, y los permisos de cada rol agrupados por tema.</div></div>
+      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Dar de alta · asignar rol · <b>definir o quitar el PIN</b> de mostrador · dar de baja · <b>encender y apagar permisos por rol</b>.</div></div>
+      <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">Nada.</div></div>
+      <div class="nota"><b>Dar de alta a alguien no lo habilita solo.</b> La cuenta y el usuario del sistema se unen en su <b>primer ingreso</b>, que es el único momento en que las dos puntas existen.</div>
+    </div>
+  </section>
+
+  <section class="pantalla">
+    <header><span class="numero">16</span><div><h3>Configuración</h3><p class="lema">Lo que puede cambiar sin depender de una actualización.</p></div></header>
+    <div class="cuerpo">
+      <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Que lo que cambia por resolución, por costumbre del mostrador o por cómo está armado el local se pueda tocar sin llamar a nadie.</div></div>
+      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Ver el cuadro de abajo.</div></div>
+      <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">Nada.</div></div>
+
+      <table class="datos">
+        <tr><th style="width:52mm">Bloque</th><th>Para qué</th></tr>
+        <tr><td><b>Percepción de IIBB — Misiones</b></td><td>Alícuota y mínimo no sujeto a percepción. Los fija la DGR y cambian por resolución.</td></tr>
+        <tr><td><b>Ritmo del mostrador</b></td><td>Si al agregar un producto se pregunta la cantidad. Se prueba unos días y se deja como le sirva al mostrador.</td></tr>
+        <tr><td><b>Impresora del mostrador</b></td><td>Se elige de la <b>lista de impresoras de Windows</b>, como al imprimir desde el Word, y se guarda <b>en cada computadora</b>. Tiene un botón para imprimir una prueba.</td></tr>
+        <tr><td><b>La red del local</b></td><td>Qué computadora escucha a las demás cuando no hay internet — conviene que sea la de la caja. Desde cada mostrador se puede probar la conexión.</td></tr>
+        <tr><td><b>Depósitos</b></td><td>Los lugares donde hay mercadería. Cada movimiento de stock queda registrado en el suyo.</td></tr>
+        <tr><td><b>Datos del emisor</b></td><td>Razón social, CUIT, domicilio, Ingresos Brutos, inicio de actividades y <b>el logo</b> que sale impreso en los comprobantes.</td></tr>
+        <tr><td><b>Puntos de venta de ARCA</b></td><td>Cuáles están habilitados para facturar.</td></tr>
+        <tr><td><b>Diagnóstico de la terminal</b></td><td>Qué terminal es esta máquina, si tiene copia local y si hay operaciones sin subir. Es lo primero que se mira cuando una PC «no anda».</td></tr>
+      </table>
+    </div>
+  </section>
+</div>
+
+<!-- ─────────── CIERRE ─────────── -->
+<div class="hoja salto">
+  <h2 class="titulo-bloque">Qué se imprime y qué se exporta</h2>
+  <div class="subrayado"></div>
+
+  <table class="datos">
+    <tr><th style="width:52mm">Documento</th><th style="width:48mm">Dónde se emite</th><th>Formato</th></tr>
+    <tr><td><b>Factura y nota de crédito</b></td><td>Caja (al cobrar) y Facturación</td><td>Ticket de 80 mm · Hoja A4 · con QR de ARCA</td></tr>
+    <tr><td><b>Presupuesto</b></td><td>Ventas</td><td>Ticket de 80 mm · Hoja A4</td></tr>
+    <tr><td><b>Remito</b></td><td>Remitos</td><td>Ticket de 80 mm · Hoja A4 · sin precios</td></tr>
+    <tr><td><b>Comprobante interno</b></td><td>Caja (cobrando «sin factura»)</td><td>Ticket de 80 mm · Hoja A4</td></tr>
+    <tr><td><b>Resumen de cuenta corriente</b></td><td>Clientes y Reportes</td><td>Hoja A4 · se guarda como PDF</td></tr>
+    <tr><td><b>Ventas del mes para el contador</b></td><td>Facturación</td><td>Archivo de Excel</td></tr>
+    <tr><td><b>Percepciones de IIBB del mes</b></td><td>Facturación</td><td>Archivo de Excel</td></tr>
+    <tr><td><b>Listado de presupuestos y remitos</b></td><td>Presupuestos</td><td>Archivo de Excel</td></tr>
+    <tr><td><b>Lista de faltantes</b></td><td>Stock</td><td>Al portapapeles, para pegar en WhatsApp</td></tr>
+    <tr><td><b>Arqueo de caja</b></td><td>Caja (al cerrar)</td><td>En pantalla</td></tr>
+  </table>
+
+  <div class="nota"><b>La impresora se elige en cada computadora.</b> Cada PC guarda la suya, porque el nombre de la impresora es distinto en cada una. El ticket sale por la cola de impresión de Windows, igual que cualquier otro documento.</div>
+
+  <h2 class="titulo-bloque" style="margin-top:8mm">Trabajar sin internet</h2>
+  <div class="subrayado"></div>
+
+  <p>Las computadoras del local tienen el sistema <b>instalado como programa</b>, y cada una guarda una copia de lo que el mostrador necesita. Si se corta internet:</p>
+  <ul class="limpia">
+    <li>Se puede <b>buscar productos y precios</b>, armar la venta y <b>cobrarla</b>.</li>
+    <li>La venta armada en un mostrador <b>le llega igual a la caja</b>, por la red del local: una computadora escucha —la de la caja— y las demás le hablan. Nadie configura direcciones: se encuentran por el nombre de la máquina.</li>
+    <li>Se pueden <b>emitir remitos y presupuestos</b>, con su número, y el papel sale igual.</li>
+    <li>Arriba a la derecha aparece un contador de <b>operaciones sin subir</b>. Cuando vuelve internet, todo sube solo y el contador baja a cero.</li>
+  </ul>
+  <div class="nota"><b>Lo que sí necesita internet, a propósito:</b> abrir y cerrar la caja. Arquear con la mitad de las ventas sin registrar produce una diferencia que no existe y que después alguien tiene que explicar.</div>
+
+  <h2 class="titulo-bloque" style="margin-top:8mm">Desde el celular</h2>
+  <div class="subrayado"></div>
+  <p>Es la misma dirección web, agregada a la pantalla de inicio del teléfono: queda un ícono y se abre como una aplicación, sin la barra del navegador. Sirve para <b>consultar stock, ver los reportes o cambiar un precio parado en el depósito</b>. Para vender en el mostrador, la computadora con el lector.</p>
+  <ul class="limpia">
+    <li><b>Android:</b> abrir la dirección en Chrome → menú de los tres puntos → <b>Instalar aplicación</b>.</li>
+    <li><b>iPhone:</b> abrir la dirección en Safari → botón <b>Compartir</b> → <b>Agregar a inicio</b>.</li>
+  </ul>
+
+  <h2 class="titulo-bloque" style="margin-top:8mm">Cómo piensa el sistema</h2>
+  <div class="subrayado"></div>
+
+  <table class="datos">
+    <tr><td style="width:50mm"><b>Dos archivadores separados</b></td><td>Los comprobantes <b>fiscales</b> (Facturación) y los <b>propios</b> (Remitos y Presupuestos) viven aparte. Comparten la impresora y la pantalla, <b>nunca los números</b>. Es lo que hace imposible que un presupuesto se cuele en una declaración.</td></tr>
+    <tr><td><b>Nada se borra</b></td><td>Dar de baja un producto, anular una venta o un remito no borra nada: queda el registro de quién lo hizo y por qué. El historial siempre queda.</td></tr>
+    <tr><td><b>El stock son movimientos</b></td><td>El saldo es la suma de lo que entró y salió, con su motivo y su responsable. Por eso puede quedar negativo a propósito: si dos terminales sin conexión venden la última unidad, entran las dos y el saldo queda en −1, que es una alerta visible y no un dato perdido.</td></tr>
+    <tr><td><b>Identidad en dos capas</b></td><td>La <b>máquina</b> se autentica una vez y queda abierta todo el día. La <b>persona</b> se identifica con PIN por operación: cero fricción en el mostrador y saber quién hizo qué.</td></tr>
+    <tr><td><b>Los datos de los clientes, cifrados</b></td><td>Lo que cada computadora guarda para poder trabajar sin internet —nombre, documento, domicilio de entrega— queda <b>cifrado</b>. Si alguien se lleva la computadora o copia sus archivos, no puede leer nada. La llave la guarda Windows, atada a la cuenta de esa máquina.</td></tr>
+  </table>
+
+  <div class="cierre">
+    <h3>Cualquier duda</h3>
+    <p>Este manual cubre el sistema tal como funciona hoy. Cuando se agregue algo nuevo, se actualiza y se vuelve a entregar.</p>
+    <p><b>ILUMA</b> · desarrollo y soporte del Sistema de Gestión de Agroveterinaria Gross.</p>
+  </div>
+</div>
+
+</body>
+</html>

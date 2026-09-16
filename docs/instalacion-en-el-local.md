@@ -6,6 +6,50 @@
 
 ---
 
+## 0. MAÑANA, EN ORDEN — el guion corto
+
+**Objetivo de la sesión:** que las cuatro máquinas queden instaladas y probadas, que **la venta llegue del mostrador a la caja con internet cortado**, y que **salga el ticket impreso**. El resto del sistema Lucas lo recorre solo con el manual.
+
+**Lo que hay que llevar:**
+
+- [ ] El instalador: `https://gross-sistema.pages.dev/actualizaciones/sistema-gross-0.4.1-setup.exe` (o en un pendrive, por si la conexión del local está lenta).
+- [ ] El **manual del sistema en PDF**, para dejárselo a Lucas.
+- [ ] Un pendrive con el instalador **y** los datos de acceso a mano.
+
+### El orden, con lo que tarda cada cosa
+
+| | Qué | Dónde | Tiempo |
+|---|---|---|---|
+| 1 | **Anotar la versión de cada PC** antes de tocar nada — *Configuración → Diagnóstico* | Las 4 | 5 min |
+| 2 | **0 pendientes en las 4** — *Diagnóstico*. Si hay, conectar y esperar | Las 4 | 5 min |
+| 3 | **Instalar limpio** la 0.4.1: desinstalar, borrar datos, instalar, entrar | Las 4 | 20 min |
+| 4 | **Asignar la terminal** en cada una (cuál es la caja) | Las 4 | 5 min |
+| 5 | **Elegir la impresora y sacar la prueba** | Las 4 | 10 min |
+| 6 | **La red del local**: marcar la caja como la que escucha, y probar desde cada mostrador | Caja + mostradores | 10 min |
+| 7 | **Una venta de punta a punta**, con internet | Mostrador → caja | 10 min |
+| 8 | 🔴 **Cortar internet en el mostrador y en la caja**, y que la venta llegue igual | Mostrador + caja | 15 min |
+| 9 | **Entregarle el manual a Lucas** y dejarlo recorrer el sistema | — | lo que dure |
+
+> **Si algo falla, no seguir de largo.** Casi todos los pasos dependen del anterior: una impresora mal elegida se nota recién en el paso 7, y la red del local no se puede probar sin el paso 6.
+
+### Los tres puntos donde de verdad se juega la sesión
+
+**a) Que salga el ticket** (paso 5). El sistema manda el ticket a **la impresora que se elija de la lista de Windows de esa computadora**, como cuando se imprime desde el Word. En la caja debería ser la `POS80`; en los mostradores, la misma compartida desde la caja.
+
+> ⚠️ **Sobre la Hasar.** Si la Hasar está instalada en Windows como impresora, aparece en la lista y se le puede mandar el ticket igual que a la POS80. Lo que hoy **no** hace el sistema es hablarle por el protocolo fiscal de Hasar (el que maneja su memoria fiscal): el comprobante fiscal es el que emite ARCA con su CAE y su QR, y el papel sale por la cola de Windows. **Conviene probar las dos** y ver con cuál queda mejor el ticket.
+
+**b) Que la venta llegue a la caja sin internet** (pasos 6 y 8). Es lo único del sistema que **nunca se probó con dos computadoras reales**. Está construido y probado con pruebas automáticas, pero la prueba de verdad es mañana. La primera vez que la caja se pone a escuchar, **Windows pregunta si permite que el programa se comunique en redes privadas: hay que decir que sí**.
+
+**c) Que no se pierda nada al instalar limpio** (pasos 2 y 3). Borrar los datos de una PC que tiene ventas sin subir las borra para siempre. Por eso el paso 2 va antes que el 3, siempre.
+
+### Lo que NO hay que hacer mañana
+
+- No recorrer el sistema pantalla por pantalla con Lucas: para eso está el manual. Si pregunta algo puntual, se le muestra y se sigue.
+- No cargar datos reales todavía.
+- No prometer fechas de lo que falta. Si aparece el tema, anotarlo y seguir con las máquinas.
+
+---
+
 ## 1. Antes de conectarse — dos preguntas a Lucas
 
 Estas dos van por WhatsApp con días de anticipación. **Ninguna se resuelve con él esperando del otro lado.**
@@ -120,8 +164,10 @@ Si el diagnóstico dijo que falta: **Ventas** → elegir cuál es esta máquina.
 
 | En qué PC | Qué elegir |
 |---|---|
-| La caja | `POS80 Printer` |
+| La caja | `POS80 Printer` — y, si está instalada, probar también la **Hasar** eligiéndola de la lista |
 | Los mostradores | `POS80 Printer(2)` — la compartida, aparece con el nombre del equipo de la caja |
+
+> **Cualquier impresora que Windows tenga instalada sirve**, porque el ticket sale por la cola de impresión. La Hasar, si está instalada, aparece en la lista como una más. Lo que el sistema no hace es hablarle por su protocolo fiscal: el comprobante válido es el de ARCA, con su CAE y su QR impresos en el papel.
 
 ✅ **Sale bien si:** sale un papel que dice "Si estás leyendo esto, la impresora está bien configurada".
 
@@ -240,6 +286,15 @@ No se instala nada desde una tienda: es la misma dirección web, agregada a la p
 Queda un ícono violeta con el isotipo de Gross y se abre como aplicación, sin la barra del navegador.
 
 ⚠️ **Sin probar en un teléfono de verdad.** Se verificó simulando la pantalla de un teléfono y revisando que el instalable salga completo (manifiesto, íconos, ícono del iPhone), pero la instalación en sí se prueba con el celular en la mano.
+
+### Paso 11 · Entregarle el manual a Lucas
+
+El **manual del sistema en PDF** explica cada sección con la misma estructura: para qué sirve, qué se ve, qué se hace y qué se exporta. Está escrito para que lo recorra solo y para entrenar a quien recién empieza.
+
+- Se le pasa por mail o por WhatsApp, y conviene dejar **una copia impresa en la caja**.
+- Cubre **lo que hoy funciona**. No habla de lo que está en camino: si Lucas pregunta por algo que no aparece, es porque todavía no está terminado y se le contesta en el momento.
+
+---
 
 ## 4. Si hay que corregir algo en el momento
 
