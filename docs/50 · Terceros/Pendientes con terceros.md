@@ -16,7 +16,8 @@ actualizado: 2026-09-09
 | Con quién | Qué | Estado |
 |---|---|---|
 | **Lucas** | Certificado de ARCA (subir el `.csr` a WSASS) | ✅ Obtenido el 21/08 — homologación. Ver [`secrets/gross_homologacion.crt`](../secrets/gross_homologacion.crt) |
-| **Contador** | **Alta del punto de venta del régimen CAEA** | 🟡 **El estudio se ofreció a hacerlo** (mensaje del 01/09), *previa autorización de Lucas*. Es exactamente el bloqueo que apareció el 24/08 probando contra ARCA: error 15003. Sólo falta que Lucas lo autorice |
+| **Contador** | **Alta del punto de venta del régimen CAEA** | ✅ **El 00009, dado de alta el 11/09** (constancia recibida el 16/09) y cargado en el sistema |
+| **Lucas** | **Certificado de producción** — subir `gross_produccion.csr` y autorizarlo a Facturación Electrónica | 🔴 El pedido está armado desde el 16/09. Bloquea facturar de verdad y la última prueba del CAEA. Paso a paso: [`certificado-produccion.md`](../certificado-produccion.md) |
 | **Lucas** | Plantilla de categorías y costos completada | En curso |
 | **Lucas** | Excel original de precios (se perdió) | Pedido |
 | **Lucas** | Qué es el "calendario de recibos" | Sin definir |

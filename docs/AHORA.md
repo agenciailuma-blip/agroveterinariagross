@@ -1,5 +1,5 @@
 ---
-actualizado: 2026-09-14
+actualizado: 2026-09-16
 estado: en curso
 ---
 
@@ -12,7 +12,7 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Publicado: 0.4.1** (14/09), con Reportes, devoluciones parciales, el resumen de cuenta corriente, la base local cifrada y la versión para el celular. **Falta instalarla limpia en el local esta semana** —la hace Francisco a mano, borrando los datos con 0 pendientes: [paso 9](instalacion-en-el-local.md). **248 pruebas verdes en la app y 11 en el programa**, 75 migraciones aplicadas.
+**Publicado: 0.4.1** (14/09), con Reportes, devoluciones parciales, el resumen de cuenta corriente, la base local cifrada y la versión para el celular. **Falta instalarla limpia en el local esta semana** —la hace Francisco a mano, borrando los datos con 0 pendientes: [paso 9](instalacion-en-el-local.md). **248 pruebas verdes en la app y 11 en el programa**, 76 migraciones aplicadas.
 
 ⚠️ **Lo que está construido pero NO verificado.** Un chat nuevo no puede darlo por probado:
 
@@ -37,7 +37,22 @@ estado: en curso
 
 ---
 
-## Lo último que pasó — 14 de septiembre
+## Lo último que pasó — 16 de septiembre
+
+**Llegó la constancia del punto de venta CAEA**: el **00009**, *CAEA – Fact. Elect. (RECE) – RI IVA – Contingencias*, dado de alta en ARCA el 11/09. **Se cargó en el sistema** como *Contingencia CAEA*, marcado de respaldo: las ventas comunes nunca van a ese punto de venta.
+
+🔴 **Y al usarlo apareció el límite de las pruebas.** El ambiente de pruebas de ARCA rechazó el aviso de «sin movimiento» con el **1204** —*el PtoVta debe corresponder a un punto de venta CAEA*— y, preguntado qué puntos de venta ve, contestó **«Sin Resultados»**: ninguno. No se entera de las altas reales. **La última prueba del CAEA sólo se puede hacer en producción**, así que lo que la bloquea ahora es el **certificado de producción**, no el alta.
+
+> **Cómo se lo contás a Lucas:** el alta está bien hecha y ya está cargada. Pero el simulador de ARCA donde probamos no ve las altas reales, así que para terminar de probar la contingencia hace falta el certificado de producción. **El pedido ya está armado**: es subir un archivo con la clave fiscal y autorizarlo, diez minutos. Paso a paso en [`certificado-produccion.md`](certificado-produccion.md) — **se puede hacer en la reunión**.
+
+Dos cosas que quedaron hechas de paso:
+
+- **La tarea diaria del CAEA no mezcla ambientes.** Buscaba los CAEA sin informar sin mirar si eran de pruebas o reales: el día del cambio a producción le habría mandado a la ARCA real, todos los días, los códigos de pruebas. Verificado con la consulta vieja contra la nueva.
+- **La Edge Function pregunta qué puntos de venta ve ARCA** (`accion: 'puntos_venta'`). Así se confirmó el diagnóstico, y es lo primero que se mira el día que se pase a producción.
+
+✅ **Y un pendiente que ya no lo era:** el control de huecos antes de rendir el CAEA —que la nota de detalle daba por pendiente— está construido y funcionando en el servidor desde el 03/09.
+
+## Lo que pasó el 14 de septiembre
 
 **Se publicó la 0.3.1** con las devoluciones parciales, verificada en el sitio.
 
@@ -176,7 +191,7 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 ## Lo que sigue, en orden
 
 1. 🔴 **Probar la impresión en el local, con la impresora delante.** El código está publicado en la 0.2.3: lo que falta es el papel.
-2. 🔴 **CAEA** — falta el trámite, no el código.
+2. 🔴 **CAEA** — el alta del punto de venta 9 llegó y está cargada (16/09). **Falta el certificado de producción**: el ambiente de pruebas no ve el punto de venta, y la última prueba sólo se puede hacer con la ARCA real. El pedido está armado: [`certificado-produccion.md`](certificado-produccion.md).
 3. ~~**Cifrado de la base local.**~~ ✅ **Hecho y publicado el 14/09 (0.4.0).** Se instala limpio, PC por PC, esta semana: [paso 9 del guion](instalacion-en-el-local.md).
 4. ~~**Devoluciones parciales**~~ ✅ **Hechas el 11/09 y publicadas el 14/09** en la 0.3.1.
 5. ~~**Reportes**~~ ✅ **Hecha y publicada el 11/09** en la 0.3.0.
@@ -190,8 +205,8 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 | Qué | Quién | |
 |---|---|---|
 | El **Excel con la columna de IVA** por producto | Lucas | 🔴 Lo que más bloquea |
-| **Alta del punto de venta CAEA** en ARCA | Lucas (autorizar al contador) | 🔴 |
-| **Certificado de producción** de ARCA | Lucas | 🔴 |
+| ~~**Alta del punto de venta CAEA** en ARCA~~ | — | ✅ **El 00009, alta del 11/09.** Cargado en el sistema el 16/09 |
+| **Certificado de producción** de ARCA | Lucas | 🔴 Ahora bloquea también la última prueba del CAEA. **El pedido está armado**; el trámite, paso a paso: [`certificado-produccion.md`](certificado-produccion.md) |
 | **Dónde se cobra la percepción de IIBB** | Lucas | 🔴 Bloquea el cobro a mayoristas |
 | Qué es un **"comprobante de percepción"** | Lucas | 🟡 Sin definir desde el 03/09 |
 | ~~¿Reciben cheques?~~ | — | ✅ **Contestado el 10/09: sí, y también le pagan a proveedores con cheque.** Es alcance nuevo y no está en ningún lado: [`cheques.md`](cheques.md) |
@@ -285,6 +300,7 @@ Queda en `http://localhost:5173`.
 - [`reunion-lucas-2026-09-07.md`](reunion-lucas-2026-09-07.md) — la visita al local.
 - [`obtech-como-piso.md`](obtech-como-piso.md) — qué cubre el sistema que usan hoy y qué nos falta.
 - [`compras-e-iva.md`](compras-e-iva.md) — facturas de compra y Libro de IVA.
+- [`certificado-produccion.md`](certificado-produccion.md) — el trámite del certificado, y lo que se hace el día que se pasa a producción.
 
 **Para el local**
 - [`instalacion-en-el-local.md`](instalacion-en-el-local.md) — el guion de las 4 PC.

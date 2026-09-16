@@ -55,11 +55,11 @@ La nota copia los importes de la factura **con la percepción de IIBB incluida**
 Verificado además: el stock vuelve a entrar (17 → 20 en la prueba), no se puede devolver dos veces la misma venta, y una venta sin facturar se anula sin generar nota (no hay nada que anular ante ARCA).
 
 **Lo que falta:**
-- ~~Contingencia con CAEA~~ — construida el 24/08, ver más abajo. Lo que falta no es código: es el alta del punto de venta en ARCA.
+- ~~Contingencia con CAEA~~ — construida el 24/08, ver más abajo. El alta del punto de venta llegó el 16/09; lo que falta ahora es el certificado de producción.
 - **Devoluciones parciales**: hoy la devolución es de la venta entera. Si el cliente devuelve 1 de 3 unidades, hay que anular todo y rehacer la venta. Nota de débito tampoco está.
 - El certificado de **producción**: trámite aparte, en otro portal (Administración de Certificados Digitales, no WSASS). Se hace cuando el servicio ya esté probado en homologación, y hay que acordarse de autorizarlo al servicio `wsfe` igual que en homologación — es el paso que todo el mundo olvida.
 
-### 🟡 1b. Contingencia con CAEA — construida el 24/08, esperando un trámite
+### 🟡 1b. Contingencia con CAEA — construida el 24/08, con el punto de venta cargado el 16/09 y esperando el certificado de producción
 
 El CAE se pide comprobante por comprobante y exige que ARCA conteste. El CAEA es al revés: ARCA lo entrega **por adelantado**, una vez por quincena, y habilita a emitir mientras el servicio está caído. Después hay que informarle qué se emitió con él, antes de una fecha tope.
 
@@ -80,7 +80,7 @@ Para que la condición 3 pueda cumplirse hubo que arreglar algo que faltaba: **c
 
 **Verificado contra la base**, con las condiciones rotas a propósito: sin CAEA vigente no deja; sin intentos fallidos no deja; sobre un comprobante rechazado no deja; sin punto de venta del régimen CAEA no deja y dice por qué; con todo en orden emite y el comprobante queda en `contingencia` con el código; emitirlo dos veces no se puede; y la alineación posterior no le pisa el número.
 
-⚠️ **Lo que NO está verificado y no puede estarlo todavía:** el ida y vuelta real con ARCA (`FECAEASolicitar` y `FECAEARegInformativo`). ARCA no otorga el código hasta que exista el punto de venta del régimen CAEA. El armado del XML del informativo, en particular, está escrito según el XSD pero **nunca lo aceptó ARCA**.
+⚠️ **Lo que NO está verificado y no puede estarlo todavía:** que ARCA acepte lo informado (`FECAEARegInformativo` y `FECAEASinMovimientoInformar`). El pedido sí anda desde el 03/09. El XML del informativo lo parseó ARCA, pero **nunca lo aceptó entero**. Y ya se sabe que **en homologación no se va a poder**: ese ambiente no ve el punto de venta 9 (ver la trampa más abajo). Queda para el día que se pase a producción: [`certificado-produccion.md`](../certificado-produccion.md).
 
 ⚠️ **Esta contingencia cubre "ARCA está caído", no "no hay internet".** Con internet cortado la terminal tampoco llega a Supabase, y el comprobante ni siquiera se puede armar. Eso es parte del trabajo de sincronización por red local + Tauri, no de esto.
 
@@ -415,7 +415,21 @@ Dos cosas importantes salen de ahí:
 
 Hoy `app.siguiente_numero_comprobante()` toma el mayor número usado + 1, así que no deja huecos. Pero hay un caso que sí los deja: **un comprobante que reservó número y terminó anulado**. Si el 13 queda anulado y el 14 sale con CAEA, ARCA espera el 13 y nunca va a aceptar el 14.
 
-**Pendiente:** antes de rendir, comparar contra `FECompUltimoAutorizado` y avisar el hueco con un mensaje claro, en vez de reintentar un 703 todos los días sin que nadie entienda por qué.
+✅ **Resuelto el 03/09:** antes de rendir, la Edge Function compara contra `FECompUltimoAutorizado` y, si hay un hueco, no manda nada y lo dice con un mensaje claro, en vez de reintentar un 703 todos los días sin que nadie entienda por qué. *(Acá figuraba como pendiente hasta el 16/09; el código ya estaba publicado.)*
+
+### ⚠️ Trampa: homologación no ve los puntos de venta reales
+
+Con el punto de venta 9 ya dado de alta en ARCA (11/09) y cargado en el sistema (16/09), homologación rechazó el aviso de «sin movimiento»:
+
+> **1204** — El PtoVta debe corresponder a un punto de venta CAEA
+
+Preguntado con `FEParamGetPtosVenta` —la Edge Function lo hace con `accion: 'puntos_venta'`—, contestó **602 — Sin Resultados**: para el CUIT de Gross, homologación no tiene **ningún** punto de venta, ni el 9 ni el 1. El alta se hace en la ARCA real y el ambiente de pruebas no la recibe.
+
+Con el CAE no se nota porque en homologación no controla el punto de venta. Con el CAEA sí lo controla, así que **el aviso de «sin movimiento» y el informativo sólo se pueden verificar en producción**. No tiene arreglo de nuestro lado.
+
+**Y dejó a la vista un error que sí era nuestro:** el paso 3 de `app.mantenimiento_caea()` buscaba los CAEA sin informar **sin mirar el ambiente**. El día del cambio a producción, los CAEA de pruebas que homologación nunca aceptó habrían seguido en la lista, y la tarea le habría mandado a la ARCA real, todos los días, códigos que la ARCA real nunca otorgó. Corregido en `20260916170000_el_caea_no_mezcla_ambientes.sql`. Verificado con la consulta vieja contra la nueva: con el ambiente en `produccion`, la vieja agarraba el CAEA de pruebas y la nueva no agarra ninguno.
+
+🟡 **Queda uno igual, sólo de pantalla:** `vista_caea_estado` tampoco filtra por ambiente, así que en la quincena del cambio el panel mostraría dos CAEA vigentes. Emitir no se confunde —`caea_vigente()` sí filtra—. No se tocó el 16/09 porque en homologación la vista da exactamente lo mismo; está en la lista de antes del cambio.
 
 ### ⚠️ Trampa: el CAEA no cuelga del punto de venta normal
 

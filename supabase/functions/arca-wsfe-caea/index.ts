@@ -11,6 +11,10 @@ import forge from "npm:node-forge@1.3.1";
 //   informar       FECAEARegInformativo       decirle a ARCA qué se emitió
 //   sin_movimiento FECAEASinMovimientoInformar  decirle que no se usó
 //
+// Y una consulta que no cambia nada:
+//
+//   puntos_venta   FEParamGetPtosVenta        qué puntos de venta ve ARCA
+//
 // El orden importa en el tiempo: el CAEA se pide ANTES del corte, se
 // usa DURANTE, y se informa DESPUÉS. Pedirlo mientras ARCA está caído
 // no sirve — pedirlo también necesita a ARCA.
@@ -835,6 +839,55 @@ Deno.serve(async (req: Request) => {
       }
 
       return responder({ ok: true, detalle });
+    }
+
+    // ───────────────────────────────────────────────────────────
+    // puntos_venta — FEParamGetPtosVenta
+    //
+    // Que el punto de venta figure en la constancia de alta no quiere
+    // decir que el web service lo vea: homologación tiene su propio
+    // padrón, y el 16/09 rechazó el 9 con el 1204 aunque en producción
+    // estaba dado de alta desde el 11/09. Esta consulta es la manera de
+    // saber qué ve ARCA en el ambiente configurado, antes de depender
+    // de eso el día que se caiga.
+    // ───────────────────────────────────────────────────────────
+    if (accion === "puntos_venta") {
+      const respuesta = await llamar(
+        ambiente,
+        "FEParamGetPtosVenta",
+        `<ar:FEParamGetPtosVenta>${auth(ticket, cuit)}</ar:FEParamGetPtosVenta>`,
+      );
+
+      const puntos: { numero: number; emision: string; bloqueado: boolean; baja: string | null }[] = [];
+      const re = /<PtoVenta>([\s\S]*?)<\/PtoVenta>/g;
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(respuesta.texto))) {
+        const baja = m[1].match(/<FchBaja>([^<]*)<\/FchBaja>/)?.[1] ?? "";
+        puntos.push({
+          numero: Number(m[1].match(/<Nro>([^<]*)<\/Nro>/)?.[1] ?? 0),
+          emision: m[1].match(/<EmisionTipo>([^<]*)<\/EmisionTipo>/)?.[1] ?? "",
+          bloqueado: m[1].match(/<Bloqueado>([^<]*)<\/Bloqueado>/)?.[1] === "S",
+          baja: baja && baja !== "NULL" ? baja : null,
+        });
+      }
+      const obs = observaciones(bloque(respuesta.texto, "Errors") ?? "");
+
+      // 'FEParamGet' es el nombre que la tabla admite para toda la familia
+      // de consultas de parámetros.
+      await supabase.from("intento_arca").insert({
+        operacion: "FEParamGet",
+        resultado: obs.length ? "rechazado" : "ok",
+        error_codigo: obs.length ? obs.map((o) => o.codigo).join(",") : null,
+        error_mensaje: obs.length ? mensajesDe(obs) : null,
+        request: { operacion: "FEParamGetPtosVenta" },
+        response: { xml: respuesta.texto },
+        duracion_ms: respuesta.duracion_ms,
+        usuario_id: usuarioId,
+      });
+
+      // Sin puntos de venta ARCA contesta con un error ("sin resultados"),
+      // que acá no es una falla: es la respuesta.
+      return responder({ ok: true, ambiente, puntos, observaciones: obs });
     }
 
     return responder({ ok: false, error: `Acción desconocida: ${accion}` }, 400);
