@@ -12,7 +12,7 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Publicado: 0.4.3** (17/09), con la red del local que ahora **dice qué le pasa** y el cortacircuito que hace que la Caja abra rápido sin internet. Antes, ese mismo día, la 0.4.2 con el recargo por cuotas arreglado, los acentos del ticket y la impresión automática al cobrar. **La 0.4.1 quedó instalada en el local el 17/09, en todas menos la de Windows 7** — las dos versiones nuevas entran solas con *Actualizar ahora*. **272 pruebas verdes en la app y 11 en el programa**, 77 migraciones aplicadas.
+**Publicado: 0.4.4** (17/09), con la red del local que ahora **dice qué le pasa**, el cortacircuito que hace que la Caja abra rápido sin internet, y la cola de la caja que se actualiza al cambiar el medio de pago. Antes, ese mismo día, la 0.4.2 con el recargo por cuotas arreglado, los acentos del ticket y la impresión automática al cobrar. **La 0.4.1 quedó instalada en el local el 17/09, en todas menos la de Windows 7** — las dos versiones nuevas entran solas con *Actualizar ahora*. **272 pruebas verdes en la app y 11 en el programa**, 77 migraciones aplicadas.
 
 ⚠️ **Lo que está construido pero NO verificado.** Un chat nuevo no puede darlo por probado:
 
@@ -44,6 +44,8 @@ estado: en curso
 🔴 **Cobrar con tarjeta en cuotas era imposible.** El recargo del plan —que ya existía— se sumaba al **importe del pago** y no al precio de la venta: total $181.280, pago $199.408, y el sistema contestaba *"Los pagos exceden el total en $18.128"* con el botón *Cobrar* apagado. No había forma de cobrar en cuotas salvo borrándole el recargo a mano.
 
 > **Cómo se arregló:** el recargo ahora va **adentro del precio**, que es como Gross lo cobra y lo que confirmó el contador. Al elegir el plan, el total sube, la pantalla dice *"Incluye 10% de recargo por 2 cuotas. De contado serían $181.280"*, y el importe coincide con el del posnet. La factura sale por lo que el cliente pagó.
+>
+> ✅ **Verificado en la aplicación de verdad, no sólo con pruebas:** se armó una venta de $6.400, se mandó a la caja y al elegir *Tarjeta de crédito · 2 cuotas* el total pasó a **$7.040** con el cartel del recargo y el botón *Cobrar* habilitado. Volviendo a Efectivo baja a $6.400, sin acumular. **Ahí salió un detalle más**, ya corregido: la lista de la izquierda se quedaba con el total anterior mientras el detalle mostraba el nuevo.
 >
 > **Editable por Lucas, en Precios**, un casillero por plan, con el ejemplo de cuánto se cobra una venta de $100.000 al lado. Cargados el 17/09: **0% a 1 cuota, 10% a 2, 15% a 3**. Está en el manual y en la [guía de pantallas](guia-de-pantallas.md).
 

@@ -124,6 +124,16 @@ export default function Caja() {
     onSuccess: ({ total }, { m, n }) => {
       setPagos([{ medio_pago_id: m.id, importe: total, cuotas: n, referencia: null }])
       qc.invalidateQueries({ queryKey: ['venta', seleccionada] })
+      /*
+        La cola también, o queda mostrando el total anterior.
+
+        Visto probando el recargo el 17/09: la tarjeta lo subía a $7.040
+        en el detalle y la lista de la izquierda seguía diciendo $6.400.
+        Dos números distintos para la misma venta, en la misma pantalla,
+        es de las cosas que hacen que el cajero deje de creerle al
+        sistema y saque la cuenta a mano.
+      */
+      qc.invalidateQueries({ queryKey: ['cola-caja'] })
       setError(null)
     },
     onError: (e) => setError(e instanceof Error ? e.message : 'No se pudo aplicar la lista.'),
