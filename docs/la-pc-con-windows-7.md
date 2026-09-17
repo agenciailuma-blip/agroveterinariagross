@@ -1,11 +1,17 @@
 ---
 actualizado: 2026-09-17
-estado: esperando una decisión de Gross
+estado: resuelto — Gross la va a cambiar
 ---
 
-# La PC con Windows 7 — la hoja para decidir
+# La PC con Windows 7
 
-> **Para Lucas.** Es una decisión suya, no nuestra, y conviene tomarla **antes del próximo viaje a Oberá**: si no, ese puesto vuelve a quedar a medias y el viaje se usa a medias.
+> ✅ **Resuelto el 17/09, por Lucas.** Están rehaciendo el local entero con un arquitecto y **en paralelo van renovando las computadoras**, que son viejas y compradas de a una. Esa PC se cambia cuando le toque. **Mientras tanto, ese puesto trabaja con Chrome** y no hay nada que hacer de nuestro lado.
+>
+> **Lo que sí conviene tener claro, dicho una vez:** hasta que esa máquina se cambie, ese puesto **no imprime** y, con internet cortado, **sus ventas no le llegan a la caja** — quedan esperando en esa computadora hasta que vuelva la conexión. Si el corte es largo y justo ahí se vende, eso se nota.
+>
+> **Y una buena:** poner el sistema en la PC nueva es bajar el instalador y elegir la terminal. Nada se pierde ni se migra, porque los datos viven en el servidor. Es exactamente lo que Lucas quiere: no depender de que nadie venga a reinstalar nada.
+
+Lo que sigue es el detalle técnico, por si hace falta explicarlo de nuevo.
 
 ---
 
@@ -41,20 +47,23 @@ Hoy funciona **con el navegador**, y así se usó en el local. Con eso alcanza p
 
 ---
 
-## Las tres opciones
+## Las opciones que se plantearon, y en qué quedó
 
-**1. Cambiarle el Windows a esa máquina** (o cambiar la máquina).
-Es la única que deja ese puesto completo. Costo: el de una licencia o el de una PC usada; el trabajo nuestro es el mismo que en las otras tres, media hora.
-⚠️ Antes de comprar nada hay que mirar si esa PC aguanta Windows 10 —memoria y disco—; puede salir más barato cambiarla que actualizarla.
+**1. Cambiar la máquina.** ✅ **Es lo que va a pasar**, dentro de la renovación del local. La decide Gross y tiene su propio tiempo.
 
-**2. Mover los puestos.**
-Si la PC buena está en un puesto que no imprime y la Windows 7 está en uno que sí, se intercambian. **No cuesta plata y se resuelve en una tarde.** Es la más razonable si no quieren invertir ahora.
+**2. Mover los puestos.** Si el corte de internet llega antes que la PC nueva y molesta, se puede intercambiar esa máquina con otra que no necesite imprimir. No cuesta plata y se hace en una tarde. **Queda como recurso, no como plan.**
 
-**3. Dejarla como está, con el navegador.**
-Vende y cobra. No imprime y, sin internet, sus ventas esperan a que vuelva la conexión en vez de pasar por la caja. **Es una decisión válida**, siempre que Gross sepa qué está eligiendo.
+**3. Dejarla con el navegador.** Es lo que se está haciendo mientras tanto.
 
 ---
 
-## Lo que necesitamos de Lucas
+## Cuando llegue la PC nueva
 
-Una sola respuesta: **cuál de las tres**. Con eso, el próximo viaje se planifica completo y no queda nada colgado.
+Quince minutos, y no hace falta que vayamos:
+
+1. Bajar el instalador de `gross-sistema.pages.dev` y ejecutarlo.
+2. Entrar con el usuario de esa persona y **elegir la terminal** (Mostrador 2, por ejemplo).
+3. Configuración → **Impresora del mostrador**, elegirla de la lista, e *Imprimir una prueba*.
+4. Correr el **diagnóstico** y copiarlo, para dejar constancia de que quedó bien.
+
+Nada se migra: lo que esa máquina tenía sin subir ya subió, y el resto vive en el servidor.

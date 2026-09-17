@@ -7,6 +7,7 @@ import { comoTexto, correrDiagnostico } from '@/lib/api/diagnostico'
 import type { Diagnostico, Estado } from '@/lib/api/diagnostico'
 import { CLAVES_IMPRESORA, obtenerTextos } from '@/lib/api/configuracion'
 import { listarImpresoras } from '@/lib/escritorio'
+import { direccionDelPuntoDeEncuentro } from '@/lib/local/red'
 
 /*
   El diagnóstico de esta terminal.
@@ -35,7 +36,7 @@ const ETIQUETA: Record<Estado, string> = {
 export default function DiagnosticoTerminal() {
   const { perfil } = useAuth()
   const { terminal } = useTerminal()
-  const { sinSubir, ultimaSync } = useSync()
+  const { sinSubir, ultimaSync, escuchando, entrega, entregaEn } = useSync()
   const [resultado, setResultado] = useState<Diagnostico | null>(null)
   const [copiado, setCopiado] = useState(false)
 
@@ -62,6 +63,11 @@ export default function DiagnosticoTerminal() {
         ultimaSync,
         impresoraElegida: terminal?.impresora_windows ?? null,
         impresorasInstaladas: instaladas,
+        esPuntoDeEncuentro: !!terminal?.es_punto_de_encuentro,
+        escuchando,
+        direccionCaja: await direccionDelPuntoDeEncuentro().catch(() => null),
+        entrega,
+        entregaEn,
         impresoraHost: config['comercio.impresora_host'] ?? null,
         impresoraPuerto: Number(config['comercio.impresora_puerto']) || 9100,
       })

@@ -1,4 +1,5 @@
 import { useSync } from '@/lib/local/SyncProvider'
+import { contarEntrega } from '@/lib/local/red'
 
 /*
   Este indicador no es decorativo.
@@ -11,9 +12,30 @@ import { useSync } from '@/lib/local/SyncProvider'
   Sin eso, el modo sin conexión es indistinguible de un sistema roto.
 */
 export function IndicadorConexion() {
-  const { enLinea, listo, sincronizando, sinSubir, ultimaSync, sincronizar } = useSync()
+  const { enLinea, listo, sincronizando, sinSubir, ultimaSync, sincronizar, entrega, entregaEn } =
+    useSync()
 
-  const estado = !enLinea ? 'sin_conexion' : sinSubir > 0 ? 'pendiente' : sincronizando ? 'sincronizando' : 'al_dia'
+  /*
+    Sin internet, lo único que salva a la venta es que llegue a la caja
+    por la red del local. Si ese camino tampoco anda, el vendedor tiene
+    que enterarse MIENTRAS vende, no cuando el cajero no encuentra la
+    venta y el cliente ya está esperando en la caja.
+
+    El 17/09 esto falló en el local y el indicador decía, tranquilo,
+    "Sin conexión · 3 en espera", que era cierto y no alcanzaba.
+  */
+  const dice = contarEntrega(entrega ?? null, entregaEn ?? null)
+  const cajaNoRecibe = dice.estado === 'falla'
+
+  const estado = !enLinea
+    ? cajaNoRecibe
+      ? 'sin_caja'
+      : 'sin_conexion'
+    : sinSubir > 0
+      ? 'pendiente'
+      : sincronizando
+        ? 'sincronizando'
+        : 'al_dia'
 
   const config = {
     al_dia: {
@@ -44,6 +66,18 @@ export function IndicadorConexion() {
       fondo: 'bg-amber-50 ring-amber-200',
       pulso: false,
     },
+    /*
+      Rojo y no ámbar, a propósito: ámbar es "esto sigue andando de otra
+      manera", y acá la venta no le está llegando a nadie más que a esta
+      computadora.
+    */
+    sin_caja: {
+      etiqueta: 'Sin conexión · la caja no recibe',
+      punto: 'bg-red-500',
+      texto: 'text-red-800',
+      fondo: 'bg-red-50 ring-red-200',
+      pulso: false,
+    },
   }[estado]
 
   const titulo = [
@@ -52,6 +86,9 @@ export function IndicadorConexion() {
       : 'Todavía no se sincronizó',
     listo ? 'Copia local lista: se puede trabajar sin conexión' : 'Sin copia local todavía',
     sinSubir > 0 ? `${sinSubir} operaciones esperando subir` : null,
+    // El motivo completo, para poder leerlo sin ir a Configuración.
+    cajaNoRecibe ? `La red del local: ${dice.detalle}` : null,
+    cajaNoRecibe && dice.queHacer ? dice.queHacer : null,
   ]
     .filter(Boolean)
     .join('\n')

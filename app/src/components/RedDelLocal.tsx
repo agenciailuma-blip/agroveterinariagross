@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useSync } from '@/lib/local/SyncProvider'
-import { claveDelLocal, direccionDelPuntoDeEncuentro } from '@/lib/local/red'
+import { claveDelLocal, contarEntrega, direccionDelPuntoDeEncuentro } from '@/lib/local/red'
 import { enEscritorio, hablarConLaCaja } from '@/lib/escritorio'
 import { enCastellano } from '@/lib/errores'
 import { useTerminal } from '@/lib/terminal'
@@ -23,7 +23,8 @@ import { useState } from 'react'
 export default function RedDelLocal() {
   const qc = useQueryClient()
   const { terminal, disponibles, elegir } = useTerminal()
-  const { escuchando } = useSync()
+  const { escuchando, entrega, entregaEn } = useSync()
+  const dice = contarEntrega(entrega, entregaEn)
   const [probando, setProbando] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -116,7 +117,37 @@ export default function RedDelLocal() {
                 </dd>
               </div>
             )}
+
+            {/*
+              Lo que le pasó de verdad a esta terminal con la caja.
+
+              Es el renglón que faltaba el 17/09, cuando la venta no
+              llegó y no había nada que mirar: la pantalla mostraba el
+              camino configurado, pero no si funcionaba.
+            */}
+            {!soyYo && enEscritorio && (
+              <div className="flex flex-wrap justify-between gap-2">
+                <dt className="text-piedra-500">Última entrega a la caja</dt>
+                <dd
+                  className={
+                    dice.estado === 'falla'
+                      ? 'text-right font-medium text-red-700'
+                      : dice.estado === 'aviso'
+                        ? 'text-right text-amber-700'
+                        : 'text-right text-verde-700'
+                  }
+                >
+                  {dice.detalle}
+                </dd>
+              </div>
+            )}
           </dl>
+
+          {!soyYo && enEscritorio && dice.queHacer && dice.estado !== 'ok' && (
+            <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900 ring-1 ring-amber-200">
+              {dice.queHacer}
+            </p>
+          )}
 
           <div className="mt-4 flex flex-wrap items-center gap-3">
             {!soyYo && (

@@ -5,7 +5,7 @@ import { db } from '@/lib/local/db'
 import { hayDatosLocales } from '@/lib/local/consultas'
 import { pendientes, recuperarHuerfanas, sincronizar } from '@/lib/local/sync'
 import { entregarALaCaja, guardarLoQueLlego, ponerseAEscuchar } from '@/lib/local/red'
-import type { MensajeDelLocal } from '@/lib/local/red'
+import type { EntregaALaCaja, MensajeDelLocal } from '@/lib/local/red'
 import { alLlegarDeLaRed, cerrarPuntoDeEncuentro, enEscritorio } from '@/lib/escritorio'
 import { useConexion } from '@/lib/useConexion'
 import { useTerminal } from '@/lib/terminal'
@@ -27,6 +27,15 @@ interface EstadoSync {
   enLinea: boolean
   /** Esta terminal es la que escucha a las demás, y está escuchando. */
   escuchando: boolean
+  /*
+    Cómo le fue a la última entrega a la caja por la red del local.
+
+    Está acá arriba y no escondido adentro de la red porque es lo que
+    hay que poder mirar cuando la venta no aparece en la caja: sin esto,
+    el 17/09 no hubo nada que revisar.
+  */
+  entrega: EntregaALaCaja | null
+  entregaEn: Date | null
   sincronizar: () => Promise<void>
   /** La llave de la base local no aparece: sin ella no se puede leer ni vender. */
   bloqueada: BaseLocalBloqueada | null
@@ -48,6 +57,8 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   const [sinSubir, setSinSubir] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [escuchando, setEscuchando] = useState(false)
+  const [entrega, setEntrega] = useState<EntregaALaCaja | null>(null)
+  const [entregaEn, setEntregaEn] = useState<Date | null>(null)
   const [bloqueada, setBloqueada] = useState<BaseLocalBloqueada | null>(null)
   const corriendo = useRef(false)
 
@@ -233,8 +244,29 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!enEscritorio || !terminal || terminal.es_punto_de_encuentro) return
 
+    /*
+      El resultado se guarda SIEMPRE, salga bien o mal.
+
+      Un fallo no interrumpe al vendedor —que la caja esté apagada de
+      noche es normal, y la venta va a subir igual cuando vuelva
+      internet—, pero tiene que quedar a la vista en algún lado. Hasta
+      el 17/09 se descartaba con un catch vacío, y el día que la venta
+      no llegó a la caja no había ni un dato para mirar.
+    */
     const entregar = () => {
-      entregarALaCaja(terminal).catch(() => {})
+      entregarALaCaja(terminal)
+        .then((r) => {
+          setEntrega(r)
+          setEntregaEn(new Date())
+        })
+        .catch((e) => {
+          setEntrega({
+            estado: 'no_contesta',
+            esperando: 0,
+            motivo: e instanceof Error ? e.message : String(e),
+          })
+          setEntregaEn(new Date())
+        })
     }
 
     entregar()
@@ -269,11 +301,26 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       error,
       enLinea,
       escuchando,
+      entrega,
+      entregaEn,
       sincronizar: correr,
       bloqueada,
       rehacer,
     }),
-    [listo, sincronizando, ultimaSync, sinSubir, error, enLinea, escuchando, correr, bloqueada, rehacer],
+    [
+      listo,
+      sincronizando,
+      ultimaSync,
+      sinSubir,
+      error,
+      enLinea,
+      escuchando,
+      entrega,
+      entregaEn,
+      correr,
+      bloqueada,
+      rehacer,
+    ],
   )
 
   return <Contexto value={valor}>{children}</Contexto>

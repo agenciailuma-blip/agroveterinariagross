@@ -191,6 +191,16 @@ Después, en **cada mostrador**: misma pantalla → **Probar la conexión**. Tie
 
 ❌ **Si no contesta:** la PC de la caja está apagada, el sistema no está abierto ahí, o se le dijo que no al aviso de Windows. Ese aviso se puede volver a habilitar en el Firewall de Windows, en "Permitir que una aplicación se comunique a través del Firewall".
 
+📋 **Desde la 0.4.3, la pantalla dice sola cómo le fue** (se probó el 17/09 y falló sin dejar rastro). En cada mostrador, en esa misma pantalla, aparece **Última entrega a la caja**, y hay tres respuestas que importan:
+
+| Dice | Qué significa | Qué hacer |
+|---|---|---|
+| *Se le entregaron N operaciones* | Anda | Nada |
+| *…no sabe cuál es la computadora de la caja* | Esa terminal nunca sincronizó desde que la caja se presentó | Con internet, sincronizar esa terminal una vez |
+| *…la caja no contesta* | La caja está apagada, sin el sistema abierto, o se le dijo que no al aviso de Windows | Prenderla y abrir el sistema; revisar el Firewall |
+
+Lo mismo sale en el **diagnóstico** (Configuración → *Copiar*), así que alcanza con pegarlo en el chat.
+
 > **Para qué sirve, en una frase:** sin esto, cuando se corta internet la venta que arma un vendedor **no tiene cómo llegar a la caja**. Con esto, llega igual.
 
 ### Paso 6 · Una venta de punta a punta

@@ -1,6 +1,8 @@
 import { supabase } from '@/lib/supabase'
 import { db } from '@/lib/local/db'
 import { enEscritorio } from '@/lib/escritorio'
+import { contarEntrega } from '@/lib/local/red'
+import type { EntregaALaCaja } from '@/lib/local/red'
 
 /*
   El diagnóstico de la terminal.
@@ -51,6 +53,14 @@ export async function correrDiagnostico(datos: {
   impresoraElegida: string | null
   /** Las que Windows informa en esta PC. Vacía desde el navegador. */
   impresorasInstaladas: string[]
+  /** Si esta terminal es la que escucha a las demás, y si está escuchando. */
+  esPuntoDeEncuentro?: boolean
+  escuchando?: boolean
+  /** El nombre con el que la caja se publicó en la red del local. */
+  direccionCaja?: string | null
+  /** Cómo le fue a la última entrega a la caja, y cuándo. */
+  entrega?: EntregaALaCaja | null
+  entregaEn?: Date | null
   impresoraHost: string | null
   impresoraPuerto: number
 }): Promise<Diagnostico> {
@@ -236,6 +246,44 @@ export async function correrDiagnostico(datos: {
       detalle: 'Esta máquina no tiene impresora de tickets elegida.',
       queHacer:
         'Configuración → Impresora del mostrador, y elegirla de la lista. En la caja es «POS80 Printer».',
+    })
+  }
+
+  /*
+    ── 7. La red del local ──
+
+    El punto que faltaba. El 17/09, en el local, la venta de un mostrador
+    no apareció en la caja con internet cortado, y no había nada que
+    mirar: ni acá ni en ninguna pantalla. Ahora la terminal que escucha
+    dice si está escuchando, y la que entrega dice cómo le fue.
+  */
+  if (!enEscritorio) {
+    puntos.push({
+      nombre: 'La red del local',
+      estado: 'aviso',
+      detalle: 'No existe en el navegador: una página web no puede hablarle a otra computadora.',
+      queHacer: 'Sin el programa instalado, esta máquina no puede pasarle la venta a la caja.',
+    })
+  } else if (datos.esPuntoDeEncuentro) {
+    puntos.push({
+      nombre: 'La red del local — esta es la que escucha',
+      estado: datos.escuchando ? 'ok' : 'falla',
+      detalle: datos.escuchando
+        ? `Escuchando a las demás terminales${datos.direccionCaja ? `, como «${datos.direccionCaja}»` : ''}.`
+        : 'NO está escuchando, así que ningún mostrador puede entregarle ventas.',
+      queHacer: datos.escuchando
+        ? undefined
+        : 'Suele ser el aviso de Windows: la primera vez pregunta si permite la comunicación en redes privadas y hay que decir que sí. Cerrar y volver a abrir el sistema para que vuelva a preguntar.',
+    })
+  } else {
+    const dice = contarEntrega(datos.entrega ?? null, datos.entregaEn ?? null)
+    puntos.push({
+      nombre: 'La red del local — entrega a la caja',
+      estado: dice.estado,
+      detalle: datos.direccionCaja
+        ? `${dice.detalle} La caja es «${datos.direccionCaja}».`
+        : `${dice.detalle} Ninguna terminal se presentó como la caja todavía.`,
+      queHacer: dice.queHacer,
     })
   }
 

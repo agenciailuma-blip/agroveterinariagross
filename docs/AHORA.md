@@ -12,7 +12,7 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Publicado: 0.4.2** (17/09), con el recargo por cuotas arreglado, los acentos del ticket y la impresión automática al cobrar. Antes, la 0.4.1 con Reportes, devoluciones parciales, el resumen de cuenta corriente, la base local cifrada y la versión para el celular. **Instalada en el local el 17/09, en todas menos la de Windows 7.** **259 pruebas verdes en la app y 11 en el programa**, 77 migraciones aplicadas.
+**Publicado: 0.4.3** (17/09), con la red del local que ahora **dice qué le pasa** y el cortacircuito que hace que la Caja abra rápido sin internet. Antes, ese mismo día, la 0.4.2 con el recargo por cuotas arreglado, los acentos del ticket y la impresión automática al cobrar. **La 0.4.1 quedó instalada en el local el 17/09, en todas menos la de Windows 7** — las dos versiones nuevas entran solas con *Actualizar ahora*. **272 pruebas verdes en la app y 11 en el programa**, 77 migraciones aplicadas.
 
 ⚠️ **Lo que está construido pero NO verificado.** Un chat nuevo no puede darlo por probado:
 
@@ -51,9 +51,15 @@ estado: en curso
 
 🟡 **Cobrar imprimía en tres pasos.** Ahora **al cobrar sale el ticket solo** por la impresora de esa PC. El botón queda para verlo o darle una copia al cliente, y si el ticket no sale, la pantalla lo dice en vez de dejar al cajero esperando.
 
-🔴 **Sin internet, la caja no vio la venta del mostrador** — el punto 2-bis, que era la promesa grande. Y la pantalla de Caja tarda muchísimo en cargar sin conexión: cada consulta espera 20 segundos antes de rendirse. **Las dos cosas siguen abiertas**, son lo primero de la próxima tanda. Lo que sí se sabe: la caja **está** marcada como la que escucha y **publicó su dirección ese día a las 15:15**; lo que falta averiguar es si el mostrador tenía esa dirección en su copia local, y ahí el sistema **se queda callado** en vez de avisar.
+🔴 **Sin internet, la caja no vio la venta del mostrador** — el punto 2-bis, que era la promesa grande. La caja **está** marcada como la que escucha y **publicó su dirección ese día a las 15:15**, así que esa parte funcionó; lo que no se pudo saber es qué falló después, **porque el sistema no lo decía**. La entrega devolvía un número y los errores se descartaban con un `catch` vacío.
 
-🔴 **La PC con Windows 7 sigue sin poder instalar el programa**, ahora con otro cartel (*falta el punto de entrada PackageIdFromFullName*). Es el mismo motivo de siempre y **no tiene arreglo de nuestro lado**: Microsoft dejó Windows 7 en 2023. Las tres opciones —cambiarle el Windows, mover los puestos, o dejarla en el navegador— las decide Gross, y conviene que decida **antes del próximo viaje**.
+> **Eso se arregló primero, y a propósito:** antes de adivinar la causa hay que poder verla. Ahora la entrega a la caja informa cuál de los cuatro finales tuvo —al día, entregado, *no sé cuál es la caja*, o *la caja no contesta*, con el motivo—, y eso aparece en tres lugares: el **indicador de arriba** se pone rojo y dice *"Sin conexión · la caja no recibe"*, **Configuración → La red del local** muestra la última entrega, y el **diagnóstico que se copia y se pega** trae el renglón nuevo. Con eso, la próxima vez el chat de WhatsApp alcanza para saber si es el aviso de Windows, una terminal que nunca sincronizó, o la caja apagada.
+
+🟡 **Y la pantalla de Caja tardaba un minuto en abrir sin internet.** Cada consulta esperaba doce segundos antes de rendirse, y la Caja hace varias. Ahora hay un **cortacircuito**: cuando una falla por red, las que vienen atrás se descartan en el acto y el sistema pasa directo a la copia local; cada quince segundos deja pasar una para ver si volvió la conexión. La primera sigue esperando sus doce segundos —no hay forma de saber antes—, pero el resto ya no.
+
+⚠️ **Lo que todavía no se sabe** es por qué no llegó esa venta. Puede ser el aviso de Windows contestado que no, que la caja estuviera abierta en el navegador en ese momento, o que el mostrador no hubiera sincronizado después de las 15:15. **Los tres casos ahora se distinguen solos**, y la prueba son dos minutos en el local: Configuración → La red del local → *Probar la conexión*.
+
+✅ **La PC con Windows 7 ya no es un problema abierto.** Volvió a fallar la instalación —mismo motivo de siempre, Microsoft dejó Windows 7 en 2023— pero **Lucas avisó ese mismo día que van a cambiar las computadoras**: están rehaciendo el local con un arquitecto y la renovación de las máquinas va en paralelo. **Mientras tanto ese puesto usa Chrome.** Lo que queda dicho, una vez: hasta que se cambie, ahí no se imprime y, con internet cortado, sus ventas no llegan a la caja. Detalle en [`la-pc-con-windows-7.md`](la-pc-con-windows-7.md).
 
 ## Lo que pasó el 16 de septiembre
 
@@ -208,9 +214,11 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 
 ## Lo que sigue, en orden
 
-0. 🔴 **Lo que quedó abierto del 17/09, y es lo primero:**
-   - **Que la venta llegue a la caja sin internet.** Falló en el local. Hay que hacer que el mostrador **avise** cuando no encuentra a la caja —hoy se queda callado— y revisar que la dirección de la caja esté en la copia local de cada terminal.
-   - **Que la Caja no tarde un minuto en abrir sin conexión.** Cada consulta espera 20 segundos antes de rendirse; sin internet hay que darse cuenta en uno y pasar directo a la copia local.
+0. 🔴 **Que la venta llegue a la caja sin internet.** Falló en el local el 17/09. **El sistema ya dice qué pasa** (0.4.3) — eso era lo que faltaba para poder arreglarlo. **Lo que sigue es una prueba de dos minutos en el local**, con las dos máquinas prendidas y el programa instalado en las dos: Configuración → La red del local → *Probar la conexión*, y después una venta con internet cortado.
+   - Si dice **«no sé cuál es la caja»**: esa terminal no sincronizó desde que la caja se presentó. Se resuelve sincronizando una vez con internet.
+   - Si dice **«la caja no contesta»**: es el aviso de Windows —hay que permitir la comunicación en redes privadas en la máquina de la caja— o el sistema no está abierto ahí.
+   - Si con eso no alcanza, la salida de fondo es que las terminales **se encuentren solas en la red**, sin depender de haber sincronizado antes. Es trabajo del programa (Rust) y no se hizo todavía a propósito: primero hay que ver qué dice la prueba.
+   - ~~**Que la Caja no tarde un minuto en abrir sin conexión.**~~ ✅ **Hecho** con el cortacircuito.
 1. ~~🔴 **Probar la impresión en el local, con la impresora delante.**~~ ✅ **Hecho el 17/09: imprime.** Quedaron dos correcciones en la 0.4.2 —las letras acentuadas y el ticket que ahora sale solo al cobrar— que **falta ver en papel**.
 2. 🔴 **CAEA** — el alta del punto de venta 9 llegó y está cargada (16/09). **Falta el certificado de producción**: el ambiente de pruebas no ve el punto de venta, y la última prueba sólo se puede hacer con la ARCA real. El pedido está armado: [`certificado-produccion.md`](certificado-produccion.md).
 3. ~~**Cifrado de la base local.**~~ ✅ **Hecho y publicado el 14/09 (0.4.0).** Se instala limpio, PC por PC, esta semana: [paso 9 del guion](instalacion-en-el-local.md).

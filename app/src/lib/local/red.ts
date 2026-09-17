@@ -226,16 +226,104 @@ export async function operacionesParaLaCaja(cola: OperacionPendiente[]): Promise
   )
 }
 
-export async function entregarALaCaja(terminal: Terminal | null): Promise<number> {
-  // La que escucha no se manda nada a sí misma.
-  if (!enEscritorio || !terminal || terminal.es_punto_de_encuentro) return 0
+/*
+  Cómo le fue a la entrega, para poder decirlo.
 
-  const [clave, direccion] = await Promise.all([claveDelLocal(), direccionDelPuntoDeEncuentro()])
-  if (!clave || !direccion) return 0
+  Antes esto devolvía un número y los errores se tragaban en silencio.
+  Probándolo en el local el 17/09 no llegó ninguna venta a la caja y no
+  había absolutamente nada que mirar: ni un cartel, ni un registro, ni
+  una pantalla que dijera "no la encuentro". Un camino que falla callado
+  es peor que uno que no existe, porque nadie sabe que hay que revisarlo.
+*/
+export type EntregaALaCaja =
+  /** Esta terminal no entrega: es la caja, o es el navegador. */
+  | { estado: 'no_corresponde' }
+  /** No hay nada esperando: todo lo de esta PC ya llegó al servidor. */
+  | { estado: 'al_dia' }
+  | { estado: 'entregado'; cuantas: number }
+  /** No sabemos a qué computadora hablarle. */
+  | { estado: 'sin_direccion'; esperando: number }
+  /** Sabemos a quién, pero no contesta. */
+  | { estado: 'no_contesta'; esperando: number; motivo: string }
+
+/*
+  Cómo se le cuenta a una persona.
+
+  Está acá y no en cada pantalla porque lo dicen dos: la sección de la
+  red del local y el diagnóstico que se copia y se pega en un chat. Si
+  cada una lo redactara por su lado, el que da soporte leería dos
+  diagnósticos distintos de la misma máquina.
+
+  Cada caso trae qué hacer, no sólo qué pasó: un "no se encuentra la
+  caja" sin el paso siguiente deja a quien está en el mostrador igual de
+  trabado que antes.
+*/
+export function contarEntrega(
+  entrega: EntregaALaCaja | null,
+  cuando: Date | null,
+): { estado: 'ok' | 'aviso' | 'falla'; detalle: string; queHacer?: string } {
+  const hora = cuando ? ` (${cuando.toLocaleTimeString('es-AR')})` : ''
+
+  if (!entrega) {
+    return {
+      estado: 'aviso',
+      detalle: 'Todavía no se intentó entregarle nada a la caja.',
+      queHacer: 'Es normal recién abierto el sistema: se intenta cada minuto.',
+    }
+  }
+
+  switch (entrega.estado) {
+    case 'no_corresponde':
+      return {
+        estado: 'ok',
+        detalle: 'Esta terminal no le entrega a nadie: es la caja, o es el navegador.',
+      }
+    case 'al_dia':
+      return { estado: 'ok', detalle: `No hay nada esperando para la caja${hora}.` }
+    case 'entregado':
+      return {
+        estado: 'ok',
+        detalle: `Se le entregaron ${entrega.cuantas} operaciones a la caja${hora}.`,
+      }
+    case 'sin_direccion':
+      return {
+        estado: 'falla',
+        detalle:
+          `Hay ${entrega.esperando} operaciones esperando y esta computadora no sabe ` +
+          `cuál es la de la caja${hora}.`,
+        queHacer:
+          'Con internet, abrir el sistema en la caja una vez —ahí publica su nombre— y ' +
+          'sincronizar esta terminal. Sin eso, la venta no puede llegar durante un corte.',
+      }
+    case 'no_contesta':
+      return {
+        estado: 'falla',
+        detalle: `Hay ${entrega.esperando} operaciones esperando y la caja no contesta${hora}. ${entrega.motivo}`,
+        queHacer:
+          'Fijate que la computadora de la caja esté prendida y con el sistema abierto. ' +
+          'La primera vez, Windows pregunta si permite la comunicación en redes privadas: hay que decir que sí.',
+      }
+  }
+}
+
+export async function entregarALaCaja(terminal: Terminal | null): Promise<EntregaALaCaja> {
+  // La que escucha no se manda nada a sí misma.
+  if (!enEscritorio || !terminal || terminal.es_punto_de_encuentro) {
+    return { estado: 'no_corresponde' }
+  }
 
   const cola = await db.outbox.toArray()
   const falta = loQueFaltaEntregar(cola)
-  if (!falta.length) return 0
+  if (!falta.length) return { estado: 'al_dia' }
+
+  /*
+    La dirección y la clave bajan con la sincronización, así que una
+    terminal que nunca sincronizó desde que la caja se presentó no sabe
+    a quién hablarle. Es un caso real y no un imposible: la caja publica
+    su nombre la primera vez que se pone a escuchar.
+  */
+  const [clave, direccion] = await Promise.all([claveDelLocal(), direccionDelPuntoDeEncuentro()])
+  if (!clave || !direccion) return { estado: 'sin_direccion', esperando: falta.length }
 
   const abiertas = await operacionesParaLaCaja(cola)
 
@@ -246,11 +334,22 @@ export async function entregarALaCaja(terminal: Terminal | null): Promise<number
     operaciones: abiertas,
   }
 
-  const r = await hablarConLaCaja(direccion, JSON.stringify(mensaje))
-  if (!r.ok) throw new Error(r.detalle)
+  let r
+  try {
+    r = await hablarConLaCaja(direccion, JSON.stringify(mensaje))
+  } catch (e) {
+    return {
+      estado: 'no_contesta',
+      esperando: falta.length,
+      motivo: e instanceof Error ? e.message : String(e),
+    }
+  }
+  if (!r.ok) {
+    return { estado: 'no_contesta', esperando: falta.length, motivo: r.detalle }
+  }
 
   const ahora = new Date().toISOString()
   await db.outbox.bulkPut(falta.map((o) => ({ ...o, entregado_en: ahora })))
 
-  return falta.length
+  return { estado: 'entregado', cuantas: falta.length }
 }

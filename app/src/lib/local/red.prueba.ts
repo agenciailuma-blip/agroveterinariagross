@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { loQueFaltaEntregar, loQueSeGuarda } from '@/lib/local/red'
+import { contarEntrega, loQueFaltaEntregar, loQueSeGuarda } from '@/lib/local/red'
 import type { OperacionAbierta } from '@/lib/local/db'
 
 /*
@@ -122,5 +122,68 @@ describe('qué le falta entregar al mostrador', () => {
     const yaEntregada = operacion({ id: 'a', entregado_en: '2026-09-10T12:05:00.000Z' })
 
     expect(loQueFaltaEntregar([yaEntregada])).toEqual([])
+  })
+})
+
+/*
+  ─────────────────────────────────────────────────────────────
+  Cómo se cuenta la entrega a la caja
+
+  El 17/09, en el local, la venta de un mostrador no llegó a la caja con
+  internet cortado, y no había NADA que mirar: la entrega devolvía un
+  número y los errores se descartaban con un catch vacío.
+
+  Estas pruebas cuidan que cada final tenga su explicación y su paso
+  siguiente. Un "no llegó" sin qué hacer deja al mostrador igual de
+  trabado que el silencio.
+  ─────────────────────────────────────────────────────────────
+*/
+describe('cómo se le cuenta a una persona qué pasó con la caja', () => {
+  const cuando = new Date('2026-09-17T18:30:00.000Z')
+
+  it('sin haber intentado todavía, avisa que es normal', () => {
+    const d = contarEntrega(null, null)
+    expect(d.estado).toBe('aviso')
+    expect(d.queHacer).toBeTruthy()
+  })
+
+  it('la caja y el navegador no entregan, y eso no es un problema', () => {
+    expect(contarEntrega({ estado: 'no_corresponde' }, cuando).estado).toBe('ok')
+  })
+
+  it('sin nada pendiente, está al día', () => {
+    expect(contarEntrega({ estado: 'al_dia' }, cuando).estado).toBe('ok')
+  })
+
+  it('entregado dice cuántas operaciones fueron', () => {
+    const d = contarEntrega({ estado: 'entregado', cuantas: 3 }, cuando)
+    expect(d.estado).toBe('ok')
+    expect(d.detalle).toContain('3')
+  })
+
+  /*
+    Los dos que importan: son los dos que pasaron en el local, y los dos
+    que antes no decían nada.
+  */
+  it('no saber cuál es la caja es una falla, y dice cómo resolverla', () => {
+    const d = contarEntrega({ estado: 'sin_direccion', esperando: 2 }, cuando)
+    expect(d.estado).toBe('falla')
+    expect(d.detalle).toContain('2')
+    expect(d.queHacer).toContain('sincronizar')
+  })
+
+  it('que la caja no conteste es una falla, con el motivo adentro', () => {
+    const d = contarEntrega(
+      { estado: 'no_contesta', esperando: 5, motivo: 'No se encontró «DESKTOP-SM2B29J».' },
+      cuando,
+    )
+    expect(d.estado).toBe('falla')
+    expect(d.detalle).toContain('DESKTOP-SM2B29J')
+    expect(d.queHacer).toContain('redes privadas')
+  })
+
+  it('dice la hora, para poder saber si es de ahora o de hace un rato', () => {
+    const d = contarEntrega({ estado: 'entregado', cuantas: 1 }, cuando)
+    expect(d.detalle).toMatch(/\d{1,2}:\d{2}/)
   })
 })
