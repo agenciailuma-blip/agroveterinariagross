@@ -267,6 +267,8 @@
       <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Crear, editar y dar de baja <b>listas</b> (Contado, Tarjeta…) con su ajuste · lo mismo con los <b>medios de pago</b>, cada uno atado a su lista · definir <b>cuotas y recargos</b> por medio.</div></div>
       <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">Nada.</div></div>
       <div class="nota"><b>El precio que se cotiza es el de tarjeta</b>, y el efectivo se presenta como descuento. No es estético: define qué número lee el vendedor en voz alta. Si dice el de contado y la caja cobra más, queda pegado con el cliente adelante.</div>
+      <div class="nota"><b>El recargo por cuotas se edita acá.</b> Cada medio de pago que admite cuotas tiene un casillero por plan —1, 2, 3 cuotas— con su porcentaje. Se escribe el número y queda guardado al salir del casillero. Debajo, la pantalla muestra cuánto se cobra una venta de $100.000 con cada plan, para comparar contra el posnet sin sacar la cuenta.</div>
+      <div class="nota"><b>Ese recargo va adentro del precio.</b> Al elegir el plan en la caja, el total de la venta sube y la factura sale por ese importe: no aparece como un renglón aparte al pie del ticket. Es como se cobra hoy, y es lo que corresponde.</div>
     </div>
   </section>
 
@@ -327,7 +329,8 @@
       <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor"><b>Abrir la caja</b> con el monto inicial · elegir una venta de la cola · <b>corregirla</b> (quitar, cambiar cantidades, agregar) · elegir medio de pago y cuotas · <b>hacer un descuento</b> por porcentaje o llevando el total a un número, con motivo · elegir <b>con factura o sin factura</b> · <b>cobrar</b> · cobrar una cuenta corriente · <b>cerrar la caja</b> con el arqueo.</div></div>
       <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">El <b>comprobante impreso</b> —factura, ticket no fiscal o comprobante interno— en ticket de 80 mm o A4.</div></div>
 
-      <div class="nota"><b>Al cobrar se factura solo.</b> El cajero no tiene que ir a otra pantalla: la factura se pide al confirmar el cobro y el comprobante queda listo para imprimir.</div>
+      <div class="nota"><b>Al cobrar se factura y se imprime solo.</b> El cajero no tiene que ir a otra pantalla ni apretar nada más: al confirmar el cobro se pide la factura y el ticket sale por la impresora del mostrador. El botón que queda al lado es para verlo o darle una copia al cliente. Si el ticket no salió, el sistema lo dice.</div>
+      <div class="nota"><b>Si el pago es en cuotas, el total ya viene con el recargo.</b> La pantalla lo aclara —cuánto es y cuánto sería de contado—, y el importe a cobrar coincide con el del posnet. El porcentaje de cada plan se carga en <b>Precios</b>.</div>
       <div class="nota"><b>«Sin factura» tiene permiso propio</b>, que no tienen ni el cajero ni el vendedor. Y a un Responsable Inscripto no se le ofrece: compra para descargar IVA.</div>
     </div>
   </section>

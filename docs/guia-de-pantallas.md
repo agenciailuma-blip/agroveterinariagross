@@ -103,6 +103,14 @@ Cómo se arma el precio final según con qué paga el cliente.
 
 > **El precio que se cotiza es el de tarjeta**, y el efectivo se presenta como descuento. No es un detalle estético: define qué número lee el vendedor en voz alta. Si dice el de contado y la caja cobra más, queda pegado con el cliente adelante.
 
+**El recargo por cuotas, que es lo que Lucas edita.** Cada medio de pago que admite cuotas tiene un casillero por plan: *1 cuota*, *2 cuotas*, *3 cuotas*, cada uno con su porcentaje. Se escribe el número y se guarda solo al salir del casillero. Debajo, la pantalla dice cuánto se cobra una venta de $100.000 con cada plan: es para comparar contra lo que cobra el posnet, sin sacar la cuenta.
+
+Hoy están cargados **0% a 1 cuota, 10% a 2 y 15% a 3** (17/09, dicho por Lucas).
+
+> **Dónde aparece ese recargo:** en el **precio**. Al elegir el plan en la caja, el total de la venta sube y la factura sale por ese importe. **No va como un renglón aparte al pie del ticket**, y no es una decisión estética: un "costo financiero" discriminado es otro régimen, con sus propias reglas, y Gross no lo usa. Lo confirmó el contador.
+>
+> **Cómo se lo explicás a Lucas:** es lo mismo que hacés hoy con la lista de tarjeta, pero por cantidad de cuotas y sin cargar el producto tres veces. Vos ponés el porcentaje una vez, y el sistema se lo suma al precio cuando el cajero elige el plan.
+
 ---
 
 ## 6 · Proveedores

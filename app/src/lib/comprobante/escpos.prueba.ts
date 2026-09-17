@@ -84,9 +84,23 @@ function comprobante(extra: Partial<ComprobanteCompleto> = {}): ComprobanteCompl
   }
 }
 
-/** Lo que va a leer la impresora, como texto latin1. */
+/*
+  Lo que va a leer la impresora, leído como lo lee ella.
+
+  La térmica no interpreta latin1 ni UTF-8: usa la página 437, la de
+  MS-DOS. Decodificar acá con otra tabla haría pasar pruebas que en el
+  papel salen mal — que es exactamente lo que pasó hasta el 17/09.
+*/
+const DESDE_437: Record<number, string> = {
+  0x81: 'ü', 0x82: 'é', 0x90: 'É', 0x99: 'Ö', 0x9a: 'Ü',
+  0xa0: 'á', 0xa1: 'í', 0xa2: 'ó', 0xa3: 'ú', 0xa4: 'ñ', 0xa5: 'Ñ',
+  0xa6: 'ª', 0xa7: 'º', 0xa8: '¿', 0xad: '¡', 0xf8: '°',
+}
+
 function comoTexto(bytes: Uint8Array): string {
-  return new TextDecoder('latin1').decode(bytes)
+  return [...bytes]
+    .map((b) => DESDE_437[b] ?? String.fromCharCode(b))
+    .join('')
 }
 
 /** Los importes impresos, en orden. */
@@ -128,14 +142,48 @@ describe('el ticket que sale por la impresora', () => {
     expect(Math.abs(netos.reduce((a, b) => a + b, 0) - c.neto_gravado)).toBeLessThan(0.02)
   })
 
-  it('los acentos salen legibles, no como símbolos raros', () => {
-    // Con UTF-8, la ó de "Bagó" viajaría como dos bytes y la impresora
-    // sacaría "BagÃ³" en un comprobante fiscal.
+  /*
+    Lo que se vio impreso en el local el 17/09, y que ninguna prueba
+    agarraba porque decodificaban con la tabla equivocada:
+
+      Oberá    salía  Oberß
+      Régimen  salía  Rθgimen
+      Alícuota salía  Alφcuota
+
+    La impresora leía los códigos de latin1 con su tabla, la 437.
+  */
+  it('los acentos salen en el alfabeto de la impresora, no en el de Windows', () => {
     const bytes = ticketEscPos(comprobante(), null)
-    expect(comoTexto(bytes)).toContain('BAGÓ')
     expect(comoTexto(bytes)).toContain('Oberá, Misiones')
-    // La ó es un solo byte, el 0xF3 de latin1
-    expect(bytes).toContain(0xf3)
+    // La á de la 437 es el 0xA0, no el 0xE1 de latin1.
+    expect(bytes).toContain(0xa0)
+    expect(bytes).not.toContain(0xe1)
+  })
+
+  it('a las mayúsculas acentuadas les saca la tilde en vez de romperlas', () => {
+    // La 437 no tiene Ó. "BAGO" se lee igual; "BAG?" parece un error.
+    const t = comoTexto(ticketEscPos(comprobante(), null))
+    expect(t).toContain('BAGO')
+    expect(t).not.toContain('BAG?')
+  })
+
+  /*
+    El "$á6.400,00" de las fotos del local. El formato de moneda separa
+    el signo del número con un espacio duro, invisible en pantalla, y ese
+    código en la 437 es justo la letra á.
+  */
+  it('los importes no arrastran el espacio duro del formato de moneda', () => {
+    const bytes = ticketEscPos(comprobante(), null)
+    const t = comoTexto(bytes)
+    expect(t).toContain('$ 21.000,00')
+    expect(t).not.toContain('$á')
+  })
+
+  it('le dice a la impresora en qué alfabeto va a hablarle', () => {
+    // ESC t 0 — si quedó en otra página, el ticket siguiente sale con
+    // las letras cambiadas y no hay forma de saber por qué.
+    const inicio = [...ticketEscPos(comprobante(), null)].slice(0, 5)
+    expect(inicio).toEqual([0x1b, 0x40, 0x1b, 0x74, 0x00])
   })
 
   it('dice CAEA, y no CAE, cuando salió por contingencia', () => {

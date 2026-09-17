@@ -235,8 +235,8 @@ async function bajarColaCaja() {
   const { data, error } = await supabase
     .from('venta')
     .select(
-      'id, codigo, estado, cliente_id, vendedor_id, total, descuento_total, lista_precio_id, medio_pago_previsto_id, cuotas_previstas, ' +
-        'observaciones, ocurrido_en, enviada_caja_en, actualizado_en',
+      'id, codigo, estado, cliente_id, vendedor_id, total, descuento_total, lista_precio_id, recargo_porcentaje, ' +
+        'medio_pago_previsto_id, cuotas_previstas, observaciones, ocurrido_en, enviada_caja_en, actualizado_en',
     )
     .eq('estado', 'en_caja')
     .order('enviada_caja_en')

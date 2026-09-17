@@ -362,6 +362,73 @@ describe('recálculo por lista de precios', () => {
   })
 })
 
+/*
+  ─────────────────────────────────────────────────────────────
+  El recargo por cuotas
+
+  Encontrado en el local el 17/09: el recargo se sumaba al importe del
+  PAGO y no al precio de la venta, así que los pagos nunca cerraban con
+  el total y cobrar con tarjeta en cuotas era imposible.
+
+  Lo que estas pruebas cuidan es que el recargo quede DENTRO del total:
+  es lo que hace que el cobro cierre, que la factura salga por lo que el
+  cliente pagó, y que la venta cobrada sin internet no sea rechazada al
+  subir.
+  ─────────────────────────────────────────────────────────────
+*/
+describe('recargo por plan de cuotas', () => {
+  beforeEach(() => sembrar())
+
+  it('entra en el total de la venta', async () => {
+    expect(await aplicarListaLocal(VENTA, LISTA_CONTADO, 10)).toBe(1100)
+  })
+
+  it('se multiplica con el ajuste de la lista, no se suma', async () => {
+    // 1000 × 1,10 (lista Tarjeta) × 1,15 (3 cuotas) = 1265, no 1250.
+    expect(await aplicarListaLocal(VENTA, LISTA_TARJETA, 15)).toBe(1265)
+  })
+
+  it('con el recargo adentro, el cobro cierra', async () => {
+    const total = await aplicarListaLocal(VENTA, LISTA_CONTADO, 10)
+    await expect(cobrar(total)).resolves.toBeUndefined()
+  })
+
+  it('pagar el precio de contado ya no alcanza', async () => {
+    await aplicarListaLocal(VENTA, LISTA_CONTADO, 10)
+    await expect(cobrar(1000)).rejects.toThrow(/Los pagos suman 1000 y el total es 1100/)
+  })
+
+  it('volver a un medio sin recargo devuelve el precio de contado', async () => {
+    await aplicarListaLocal(VENTA, LISTA_CONTADO, 15)
+    expect(await aplicarListaLocal(VENTA, LISTA_CONTADO, 0)).toBe(1000)
+  })
+
+  it('cambiar de plan no acumula recargo sobre recargo', async () => {
+    await aplicarListaLocal(VENTA, LISTA_CONTADO, 10)
+    await aplicarListaLocal(VENTA, LISTA_CONTADO, 15)
+    expect(await aplicarListaLocal(VENTA, LISTA_CONTADO, 10)).toBe(1100)
+  })
+
+  it('queda guardado en la venta, para poder explicarlo después', async () => {
+    await aplicarListaLocal(VENTA, LISTA_CONTADO, 10)
+    expect((await obtenerVentaLocal(VENTA))?.recargo_porcentaje).toBe(10)
+  })
+
+  /*
+    El tope es el mismo que el del servidor. Un 1000 mal tipeado en
+    Configuración multiplicaría por once el precio de la venta, y el
+    cajero lo cobraría sin enterarse.
+  */
+  it('rechaza un recargo fuera de rango', async () => {
+    await expect(aplicarListaLocal(VENTA, LISTA_CONTADO, 1000)).rejects.toThrow(
+      /entre 0 y 100 por ciento/,
+    )
+    await expect(aplicarListaLocal(VENTA, LISTA_CONTADO, -5)).rejects.toThrow(
+      /entre 0 y 100 por ciento/,
+    )
+  })
+})
+
 describe('lectura de la venta desde la copia local', () => {
   beforeEach(() => sembrar())
 

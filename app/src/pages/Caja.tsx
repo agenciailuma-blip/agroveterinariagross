@@ -28,6 +28,11 @@ import type { MedioPago } from '@/lib/api/precios'
 import { facturarVenta } from '@/lib/api/facturacion'
 import { emitirNoFiscal, marcarDocumentacion, numeroNoFiscal } from '@/lib/api/noFiscal'
 import { abrirComprobante, abrirNoFiscal } from '@/lib/escritorio'
+import {
+  imprimirComprobante,
+  imprimirNoFiscal,
+  puedeImprimirSolo,
+} from '@/lib/comprobante/imprimirDirecto'
 import { moneda, numero } from '@/lib/tipos'
 
 export default function Caja() {
@@ -62,6 +67,13 @@ export default function Caja() {
   } | null>(null)
   const [cerrando, setCerrando] = useState(false)
   const [errorEdicion, setErrorEdicion] = useState<string | null>(null)
+  /*
+    El ticket sale solo al cobrar, así que lo único que hay que contar es
+    cuando NO salió. Un cartel de "imprimiendo" que aparece y desaparece
+    no lo alcanza a leer nadie; uno de "no salió" hay que leerlo sí o sí,
+    porque el cliente está esperando el papel.
+  */
+  const [errorImpresion, setErrorImpresion] = useState<string | null>(null)
 
   const caja = useQuery({
     queryKey: ['caja', terminal?.id],
@@ -91,19 +103,26 @@ export default function Caja() {
 
   const medios = precios.data?.medios ?? []
 
-  // Al elegir con qué se paga, la venta se recalcula con la lista de ese
-  // medio. Siempre desde el precio acordado, así cambiar de opinión no
-  // acumula recargos ni pisa las rebajas del vendedor.
+  /*
+    Al elegir con qué se paga, la venta se recalcula con la lista de ese
+    medio y con el recargo de ese plan de cuotas. Siempre desde el precio
+    acordado, así cambiar de opinión no acumula recargos ni pisa las
+    rebajas del vendedor.
+
+    El recargo entra en el PRECIO de la venta, no en el importe del pago.
+    Sumarlo al pago —como estaba hasta el 17/09— dejaba la venta valiendo
+    menos que lo que el cliente pagaba, y como el cobro exige que los
+    pagos cierren con el total, cobrar en cuotas era imposible: saltaba
+    "Los pagos exceden el total" y el botón quedaba apagado.
+  */
   const aplicar = useMutation({
     mutationFn: async ({ m, n }: { m: MedioPago; n: number }) => {
-      const total = await aplicarLista(seleccionada!, m.lista_precio_id)
-      const recargo =
-        m.medio_pago_cuota.find((c) => c.cuotas === n)?.recargo_porcentaje ?? 0
-      const conRecargo = Math.round(total * (1 + recargo / 100) * 100) / 100
-      return { total, conRecargo }
+      const recargo = m.medio_pago_cuota.find((c) => c.cuotas === n)?.recargo_porcentaje ?? 0
+      const total = await aplicarLista(seleccionada!, m.lista_precio_id, Number(recargo) || 0)
+      return { total }
     },
-    onSuccess: ({ conRecargo }, { m, n }) => {
-      setPagos([{ medio_pago_id: m.id, importe: conRecargo, cuotas: n, referencia: null }])
+    onSuccess: ({ total }, { m, n }) => {
+      setPagos([{ medio_pago_id: m.id, importe: total, cuotas: n, referencia: null }])
       qc.invalidateQueries({ queryKey: ['venta', seleccionada] })
       setError(null)
     },
@@ -268,6 +287,7 @@ export default function Caja() {
           id: noFiscal.id,
           texto: `Venta ${codigo} cobrada sin factura. Comprobante interno ${noFiscal.numero}.`,
         })
+        imprimirSolo(() => imprimirNoFiscal(noFiscal.id, terminal))
       } else {
         /*
           El comprobante queda a un clic, no escondido en otra pantalla.
@@ -278,6 +298,7 @@ export default function Caja() {
           bloquea las ventanas que no abrió una persona.
         */
         setListoParaImprimir({ codigo: codigo ?? '', cae: cae ?? '', comprobanteId })
+        if (comprobanteId) imprimirSolo(() => imprimirComprobante(comprobanteId, terminal))
       }
       limpiar()
       qc.invalidateQueries({ queryKey: ['cola-caja'] })
@@ -287,6 +308,29 @@ export default function Caja() {
     },
     onError: (e) => setError(e instanceof Error ? e.message : 'No se pudo cobrar.'),
   })
+
+  /*
+    Mandar el ticket a la impresora del mostrador, sin pedir permiso.
+
+    No se espera a que termine: el cajero ya puede seguir con el próximo
+    cliente. Y no se toca el cartel verde si falla — se agrega uno
+    aparte, porque la venta está cobrada igual y el comprobante se puede
+    imprimir a mano con el botón que quedó al lado.
+
+    Desde el navegador, o en una PC sin impresora elegida, no se intenta
+    nada: ahí el botón de siempre es el único camino.
+  */
+  function imprimirSolo(hacerlo: () => Promise<void>) {
+    setErrorImpresion(null)
+    if (!puedeImprimirSolo(terminal)) return
+    hacerlo().catch((e) =>
+      setErrorImpresion(
+        e instanceof Error
+          ? `El ticket no salió: ${e.message}`
+          : 'El ticket no salió por la impresora del mostrador.',
+      ),
+    )
+  }
 
   function limpiar() {
     setSeleccionada(null)
@@ -458,6 +502,23 @@ export default function Caja() {
       </div>
 
       <div className="min-w-0 flex-1">
+        {/*
+          El ticket no salió. La venta está cobrada igual —eso ya pasó—,
+          así que esto no es un error del cobro: es un aviso de que hay
+          que imprimir a mano con el botón de al lado.
+        */}
+        {errorImpresion && (
+          <div className="mb-3 flex items-center justify-between gap-3 rounded-xl bg-amber-50 px-4 py-3 ring-1 ring-amber-200">
+            <p className="text-sm text-amber-900">{errorImpresion}</p>
+            <button
+              onClick={() => setErrorImpresion(null)}
+              className="rounded-lg px-3 py-1.5 text-sm font-medium text-amber-800 hover:bg-amber-100"
+            >
+              Entendido
+            </button>
+          </div>
+        )}
+
         {/* Cobrado y facturado: lo único que falta es entregarlo. */}
         {listoParaImprimir && (
           <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-verde-50 px-4 py-3 ring-1 ring-verde-200">
@@ -473,7 +534,12 @@ export default function Caja() {
                   onClick={() => abrirComprobante(listoParaImprimir.comprobanteId!)}
                   className="rounded-lg bg-verde-600 px-4 py-2 text-sm font-medium text-white hover:bg-verde-500"
                 >
-                  Imprimir comprobante
+                  {/*
+                    Cuando el ticket ya salió solo, el botón sigue estando
+                    pero dice otra cosa: es para el cliente que pide una
+                    copia o para la hoja A4, no el paso que falta.
+                  */}
+                  {puedeImprimirSolo(terminal) ? 'Ver o reimprimir' : 'Imprimir comprobante'}
                 </button>
               )}
               <button
@@ -752,6 +818,10 @@ function PanelCobro({
     : null
   const medio = medios.find((m) => m.id === medioPrincipal)
   const esCuentaCorriente = medio?.tipo === 'cuenta_corriente'
+  // El que de verdad quedó aplicado a los precios, no el de la tabla:
+  // si el recalculo todavía no volvió, el cartel diría una cosa y el
+  // total mostraría otra.
+  const recargoAplicado = Number(venta.recargo_porcentaje ?? 0)
   // 1 es "IVA Responsable Inscripto" en la tabla de ARCA.
   const esResponsableInscripto = venta.cliente?.condicion_iva_id === 1
   const nuevoSaldo = saldoActual + (pagos.find((p) => p.medio_pago_id === medio?.id)?.importe ?? 0)
@@ -952,6 +1022,20 @@ function PanelCobro({
                 </span>
               </div>
             </div>
+
+            {/*
+              Por qué el total subió. El recargo va adentro del precio
+              —así lo cobra Gross y así lo pidió el contador—, y un total
+              que cambia solo, sin decir por qué, es lo que hace que el
+              cajero desconfíe del sistema y saque la cuenta a mano.
+            */}
+            {recargoAplicado > 0 && (
+              <p className="rounded-lg bg-piedra-50 px-3 py-2 text-xs text-piedra-600 ring-1 ring-borde">
+                Incluye <strong>{numero.format(recargoAplicado)}%</strong> de recargo por{' '}
+                {cuotas === 1 ? '1 cuota' : `${cuotas} cuotas`}. De contado serían{' '}
+                {moneda.format(Math.round((venta.total / (1 + recargoAplicado / 100)) * 100) / 100)}.
+              </p>
+            )}
 
             {/*
               Si ya hubo un ajuste a mano y después se cambia el medio de

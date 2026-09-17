@@ -25,6 +25,47 @@ const ESC = 0x1b
 const GS = 0x1d
 
 /*
+  Lo que la página 437 tiene y el ASCII no. Están sólo las que aparecen
+  de verdad en un comprobante: acentos, eñes, los signos de apertura y
+  los símbolos de grado y ordinal.
+*/
+const PAGINA_437: Record<string, number> = {
+  'ü': 0x81, 'é': 0x82, 'â': 0x83, 'à': 0x85, 'ç': 0x87, 'ê': 0x88, 'ë': 0x89,
+  'è': 0x8a, 'ï': 0x8b, 'î': 0x8c, 'ì': 0x8d, 'Ä': 0x8e, 'É': 0x90, 'ô': 0x93,
+  'ö': 0x94, 'ò': 0x95, 'û': 0x96, 'ù': 0x97, 'Ö': 0x99, 'Ü': 0x9a,
+  'á': 0xa0, 'í': 0xa1, 'ó': 0xa2, 'ú': 0xa3, 'ñ': 0xa4, 'Ñ': 0xa5,
+  'ª': 0xa6, 'º': 0xa7, '¿': 0xa8, '¬': 0xaa, '½': 0xab, '¼': 0xac, '¡': 0xad,
+  '«': 0xae, '»': 0xaf, '±': 0xf1, '°': 0xf8, '·': 0xfa, '²': 0xfd,
+}
+
+/*
+  Los espacios que no son el espacio.
+
+  El formato de moneda argentino separa el signo del número con un
+  espacio duro (U+00A0), invisible en pantalla. En la página 437 ese
+  código es la letra 'á', así que el ticket del local imprimía "$á6.400"
+  en todos los importes. El espacio angosto (U+202F) lo usan otras
+  versiones del mismo formato.
+*/
+const ESPACIOS = /[\u00a0\u202f\u2009]/
+
+/** El código que le corresponde a un carácter en la página 437. */
+function byte437(c: string): number {
+  if (ESPACIOS.test(c)) return 0x20
+  const directo = PAGINA_437[c]
+  if (directo !== undefined) return directo
+
+  const punto = c.codePointAt(0) ?? 63
+  if (punto >= 0x20 && punto < 0x7f) return punto
+
+  // Sin tilde: "BAGÓ" tiene que salir "BAGO" y no "BAG?".
+  const pelado = c.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  if (pelado.length === 1 && pelado !== c) return byte437(pelado)
+
+  return 63 // '?'
+}
+
+/*
   La cinta de bytes. Se exporta para que el ticket no fiscal la use sin
   volver a escribirla: lo que comparten es la forma de hablarle a la
   impresora, no los datos que le mandan.
@@ -39,16 +80,41 @@ export class Cinta {
   }
 
   /*
-    El texto va en latin1 y no en UTF-8: es lo que entienden estas
-    impresoras. Con UTF-8, cada acento sale como dos símbolos raros, y
-    "Bagó" se imprime "BagÃ³" en un comprobante fiscal.
+    El texto va en el alfabeto de la impresora, que NO es el de Windows.
+
+    Esto se vio impreso en el local el 17/09: "Oberá" salía "Oberß",
+    "Régimen" salía "Rθgimen" y "Alícuota", "Alφcuota". No era que
+    perdiera la tilde: ponía otra letra. Se mandaban los códigos de
+    latin1 —el alfabeto de Windows— y la impresora los leía con el suyo,
+    la página 437, que es la de MS-DOS y la que traen de fábrica todas
+    estas térmicas.
+
+    Se convierte a la 437 en vez de pedirle a la impresora que cambie de
+    página: el comando para cambiarla existe, pero cada clon soporta una
+    lista distinta de páginas y el que no la tenga imprime cualquier
+    cosa. La 437 la entienden todas.
+
+    Lo que la 437 no tiene son las mayúsculas acentuadas —Á, Ó, Ú—, y
+    ahí se les saca la tilde en vez de mandar un '?': "BAGÓ" impreso
+    "BAGO" se lee; "BAG?" parece un error del sistema.
   */
   texto(t: string) {
     for (const c of t) {
-      const punto = c.codePointAt(0) ?? 63
-      this.partes.push(punto < 256 ? punto : 63) // 63 = '?'
+      this.partes.push(byte437(c))
     }
     return this
+  }
+
+  /*
+    Arranque: reiniciar y dejar la impresora en la página 437.
+
+    El reinicio solo no alcanza. Si alguien dejó la impresora en otra
+    página —los drivers de Windows a veces la cambian— el ticket
+    siguiente sale con las letras cambiadas y no hay forma de saber por
+    qué desde el sistema.
+  */
+  reiniciar() {
+    return this.crudo(ESC, 0x40).crudo(ESC, 0x74, 0)
   }
 
   linea(t = '') {
@@ -119,7 +185,7 @@ export class Cinta {
 /** Un ticket corto para verificar que la impresora contesta. */
 export function ticketDePrueba(nombreComercio: string): Uint8Array {
   const c = new Cinta()
-  c.crudo(ESC, 0x40) // reiniciar
+  c.reiniciar()
   c.alinear(1).negrita(true).linea(nombreComercio).negrita(false)
   c.linea('Prueba de impresión').linea()
   c.alinear(0).separador()
@@ -136,7 +202,7 @@ export function ticketEscPos(comp: ComprobanteCompleto, urlQr: string | null): U
   const e = comp.emisor
   const c = new Cinta()
 
-  c.crudo(ESC, 0x40)
+  c.reiniciar()
 
   // ── Emisor ──
   c.alinear(1).negrita(true).linea(e.razon_social).negrita(false)

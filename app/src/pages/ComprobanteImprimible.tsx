@@ -4,7 +4,7 @@ import { Link, useParams } from 'react-router-dom'
 import QRCode from 'qrcode'
 import { obtenerComprobanteCompleto, registrarImpresion } from '@/lib/api/comprobante'
 import type { ComprobanteCompleto } from '@/lib/api/comprobante'
-import { urlQrComprobante } from '@/lib/arca/qr'
+import { urlQrDe } from '@/lib/comprobante/imprimirDirecto'
 import TicketComprobante from '@/components/TicketComprobante'
 import { ticketEscPos } from '@/lib/comprobante/escpos'
 import { destinoDeImpresion } from '@/lib/comprobante/destino'
@@ -77,21 +77,12 @@ export default function ComprobanteImprimible() {
   const c = comprobante.data
 
   useEffect(() => {
-    if (!c?.cae) return
-    const url = urlQrComprobante({
-      fecha: c.fecha,
-      cuitEmisor: c.emisor.cuit ?? '',
-      puntoVenta: c.punto_venta,
-      tipoComprobante: c.tipo_comprobante_id,
-      numero: c.numero,
-      importeTotal: c.total,
-      moneda: c.moneda,
-      cotizacion: c.cotizacion,
-      tipoDocumentoReceptor: c.receptor_tipo_documento_id,
-      documentoReceptor: c.receptor_documento,
-      tipoAutorizacion: c.modalidad === 'caea' ? 'A' : 'E',
-      codigoAutorizacion: c.cae,
-    })
+    if (!c) return
+    // La misma dirección que le manda a la impresora el ticket que sale
+    // solo al cobrar. Armarla dos veces sería tener dos QR distintos
+    // para el mismo comprobante el día que ARCA cambie un campo.
+    const url = urlQrDe(c)
+    if (!url) return
     // Nivel de corrección M: el QR sigue leyéndose con la tinta corrida
     // de una impresora de mostrador o si el papel se dobla.
     setUrlQr(url)

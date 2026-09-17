@@ -53,6 +53,8 @@ export interface VentaCompleta {
   total: number
   descuento_total: number
   lista_precio_id: string | null
+  /** Recargo del plan de cuotas, ya incluido en los precios. */
+  recargo_porcentaje?: number
   /** Lo que el vendedor ya le preguntó al cliente. */
   medio_pago_previsto_id: string | null
   cuotas_previstas: number | null
@@ -186,7 +188,7 @@ export async function obtenerVentaCompleta(id: string): Promise<VentaCompleta> {
     const { data, error } = await supabase
       .from('venta')
       .select(
-        `id, codigo, estado, total, descuento_total, lista_precio_id, medio_pago_previsto_id, cuotas_previstas, observaciones, documentacion,
+        `id, codigo, estado, total, descuento_total, lista_precio_id, recargo_porcentaje, medio_pago_previsto_id, cuotas_previstas, observaciones, documentacion,
          cliente:cliente_id(id, nombre, condicion_iva_id, cuenta_corriente, limite_credito),
          vendedor:vendedor_id(id, nombre),
          venta_linea(id, orden, codigo_producto, descripcion, cantidad,
@@ -217,12 +219,25 @@ export async function obtenerVentaCompleta(id: string): Promise<VentaCompleta> {
   return { ...local, documentacion: local.documentacion ?? 'fiscal' } as VentaCompleta
 }
 
-/** Aplica una lista a la venta y devuelve el total recalculado. */
-export async function aplicarLista(ventaId: string, listaId: string | null): Promise<number> {
+/*
+  Aplica una lista y el recargo del plan de cuotas, y devuelve el total.
+
+  El recargo va acá adentro —en el precio de la venta— y no sumado al
+  importe del pago. Sumarlo al pago dejaba la venta valiendo menos que
+  lo que el cliente pagaba, y como el cobro exige que los pagos cierren
+  con el total, cobrar en cuotas era imposible. Ver la migración
+  20260917200000.
+*/
+export async function aplicarLista(
+  ventaId: string,
+  listaId: string | null,
+  recargoPorcentaje = 0,
+): Promise<number> {
   if (navigator.onLine) {
     const { data, error } = await supabase.rpc('aplicar_lista_a_venta', {
       p_venta_id: ventaId,
       p_lista_id: listaId,
+      p_recargo_porcentaje: recargoPorcentaje,
     })
     if (!error) {
       // El servidor recalculó: la copia local queda vieja y es contra
@@ -233,7 +248,7 @@ export async function aplicarLista(ventaId: string, listaId: string | null): Pro
     }
   }
 
-  const total = await aplicarListaLocal(ventaId, listaId)
+  const total = await aplicarListaLocal(ventaId, listaId, recargoPorcentaje)
 
   /*
     Sin conexión el cambio TAMBIÉN tiene que viajar, y esto faltaba.
@@ -250,7 +265,11 @@ export async function aplicarLista(ventaId: string, listaId: string | null): Pro
     {
       tipo: 'rpc',
       tabla: 'aplicar_lista_a_venta',
-      datos: { p_venta_id: ventaId, p_lista_id: listaId },
+      datos: {
+        p_venta_id: ventaId,
+        p_lista_id: listaId,
+        p_recargo_porcentaje: recargoPorcentaje,
+      },
       descripcion: 'lista de precios',
     },
   ])

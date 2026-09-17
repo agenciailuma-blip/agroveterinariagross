@@ -12,15 +12,15 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Publicado: 0.4.1** (14/09), con Reportes, devoluciones parciales, el resumen de cuenta corriente, la base local cifrada y la versión para el celular. **Falta instalarla limpia en el local esta semana** —la hace Francisco a mano, borrando los datos con 0 pendientes: [paso 9](instalacion-en-el-local.md). **248 pruebas verdes en la app y 11 en el programa**, 76 migraciones aplicadas.
+**Publicado: 0.4.2** (17/09), con el recargo por cuotas arreglado, los acentos del ticket y la impresión automática al cobrar. Antes, la 0.4.1 con Reportes, devoluciones parciales, el resumen de cuenta corriente, la base local cifrada y la versión para el celular. **Instalada en el local el 17/09, en todas menos la de Windows 7.** **259 pruebas verdes en la app y 11 en el programa**, 77 migraciones aplicadas.
 
 ⚠️ **Lo que está construido pero NO verificado.** Un chat nuevo no puede darlo por probado:
 
 | Qué | Cómo se verifica |
 |---|---|
-| La impresión por impresora de Windows | Con el papel puesto, en el local. Dos minutos por PC |
-| La red del local con dos máquinas | En el local, Paso 5-bis del guion de instalación |
-| El actualizador de punta a punta | Apretando *Actualizar ahora* en una PC, sin desinstalar antes |
+| ~~La impresión por impresora de Windows~~ | ✅ **Imprimió el 17/09.** Falta ver en papel lo corregido después: los acentos y el ticket que sale solo al cobrar |
+| **La venta que llega a la caja sin internet** | 🔴 **Se probó el 17/09 y NO funcionó.** Ver *Lo que sigue* |
+| El actualizador de punta a punta | Apretando *Actualizar ahora* en una PC, sin desinstalar antes. **La 0.4.2 es la oportunidad** |
 | ~~Las pantallas de **La red del local** y **Percepciones**~~ | ✅ **Vistas el 11/09.** Percepciones entera, con datos de agosto y el caso de la nota de crédito. De La red del local sólo se puede ver en el navegador el aviso de que hace falta el programa instalado: es así a propósito |
 
 🟡 **`cargo test` falla en esta máquina, y ya se sabe por qué: hay tres antivirus instalados.** Norton Security y Avast conviven con Windows Defender —que quedó desactivado, porque los otros dos le sacaron el control—. Cada `.exe` que el compilador crea lo intercepta el antivirus antes de que termine de escribirse, y el enlazador falla con `LNK1104`, «no se puede abrir el archivo». El archivo, efectivamente, no está: lo hicieron desaparecer.
@@ -31,13 +31,31 @@ estado: en curso
 
 ## Lo primero de todo
 
-🔴 **Probar la impresión en el local, con el papel puesto.** Es lo último que traba el mostrador. Está **publicada en la 0.2.3** desde el 09/09 y probada hasta donde se puede probar sin la impresora delante; la prueba que falta es de dos minutos, con la PC de la caja adelante: Configuración → Impresora del mostrador → elegir de la lista → *Imprimir una prueba*. En **cada** PC, porque cada una elige la suya.
+🔴 **Que la venta llegue a la caja sin internet.** Se probó en el local el 17/09 y no llegó. Es la promesa grande del sistema —el punto 2-bis— y lo único de V1-A que se probó y falló. Lo primero es que el mostrador **avise** cuando no encuentra a la caja: hoy no lo intenta y no dice nada, así que no se puede ni saber por qué falló.
 
-🟡 **El actualizador sigue sin probarse de punta a punta.** La 0.2.2 entró bien, pero desinstalando la versión vieja primero, así que **el arreglo del archivo tomado no se ejercitó**. Hoy no molesta: en el local se desinstala e instala con la máquina delante. Molesta **después del 26/10**, cuando una corrección tenga que llegar a las 4 PC sin viajar a Oberá. Conviene probarlo una vez con la próxima versión, en una sola PC, sin desinstalar nada.
+🟡 **El actualizador sigue sin probarse de punta a punta.** La 0.2.2 entró bien, pero desinstalando la versión vieja primero, así que **el arreglo del archivo tomado no se ejercitó**. **La 0.4.2 es la oportunidad**: en una sola PC, *Actualizar ahora*, sin desinstalar nada. Molesta después del 26/10, cuando una corrección tenga que llegar a las 4 PC sin viajar a Oberá.
 
 ---
 
-## Lo último que pasó — 16 de septiembre
+## Lo último que pasó — 17 de septiembre, en el local
+
+**Francisco estuvo en Gross con las PC delante**, y de ahí salió lo bueno y lo malo. Lo bueno: **la impresión anda**, los tickets salieron por la POS80 y las ventas se cobraron y facturaron con CAE. Lo malo, en orden de gravedad:
+
+🔴 **Cobrar con tarjeta en cuotas era imposible.** El recargo del plan —que ya existía— se sumaba al **importe del pago** y no al precio de la venta: total $181.280, pago $199.408, y el sistema contestaba *"Los pagos exceden el total en $18.128"* con el botón *Cobrar* apagado. No había forma de cobrar en cuotas salvo borrándole el recargo a mano.
+
+> **Cómo se arregló:** el recargo ahora va **adentro del precio**, que es como Gross lo cobra y lo que confirmó el contador. Al elegir el plan, el total sube, la pantalla dice *"Incluye 10% de recargo por 2 cuotas. De contado serían $181.280"*, y el importe coincide con el del posnet. La factura sale por lo que el cliente pagó.
+>
+> **Editable por Lucas, en Precios**, un casillero por plan, con el ejemplo de cuánto se cobra una venta de $100.000 al lado. Cargados el 17/09: **0% a 1 cuota, 10% a 2, 15% a 3**. Está en el manual y en la [guía de pantallas](guia-de-pantallas.md).
+
+🔴 **El ticket salía con las letras cambiadas:** *Oberá* → *Oberß*, *Régimen* → *Rθgimen*, y un `$á` delante de cada importe. No era que perdiera la tilde: ponía otra letra. Se le mandaba el alfabeto de Windows y la impresora lee el suyo, el de MS-DOS. El `$á` era el espacio duro que el formato de moneda mete entre el signo y el número, que en ese alfabeto es justo la `á`. **Corregido y probado contando los bytes**; falta verlo en papel.
+
+🟡 **Cobrar imprimía en tres pasos.** Ahora **al cobrar sale el ticket solo** por la impresora de esa PC. El botón queda para verlo o darle una copia al cliente, y si el ticket no sale, la pantalla lo dice en vez de dejar al cajero esperando.
+
+🔴 **Sin internet, la caja no vio la venta del mostrador** — el punto 2-bis, que era la promesa grande. Y la pantalla de Caja tarda muchísimo en cargar sin conexión: cada consulta espera 20 segundos antes de rendirse. **Las dos cosas siguen abiertas**, son lo primero de la próxima tanda. Lo que sí se sabe: la caja **está** marcada como la que escucha y **publicó su dirección ese día a las 15:15**; lo que falta averiguar es si el mostrador tenía esa dirección en su copia local, y ahí el sistema **se queda callado** en vez de avisar.
+
+🔴 **La PC con Windows 7 sigue sin poder instalar el programa**, ahora con otro cartel (*falta el punto de entrada PackageIdFromFullName*). Es el mismo motivo de siempre y **no tiene arreglo de nuestro lado**: Microsoft dejó Windows 7 en 2023. Las tres opciones —cambiarle el Windows, mover los puestos, o dejarla en el navegador— las decide Gross, y conviene que decida **antes del próximo viaje**.
+
+## Lo que pasó el 16 de septiembre
 
 **Llegó la constancia del punto de venta CAEA**: el **00009**, *CAEA – Fact. Elect. (RECE) – RI IVA – Contingencias*, dado de alta en ARCA el 11/09. **Se cargó en el sistema** como *Contingencia CAEA*, marcado de respaldo: las ventas comunes nunca van a ese punto de venta.
 
@@ -190,7 +208,10 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 
 ## Lo que sigue, en orden
 
-1. 🔴 **Probar la impresión en el local, con la impresora delante.** El código está publicado en la 0.2.3: lo que falta es el papel.
+0. 🔴 **Lo que quedó abierto del 17/09, y es lo primero:**
+   - **Que la venta llegue a la caja sin internet.** Falló en el local. Hay que hacer que el mostrador **avise** cuando no encuentra a la caja —hoy se queda callado— y revisar que la dirección de la caja esté en la copia local de cada terminal.
+   - **Que la Caja no tarde un minuto en abrir sin conexión.** Cada consulta espera 20 segundos antes de rendirse; sin internet hay que darse cuenta en uno y pasar directo a la copia local.
+1. ~~🔴 **Probar la impresión en el local, con la impresora delante.**~~ ✅ **Hecho el 17/09: imprime.** Quedaron dos correcciones en la 0.4.2 —las letras acentuadas y el ticket que ahora sale solo al cobrar— que **falta ver en papel**.
 2. 🔴 **CAEA** — el alta del punto de venta 9 llegó y está cargada (16/09). **Falta el certificado de producción**: el ambiente de pruebas no ve el punto de venta, y la última prueba sólo se puede hacer con la ARCA real. El pedido está armado: [`certificado-produccion.md`](certificado-produccion.md).
 3. ~~**Cifrado de la base local.**~~ ✅ **Hecho y publicado el 14/09 (0.4.0).** Se instala limpio, PC por PC, esta semana: [paso 9 del guion](instalacion-en-el-local.md).
 4. ~~**Devoluciones parciales**~~ ✅ **Hechas el 11/09 y publicadas el 14/09** en la 0.3.1.
@@ -251,6 +272,8 @@ Está andando y verificado. Si algo de acá se rompe, es una regresión:
 - **Se cifra antes de abrir una transacción de Dexie, nunca adentro.** Esperar el cifrado con la transacción abierta la cierra sola y la escritura falla.
 - **Los pagos de cuenta corriente se imputan a la deuda más vieja primero.** Es lo que hace que la suma de los tramos de `vista_deuda_antiguedad` dé el saldo. Volver a sumar sólo las facturas —que es como estaba— hace que un cliente que ya pagó siga apareciendo como deudor vencido.
 - **Las métricas de venta se comparan por tramo del mes, no contra el mes anterior completo.** Cambiarlo deja el mes en curso en baja permanente hasta el día 30, todos los meses.
+- **El recargo por cuotas va en el precio de la venta, no en el importe del pago.** Sumarlo al pago —como estaba hasta el 17/09— deja la venta valiendo menos que lo que el cliente paga, y como el cobro exige que los pagos cierren con el total, cobrar en cuotas se vuelve imposible. Además la factura saldría por menos de lo cobrado.
+- **El ticket va en la página 437, la de MS-DOS, y no en el alfabeto de Windows.** Es lo que la impresora lee de fábrica. Con el de Windows, "Oberá" sale impreso "Oberß" y cada importe arrastra un `$á`.
 - **La impresora se guarda por terminal, no en la configuración del comercio.** Volverla a un solo valor para todo el local deja tres de las cuatro PC imprimiendo a un nombre que en su lista no existe. Y el nombre se elige de la lista de Windows: escribirlo a mano falla en silencio.
 
 ## Cómo arrancar
@@ -301,6 +324,7 @@ Queda en `http://localhost:5173`.
 - [`obtech-como-piso.md`](obtech-como-piso.md) — qué cubre el sistema que usan hoy y qué nos falta.
 - [`compras-e-iva.md`](compras-e-iva.md) — facturas de compra y Libro de IVA.
 - [`certificado-produccion.md`](certificado-produccion.md) — el trámite del certificado, y lo que se hace el día que se pasa a producción.
+- [`la-pc-con-windows-7.md`](la-pc-con-windows-7.md) — la hoja para que Lucas decida qué hace con esa máquina.
 
 **Para el local**
 - [`instalacion-en-el-local.md`](instalacion-en-el-local.md) — el guion de las 4 PC.

@@ -175,6 +175,14 @@ export interface VentaLocal {
   total: number
   descuento_total: number
   lista_precio_id: string | null
+  /*
+    Recargo del plan de cuotas, ya incluido en los precios de las líneas.
+
+    Opcional por lo mismo que `nombre_para_llamar`: las ventas guardadas
+    antes de esta versión no lo tienen y Dexie no migra filas viejas.
+    Leerlo como `?? 0` es correcto para las dos.
+  */
+  recargo_porcentaje?: number
   /** Lo que el vendedor ya le preguntó al cliente, para no repetirlo. */
   medio_pago_previsto_id: string | null
   cuotas_previstas: number | null

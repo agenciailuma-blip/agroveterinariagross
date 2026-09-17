@@ -263,15 +263,25 @@ describe('el contenido', () => {
     expect(bytes(anulado)).toContain('ANULADO')
   })
 
-  it('los acentos van en latin1, no en UTF-8', () => {
-    // Con la codificación equivocada "VÁLIDO" sale "VÃLIDO" impreso, y
-    // justo en la leyenda que hace que este papel no se confunda con una
-    // factura.
+  /*
+    Los acentos van en el alfabeto de la impresora —la página 437, la de
+    MS-DOS— y no en el de Windows. Con el de Windows, que es lo que se
+    mandaba hasta el 17/09, "Operación" sale impreso "Operaci≤n".
+
+    La leyenda va en mayúsculas y la 437 no tiene Á, así que sale
+    "VALIDO", sin tilde. Se lee igual, que es lo que importa en el
+    renglón que impide que este papel se confunda con una factura.
+  */
+  it('los acentos van en el alfabeto de la impresora', () => {
     const crudo = ticketNoFiscalEscPos(doc({ venta_codigo: 'CAJA1-000123' }))
     const texto = new TextDecoder('latin1').decode(crudo)
-    expect(texto).toContain('VÁLIDO')
-    expect(texto).toContain('Operación')
-    expect(texto).not.toContain('Ã')
+
+    expect(texto).toContain('DOCUMENTO NO VALIDO COMO FACTURA')
+    // La ó de "Operación" es el 0xA2 de la 437, no el 0xF3 de Windows.
+    expect(crudo).toContain(0xa2)
+    expect(crudo).not.toContain(0xf3)
+    // Ni rastro de UTF-8: ahí cada acento viajaría como dos bytes.
+    expect(crudo).not.toContain(0xc3)
   })
 
   it('corta el papel al final', () => {

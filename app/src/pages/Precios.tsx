@@ -29,6 +29,9 @@ import { moneda } from '@/lib/tipos'
 */
 const PRECIO_EJEMPLO = 10000
 
+/** Una venta redonda, para mostrar cuánto suma cada plan de cuotas. */
+const VENTA_EJEMPLO = 100000
+
 export default function Precios() {
   const { tienePermiso } = useAuth()
   const qc = useQueryClient()
@@ -244,8 +247,19 @@ export default function Precios() {
           <div>
             <h2 className="font-medium text-tinta">Medios de pago</h2>
             <p className="text-sm text-piedra-500">
-              Lo que el cajero ve al cobrar. Cada uno usa una lista y puede tener recargo por
-              cantidad de cuotas.
+              Lo que el cajero ve al cobrar. Cada uno usa una lista de precios y, si se paga en
+              cuotas, suma el recargo de ese plan.
+            </p>
+            {/*
+              Dicho con todas las letras porque es de donde salen los
+              números que el cajero cobra, y en el local costó entenderlo:
+              el recargo sube el precio de la venta, no se agrega como un
+              renglón aparte al pie del ticket.
+            */}
+            <p className="mt-1 text-xs text-piedra-500">
+              El recargo va <strong>adentro del precio</strong>: al elegir el plan en la caja, el
+              total sube y la factura sale por ese importe. No aparece como un renglón aparte, que
+              es como Gross lo cobra hoy.
             </p>
           </div>
           <button
@@ -300,20 +314,39 @@ export default function Precios() {
               </div>
 
               {m.admite_cuotas && (
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {Array.from({ length: m.cuotas_maximas }, (_, i) => i + 1).map((n) => {
-                    const cuota = m.medio_pago_cuota.find((c) => c.cuotas === n)
-                    return (
-                      <CampoCuota
-                        key={n}
-                        cuotas={n}
-                        recargo={cuota?.recargo_porcentaje ?? 0}
-                        guardando={mutarCuota.isPending}
-                        onGuardar={(recargo) => mutarCuota.mutate({ medio: m.id, cuotas: n, recargo })}
-                      />
-                    )
-                  })}
-                </div>
+                <>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {Array.from({ length: m.cuotas_maximas }, (_, i) => i + 1).map((n) => {
+                      const cuota = m.medio_pago_cuota.find((c) => c.cuotas === n)
+                      return (
+                        <CampoCuota
+                          key={n}
+                          cuotas={n}
+                          recargo={cuota?.recargo_porcentaje ?? 0}
+                          guardando={mutarCuota.isPending}
+                          onGuardar={(recargo) => mutarCuota.mutate({ medio: m.id, cuotas: n, recargo })}
+                        />
+                      )
+                    })}
+                  </div>
+                  {/*
+                    El ejemplo con plata en la mano. Un "15%" suelto se
+                    discute; "$100.000 se cobran $115.000" se entiende de
+                    una y se puede comparar con lo que dice el posnet.
+                  */}
+                  <p className="mt-1.5 text-xs text-piedra-500">
+                    Una venta de {moneda.format(VENTA_EJEMPLO)} de contado se cobra{' '}
+                    {Array.from({ length: m.cuotas_maximas }, (_, i) => i + 1)
+                      .map((n) => {
+                        const r = Number(
+                          m.medio_pago_cuota.find((c) => c.cuotas === n)?.recargo_porcentaje ?? 0,
+                        )
+                        return `${moneda.format(Math.round(VENTA_EJEMPLO * (1 + r / 100)))} en ${n}`
+                      })
+                      .join(', ')}
+                    .
+                  </p>
+                </>
               )}
             </div>
           ))}

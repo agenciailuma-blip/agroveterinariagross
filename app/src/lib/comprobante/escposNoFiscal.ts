@@ -14,11 +14,10 @@ import { moneda, numero } from '@/lib/tipos'
   alguien se acuerde de no hacerlo.
 
   Lo que sí se comparte es la Cinta: la forma de hablarle a la impresora
-  —dónde centrar, dónde poner negrita, cómo cortar el papel, y que los
-  acentos van en latin1— es la misma para los dos papeles.
+  —dónde centrar, dónde poner negrita, cómo cortar el papel, y en qué
+  alfabeto van los acentos— es la misma para los dos papeles.
 */
 
-const ESC = 0x1b
 const ANCHO = 48
 
 /** Centra un texto dentro del ancho del rollo. */
@@ -31,7 +30,7 @@ export function ticketNoFiscalEscPos(d: NoFiscalCompleto): Uint8Array {
   const c = new Cinta()
   const esRemito = d.tipo_clave === 'remito'
 
-  c.crudo(ESC, 0x40) // reiniciar
+  c.reiniciar()
 
   // ── La leyenda, primero y en grande ──
   c.alinear(1).negrita(true)

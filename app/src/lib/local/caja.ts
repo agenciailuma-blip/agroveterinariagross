@@ -85,6 +85,8 @@ export interface VentaCompletaLocal {
   total: number
   descuento_total: number
   lista_precio_id: string | null
+  /** Recargo del plan de cuotas, ya incluido en los precios de las líneas. */
+  recargo_porcentaje?: number
   medio_pago_previsto_id: string | null
   cuotas_previstas: number | null
   /*
@@ -134,6 +136,7 @@ export async function obtenerVentaLocal(id: string): Promise<VentaCompletaLocal 
     total: Number(v.total),
     descuento_total: Number(v.descuento_total ?? 0),
     lista_precio_id: v.lista_precio_id,
+    recargo_porcentaje: Number(v.recargo_porcentaje ?? 0),
     medio_pago_previsto_id: v.medio_pago_previsto_id,
     cuotas_previstas: v.cuotas_previstas,
     observaciones: v.observaciones,
@@ -166,6 +169,19 @@ function totalDeLineas(lineas: VentaLineaLocal[]): number {
 }
 
 /*
+  El precio que ve el cliente: el acordado, con la lista del medio de
+  pago y el recargo del plan de cuotas.
+
+  Los dos se multiplican, no se suman, y en este orden: es el mismo
+  redondeo al centavo que hace aplicar_lista_a_venta() en el servidor.
+  Si las dos cuentas dieran distinto, la venta cobrada sin internet
+  llegaría al servidor con un total que no cierra con los pagos.
+*/
+function precioCon(acordado: number, ajuste: number, recargo: number): number {
+  return Math.round(acordado * (1 + ajuste / 100) * (1 + recargo / 100) * 100) / 100
+}
+
+/*
   Recalcula la venta con otra lista de precios.
 
   Réplica exacta de aplicar_lista_a_venta(): siempre parte del precio
@@ -177,11 +193,20 @@ function totalDeLineas(lineas: VentaLineaLocal[]): number {
   aplica el servidor al procesar el cobro, con la misma función de
   siempre — por eso se manda el id de la lista junto con el cobro.
 */
-export async function aplicarListaLocal(ventaId: string, listaId: string | null): Promise<number> {
+export async function aplicarListaLocal(
+  ventaId: string,
+  listaId: string | null,
+  recargoPorcentaje = 0,
+): Promise<number> {
   const venta = await db.venta.get(ventaId)
   if (!venta) throw new Error('La venta no está en esta computadora.')
   if (!['borrador', 'en_caja'].includes(venta.estado)) {
     throw new Error(`La venta está ${venta.estado} y ya no admite cambios de precio.`)
+  }
+
+  const recargo = Number(recargoPorcentaje) || 0
+  if (recargo < 0 || recargo > 100) {
+    throw new Error(`El recargo tiene que estar entre 0 y 100 por ciento, y es ${recargo}.`)
   }
 
   let ajuste = 0
@@ -196,12 +221,16 @@ export async function aplicarListaLocal(ventaId: string, listaId: string | null)
   const lineas = await db.venta_linea.where('venta_id').equals(ventaId).toArray()
   const recalculadas = lineas.map((l) => ({
     ...l,
-    precio_unitario: Math.round(Number(l.precio_acordado) * (1 + ajuste / 100) * 100) / 100,
+    precio_unitario: precioCon(Number(l.precio_acordado), ajuste, recargo),
   }))
   await db.venta_linea.bulkPut(recalculadas)
 
   const total = totalDeLineas(recalculadas)
-  await db.venta.update(ventaId, { lista_precio_id: listaId, total })
+  await db.venta.update(ventaId, {
+    lista_precio_id: listaId,
+    recargo_porcentaje: recargo,
+    total,
+  })
   return total
 }
 
@@ -403,6 +432,17 @@ export async function editarVentaLocal(
     const lista = await db.lista_precio.get(venta.lista_precio_id)
     ajuste = Number(lista?.ajuste_porcentaje ?? 0)
   }
+  /*
+    El recargo por cuotas NO se aplica acá, igual que en el servidor: la
+    línea nueva entra con la lista y nada más. Quien edita en la caja ya
+    tiene un medio de pago elegido, así que la pantalla vuelve a aplicar
+    lista y recargo apenas termina la corrección, y ahí los precios de
+    todas las líneas quedan parejos.
+
+    Se deja explícito porque es exactamente el tipo de cosa que se
+    "arregla" acá sin mirar el servidor, y entonces la venta cobrada sin
+    internet llega con un total que allá no da igual.
+  */
 
   const actuales = await db.venta_linea.where('venta_id').equals(ventaId).toArray()
   const porId = new Map(actuales.map((l) => [l.id, l]))
@@ -437,7 +477,7 @@ export async function editarVentaLocal(
       cantidad: d.cantidad,
       precio_original: base,
       precio_acordado: base,
-      precio_unitario: Math.round(base * (1 + ajuste / 100) * 100) / 100,
+      precio_unitario: precioCon(base, ajuste, 0),
       motivo_modificacion: null,
       alicuota_iva_id: p.alicuota_iva_id,
       condicion_iva: p.condicion_iva,
