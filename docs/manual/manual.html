@@ -331,6 +331,7 @@
 
       <div class="nota"><b>Al cobrar se factura y se imprime solo.</b> El cajero no tiene que ir a otra pantalla ni apretar nada más: al confirmar el cobro se pide la factura y el ticket sale por la impresora del mostrador. El botón que queda al lado es para verlo o darle una copia al cliente. Si el ticket no salió, el sistema lo dice.</div>
       <div class="nota"><b>Si el pago es en cuotas, el total ya viene con el recargo.</b> La pantalla lo aclara —cuánto es y cuánto sería de contado—, y el importe a cobrar coincide con el del posnet. El porcentaje de cada plan se carga en <b>Precios</b>.</div>
+      <div class="nota"><b>Sin internet, la caja factura igual.</b> Se cobra como siempre y el ticket sale con el código de contingencia (CAEA). Lo único que cambia en la pantalla es que el cartel verde lo aclara.</div>
       <div class="nota"><b>«Sin factura» tiene permiso propio</b>, que no tienen ni el cajero ni el vendedor. Y a un Responsable Inscripto no se le ofrece: compra para descargar IVA.</div>
     </div>
   </section>
@@ -360,6 +361,13 @@
         <li>Se abre la lista de lo que el cliente se llevó y se marca <b>cuánto vuelve de cada producto</b>. El total a devolver se ve antes de confirmar.</li>
         <li>Vuelve el stock de lo marcado, se descuenta de la cuenta corriente la parte que estaba en cuenta y sale la <b>nota de crédito</b> por ese importe. La venta no se anula: queda con lo devuelto restado.</li>
         <li><b>Se puede devolver varias veces</b>: una bolsa hoy y otra la semana que viene. El sistema lleva la cuenta de lo que queda y no deja devolver más de lo que se llevó.</li>
+      </ul>
+
+      <p style="margin:3mm 0 1mm"><b>Lo que se facturó durante un corte de internet</b></p>
+      <ul class="limpia">
+        <li>Aparece en su propio recuadro: qué emitió la caja mientras no había conexión, con el número de cada factura y su total.</li>
+        <li><b>Se puede reimprimir</b> desde ahí, con o sin internet — para el cliente que vuelve con el ticket arrugado.</li>
+        <li>Cada una dice si <b>ya llegó al servidor</b> o todavía está esperando. Informarle a ARCA lo emitido lo hace el sistema solo, todos los días.</li>
       </ul>
 
       <div class="nota"><b>El archivo para el contador</b> se baja de esta misma pantalla: se elige el mes y, antes de bajarlo, se ven los totales para controlar que el mes sea el correcto. Lleva <b>una fila por alícuota</b> —una factura con 21% y 10,5% ocupa dos renglones— y las notas de crédito van en negativo, así sumar la columna da el neto del mes.</div>
@@ -462,9 +470,12 @@
   <ul class="limpia">
     <li>Se puede <b>buscar productos y precios</b>, armar la venta y <b>cobrarla</b>.</li>
     <li>La venta armada en un mostrador <b>le llega igual a la caja</b>, por la red del local: una computadora escucha —la de la caja— y las demás le hablan. Nadie configura direcciones: se encuentran por el nombre de la máquina.</li>
+    <li><b>La factura sale igual.</b> La caja la emite con el <b>CAEA</b>, un código que ARCA entrega por adelantado —una vez por quincena— justamente para los cortes. El ticket sale con su número como cualquier otro día, y el cliente se va con su comprobante.</li>
     <li>Se pueden <b>emitir remitos y presupuestos</b>, con su número, y el papel sale igual.</li>
     <li>Arriba a la derecha aparece un contador de <b>operaciones sin subir</b>. Cuando vuelve internet, todo sube solo y el contador baja a cero.</li>
   </ul>
+  <div class="nota"><b>La factura de un corte es una factura, no un provisorio.</b> El cartel verde dice <i>«cobrada y facturada por contingencia»</i> y el ticket lleva <b>CAEA</b> donde normalmente dice CAE. Cuando vuelve internet, el sistema le informa a ARCA lo que se emitió: eso lo hace solo, todos los días, sin que nadie apriete nada.</div>
+  <div class="nota"><b>Durante un corte factura la caja.</b> Los mostradores le pasan la venta por la red del local y ella emite. Es lo que evita que dos computadoras, sin verse entre ellas, entreguen dos facturas con el mismo número.</div>
   <div class="nota"><b>Lo que sí necesita internet, a propósito:</b> abrir y cerrar la caja. Arquear con la mitad de las ventas sin registrar produce una diferencia que no existe y que después alguien tiene que explicar.</div>
 
   <h2 class="titulo-bloque" style="margin-top:8mm">Desde el celular</h2>
