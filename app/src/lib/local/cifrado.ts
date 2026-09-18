@@ -3,6 +3,8 @@ import { db } from '@/lib/local/db'
 import type {
   ClienteGuardado,
   ClienteLocal,
+  ComprobanteGuardado,
+  ComprobanteLocal,
   NoFiscalGuardado,
   NoFiscalLocal,
   VentaGuardada,
@@ -312,6 +314,7 @@ export async function descifrar(valor: Cifrado | string | null | undefined): Pro
 /** Los campos que identifican a una persona, tabla por tabla. */
 export const PERSONALES = {
   cliente: ['nombre', 'numero_documento', 'busqueda', 'domicilio'],
+  comprobante: ['receptor_nombre', 'receptor_documento', 'receptor_domicilio'],
   venta: ['nombre_para_llamar', 'observaciones'],
   no_fiscal: [
     'receptor_nombre',
@@ -367,6 +370,7 @@ export async function abrir<T extends object, K extends keyof T & string>(
   desapercibido. Con estas, cada lugar dice qué abre.
 */
 type CamposCliente = (typeof PERSONALES.cliente)[number]
+type CamposComprobante = (typeof PERSONALES.comprobante)[number]
 type CamposVenta = (typeof PERSONALES.venta)[number]
 type CamposNoFiscal = (typeof PERSONALES.no_fiscal)[number]
 
@@ -374,6 +378,11 @@ export const sellarCliente = (c: ClienteLocal): Promise<ClienteGuardado> =>
   sellar<ClienteLocal, CamposCliente>(c, PERSONALES.cliente)
 export const abrirCliente = (c: ClienteGuardado): Promise<ClienteLocal> =>
   abrir<ClienteLocal, CamposCliente>(c, PERSONALES.cliente)
+
+export const sellarComprobante = (c: ComprobanteLocal): Promise<ComprobanteGuardado> =>
+  sellar<ComprobanteLocal, CamposComprobante>(c, PERSONALES.comprobante)
+export const abrirComprobante = (c: ComprobanteGuardado): Promise<ComprobanteLocal> =>
+  abrir<ComprobanteLocal, CamposComprobante>(c, PERSONALES.comprobante)
 
 export const sellarVenta = (v: VentaLocal): Promise<VentaGuardada> =>
   sellar<VentaLocal, CamposVenta>(v, PERSONALES.venta)

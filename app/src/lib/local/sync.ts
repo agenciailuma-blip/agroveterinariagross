@@ -141,6 +141,20 @@ const MAESTROS: Definicion[] = [
     origen: 'cuenta_corriente_saldo',
     columnas: 'cliente_id, saldo, actualizado_en',
   },
+  /*
+    Hasta dónde llegó la numeración de cada serie.
+
+    Es el piso desde el que numera la terminal cuando emite sin
+    conexión. Sin esto empezaría de cero y pisaría comprobantes que ya
+    existen — y un comprobante emitido con CAEA ya se entregó impreso,
+    así que no se puede renumerar después.
+  */
+  {
+    tabla: 'secuencia',
+    origen: 'secuencia_comprobante',
+    columnas: 'punto_venta_id, tipo_comprobante_id, ultimo_numero, actualizado_en',
+    mapear: (f) => ({ ...f, clave: `${f.punto_venta_id}-${f.tipo_comprobante_id}` }),
+  },
 ]
 
 /*

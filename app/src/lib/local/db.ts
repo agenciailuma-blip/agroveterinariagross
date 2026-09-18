@@ -449,6 +449,90 @@ export interface PuntoVentaLocal {
 }
 
 /*
+  Hasta dónde llegó la numeración de cada punto de venta y tipo.
+
+  Baja del servidor y es el piso desde el que numera la terminal cuando
+  emite sin conexión. La serie no tolera huecos: si la terminal empieza
+  en un número más alto del que corresponde, ARCA rechaza el lote entero
+  al informarlo, y los comprobantes ya se entregaron.
+*/
+export interface SecuenciaLocal {
+  /** `${punto_venta_id}-${tipo_comprobante_id}` */
+  clave: string
+  punto_venta_id: string
+  tipo_comprobante_id: number
+  ultimo_numero: number
+  actualizado_en: string
+}
+
+/*
+  El comprobante emitido en esta terminal, sin conexión.
+
+  Vive acá por la misma razón que el remito: el papel sale a la calle.
+  Si se emite durante un corte, tiene que poder imprimirse desde esta
+  máquina —y volver a imprimirse si el cliente lo pide— sin depender de
+  que haya vuelto internet.
+*/
+export interface ComprobanteLocal {
+  id: string
+  venta_id: string
+  tipo_comprobante_id: number
+  punto_venta_id: string
+  punto_venta_numero: number
+  numero: number
+  fecha: string
+  concepto: number
+  cliente_id: string
+  receptor_nombre: string
+  receptor_documento: string | null
+  receptor_tipo_documento_id: number
+  receptor_condicion_iva_id: number
+  receptor_domicilio: string | null
+  neto_gravado: number
+  neto_no_gravado: number
+  exento: number
+  iva_total: number
+  tributos_total: number
+  total: number
+  moneda: string
+  cotizacion: number
+  /** 'caea' — el único camino por el que esta terminal emite sola. */
+  modalidad: string
+  estado: string
+  caea_id: string | null
+  cae: string | null
+  cae_vencimiento: string | null
+  motivo: string | null
+  usuario_id: string | null
+  terminal_id: string | null
+  creado_en: string
+  impresiones: number
+}
+
+export type ComprobanteGuardado = Guardado<
+  ComprobanteLocal,
+  'receptor_nombre' | 'receptor_documento' | 'receptor_domicilio'
+>
+
+export interface ComprobanteAlicuotaLocal {
+  id: string
+  comprobante_id: string
+  alicuota_iva_id: number
+  base_imponible: number
+  importe: number
+}
+
+export interface ComprobanteTributoLocal {
+  id: string
+  comprobante_id: string
+  tributo_id: number
+  descripcion: string
+  base_imponible: number
+  alicuota: number
+  importe: number
+}
+
+/*
   El CAEA de la quincena, bajado por adelantado.
 
   Es la pieza que hace posible facturar sin internet: el código ya está
@@ -494,6 +578,10 @@ class BaseLocal extends Dexie {
   tipo_documento!: EntityTable<TipoDocumentoLocal, 'id'>
   punto_venta!: EntityTable<PuntoVentaLocal, 'id'>
   caea!: EntityTable<CaeaLocal, 'id'>
+  secuencia!: EntityTable<SecuenciaLocal, 'clave'>
+  comprobante!: EntityTable<ComprobanteGuardado, 'id'>
+  comprobante_alicuota!: EntityTable<ComprobanteAlicuotaLocal, 'id'>
+  comprobante_tributo!: EntityTable<ComprobanteTributoLocal, 'id'>
 
   constructor() {
     super('gross')
@@ -563,6 +651,10 @@ class BaseLocal extends Dexie {
       tipo_documento: 'id',
       punto_venta: 'id, numero, actualizado_en',
       caea: 'id, [periodo+quincena], fecha_desde, actualizado_en',
+      secuencia: 'clave, actualizado_en',
+      comprobante: 'id, venta_id, estado, [punto_venta_id+tipo_comprobante_id], creado_en',
+      comprobante_alicuota: 'id, comprobante_id',
+      comprobante_tributo: 'id, comprobante_id',
     })
   }
 }
