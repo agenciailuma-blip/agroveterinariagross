@@ -34,7 +34,8 @@ actualizado: 2026-09-09
 | **Lucas / Contador** | **Número de Ingresos Brutos** y **fecha de inicio de actividades** de Gross | ✅ **Resueltos el 25/08.** Lucas mandó dos comprobantes reales (un ticket de la Hasar y una Factura A en A4) y los dos traen los mismos valores: IIBB `20-14636976-7` (es el CUIT) e inicio `16/06/1986`. Ya cargados |
 | **Lucas** | Qué hacer con la columna **Animal** de la planilla (Perros, Gatos, Bovinos…) | 🟡 Es una dimensión aparte del árbol de rubros. Hoy no se importa. Importa para la tienda de V1-B |
 | **Lucas** | La columna **Precio tarjeta** de la planilla | 🟡 Hoy el sistema lo calcula solo con el ajuste de la lista. Si sus precios de tarjeta no salen de un porcentaje fijo, hay que hablarlo |
-| **Zubu** | Acuerdo de integración (exponemos nosotros) | Avisados |
+| **Zubu** | Acuerdo de integración (exponemos nosotros) | 🟢 **La API de lectura está publicada desde el 18/09.** Falta darles la clave (por un canal privado) y el documento [`api-tienda.md`](../api-tienda.md). Que su proceso de compra pida desde ya DNI o CUIT, condición frente al IVA y email: lo necesitan los pedidos de la segunda etapa |
+| **Lucas** | **La dirección desde la que salen los mails** (facturas de la tienda, y el pedido 17) | 🟡 El servicio ya está elegido: Resend. Falta la dirección y acceso al dominio para configurarla |
 | **Gross** | Plan del inventario inicial (~3.000 productos) | 🔴 Sin planificar |
 | **Supabase** | Activar protección de contraseñas filtradas | 30 segundos |
 

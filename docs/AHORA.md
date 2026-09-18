@@ -12,7 +12,9 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Publicado: 0.5.0** (18/09), con **la factura que sale sin internet** —la caja emite con CAEA y el ticket sale solo—. Antes, la 0.4.4 con la red del local que ahora **dice qué le pasa**, el cortacircuito que hace que la Caja abra rápido sin internet, y la cola de la caja que se actualiza al cambiar el medio de pago. Antes, ese mismo día, la 0.4.2 con el recargo por cuotas arreglado, los acentos del ticket y la impresión automática al cobrar. **La 0.4.1 quedó instalada en el local el 17/09, en todas menos la de Windows 7** — las dos versiones nuevas entran solas con *Actualizar ahora*. **305 pruebas verdes en la app y 11 en el programa**, 78 migraciones aplicadas.
+**Publicado: 0.5.0** (18/09), con **la factura que sale sin internet** —la caja emite con CAEA y el ticket sale solo—. Antes, la 0.4.4 con la red del local que ahora **dice qué le pasa**, el cortacircuito que hace que la Caja abra rápido sin internet, y la cola de la caja que se actualiza al cambiar el medio de pago. Antes, ese mismo día, la 0.4.2 con el recargo por cuotas arreglado, los acentos del ticket y la impresión automática al cobrar. **La 0.4.1 quedó instalada en el local el 17/09, en todas menos la de Windows 7** — las dos versiones nuevas entran solas con *Actualizar ahora*. **336 pruebas verdes en la app y 11 en el programa**, 80 migraciones aplicadas.
+
+**Y la API para Zubu, publicada el 18/09 a la tarde** — la primera pieza de V1-B, sin tocar nada de lo que anda. Ver abajo.
 
 ⚠️ **Lo que está construido pero NO verificado.** Un chat nuevo no puede darlo por probado:
 
@@ -38,7 +40,27 @@ estado: en curso
 
 ---
 
-## Lo último que pasó — 18 de septiembre
+## Lo último que pasó — 18 de septiembre, a la tarde: la API para Zubu
+
+**La tienda online ya puede leer el catálogo.** Es la primera pieza de V1-B, adelantada para que Zubu arme la tienda en paralelo, y es **todo nuevo al costado de lo que anda**: no hizo falta publicar una versión del programa. El diseño se aprobó antes de construir. Para Zubu: [`api-tienda.md`](api-tienda.md), que un desarrollador de afuera puede leer sin nosotros.
+
+> **Cómo se lo contás a Lucas:** la tienda de Zubu mira el catálogo y el stock del sistema como se mira una vidriera: ve lo que está a la venta y a qué precio, pero no puede tocar nada ni ver lo de adentro —costos, proveedores, clientes—. Entra con una clave propia, que no es la de ningún empleado y que se anula en el momento. **Lo que sale a la web lo decide Gross**, prendiendo «Vender online» producto por producto o por categoría.
+
+Lo que quedó decidido, y por qué:
+
+- **Zubu no es un usuario del sistema.** Tiene una clave atada al canal «Tienda online», guardada como huella: ni nosotros podemos leerla. La puerta entra a la base con la llave pública, que sin usuario no lee ninguna tabla: **aunque la puerta tuviera un error, no tiene con qué llegar a los costos.**
+- **«Vender online» es la decisión; nombre público y precio son el control.** Sin nombre público no sale —en la web se leería «ALIM BAL TOTALMAX PERRO 20KG»—. **Los fitosanitarios no salen** hasta que Gross lo decida: la ley de Misiones pide receta agronómica. Hoy salen **29 de los 35** productos de prueba, prendidos a mano mientras llega el interruptor.
+- **El precio es el de la lista que se elija para la tienda**: la de contado, o una creada para la web. Esa lista no se puede dar de baja mientras la use la tienda.
+- **El stock sale con el colchón descontado** —hoy 2 unidades—, para que una venta del mostrador y una de la web en el mismo minuto no se lleven la misma bolsa. El número real no sale nunca.
+- **La frescura no es la de Inicio**: aquella se traba con una PC apagada. La de la tienda dice «confiable» si alguna terminal sincronizó en los últimos 15 minutos y ninguna tiene ventas trabadas. De noche dice «no confiable», y qué hace la tienda con eso lo deciden Gross y Zubu.
+
+> **Lo delicado, y cómo se verificó:** si Zubu consulta justo mientras alguien guarda un precio, ese precio podía quedar detrás de la marca de «lo que cambió» y **no llegar nunca** a la web. La marca ahora nunca pasa por delante de un guardado en curso. Se probó con dos sesiones a la vez: un guardado abierto 25 segundos mientras la «tienda» consultaba. Con el código bien, el cambio llegó; **rompiendo la marca a propósito, se perdió.** En total, 64 comprobaciones contra la base, 30 pruebas nuevas en la app, 27 por internet, y **siete roturas a propósito, las siete atrapadas**. Y el punto 16 del alcance: una salida de stock en el local, y la tienda pasó de ver 9 a ver 8 en la consulta siguiente.
+
+**Lo que quedó pensado para los pedidos (segunda etapa), porque se pidió automatizado desde el principio:** la venta online pagada **se factura sola y la factura le llega al cliente por mail**; si paga en el local, el pedido va a la caja. El mail sale por **Resend**, gratis hasta que esté probado. Por eso **el proceso de compra de Zubu tiene que pedir desde ya DNI o CUIT, condición frente al IVA y email** —está en su documento—. Y el DNI o el CUIT es lo que va a vincular a los clientes de la web con los del local.
+
+💡 **Idea anotada:** cuando abra el segundo local, un depósito «Online» del que salgan las ventas de la tienda. Está en el [alcance, §13](alcance-v1.md).
+
+## Lo que pasó el 18 de septiembre, a la mañana
 
 **Arrancó el CAEA sin internet**, que es lo que falta para que el corte de conexión no deje al cliente sin papel. Decidido con Francisco el 17/09: los cortes en Oberá son pocos, pero el sistema híbrido se prometió justamente para eso, así que se hace bien y no con un parche.
 
@@ -253,7 +275,7 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 > - **Los atajos de teclado** se definen con Lucas la **primera semana de octubre**.
 > - **La capacitación ya se viene haciendo** en cada visita, fuera de horario, y Lucas y los empleados siguen el sistema al detalle. No es un pendiente.
 > - **La base de datos sigue en plan gratis, por decisión de Gross**, conociendo el riesgo: sin copias de seguridad recuperables. Se contrata más adelante. Dicho una vez y anotado.
-> - **Lo que sigue: adelantar V1-B, empezando por la API para Zubu**, así arrancan su tienda en paralelo leyendo los artículos. La semana del 21/09 hay un hueco para eso.
+> - ~~**Lo que sigue: adelantar V1-B, empezando por la API para Zubu**~~ ✅ **La API de lectura está publicada (18/09).** Lo que sigue en esta línea es **el interruptor «Vender online» en Productos**: en la ficha, a un grupo marcado y a una categoría entera, con el colchón por producto y la lista de la tienda elegible en Precios. Necesita versión nueva del programa. Y **darle a Zubu la clave y el documento**.
 
 0. 🔴 **Que la venta llegue a la caja sin internet.** Falló en el local el 17/09. **El sistema ya dice qué pasa** (0.4.3) — eso era lo que faltaba para poder arreglarlo. **Lo que sigue es una prueba de dos minutos en el local**, con las dos máquinas prendidas y el programa instalado en las dos: Configuración → La red del local → *Probar la conexión*, y después una venta con internet cortado.
    - Si dice **«no sé cuál es la caja»**: esa terminal no sincronizó desde que la caja se presentó. Se resuelve sincronizando una vez con internet.
@@ -284,6 +306,7 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 | ~~Las **fotos de cómo cargan facturas de compra**~~ | Lucas | ✅ Llegaron el 10/09, con tres audios. Análisis en [`compras-e-iva.md`](compras-e-iva.md) |
 | **¿La cuenta corriente de proveedores entra al alcance?** | Lucas | 🔴 Hay plan con tamaños: [`plan-compras.md`](plan-compras.md). Son cuatro preguntas de cinco minutos |
 | Qué **columnas** quiere el contador en el Excel | Contador | 🟡 Ya se exporta con lo estándar |
+| **La dirección desde la que salen los mails** | Lucas | 🟡 El servicio ya está elegido (Resend). La necesitan las facturas de la tienda y el pedido 17 |
 
 → La lista completa está en [[Pendientes con terceros]].
 
@@ -323,6 +346,10 @@ Está andando y verificado. Si algo de acá se rompe, es una regresión:
 - **Las métricas de venta se comparan por tramo del mes, no contra el mes anterior completo.** Cambiarlo deja el mes en curso en baja permanente hasta el día 30, todos los meses.
 - **El recargo por cuotas va en el precio de la venta, no en el importe del pago.** Sumarlo al pago —como estaba hasta el 17/09— deja la venta valiendo menos que lo que el cliente paga, y como el cobro exige que los pagos cierren con el total, cobrar en cuotas se vuelve imposible. Además la factura saldría por menos de lo cobrado.
 - **El ticket va en la página 437, la de MS-DOS, y no en el alfabeto de Windows.** Es lo que la impresora lee de fábrica. Con el de Windows, "Oberá" sale impreso "Oberß" y cada importe arrastra un `$á`.
+- **La API de la tienda entra a la base con la llave pública, no con la de servicio.** Es lo que hace que un error en la puerta no pueda llegar a los costos ni a los clientes. Con la de servicio, la puerta lo ve todo.
+- **La lista de campos que sale a la tienda está escrita a mano**, y una prueba la compara. Armarla «con lo que tenga la tabla» publicaría el próximo campo interno que se agregue.
+- **La marca de agua de la API mira las transacciones abiertas.** Si devuelve «ahora», un precio que se guarda mientras Zubu consulta no llega nunca a la web. Se probó rompiéndola.
+- **Todo lo que cambia lo que ve la tienda le mueve la fecha al producto** (animales, etapas, códigos de barra, «Vender online», precio en una lista). Sacar esos disparadores deja a la tienda con datos viejos, sin ningún error.
 - **La impresora se guarda por terminal, no en la configuración del comercio.** Volverla a un solo valor para todo el local deja tres de las cuatro PC imprimiendo a un nombre que en su lista no existe. Y el nombre se elige de la lista de Windows: escribirlo a mano falla en silencio.
 
 ## Cómo arrancar

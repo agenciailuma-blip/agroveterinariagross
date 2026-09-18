@@ -110,6 +110,8 @@ Necesita un servicio de correo, que hoy no está contratado. **El trabajo en sí
 
 **Falta decidir dos cosas con Lucas:** si lo quiere para V1-A o V1-B, y desde qué dirección salen los mails.
 
+> **18/09 — el servicio está elegido: Resend**, con su plan gratis hasta que esté probado, y un plan pago si hace falta después. Y el mail automático **entra sí o sí con los pedidos de la tienda online**: la venta online pagada se factura y la factura le llega sola al cliente. La misma pieza sirve para esto. Lo que sigue faltando de Lucas es **la dirección** desde la que salen, con acceso al dominio para configurarla (la casilla institucional pendiente desde la primera reunión).
+
 > **Lo volvió a mencionar el 14/09**, en el audio del resumen de cuenta corriente: *"cada vez que alguien viene a buscar en cuenta corriente, yo le mando la factura por mail, que sería la ideal"*. Confirma el uso —es para el cliente de cuenta corriente, no para el mostrador— pero **no cambia lo que falta decidir**. Mientras tanto se puede hacer a mano: la factura en A4 se guarda como PDF desde *Ver / Imprimir* y se adjunta al mail.
 
 ---

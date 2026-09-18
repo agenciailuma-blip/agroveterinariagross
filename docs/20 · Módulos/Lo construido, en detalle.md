@@ -590,6 +590,32 @@ Decisiones que importan:
 
 ⏳ Falta la planilla de Lucas. El importador ya está probado de punta a punta contra la base con un archivo desprolijo de ejemplo.
 
+### ✅ 13a. La API de la tienda: leer el catálogo (18/09)
+
+Primera pieza de V1-B, adelantada para que Zubu arranque la tienda en paralelo. **Sólo lectura**: productos con nombre público, precio, clasificaciones, stock con el colchón y la frescura. Los pedidos son la segunda etapa. Para Zubu: [`api-tienda.md`](../api-tienda.md). El diseño se aprobó antes de construir, con una página propia.
+
+**Cómo entra Zubu.** Con una clave atada al canal «Tienda online» (`clave_api`), que se guarda como huella SHA-256 y nunca en claro. **No es un usuario del sistema.** La puerta es la Edge Function `api-tienda` (`verify_jwt = false`, porque la clave no es un token de Supabase), y entra a la base con la **llave pública**, no con la de servicio: `anon` no lee ninguna tabla, y lo único que puede ejecutar son `api_tienda_catalogo` y `api_tienda_clasificaciones`. Si la puerta tuviera un error, no tiene con qué llegar a los costos. Sin CORS, a propósito: la clave tiene que vivir en el servidor de Zubu.
+
+**Qué se publica: «Vender online» es la decisión, las condiciones son el control.** Nada sale hasta que se prende (`canal_producto.publicar`, ahora con el sentido de *sí, vender*). Prendido, sale sólo si está activo, tiene nombre público y precio mayor a cero. **Los fitosanitarios no salen** hasta que Gross lo decida: la ley XVI-144 de Misiones pide receta agronómica y la tienda no tiene cómo pedirla. La regla está en un solo lugar (`app.motivo_para_no_publicar`), que devuelve el *motivo* en palabras para que la ficha lo muestre tal cual.
+
+**El precio sale de la lista que se elija para la tienda** (`canal.lista_precio_id`, arranca con Contado), con la misma cuenta que `calcular_precio`. Una lista elegida para un canal **no se puede dar de baja**: la tienda quedaría publicando con una lista que no existe.
+
+**La lista de campos es cerrada**, escrita a mano en la función. Una prueba compara las claves de cada producto contra la lista: un campo nuevo no llega a la tienda sin que alguien lo decida.
+
+**La marca de agua**, que es lo delicado. Zubu pide «lo que cambió desde la marca», y una fecha de modificación es el *comienzo* de la transacción que escribió, no su final. Sin cuidado, un precio que se está guardando mientras Zubu consulta queda con fecha anterior a la marca y **no llega nunca**. La marca que se devuelve es el comienzo de la transacción abierta más vieja (`app.marca_de_agua`, que lee `pg_stat_activity`), así que nunca pasa por delante de un guardado en curso. A cambio, a veces un producto llega dos veces.
+
+**Cualquier cosa que cambie lo que ve la tienda le mueve la fecha al producto**: los animales, las etapas, los códigos de barra, el interruptor y el precio fijo en una lista no la movían. Se agregó con disparadores (`app.tocar_producto`). El único efecto sobre el local es que las terminales vuelven a bajar ese producto.
+
+**La frescura no es la de Inicio.** Aquella toma la terminal más atrasada y una PC apagada la traba. La de la tienda: confiable si **alguna** terminal sincronizó dentro de la tolerancia y **ninguna** tiene un error de sincronización sin resolver. De noche dice «no confiable», y eso lo deciden Gross y Zubu.
+
+**Cómo se verificó:**
+
+- **64 comprobaciones contra la base real** ([`supabase/pruebas/api-tienda.sql`](../../supabase/pruebas/api-tienda.sql)), dentro de una transacción que se deshace sola.
+- **30 pruebas de la puerta** en la suite de la app y **27 comprobaciones por internet** contra la función publicada ([`api-tienda-http.mjs`](../../supabase/pruebas/api-tienda-http.mjs)).
+- **Se rompió a propósito de siete maneras y las siete fueron atrapadas.** En la base: el stock sin colchón, el costo en la respuesta, una clave anulada que entra y un producto apagado que sale. En la puerta: un límite sin tope y un pedido sin clave.
+- **La séptima, la marca de agua, con dos sesiones a la vez.** Se guardó un cambio con la transacción abierta 25 segundos mientras la «tienda» consultaba. Con el código bien, la marca devuelta fue *exactamente* el comienzo de ese guardado y el cambio llegó en la consulta siguiente. Con la marca rota, el cambio **se perdió**.
+- **Punto 16 de la definición de terminado:** una salida de stock en el local y la tienda pasó de ver 9 a ver 8 en la consulta siguiente. Se hizo con un ajuste de −1 y otro de +1 en DEMO-051, que quedan en su historial con el motivo.
+
 ### 🟢 5. Deploy y empaquetado
 Cloudflare Pages (10 minutos cuando haya algo que publicar) y Tauri para las 4 PC del mostrador, con impresión ESC/POS a la Hasar por red.
 
