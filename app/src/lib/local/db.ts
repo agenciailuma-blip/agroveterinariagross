@@ -507,6 +507,14 @@ export interface ComprobanteLocal {
   terminal_id: string | null
   creado_en: string
   impresiones: number
+  /*
+    Cuándo llegó al servidor. Vacío mientras espera en la cola.
+
+    No se borra el comprobante al subirlo: queda en la máquina para
+    poder reimprimirlo sin internet, que es lo que pide un cliente que
+    vuelve al otro día con el ticket arrugado.
+  */
+  subido_en?: string | null
 }
 
 export type ComprobanteGuardado = Guardado<

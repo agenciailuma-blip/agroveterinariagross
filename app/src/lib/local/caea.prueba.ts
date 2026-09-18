@@ -309,6 +309,28 @@ describe('la factura que sale sin internet', () => {
     expect(c.numero).toBe(13)
   })
 
+  /*
+    La factura sube DESPUÉS del cobro, siempre.
+
+    El servidor no acepta un comprobante de una venta que para él
+    todavía está esperando en la caja. Si la factura se adelantara,
+    fallaría en cada intento y la venta quedaría facturada sólo acá.
+  */
+  it('sube después del cobro de la misma venta', async () => {
+    await db.outbox.add({
+      id: 'op-cobro', lote: VENTA, orden: 0, tipo: 'rpc', tabla: 'cobrar_venta',
+      datos: {} as never, descripcion: 'cobro', creado_en: AHORA, intentos: 0,
+      ultimo_error: null, estado: 'pendiente',
+    })
+
+    await emitir()
+
+    const cola = (await db.outbox.where('lote').equals(VENTA).toArray()).sort(
+      (a, b) => a.orden - b.orden,
+    )
+    expect(cola.map((o) => o.tabla)).toEqual(['cobrar_venta', 'registrar_comprobante_caea'])
+  })
+
   it('una venta no se factura dos veces', async () => {
     await emitir()
     await expect(emitir()).rejects.toThrow(/ya tiene un comprobante/)

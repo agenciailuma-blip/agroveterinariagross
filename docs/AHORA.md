@@ -1,5 +1,5 @@
 ---
-actualizado: 2026-09-16
+actualizado: 2026-09-18
 estado: en curso
 ---
 
@@ -12,7 +12,7 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Publicado: 0.4.4** (17/09), con la red del local que ahora **dice qué le pasa**, el cortacircuito que hace que la Caja abra rápido sin internet, y la cola de la caja que se actualiza al cambiar el medio de pago. Antes, ese mismo día, la 0.4.2 con el recargo por cuotas arreglado, los acentos del ticket y la impresión automática al cobrar. **La 0.4.1 quedó instalada en el local el 17/09, en todas menos la de Windows 7** — las dos versiones nuevas entran solas con *Actualizar ahora*. **272 pruebas verdes en la app y 11 en el programa**, 77 migraciones aplicadas.
+**Publicado: 0.5.0** (18/09), con **la factura que sale sin internet** —la caja emite con CAEA y el ticket sale solo—. Antes, la 0.4.4 con la red del local que ahora **dice qué le pasa**, el cortacircuito que hace que la Caja abra rápido sin internet, y la cola de la caja que se actualiza al cambiar el medio de pago. Antes, ese mismo día, la 0.4.2 con el recargo por cuotas arreglado, los acentos del ticket y la impresión automática al cobrar. **La 0.4.1 quedó instalada en el local el 17/09, en todas menos la de Windows 7** — las dos versiones nuevas entran solas con *Actualizar ahora*. **305 pruebas verdes en la app y 11 en el programa**, 78 migraciones aplicadas.
 
 ⚠️ **Lo que está construido pero NO verificado.** Un chat nuevo no puede darlo por probado:
 
@@ -20,7 +20,8 @@ estado: en curso
 |---|---|
 | ~~La impresión por impresora de Windows~~ | ✅ **Imprimió el 17/09.** Falta ver en papel lo corregido después: los acentos y el ticket que sale solo al cobrar |
 | **La venta que llega a la caja sin internet** | 🔴 **Se probó el 17/09 y NO funcionó.** Ver *Lo que sigue* |
-| El actualizador de punta a punta | Apretando *Actualizar ahora* en una PC, sin desinstalar antes. **La 0.4.2 es la oportunidad** |
+| El actualizador de punta a punta | Apretando *Actualizar ahora* en una PC, sin desinstalar antes. **La 0.5.0 es la oportunidad** |
+| **Facturar sin internet, con CAEA** | 🔴 En el local, con la conexión cortada de verdad: cobrar en la caja y que salga el ticket con el CAEA |
 | ~~Las pantallas de **La red del local** y **Percepciones**~~ | ✅ **Vistas el 11/09.** Percepciones entera, con datos de agosto y el caso de la nota de crédito. De La red del local sólo se puede ver en el navegador el aviso de que hace falta el programa instalado: es así a propósito |
 
 🟡 **`cargo test` falla en esta máquina, y ya se sabe por qué: hay tres antivirus instalados.** Norton Security y Avast conviven con Windows Defender —que quedó desactivado, porque los otros dos le sacaron el control—. Cada `.exe` que el compilador crea lo intercepta el antivirus antes de que termine de escribirse, y el enlazador falla con `LNK1104`, «no se puede abrir el archivo». El archivo, efectivamente, no está: lo hicieron desaparecer.
@@ -33,7 +34,7 @@ estado: en curso
 
 🔴 **Que la venta llegue a la caja sin internet.** Se probó en el local el 17/09 y no llegó. Es la promesa grande del sistema —el punto 2-bis— y lo único de V1-A que se probó y falló. Lo primero es que el mostrador **avise** cuando no encuentra a la caja: hoy no lo intenta y no dice nada, así que no se puede ni saber por qué falló.
 
-🟡 **El actualizador sigue sin probarse de punta a punta.** La 0.2.2 entró bien, pero desinstalando la versión vieja primero, así que **el arreglo del archivo tomado no se ejercitó**. **La 0.4.2 es la oportunidad**: en una sola PC, *Actualizar ahora*, sin desinstalar nada. Molesta después del 26/10, cuando una corrección tenga que llegar a las 4 PC sin viajar a Oberá.
+🟡 **El actualizador sigue sin probarse de punta a punta.** La 0.2.2 entró bien, pero desinstalando la versión vieja primero, así que **el arreglo del archivo tomado no se ejercitó**. **La 0.5.0 es la oportunidad**: en una sola PC, *Actualizar ahora*, sin desinstalar nada. Molesta después del 26/10, cuando una corrección tenga que llegar a las 4 PC sin viajar a Oberá.
 
 ---
 
@@ -50,7 +51,17 @@ estado: en curso
 >
 > **Cómo se verificó:** contra los tickets que salieron impresos en el local el 17/09 —el collar de $6.400 y la venta de dos alícuotas de $69.900— y contra la vista del servidor, que da exactamente los mismos números. Y se rompió el código de cuatro maneras a propósito: redondear línea por línea en vez de agrupar, comparar el mínimo de la percepción contra la venta en vez de contra la percepción, usar «menor» donde va «menor o igual» en el borde exacto, y sacar el total de la suma del desglose en vez del total cobrado. **Las cuatro fueron atrapadas** —la última recién después de corregir una prueba que no distinguía los dos caminos—.
 
-**Lo que falta para que funcione de punta a punta:** numerar el comprobante en la terminal sin dejar huecos, emitirlo con el código del CAEA, imprimirlo, y engancharlo en la caja. Y, para que sirva de verdad, el certificado de producción.
+**Y quedó completo el mismo día, en la 0.5.0.** Al cobrar sin internet, la caja emite la factura con el CAEA y **el ticket sale solo**. El cliente se va con su comprobante.
+
+> **Cómo se lo contás a Lucas:** si se corta internet, la caja sigue facturando. El código con el que sale la factura —el CAEA— ARCA lo entrega por adelantado, una vez por quincena, justamente para esto. Cuando vuelve la conexión, la factura sube sola y el sistema le informa a ARCA lo que se emitió. **El cliente nunca se va sin papel.**
+
+Las tres piezas que faltaban:
+
+- **La numeración**, que era lo delicado: sale del mayor entre lo que sabe el servidor y lo que esta máquina ya emitió. Mirar solo al servidor repetiría números —quedó atrasado justo porque no había internet—; mirar solo lo local los repetiría después de reinstalar. Las dos formas entregan dos papeles con el mismo número.
+- **La impresión**, que ahora lee de la terminal cuando el servidor no contesta. Es lo que permite imprimir en el momento y **reimprimir después**, con o sin conexión.
+- **Facturación muestra lo emitido en el corte**, con reimpresión y con cuáles todavía no llegaron al servidor. Informarle a ARCA lo sigue haciendo la tarea diaria sola: un botón que alguien tiene que acordarse de apretar no es una obligación cumplida.
+
+⚠️ **Lo que todavía no se probó:** un corte de internet de verdad, con las dos máquinas. Es lo primero para la próxima visita. Y **mientras el sistema esté en homologación, lo que sale de una contingencia es un comprobante de prueba**, igual que todo lo demás: recién con el certificado de producción es una factura válida.
 
 ⚠️ **Una decisión tomada, para que la sepas:** durante un corte **emite sólo la caja**. Es donde ya se cobra y se factura, y así alcanza con un punto de venta CAEA —el 9, que ya está dado de alta—. Si más adelante quieren que cada mostrador emita por su cuenta, es darle de alta un punto de venta a cada uno: trámite, no rehacer.
 

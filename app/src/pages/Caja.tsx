@@ -33,6 +33,7 @@ import {
   imprimirNoFiscal,
   puedeImprimirSolo,
 } from '@/lib/comprobante/imprimirDirecto'
+import { emitirConCaeaLocal, sePuedeEmitirConCaea } from '@/lib/local/caea'
 import { moneda, numero } from '@/lib/tipos'
 
 export default function Caja() {
@@ -64,6 +65,8 @@ export default function Caja() {
     codigo: string
     cae: string
     comprobanteId: string | null
+    /** Emitida por contingencia: el código es un CAEA y falta informarla. */
+    caea: boolean
   } | null>(null)
   const [cerrando, setCerrando] = useState(false)
   const [errorEdicion, setErrorEdicion] = useState<string | null>(null)
@@ -222,15 +225,58 @@ export default function Caja() {
 
       const { subida } = await cobrar(seleccionada!, caja.data!.id, operador!.usuario_id, pagos)
 
-      // Sin haber llegado al servidor no hay nada que documentar
-      // todavía: el comprobante se arma sobre una venta cobrada, y para
-      // el servidor esta venta sigue esperando en la cola.
+      /*
+        Sin conexión, la factura la emite ESTA terminal con el CAEA.
+
+        Es para lo que existe el CAEA: el código lo entrega ARCA por
+        adelantado, una vez por quincena, justamente para poder seguir
+        facturando cuando su servicio no está disponible. Acá se usa,
+        sale el papel, y la factura sube tal cual cuando vuelve internet.
+
+        Si no se puede —no es la caja, no bajó el CAEA, se eligió sin
+        factura— la venta queda cobrada igual y la factura, pendiente.
+        Cobrar nunca se bloquea por esto.
+      */
       if (!subida) {
+        if (!sinFactura) {
+          const permiso = await sePuedeEmitirConCaea(terminal?.tipo === 'caja')
+          if (permiso.puede) {
+            try {
+              const emitido = await emitirConCaeaLocal(seleccionada!, {
+                usuarioId: operador!.usuario_id,
+                terminalId: terminal?.id ?? null,
+                motivo: 'Sin conexión',
+              })
+              return {
+                codigo,
+                cae: emitido.cae,
+                comprobanteId: emitido.id,
+                noFiscal: null as { id: string; numero: string } | null,
+                conCaea: true,
+                problema: null as string | null,
+              }
+            } catch (e) {
+              return {
+                codigo,
+                cae: null,
+                comprobanteId: null,
+                noFiscal: null,
+                conCaea: false,
+                problema:
+                  e instanceof Error
+                    ? `no se pudo emitir por contingencia (${e.message}). Se factura sola cuando vuelva la conexión.`
+                    : 'no se pudo emitir por contingencia. Se factura sola cuando vuelva la conexión.',
+              }
+            }
+          }
+        }
+
         return {
           codigo,
           cae: null,
           comprobanteId: null,
           noFiscal: null as { id: string; numero: string } | null,
+          conCaea: false,
           problema:
             'la venta quedó guardada en esta computadora y se va a facturar sola cuando vuelva la conexión.',
         }
@@ -258,6 +304,7 @@ export default function Caja() {
               id: emitido.id,
               numero: numeroNoFiscal('comprobante_interno', emitido.serie, emitido.numero),
             },
+            conCaea: false,
             problema: null as string | null,
           }
         } catch (e) {
@@ -266,6 +313,7 @@ export default function Caja() {
             cae: null,
             comprobanteId: null,
             noFiscal: null,
+            conCaea: false,
             problema:
               e instanceof Error
                 ? `no se pudo emitir el comprobante interno: ${e.message}`
@@ -276,18 +324,19 @@ export default function Caja() {
 
       try {
         const { cae, comprobanteId } = await facturarVenta(seleccionada!)
-        return { codigo, cae, comprobanteId, noFiscal: null, problema: null as string | null }
+        return { codigo, cae, comprobanteId, noFiscal: null, conCaea: false, problema: null as string | null }
       } catch (e) {
         return {
           codigo,
           cae: null,
           comprobanteId: null,
           noFiscal: null,
+          conCaea: false,
           problema: e instanceof Error ? e.message : 'ARCA no respondió.',
         }
       }
     },
-    onSuccess: ({ codigo, cae, comprobanteId, noFiscal, problema }) => {
+    onSuccess: ({ codigo, cae, comprobanteId, noFiscal, problema, conCaea }) => {
       if (problema) {
         setFacturaPendiente(`Venta ${codigo} cobrada, pero la factura quedó pendiente: ${problema}`)
       } else if (noFiscal) {
@@ -307,7 +356,7 @@ export default function Caja() {
           más en el peor momento. No se abre solo porque el navegador
           bloquea las ventanas que no abrió una persona.
         */
-        setListoParaImprimir({ codigo: codigo ?? '', cae: cae ?? '', comprobanteId })
+        setListoParaImprimir({ codigo: codigo ?? '', cae: cae ?? '', comprobanteId, caea: conCaea })
         if (comprobanteId) imprimirSolo(() => imprimirComprobante(comprobanteId, terminal))
       }
       limpiar()
@@ -535,8 +584,19 @@ export default function Caja() {
             <div className="min-w-0">
               <p className="font-medium text-verde-900">
                 Venta {listoParaImprimir.codigo} cobrada y facturada
+                {listoParaImprimir.caea && ' por contingencia'}
               </p>
-              <p className="text-xs text-verde-800">CAE {listoParaImprimir.cae}</p>
+              {/*
+                Con CAEA se dice que es CAEA y qué falta. El cajero tiene
+                que poder contestarle al cliente por qué el papel dice
+                otra cosa, y de paso queda claro que la factura es válida
+                —el código lo dio ARCA por adelantado—, no un borrador.
+              */}
+              <p className="text-xs text-verde-800">
+                {listoParaImprimir.caea ? 'CAEA ' : 'CAE '}
+                {listoParaImprimir.cae}
+                {listoParaImprimir.caea && ' · se le informa a ARCA cuando vuelva internet'}
+              </p>
             </div>
             <div className="flex items-center gap-2">
               {listoParaImprimir.comprobanteId && (

@@ -14,6 +14,7 @@ import {
 } from '@/lib/api/facturacion'
 import type { FilaComprobante, Semaforo, VentanaCae } from '@/lib/api/facturacion'
 import PanelContingencia from '@/components/PanelContingencia'
+import EmitidasEnElCorte from '@/components/EmitidasEnElCorte'
 import DevolucionParcial from '@/components/DevolucionParcial'
 import { emitirConCaea, estadoContingencia } from '@/lib/api/contingencia'
 import { moneda } from '@/lib/tipos'
@@ -190,6 +191,13 @@ export default function Facturacion() {
       )}
 
       <PanelContingencia onAviso={avisar} onError={setError} />
+
+      {/*
+        Lo que esta computadora facturó durante un corte. Va pegado al
+        panel de contingencia porque es su consecuencia: el CAEA de
+        arriba es el código, esto es lo que se emitió con él.
+      */}
+      <EmitidasEnElCorte />
 
       {/*
         El archivo que Gross le manda al contador todos los meses.

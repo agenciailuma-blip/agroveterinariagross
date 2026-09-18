@@ -204,6 +204,8 @@ El semáforo de todo lo que se le informa a ARCA.
 | **Qué veo** | El semáforo por comprobante (pendiente, autorizado, impreso, rechazado) · **el motivo exacto del rechazo** · el aviso de la ventana de 5 días para pedir el CAE · el **panel rojo** de ventas cobradas sin comprobante, que es el caso grave: la plata entró y no hay respaldo fiscal · el **panel de contingencia** con el CAEA vigente, qué falta informarle a ARCA y cuántos días quedan. |
 | **Qué exporto** | La **factura impresa** con QR de ARCA, en ticket de 80 mm o A4 · ✅ **el Excel de ventas del mes, para el contador**. |
 
+**Lo emitido durante un corte de internet** aparece en su propio recuadro, debajo del panel de contingencia: qué facturó la caja mientras no había conexión, con **Reimprimir** y con cuáles ya llegaron al servidor. No hay botón para informarle a ARCA — eso lo hace la tarea diaria sola, porque un botón que alguien tiene que acordarse de apretar no es una obligación cumplida.
+
 **El archivo para el contador** está en esta misma pantalla: se elige el mes y se baja. Antes de bajarlo muestra los totales —comprobantes, neto gravado, IVA y total— para poder controlar que el mes sea el correcto.
 
 > **No armamos el Libro de IVA: lo arma el contador.** Y **las facturas de compra las baja él de ARCA**, de *Mis Comprobantes*. Lo único que Gross le tiene que dar son sus ventas.

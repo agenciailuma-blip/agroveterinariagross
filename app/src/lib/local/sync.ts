@@ -473,6 +473,20 @@ async function enviarOperacion(op: OperacionPendiente) {
   if (op.tipo === 'rpc') {
     const { error } = await supabase.rpc(op.tabla, datos)
     if (error) throw new Error(error.message)
+
+    /*
+      Una factura emitida durante un corte deja de estar "esperando
+      subir" recién cuando el servidor la acepta. Se anota en la copia
+      local para que la pantalla lo muestre sin tener que adivinarlo
+      mirando la cola, que viaja cifrada.
+    */
+    if (op.tabla === 'registrar_comprobante_caea') {
+      const id = (datos as { p_datos?: { id?: string } }).p_datos?.id
+      if (id) {
+        const guardado = await db.comprobante.get(id)
+        if (guardado) await db.comprobante.put({ ...guardado, subido_en: new Date().toISOString() })
+      }
+    }
     return
   }
 

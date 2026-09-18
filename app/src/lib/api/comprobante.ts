@@ -75,7 +75,35 @@ export async function datosEmisor(): Promise<Record<string, string>> {
   return emisor
 }
 
+/*
+  El comprobante, del servidor o de esta máquina.
+
+  Manda el servidor, que es el que tiene todos y el que sabe si ARCA ya
+  lo autorizó. Pero los que se emiten durante un corte existen primero
+  acá, y hay que poder imprimirlos en el momento —el cliente está
+  esperando el papel— y reimprimirlos después, con o sin internet.
+*/
 export async function obtenerComprobanteCompleto(id: string): Promise<ComprobanteCompleto> {
+  if (navigator.onLine) {
+    try {
+      return await desdeElServidor(id)
+    } catch (e) {
+      const { obtenerComprobanteLocal } = await import('@/lib/local/comprobante')
+      const local = await obtenerComprobanteLocal(id)
+      if (local) return local
+      throw e
+    }
+  }
+
+  const { obtenerComprobanteLocal } = await import('@/lib/local/comprobante')
+  const local = await obtenerComprobanteLocal(id)
+  if (local) return local
+  throw new Error(
+    'Ese comprobante no está en esta computadora y no hay conexión para traerlo.',
+  )
+}
+
+async function desdeElServidor(id: string): Promise<ComprobanteCompleto> {
   const { data: c, error } = await supabase
     .from('comprobante')
     .select(
