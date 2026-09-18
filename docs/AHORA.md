@@ -247,6 +247,13 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 > 🔴 **Revisado el 18/09 contra la definición de terminado de V1-A, y lo más grande que falta no estaba en esta lista: los datos reales.** Hoy la base tiene 35 productos y 8 clientes, todos de prueba, y el punto 12 del alcance dice *"todos los productos, clientes y saldos están cargados y verificados"*. La importación del catálogo está construida y espera **el Excel de Lucas con la columna de IVA**. Los clientes y sus saldos de cuenta corriente no tienen importación masiva todavía. Y **antes de cargar nada real, la base tiene que pasar a plan pago** —sin eso no hay copias de seguridad—, que no consta que se haya hecho. Es trabajo de semanas del personal de Gross, y quedan cinco hasta el 26/10.
 >
 > Lo demás que bloquea el corte depende de Lucas y está en la tabla de abajo: **dónde se cobra la percepción de IIBB** —hoy la factura a un mayorista grande suma la percepción pero la caja no la cobra— y **los atajos de teclado**. Y falta poner fecha a **la capacitación y la semana en paralelo** con OBTech.
+>
+> **Actualizado el 18/09 con lo que contó Francisco:**
+> - **La percepción, casi resuelta.** El mayorista no compra en la caja: hace un pedido y se le manda. Casi siempre en cuenta corriente, a veces lo paga en el momento con factura. **La regla que sale de ahí: la percepción va con la factura, a donde vaya la plata** —si es cuenta corriente, la deuda es la factura entera con la percepción; si paga en el momento, se cobra entera—. Falta confirmarlo con Lucas en una línea y construirlo: el cálculo ya existe, lo que falta es sumarlo a lo que se cobra o se debe.
+> - **Los atajos de teclado** se definen con Lucas la **primera semana de octubre**.
+> - **La capacitación ya se viene haciendo** en cada visita, fuera de horario, y Lucas y los empleados siguen el sistema al detalle. No es un pendiente.
+> - **La base de datos sigue en plan gratis, por decisión de Gross**, conociendo el riesgo: sin copias de seguridad recuperables. Se contrata más adelante. Dicho una vez y anotado.
+> - **Lo que sigue: adelantar V1-B, empezando por la API para Zubu**, así arrancan su tienda en paralelo leyendo los artículos. La semana del 21/09 hay un hueco para eso.
 
 0. 🔴 **Que la venta llegue a la caja sin internet.** Falló en el local el 17/09. **El sistema ya dice qué pasa** (0.4.3) — eso era lo que faltaba para poder arreglarlo. **Lo que sigue es una prueba de dos minutos en el local**, con las dos máquinas prendidas y el programa instalado en las dos: Configuración → La red del local → *Probar la conexión*, y después una venta con internet cortado.
    - Si dice **«no sé cuál es la caja»**: esa terminal no sincronizó desde que la caja se presentó. Se resuelve sincronizando una vez con internet.
@@ -270,7 +277,7 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 | El **Excel con la columna de IVA** por producto | Lucas | 🔴 Lo que más bloquea |
 | ~~**Alta del punto de venta CAEA** en ARCA~~ | — | ✅ **El 00009, alta del 11/09.** Cargado en el sistema el 16/09 |
 | **Certificado de producción** de ARCA | Lucas | 🔴 Ahora bloquea también la última prueba del CAEA. **El pedido está armado**; el trámite, paso a paso: [`certificado-produccion.md`](certificado-produccion.md) |
-| **Dónde se cobra la percepción de IIBB** | Lucas | 🔴 Bloquea el cobro a mayoristas |
+| **Dónde se cobra la percepción de IIBB** | Lucas | 🟡 **Casi resuelto el 18/09**: el mayorista pide y se le manda, casi siempre en cuenta corriente. La percepción va con la factura, a donde vaya la plata. Falta que Lucas lo confirme y construirlo |
 | Qué es un **"comprobante de percepción"** | Lucas | 🟡 Sin definir desde el 03/09 |
 | ~~¿Reciben cheques?~~ | — | ✅ **Contestado el 10/09: sí, y también le pagan a proveedores con cheque.** Es alcance nuevo y no está en ningún lado: [`cheques.md`](cheques.md) |
 | **¿Cómo se llama el segundo local?** | Lucas | 🟢 Se carga en Configuración → Depósitos cuando abra. Los cinco de OBTech quedaron descartados como referencia |
