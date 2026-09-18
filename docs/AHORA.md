@@ -37,7 +37,24 @@ estado: en curso
 
 ---
 
-## Lo último que pasó — 17 de septiembre, en el local
+## Lo último que pasó — 18 de septiembre
+
+**Arrancó el CAEA sin internet**, que es lo que falta para que el corte de conexión no deje al cliente sin papel. Decidido con Francisco el 17/09: los cortes en Oberá son pocos, pero el sistema híbrido se prometió justamente para eso, así que se hace bien y no con un parche.
+
+**Lo que está hecho (primera parte, la cuenta):**
+
+- **La terminal ya baja lo que necesita para facturar sola:** las alícuotas de IVA, qué clase de factura le corresponde a cada condición frente al IVA, los tipos de comprobante y de documento, el punto de venta, y **el CAEA de la quincena** — que tiene que estar en la máquina *antes* del corte, porque pedirlo también necesita internet.
+- **Y hace la misma cuenta fiscal que el servidor**, en un módulo aparte que es puro cálculo: el IVA que viene adentro del precio, lo exento, y la percepción de IIBB con sus tres reglas.
+
+> **Por qué esto es lo delicado:** lo que se imprima durante un corte se entrega y no se puede rehacer. Si la cuenta de la terminal difiere de la del servidor aunque sea en un centavo, la factura que se llevó el cliente dice una cosa y la que queda en el sistema dice otra.
+>
+> **Cómo se verificó:** contra los tickets que salieron impresos en el local el 17/09 —el collar de $6.400 y la venta de dos alícuotas de $69.900— y contra la vista del servidor, que da exactamente los mismos números. Y se rompió el código de cuatro maneras a propósito: redondear línea por línea en vez de agrupar, comparar el mínimo de la percepción contra la venta en vez de contra la percepción, usar «menor» donde va «menor o igual» en el borde exacto, y sacar el total de la suma del desglose en vez del total cobrado. **Las cuatro fueron atrapadas** —la última recién después de corregir una prueba que no distinguía los dos caminos—.
+
+**Lo que falta para que funcione de punta a punta:** numerar el comprobante en la terminal sin dejar huecos, emitirlo con el código del CAEA, imprimirlo, y engancharlo en la caja. Y, para que sirva de verdad, el certificado de producción.
+
+⚠️ **Una decisión tomada, para que la sepas:** durante un corte **emite sólo la caja**. Es donde ya se cobra y se factura, y así alcanza con un punto de venta CAEA —el 9, que ya está dado de alta—. Si más adelante quieren que cada mostrador emita por su cuenta, es darle de alta un punto de venta a cada uno: trámite, no rehacer.
+
+## Lo que pasó el 17 de septiembre, en el local
 
 **Francisco estuvo en Gross con las PC delante**, y de ahí salió lo bueno y lo malo. Lo bueno: **la impresión anda**, los tickets salieron por la POS80 y las ventas se cobraron y facturaron con CAE. Lo malo, en orden de gravedad:
 

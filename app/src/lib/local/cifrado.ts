@@ -311,7 +311,7 @@ export async function descifrar(valor: Cifrado | string | null | undefined): Pro
 
 /** Los campos que identifican a una persona, tabla por tabla. */
 export const PERSONALES = {
-  cliente: ['nombre', 'numero_documento', 'busqueda'],
+  cliente: ['nombre', 'numero_documento', 'busqueda', 'domicilio'],
   venta: ['nombre_para_llamar', 'observaciones'],
   no_fiscal: [
     'receptor_nombre',

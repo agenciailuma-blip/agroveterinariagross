@@ -71,7 +71,23 @@ export interface ClienteLocal {
   codigo: string | null
   nombre: string
   numero_documento: string | null
+  /*
+    Lo que hace falta para facturar sin internet, además del nombre:
+    con qué tipo de documento se lo identifica ante ARCA y su domicilio.
+
+    El domicilio viaja armado en un solo campo —calle, número y
+    localidad— igual que lo arma el servidor al emitir. Así no hay dos
+    maneras de escribir la misma dirección, y es un solo dato personal
+    que cifrar en vez de tres.
+
+    Opcionales porque las terminales que sincronizaron antes de esta
+    versión no los tienen: quien los lee usa `?? null`.
+  */
+  tipo_documento_id?: number | null
+  domicilio?: string | null
   condicion_iva_id: number
+  /** Certificado de exclusión de la DGR: a este cliente no se le percibe. */
+  iibb_percepcion_excluido?: boolean
   descuento_porcentaje: number
   lista_precio_id: string | null
   cuenta_corriente: boolean
@@ -83,8 +99,11 @@ export interface ClienteLocal {
   busqueda: string
 }
 
-/** El cliente como queda en disco: nombre, documento y búsqueda, cifrados. */
-export type ClienteGuardado = Guardado<ClienteLocal, 'nombre' | 'numero_documento' | 'busqueda'>
+/** El cliente como queda en disco: lo que lo identifica, cifrado. */
+export type ClienteGuardado = Guardado<
+  ClienteLocal,
+  'nombre' | 'numero_documento' | 'busqueda' | 'domicilio'
+>
 
 export interface ListaPrecioLocal {
   id: string
@@ -370,6 +389,85 @@ export interface OperacionPendiente {
   entregado_en?: string | null
 }
 
+/*
+  ─────────────────────────────────────────────────────────────
+  Lo que hace falta para facturar con internet cortado
+
+  Hasta acá la terminal sabía cobrar sin conexión, pero no facturar: el
+  comprobante lo armaba siempre el servidor. Con el CAEA —el código que
+  ARCA entrega por adelantado, una vez por quincena— la terminal puede
+  emitir sola, y para eso necesita tener a mano las mismas cuatro cosas
+  que mira el servidor: las alícuotas de IVA, qué clase de comprobante
+  le corresponde a cada condición frente al IVA, los tipos de
+  comprobante con los códigos de ARCA, y el punto de venta.
+
+  Son catálogos fijos —los números son de ARCA, no nuestros— y por eso
+  no tienen fecha de actualización: se bajan enteros, que son unas pocas
+  filas.
+  ─────────────────────────────────────────────────────────────
+*/
+
+export interface AlicuotaIvaLocal {
+  id: number
+  descripcion: string
+  porcentaje: number
+  activo: boolean
+}
+
+export interface CondicionIvaLocal {
+  id: number
+  descripcion: string
+  /** 'A', 'B' o 'C': la clase de factura que le corresponde. */
+  tipo_comprobante: string
+  activo: boolean
+}
+
+export interface TipoComprobanteLocal {
+  id: number
+  descripcion: string
+  clase: string
+  familia: string
+  activo: boolean
+}
+
+export interface TipoDocumentoLocal {
+  id: number
+  descripcion: string
+  sigla: string
+  activo: boolean
+}
+
+export interface PuntoVentaLocal {
+  id: string
+  numero: number
+  nombre: string
+  es_respaldo: boolean
+  regimen_caea: boolean
+  activo: boolean
+  actualizado_en: string
+  eliminado_en: string | null
+}
+
+/*
+  El CAEA de la quincena, bajado por adelantado.
+
+  Es la pieza que hace posible facturar sin internet: el código ya está
+  otorgado y guardado en esta máquina antes del corte. Pedirlo durante
+  el corte no serviría — pedirlo también necesita a ARCA.
+*/
+export interface CaeaLocal {
+  id: string
+  codigo: string
+  periodo: number
+  quincena: number
+  fecha_desde: string
+  fecha_hasta: string
+  fecha_tope_informar: string | null
+  estado: string
+  ambiente: string
+  actualizado_en: string
+}
+
 class BaseLocal extends Dexie {
   producto!: EntityTable<ProductoLocal, 'id'>
   codigo_barra!: EntityTable<CodigoBarraLocal, 'id'>
@@ -390,6 +488,12 @@ class BaseLocal extends Dexie {
   no_fiscal_linea!: EntityTable<NoFiscalLineaLocal, 'id'>
   outbox!: EntityTable<OperacionPendiente, 'id'>
   seguridad!: EntityTable<SeguridadLocal, 'clave'>
+  alicuota_iva!: EntityTable<AlicuotaIvaLocal, 'id'>
+  condicion_iva!: EntityTable<CondicionIvaLocal, 'id'>
+  tipo_comprobante!: EntityTable<TipoComprobanteLocal, 'id'>
+  tipo_documento!: EntityTable<TipoDocumentoLocal, 'id'>
+  punto_venta!: EntityTable<PuntoVentaLocal, 'id'>
+  caea!: EntityTable<CaeaLocal, 'id'>
 
   constructor() {
     super('gross')
@@ -440,6 +544,25 @@ class BaseLocal extends Dexie {
     */
     this.version(5).stores({
       seguridad: 'clave',
+    })
+
+    /*
+      v6 — facturar con internet cortado.
+
+      Seis tablas nuevas y ninguna transformación de datos: los
+      catálogos de ARCA, el punto de venta y el CAEA de la quincena. La
+      advertencia de la v5 sigue en pie —una ventana abierta con la
+      versión anterior traba la apertura— y por eso acá tampoco hay
+      función de actualización: sólo se crean tablas vacías que la
+      próxima sincronización llena.
+    */
+    this.version(6).stores({
+      alicuota_iva: 'id',
+      condicion_iva: 'id',
+      tipo_comprobante: 'id, clase, familia',
+      tipo_documento: 'id',
+      punto_venta: 'id, numero, actualizado_en',
+      caea: 'id, [periodo+quincena], fecha_desde, actualizado_en',
     })
   }
 }

@@ -66,17 +66,37 @@ const MAESTROS: Definicion[] = [
     tabla: 'cliente',
     origen: 'cliente',
     columnas:
-      'id, codigo, nombre, numero_documento, condicion_iva_id, descuento_porcentaje, lista_precio_id, cuenta_corriente, limite_credito, dias_vencimiento, activo, actualizado_en, eliminado_en',
+      'id, codigo, nombre, numero_documento, tipo_documento_id, calle, numero, localidad, condicion_iva_id, iibb_percepcion_excluido, descuento_porcentaje, lista_precio_id, cuenta_corriente, limite_credito, dias_vencimiento, activo, actualizado_en, eliminado_en',
     /*
       La búsqueda se arma con el nombre en claro y después se cifra junto
       con él: es una copia del nombre, y dejarla legible sería dejar el
       nombre legible con otro nombre de campo.
+
+      El domicilio se arma acá de la misma manera que lo arma el
+      servidor al emitir —calle, número y localidad, y nulo si no hay
+      nada—, para que la factura que sale sin internet diga exactamente
+      lo mismo que la que sale con internet.
     */
-    mapear: (f) =>
-      sellarCliente({
-        ...f,
+    mapear: (f) => {
+      /*
+        Las tres partes de la dirección se descartan después de juntarlas.
+
+        Si se guardaran tal como vienen quedarían en claro en el disco de
+        la terminal, al lado del domicilio cifrado: el mismo dato
+        personal, dos veces, una de ellas legible. Es exactamente el
+        error que ya apareció el 14/09 con el nombre para llamar.
+      */
+      const { calle, numero, localidad, ...resto } = f
+      return sellarCliente({
+        ...resto,
+        domicilio:
+          [calle, numero, localidad]
+            .map((p) => String(p ?? '').trim())
+            .filter(Boolean)
+            .join(' ') || null,
         busqueda: normalizar(`${f.nombre ?? ''} ${f.numero_documento ?? ''} ${f.codigo ?? ''}`),
-      } as unknown as ClienteLocal) as unknown as Promise<Record<string, unknown>>,
+      } as unknown as ClienteLocal) as unknown as Promise<Record<string, unknown>>
+    },
   },
   {
     tabla: 'lista_precio',
@@ -96,6 +116,26 @@ const MAESTROS: Definicion[] = [
     mapear: (f) => ({ ...f, clave: `${f.medio_pago_id}-${f.cuotas}` }),
   },
   { tabla: 'configuracion', origen: 'configuracion', columnas: 'clave, valor, actualizado_en' },
+  {
+    tabla: 'punto_venta',
+    origen: 'punto_venta',
+    columnas:
+      'id, numero, nombre, es_respaldo, regimen_caea, activo, actualizado_en, eliminado_en',
+  },
+  /*
+    El CAEA de la quincena, antes del corte.
+
+    Se baja como cualquier otra tabla porque es lo que permite facturar
+    sin internet: el código tiene que estar en la máquina ANTES de que
+    se caiga la conexión. Bajarlo durante el corte no se puede, y
+    pedírselo a ARCA tampoco.
+  */
+  {
+    tabla: 'caea',
+    origen: 'caea',
+    columnas:
+      'id, codigo, periodo, quincena, fecha_desde, fecha_hasta, fecha_tope_informar, estado, ambiente, actualizado_en',
+  },
   {
     tabla: 'saldo_cuenta_corriente',
     origen: 'cuenta_corriente_saldo',
@@ -151,6 +191,44 @@ async function bajarTabla(def: Definicion) {
   }
 
   if (total) await guardarCursor(def.tabla, cursor)
+  return total
+}
+
+/*
+  Los catálogos fiscales de ARCA.
+
+  Son los códigos con los que se arma un comprobante: las alícuotas de
+  IVA, qué clase de factura le corresponde a cada condición frente al
+  IVA, los tipos de comprobante y los tipos de documento. Sin esto, la
+  terminal no puede armar una factura sin internet.
+
+  Se bajan ENTEROS y no por cursor: no tienen fecha de actualización
+  —son códigos de ARCA, no datos nuestros— y entre las cuatro no llegan
+  a treinta filas. Pedirlas cada vez cuesta menos que llevarles la
+  cuenta de qué cambió.
+*/
+const CATALOGOS_FISCALES = [
+  { tabla: 'alicuota_iva', columnas: 'id, descripcion, porcentaje, activo' },
+  { tabla: 'condicion_iva', origen: 'condicion_iva_receptor', columnas: 'id, descripcion, tipo_comprobante, activo' },
+  { tabla: 'tipo_comprobante', columnas: 'id, descripcion, clase, familia, activo' },
+  { tabla: 'tipo_documento', columnas: 'id, descripcion, sigla, activo' },
+] as const
+
+async function bajarCatalogosFiscales() {
+  let total = 0
+  for (const c of CATALOGOS_FISCALES) {
+    const origen = 'origen' in c ? c.origen : c.tabla
+    // El cliente de Supabase no puede deducir el tipo de una lista de
+    // columnas que se arma acá arriba: se le dice que es texto y listo.
+    const { data, error } = await supabase.from(origen).select(c.columnas as string)
+    if (error) throw new Error(`${origen}: ${error.message}`)
+
+    const filas = (data ?? []) as unknown as Record<string, unknown>[]
+    if (!filas.length) continue
+
+    await db.table(c.tabla).bulkPut(filas)
+    total += filas.length
+  }
   return total
 }
 
@@ -285,10 +363,46 @@ async function bajarColaCaja() {
   return enServidor.length
 }
 
+/*
+  Cuando una tabla empieza a bajar columnas nuevas, hay que volver a
+  bajarla entera.
+
+  El cursor guarda hasta qué fecha se bajó, no qué columnas. Una
+  terminal que ya sincronizó los clientes no los vuelve a pedir nunca
+  —salvo los que cambien—, así que los campos nuevos quedarían vacíos
+  para siempre en las filas viejas. Y se notaría tarde y feo: una
+  factura emitida sin internet, sin domicilio ni tipo de documento del
+  cliente, ya entregada.
+
+  Por eso cada cambio de columnas sube este número y borra el cursor de
+  las tablas afectadas, que es una bajada completa más y nada más.
+
+  2 — 18/09: el cliente suma tipo de documento, domicilio y la
+      exclusión de percepción, para poder facturar sin conexión.
+*/
+const VERSION_BAJADA = 2
+const TABLAS_DE_LA_VERSION_2 = ['cliente']
+
+async function rebajarLoQueCambio() {
+  const marca = await db.cursor.get('version_bajada')
+  const guardada = Number(marca?.cursor ?? 1)
+  if (guardada >= VERSION_BAJADA) return
+
+  if (guardada < 2) await db.cursor.bulkDelete(TABLAS_DE_LA_VERSION_2)
+
+  await db.cursor.put({
+    tabla: 'version_bajada',
+    cursor: String(VERSION_BAJADA),
+    sincronizado_en: new Date().toISOString(),
+  })
+}
+
 export async function bajarCambios() {
   let total = 0
+  await rebajarLoQueCambio()
   for (const def of MAESTROS) total += await bajarTabla(def)
   total += await bajarReferencias()
+  total += await bajarCatalogosFiscales()
   total += await bajarColaCaja()
   return total
 }
