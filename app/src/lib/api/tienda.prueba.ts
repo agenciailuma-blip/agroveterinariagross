@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
   cuerpoDeError,
+  interpretarCuerpoDelPedido,
   interpretarErrorDeLaBase,
   interpretarPedido,
+  LIMITE_DEL_CUERPO,
   LIMITE_POR_DEFECTO,
   MENSAJES,
   type CodigoDeError,
@@ -61,6 +63,14 @@ describe('las consultas que pasan', () => {
     })
   })
 
+  it('un pedido de compra: la puerta lo deja pasar sin mirarle el cuerpo', () => {
+    expect(pedir('/api-tienda/pedidos', BEARER, 'POST')).toEqual({
+      tipo: 'pedido',
+      funcion: 'api_tienda_registrar_pedido',
+      clave: CLAVE,
+    })
+  })
+
   it('con la dirección de desarrollo local y con barra al final', () => {
     expect(pedir('/functions/v1/api-tienda/catalogo/')).toMatchObject({ funcion: 'api_tienda_catalogo' })
   })
@@ -79,7 +89,10 @@ describe('lo que se rechaza', () => {
     ['escribir', '/api-tienda/catalogo', BEARER, 'POST', 'metodo_no_permitido', 405],
     ['borrar', '/api-tienda/catalogo', BEARER, 'DELETE', 'metodo_no_permitido', 405],
     ['la pregunta previa de un navegador', '/api-tienda/catalogo', null, 'OPTIONS', 'metodo_no_permitido', 405],
-    ['una consulta que no existe', '/api-tienda/pedidos', BEARER, 'GET', 'ruta_desconocida', 404],
+    ['un camino que no existe', '/api-tienda/clientes', BEARER, 'GET', 'ruta_desconocida', 404],
+    ['leer los pedidos, que todavía no se puede', '/api-tienda/pedidos', BEARER, 'GET', 'metodo_no_permitido', 405],
+    ['mandar un pedido sin clave', '/api-tienda/pedidos', null, 'POST', 'falta_clave', 401],
+    ['un parámetro en los pedidos', '/api-tienda/pedidos?estado=x', BEARER, 'POST', 'parametro_desconocido', 400],
     ['la raíz', '/api-tienda', BEARER, 'GET', 'ruta_desconocida', 404],
     ['un parámetro mal escrito', '/api-tienda/catalogo?dsde=x', BEARER, 'GET', 'parametro_desconocido', 400],
     ['parámetros en clasificaciones', '/api-tienda/clasificaciones?limite=5', BEARER, 'GET', 'parametro_desconocido', 400],
@@ -108,6 +121,106 @@ describe('lo que se rechaza', () => {
       if (r.tipo !== 'error') throw new Error(`"${ruta}" tenía que ser un error`)
       expect(JSON.stringify(cuerpoDeError(r.codigo, r.detalle))).not.toContain(CLAVE)
     }
+  })
+})
+
+describe('el cuerpo del pedido de compra', () => {
+  it('un objeto JSON pasa tal cual: qué campos lleva lo decide la base', () => {
+    const pedido = { numero: 'A-1', productos: [{ id: 'x', cantidad: 1, precio: 10 }] }
+    expect(interpretarCuerpoDelPedido(JSON.stringify(pedido))).toEqual({ tipo: 'cuerpo', pedido })
+  })
+
+  const malos: Array<[string, string, CodigoDeError, number]> = [
+    ['vacío', '', 'cuerpo_invalido', 400],
+    ['sólo espacios', '   ', 'cuerpo_invalido', 400],
+    ['JSON roto', '{"numero": ', 'cuerpo_invalido', 400],
+    ['una lista', '[{"numero":"A-1"}]', 'cuerpo_invalido', 400],
+    ['un texto', '"un pedido"', 'cuerpo_invalido', 400],
+    ['un número', '42', 'cuerpo_invalido', 400],
+    ['nulo', 'null', 'cuerpo_invalido', 400],
+  ]
+
+  it.each(malos)('%s', (_, texto, codigo, estado) => {
+    expect(interpretarCuerpoDelPedido(texto)).toMatchObject({ tipo: 'error', codigo, estado })
+  })
+
+  /*
+    El tope se mira antes de intentar interpretar el texto: un cuerpo
+    enorme no tiene que costar el trabajo de analizarlo.
+  */
+  it('un cuerpo enorme se corta con su propio código', () => {
+    expect(interpretarCuerpoDelPedido('x'.repeat(LIMITE_DEL_CUERPO + 1))).toMatchObject({
+      tipo: 'error',
+      codigo: 'cuerpo_demasiado_grande',
+      estado: 413,
+    })
+  })
+
+  it('justo en el tope todavía entra', () => {
+    const relleno = 'a'.repeat(LIMITE_DEL_CUERPO - 14)
+    const texto = JSON.stringify({ numero: relleno })
+    expect(texto.length).toBeLessThanOrEqual(LIMITE_DEL_CUERPO)
+    expect(interpretarCuerpoDelPedido(texto)).toMatchObject({ tipo: 'cuerpo' })
+  })
+})
+
+describe('los errores del pedido de compra que contesta la base', () => {
+  const codigos: CodigoDeError[] = [
+    'falta_numero',
+    'faltan_productos',
+    'producto_desconocido',
+    'cantidad_invalida',
+    'precio_invalido',
+    'entrega_invalida',
+    'falta_el_comprador',
+    'pedido_invalido',
+  ]
+
+  it.each(codigos)('%s llega con su nombre y un 400', (codigo) => {
+    expect(interpretarErrorDeLaBase({ code: 'PT400', message: codigo })).toMatchObject({ estado: 400, codigo })
+  })
+
+  /*
+    Del producto desconocido sí se devuelve cuál: ese identificador lo
+    mandó la tienda en el mismo pedido, así que no le cuenta nada que
+    no sepa, y sin él tiene que adivinar cuál de veinte líneas falló.
+  */
+  it('el producto desconocido dice cuál era', () => {
+    const e = interpretarErrorDeLaBase({
+      code: 'PT400',
+      message: 'producto_desconocido',
+      details: '0f3c2a44-0000-0000-0000-000000000000',
+    })
+    expect(e.detalle).toBe('0f3c2a44-0000-0000-0000-000000000000')
+    expect(cuerpoDeError(e.codigo, e.detalle).error.mensaje).toContain('0f3c2a44')
+  })
+
+  /*
+    El resto de los detalles es el mensaje crudo de Postgres, que
+    nombra tipos y columnas del sistema. El código alcanza para
+    arreglar el pedido; el detalle sólo cuenta cómo está armado adentro.
+  */
+  it('los demás errores no dejan salir el detalle interno', () => {
+    for (const codigo of codigos.filter((c) => c !== 'producto_desconocido')) {
+      const e = interpretarErrorDeLaBase({
+        code: 'PT400',
+        message: codigo,
+        details: 'invalid input syntax for type uuid: "venta_linea"',
+      })
+      expect(e.detalle, codigo).toBeUndefined()
+      expect(JSON.stringify(cuerpoDeError(e.codigo, e.detalle)), codigo).not.toContain('venta_linea')
+    }
+  })
+
+  it('un error que la base no nombra sigue siendo un 500 nuestro', () => {
+    expect(interpretarErrorDeLaBase({ code: 'PT400', message: 'canal_sin_medio_de_pago' })).toEqual({
+      estado: 500,
+      codigo: 'error_interno',
+    })
+    expect(interpretarErrorDeLaBase({ code: 'PT500', message: 'canal_sin_medio_de_pago' })).toEqual({
+      estado: 500,
+      codigo: 'error_interno',
+    })
   })
 })
 

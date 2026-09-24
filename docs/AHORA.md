@@ -12,9 +12,9 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Publicado: 0.6.0** (24/09), con **«Vender online»** —qué productos salen a la tienda web se decide desde Productos— y con **el arreglo de la sincronización que impedía que el CAEA llegara a las máquinas**. Antes, la 0.5.0 con **la factura que sale sin internet** —la caja emite con CAEA y el ticket sale solo—. Antes, la 0.4.4 con la red del local que ahora **dice qué le pasa**, el cortacircuito que hace que la Caja abra rápido sin internet, y la cola de la caja que se actualiza al cambiar el medio de pago. Antes, ese mismo día, la 0.4.2 con el recargo por cuotas arreglado, los acentos del ticket y la impresión automática al cobrar. **La 0.4.1 quedó instalada en el local el 17/09, en todas menos la de Windows 7** — las versiones nuevas entran solas con *Actualizar ahora*. **353 pruebas verdes en la app y 11 en el programa**, 83 migraciones aplicadas.
+**Publicado: 0.6.0** (24/09), con **«Vender online»** —qué productos salen a la tienda web se decide desde Productos— y con **el arreglo de la sincronización que impedía que el CAEA llegara a las máquinas**. Antes, la 0.5.0 con **la factura que sale sin internet** —la caja emite con CAEA y el ticket sale solo—. Antes, la 0.4.4 con la red del local que ahora **dice qué le pasa**, el cortacircuito que hace que la Caja abra rápido sin internet, y la cola de la caja que se actualiza al cambiar el medio de pago. Antes, ese mismo día, la 0.4.2 con el recargo por cuotas arreglado, los acentos del ticket y la impresión automática al cobrar. **La 0.4.1 quedó instalada en el local el 17/09, en todas menos la de Windows 7** — las versiones nuevas entran solas con *Actualizar ahora*. **378 pruebas verdes en la app y 11 en el programa**, 86 migraciones aplicadas.
 
-**Y la API para Zubu, publicada el 18/09** — la primera pieza de V1-B. **Zubu ya tiene su clave y su documentación** (24/09). Ver abajo.
+**Y la API de la tienda online.** Leer el catálogo desde el 18/09; **mandar pedidos desde el 24/09**. Zubu ya tiene su clave y su documentación. Ver abajo.
 
 ⚠️ **Lo que está construido pero NO verificado.** Un chat nuevo no puede darlo por probado:
 
@@ -77,6 +77,34 @@ Lo que arrastraba, en orden de gravedad:
 
 Verificado contra la base real: **30 comprobaciones** de «Vender online» y **353 pruebas** en la app. Se rompió a propósito de dos maneras —prender sin controlar el permiso, y que el colchón prenda un producto de paso— y las dos fueron atrapadas. Y en la aplicación de verdad: se le puso el nombre público que le faltaba a un producto, se guardó, **y apareció en la API con su precio y su stock**; al apagarlo, le llegó a la tienda como baja.
 
+**Y lo tercero del día: la tienda ya puede mandar pedidos.** Es la segunda pieza de V1-B, también al costado de lo que anda: ninguna versión del programa cambió.
+
+> **Cómo se lo contás a Lucas:** cuando alguien compra en la web, el pedido entra al sistema como una venta más, con el nombre del cliente y lo que compró. **Nada se factura solo.** El encargado lo revisa, arma el paquete y recién ahí factura y se lo manda al cliente por mail —como Mercado Libre—. Si el cliente eligió pagar en el local, la venta le aparece a la caja como cualquier otra. El stock lo descuenta el sistema, siempre: la tienda nunca lo toca.
+
+**La decisión del día, tomada por vos: no se factura automáticamente, nunca.** Vale para todos los pedidos, no sólo para los que piden factura A. El motivo es práctico: **la factura sale cuando ya se sabe lo que realmente se entrega.** Si faltaba una unidad, si el cliente cambió algo por teléfono o si hay que reemplazar un producto, se arregla antes. Facturar primero y corregir después significa notas de crédito.
+
+> ⚠️ **Con un límite que conviene saber:** si el cliente ya pagó en la web, para ARCA la factura corresponde al momento del cobro. En la práctica se hace el mismo día, pero no puede quedar para la semana que viene. La pantalla de Pedidos va a mostrar cuáles esperan factura y hace cuánto.
+
+Cómo entra un pedido, y las tres decisiones que la base impuso:
+
+- **Entra como una venta de verdad**, por el mismo camino que el mostrador: líneas, totales, IVA y descuento de stock los hace el sistema. Si el cliente **pagó en la web**, la venta queda cobrada con el medio de pago «Tienda online» —que no aparece en el mostrador ni entra al arqueo, porque esa plata no está en el cajón—. Si eligió **pagar en el local**, la venta espera en la cola de la caja y el stock se descuenta al cobrarla.
+- **El mismo pedido dos veces no se duplica.** El número del pedido de la tienda es la llave: si se corta la conexión y reintentan, contesta lo mismo que la primera vez. Reintentar es seguro; lo que duplicaría es cambiar el número.
+- **El precio que manda la tienda es el que se factura.** Lo enseñó la base: una línea con un precio distinto del de lista exige que diga quién lo cambió y por qué —la regla del precio tocado a mano en el mostrador—, y en un pedido web no hay ningún quién. Entonces el precio de la web es el precio de la línea, **y la diferencia contra el sistema queda anotada en el pedido**, que es donde alguien la va a mirar antes de facturar.
+- **Nada se rechaza por falta de stock.** Si el cliente ya pagó, rechazarlo sería perder la venta y dejarlo sin respuesta. El pedido entra marcado y lo resuelve el local.
+- **El que dice ser responsable inscripto pero manda un DNI** entra como consumidor final y queda marcado. La base no admite un responsable inscripto sin CUIT, y perder el pedido de alguien que ya pagó sería peor.
+
+Verificado contra la base real: **43 comprobaciones** de pedidos y **55 por internet**, contra la API publicada. Se rompió a propósito de **siete maneras** —sacarle el reconocimiento del pedido repetido, hacer que lo no pagado descuente stock, que la puerta no mire la clave, callar el aviso de precio raro, callar el de falta de stock, deshacer el arreglo del precio de la línea y desarmar el guardián del medio de pago— **y las siete fueron atrapadas**. Las pruebas de la app pasaron de 353 a 378.
+
+> **Tres defectos reales los encontró la prueba antes de que el código saliera de la máquina:** un pedido con CUIT fallaba entero por un operador mal usado; un cliente que se declaraba responsable inscripto con DNI chocaba con una regla fiscal de la base; y un precio distinto del de lista era rechazado por la regla del precio tocado a mano. Los tres se arreglaron y los tres tienen su prueba.
+
+⚠️ **Al desplegar la puerta hay que apagar la verificación de JWT.** Viene prendida por omisión y, prendida, rechaza la clave de la tienda antes de llegar a nuestro código: la API queda contestando «Invalid JWT» a todo. Pasó hoy en el primer despliegue, se detectó en el minuto siguiente con las pruebas por internet, y quedó anotado en el encabezado de la función.
+
+**Lo que sigue de los pedidos**, en orden:
+
+1. **La pantalla Pedidos web:** lo que hay que preparar, con sus estados, cuáles esperan factura y hace cuánto, el remito del envío, y la consulta de estado para la tienda.
+2. **El botón «Facturar y enviar»:** pide el CAE a ARCA por el circuito que ya existe y deja la factura lista.
+3. **El mail con la factura**, por Resend. Necesita una dirección de correo de Gross con acceso al dominio: es lo único de esto que depende de Lucas.
+
 ## Lo que pasó el 18 de septiembre, a la tarde: la API para Zubu
 
 **La tienda online ya puede leer el catálogo.** Es la primera pieza de V1-B, adelantada para que Zubu arme la tienda en paralelo, y es **todo nuevo al costado de lo que anda**: no hizo falta publicar una versión del programa. El diseño se aprobó antes de construir. Para Zubu: [`api-tienda.md`](api-tienda.md), que un desarrollador de afuera puede leer sin nosotros.
@@ -93,7 +121,7 @@ Lo que quedó decidido, y por qué:
 
 > **Lo delicado, y cómo se verificó:** si Zubu consulta justo mientras alguien guarda un precio, ese precio podía quedar detrás de la marca de «lo que cambió» y **no llegar nunca** a la web. La marca ahora nunca pasa por delante de un guardado en curso. Se probó con dos sesiones a la vez: un guardado abierto 25 segundos mientras la «tienda» consultaba. Con el código bien, el cambio llegó; **rompiendo la marca a propósito, se perdió.** En total, 64 comprobaciones contra la base, 30 pruebas nuevas en la app, 27 por internet, y **siete roturas a propósito, las siete atrapadas**. Y el punto 16 del alcance: una salida de stock en el local, y la tienda pasó de ver 9 a ver 8 en la consulta siguiente.
 
-**Lo que quedó pensado para los pedidos (segunda etapa), porque se pidió automatizado desde el principio:** la venta online pagada **se factura sola y la factura le llega al cliente por mail**; si paga en el local, el pedido va a la caja. El mail sale por **Resend**, gratis hasta que esté probado. Por eso **el proceso de compra de Zubu tiene que pedir desde ya DNI o CUIT, condición frente al IVA y email** —está en su documento—. Y el DNI o el CUIT es lo que va a vincular a los clientes de la web con los del local.
+**Lo que quedó pensado ese día para los pedidos** fue que la venta online pagada se facturara sola. **El 24/09 se decidió lo contrario** —la factura la emite una persona, después de armar el paquete— y está explicado arriba. Lo que no cambió: **el proceso de compra tiene que pedir DNI o CUIT, condición frente al IVA y email**, que es lo que hace falta para facturar, y el DNI o el CUIT es lo que va a vincular a los clientes de la web con los del local. El mail de la factura sale por **Resend**, gratis hasta que esté probado.
 
 💡 **Idea anotada:** cuando abra el segundo local, un depósito «Online» del que salgan las ventas de la tienda. Está en el [alcance, §13](alcance-v1.md).
 
@@ -312,7 +340,7 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 > - **Los atajos de teclado** se definen con Lucas la **primera semana de octubre**.
 > - **La capacitación ya se viene haciendo** en cada visita, fuera de horario, y Lucas y los empleados siguen el sistema al detalle. No es un pendiente.
 > - **La base de datos sigue en plan gratis, por decisión de Gross**, conociendo el riesgo: sin copias de seguridad recuperables. Se contrata más adelante. Dicho una vez y anotado.
-> - ~~**Lo que sigue: adelantar V1-B, empezando por la API para Zubu**~~ ✅ **Hecho.** La API de lectura se publicó el 18/09 y **«Vender online» el 24/09** (0.6.0). **Zubu ya tiene su clave y su documentación.** Lo que sigue de la tienda son los pedidos, con la factura automática por mail — y eso espera la dirección de correo de Gross.
+> - ~~**Lo que sigue: adelantar V1-B, empezando por la API para Zubu**~~ ✅ **Hecho.** El catálogo se publicó el 18/09, **«Vender online» el 24/09** (0.6.0) y **los pedidos el 24/09**. **Zubu ya tiene su clave y su documentación.** Lo que sigue de la tienda es la pantalla de Pedidos y el botón de facturar; el mail con la factura espera la dirección de correo de Gross.
 
 0. 🔴 **Que la venta llegue a la caja sin internet.** Falló en el local el 17/09. **El sistema ya dice qué pasa** (0.4.3) — eso era lo que faltaba para poder arreglarlo. **Lo que sigue es una prueba de dos minutos en el local**, con las dos máquinas prendidas y el programa instalado en las dos: Configuración → La red del local → *Probar la conexión*, y después una venta con internet cortado.
    - Si dice **«no sé cuál es la caja»**: esa terminal no sincronizó desde que la caja se presentó. Se resuelve sincronizando una vez con internet.

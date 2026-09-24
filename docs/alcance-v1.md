@@ -225,13 +225,13 @@ Un producto puede pertenecer a varios ejes a la vez. Esto es lo que después hab
 
 > ⚠️ **Por qué esto va en V1-B y no en V1-A:** depende de que Zubu haga su parte, y son un tercero cuya agenda no controlamos. Poner una dependencia externa en el camino crítico de una fecha comprometida es la forma más común de romper esa fecha. La **capa de integración se diseña en V1-A** —por eso el stock se modela por canal desde el principio— y se enciende en V1-B.
 
-> ✅ **Adelantado el 18/09: la API de lectura está hecha y publicada**, para que Zubu arme la tienda en paralelo. Documento para ellos: [`api-tienda.md`](api-tienda.md). Cubre los puntos 15 y 16 de la definición de terminado, verificados contra la base real. **No toca el 26/10**: es todo nuevo, al costado de lo que anda.
+> ✅ **Adelantado: la API está hecha y publicada.** Leer el catálogo desde el 18/09 y **recibir pedidos desde el 24/09**, para que Zubu arme la tienda en paralelo. Documento para ellos: [`api-tienda.md`](api-tienda.md). Cubre los puntos 15 y 16 de la definición de terminado, verificados contra la base real. **No toca el 26/10**: es todo nuevo, al costado de lo que anda.
 >
 > **Decidido con el diseño (18/09):**
 > - **Qué sale a la tienda lo decide un interruptor, «Vender online».** Se prende por producto, por grupo o por categoría, y **por categoría es una acción de una vez**: lo que se cargue después se prende en su ficha. Prendido, sale sólo si tiene nombre público y precio. **Los fitosanitarios no salen** hasta que Gross lo decida.
 > - **El precio es el de la lista que se elija para la tienda**, que puede ser una creada para la web. Arranca con Contado.
 > - **La frescura de la tienda no es la de Inicio**: una PC apagada no puede trabar la tienda.
-> - **Los pedidos (segunda etapa) facturan solos y mandan la factura por mail** si el cliente pagó online; si paga en el local, el pedido va a la caja. Los mails salen por **Resend**, con su plan gratis hasta que esté probado. El proceso de compra de Zubu tiene que pedir desde ya DNI o CUIT, condición frente al IVA y email.
+> - **Los pedidos entran como una venta del sistema**, y si el cliente pagó online la venta queda cobrada; si paga en el local, va a la cola de la caja. **La factura no es automática** (decidido el 24/09): la emite una persona desde Pedidos, después de revisar y armar el paquete, y recién ahí sale el mail. Los mails salen por **Resend**, con su plan gratis hasta que esté probado. El proceso de compra de Zubu tiene que pedir desde ya DNI o CUIT, condición frente al IVA y email.
 > - **El vínculo con los clientes del local es el DNI o el CUIT** que trae cada pedido. Los datos van de la tienda al sistema, nunca al revés.
 >
 > 💡 **Idea anotada para cuando abra el segundo local:** un depósito **«Online»** del que salgan las ventas de la tienda. Resolvería la pregunta de qué stock ve la tienda con dos locales, y en parte reemplaza al colchón: la mercadería de la web no la toca el mostrador. Necesita el módulo de mover mercadería entre depósitos, que es V1-B.

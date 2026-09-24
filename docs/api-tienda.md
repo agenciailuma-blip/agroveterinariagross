@@ -1,6 +1,6 @@
-# API de catálogo
+# API de la tienda online
 
-Documentación de la API que lee la tienda online: nombre público, descripción, precio, clasificaciones y stock disponible para la venta web.
+Documentación de la API con la que una tienda online lee el catálogo del sistema de gestión —nombre público, descripción, precio, clasificaciones y stock disponible— y le registra las compras.
 
 > **La versión que se le entrega a la tienda** es la página con la marca de Gross: https://claude.ai/artifact/VXHehNGKU5HF9Ltbbe7LgB — esta copia es la misma documentación, en el repositorio, para que no dependa de un enlace.
 >
@@ -13,7 +13,7 @@ Documentación de la API que lee la tienda online: nombre público, descripción
 | | |
 |---|---|
 | **Dirección** | `https://ywggnhoifhtoncnxrodh.supabase.co/functions/v1/api-tienda` |
-| **Consultas** | `GET /catalogo` y `GET /clasificaciones` |
+| **Caminos** | `GET /catalogo`, `GET /clasificaciones` y `POST /pedidos` |
 | **Autenticación** | Encabezado `Authorization: Bearer <clave>`. La clave se entrega por separado |
 | **Formato** | JSON en UTF-8. Fechas ISO 8601 en UTC (`2026-09-24T12:30:15.807035Z`). Importes en pesos, finales, con IVA |
 | **Origen** | Las consultas se hacen desde el servidor de la tienda. La API no responde a pedidos de un navegador |
@@ -139,6 +139,118 @@ El `slug` no cambia, mientras que el `nombre` puede cambiar: por eso los product
 
 ---
 
+## `POST /pedidos`
+
+Registra una compra hecha en la tienda. El sistema la convierte en una venta, descuenta el stock cuando corresponde y la deja lista para que el local la prepare.
+
+```bash
+curl -s -X POST "https://ywggnhoifhtoncnxrodh.supabase.co/functions/v1/api-tienda/pedidos" \
+  -H "Authorization: Bearer $CLAVE_GROSS" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "numero": "1042",
+    "pagado": true,
+    "referencia_pago": "mp-8871234",
+    "comprador": {
+      "nombre": "María Gómez",
+      "email": "maria@ejemplo.com",
+      "documento": "30111222",
+      "tipo_documento": "DNI",
+      "condicion_iva": "consumidor_final"
+    },
+    "entrega": { "tipo": "envio", "domicilio": "Av. Libertad 1234", "localidad": "Oberá", "contacto": "3755-000000" },
+    "productos": [
+      { "id": "0f3c2a44-1c9e-4f0a-9a1e-7b6c2d8e5a10", "cantidad": 2, "precio": 10000 },
+      { "id": "7a1b9c02-3d4e-4f56-8a90-1b2c3d4e5f60", "cantidad": 1, "precio": 2500 }
+    ],
+    "total": 22500
+  }'
+```
+
+### El pedido
+
+| Campo | | |
+|---|---|---|
+| `numero` | **obligatorio** | El identificador del pedido en la tienda. Es lo que evita que un reintento entre dos veces |
+| `productos` | **obligatorio** | Lista con al menos un producto. Cada uno con `id`, `cantidad` y `precio` |
+| `comprador.nombre` | **obligatorio** | Nombre y apellido, o razón social |
+| `pagado` | opcional | `true` si el comprador ya pagó en la web. Por omisión, `false` |
+| `referencia_pago` | opcional | El identificador del pago en la pasarela. Queda anotado en la venta |
+| `comprador.email` | opcional | A esa dirección se envía la factura |
+| `comprador.documento` | opcional | DNI o CUIT, sin puntos ni guiones. Permite reconocer al comprador si ya es cliente del local |
+| `comprador.tipo_documento` | opcional | `DNI`, `CUIT` o `CUIL`. Sin él se deduce por la cantidad de dígitos |
+| `comprador.condicion_iva` | opcional | `consumidor_final` (por omisión), `responsable_inscripto`, `monotributo` o `exento` |
+| `entrega.tipo` | opcional | `retira` (por omisión) o `envio` |
+| `entrega.domicilio`, `entrega.localidad`, `entrega.contacto` | opcional | Para el envío |
+| `total` | opcional | El total que la tienda le cobró al comprador. Si no coincide con la suma de las líneas, el pedido queda marcado para revisar |
+| `observaciones` | opcional | Texto libre del comprador |
+
+Cada producto lleva:
+
+| Campo | | |
+|---|---|---|
+| `id` | **obligatorio** | El `id` tal como viene en `/catalogo` |
+| `cantidad` | **obligatorio** | Número mayor que cero |
+| `precio` | **obligatorio** | Precio **unitario**, final, con IVA: el que la tienda le mostró y le cobró al comprador |
+
+### La respuesta
+
+```json
+{
+  "repetido": false,
+  "pedido": "1042",
+  "estado": "recibido",
+  "venta": "WEB-000007",
+  "total": 22500,
+  "revisar": null
+}
+```
+
+| Campo | Qué es |
+|---|---|
+| `repetido` | `true` cuando ese `numero` ya se había registrado antes |
+| `pedido` | El `numero` que envió la tienda |
+| `estado` | El estado del pedido en el sistema: `recibido`, `preparado`, `entregado` o `cancelado` |
+| `venta` | El código de la venta en el sistema. Sirve para referirse al pedido al hablar con el local |
+| `total` | La suma de las líneas, calculada por el sistema |
+| `revisar` | Qué llamó la atención del sistema, o `null`. Informativo: lo resuelve una persona en el local |
+
+### El mismo pedido dos veces
+
+`numero` identifica el pedido. Si se envía dos veces —porque se cortó la conexión y la tienda reintenta— el segundo envío **no crea otra venta**: responde `200` con `repetido: true` y el mismo número de venta que la primera vez.
+
+Reintentar es seguro y es lo recomendado ante un `500` o ante un corte de conexión. Lo que **no** hay que hacer es cambiar el `numero` al reintentar: eso sí duplica el pedido.
+
+### El precio que manda es el de la tienda
+
+El precio que llega en cada línea es el que se factura: es lo que el comprador vio y pagó, y el comprobante tiene que decir eso.
+
+El sistema igual compara contra su propio precio. Si la diferencia pasa la tolerancia configurada, el pedido entra lo mismo y queda marcado para que alguien lo mire antes de facturar. Una diferencia sistemática suele significar que la tienda quedó con un catálogo viejo: conviene revisar cada cuánto se sincroniza.
+
+### El stock
+
+Lo descuenta el sistema, nunca la tienda:
+
+- **Pagado en la web:** la venta queda cobrada y el stock se descuenta al registrarse el pedido.
+- **A pagar en el local:** la venta queda esperando en la caja y el stock se descuenta cuando se cobra.
+
+Si no alcanza el stock, **el pedido entra igual** y queda marcado. Es a propósito: si el comprador ya pagó, rechazarlo sería perder la operación y dejarlo sin respuesta. Lo resuelve el local, hablando con el comprador.
+
+### La facturación
+
+**No es automática y no ocurre al registrarse el pedido.** El local revisa el pedido, prepara la mercadería y recién entonces emite la factura, que sale por el mismo circuito fiscal del mostrador y se envía por mail al comprador.
+
+Para la tienda esto significa dos cosas:
+
+- La respuesta de `POST /pedidos` **no trae número de factura**, y no hay que esperarlo.
+- El mail de «recibimos tu pedido» lo envía la tienda. El de la factura lo envía el sistema, más tarde.
+
+### Responsable inscripto
+
+Un responsable inscripto necesita factura A, y para eso hace falta el CUIT. Si el pedido dice `responsable_inscripto` pero no trae un CUIT, el comprador se registra como consumidor final y el pedido queda marcado, para que el local lo hable antes de facturar. El pedido entra igual.
+
+---
+
 ## Mantener el catálogo al día
 
 **La primera carga:**
@@ -177,17 +289,34 @@ Tres comportamientos a tener en cuenta:
 | `400` | `parametro_desconocido` | Un parámetro que esa consulta no acepta. El mensaje lo nombra |
 | `400` | `desde_invalido` | `desde` no es un `siguiente` devuelto por la API |
 | `400` | `limite_invalido` | `limite` no es un entero entre 1 y 1000 |
-| `404` | `ruta_desconocida` | La consulta no existe. Las disponibles son `/catalogo` y `/clasificaciones` |
-| `405` | `metodo_no_permitido` | Un método distinto de `GET`. La API es de sólo lectura |
+| `404` | `ruta_desconocida` | El camino no existe. Los disponibles son `/catalogo`, `/clasificaciones` y `/pedidos` |
+| `405` | `metodo_no_permitido` | El camino no acepta ese método. El encabezado `Allow` dice cuál va |
 | `500` | `error_interno` | Falla del lado del sistema. Conviene reintentar espaciando los intentos y, si persiste, reportarlo con la hora del pedido |
 
-El stock y los precios los administra el sistema de gestión, que es su único origen: por esta API no se modifica nada. El descuento de stock de un pedido web también lo hace el sistema.
+Los de `POST /pedidos`:
+
+| Estado | `codigo` | Qué significa |
+|---|---|---|
+| `400` | `cuerpo_invalido` | El cuerpo no es un objeto JSON |
+| `400` | `falta_numero` | Falta `numero` |
+| `400` | `faltan_productos` | Falta `productos`, o la lista vino vacía |
+| `400` | `falta_el_comprador` | Falta `comprador.nombre` |
+| `400` | `producto_desconocido` | Un `id` que no existe en el sistema. El mensaje dice cuál |
+| `400` | `cantidad_invalida` | Una `cantidad` que no es un número mayor que cero |
+| `400` | `precio_invalido` | Un `precio` que no es un número de cero para arriba |
+| `400` | `entrega_invalida` | `entrega.tipo` no es `retira` ni `envio` |
+| `400` | `pedido_invalido` | Algún valor no tiene el formato esperado: un `id` que no es un identificador, un número que vino como texto |
+| `413` | `cuerpo_demasiado_grande` | El pedido pasa de 200.000 caracteres |
+
+**Ante un `500` o un corte de conexión, reintentar con el mismo `numero`.** Es seguro: el pedido no se duplica. Ante un `400`, reintentar no sirve: hay que corregir el pedido.
+
+El stock y los precios los administra el sistema de gestión, que es su único origen: por esta API no se modifican. El descuento de stock de un pedido web también lo hace el sistema.
 
 ---
 
 ## Datos del comprador para facturar
 
-La facturación de los pedidos web la hace el sistema de gestión: emite la factura electrónica ante ARCA y la envía por mail al comprador. La API de pedidos se documenta aparte; esto es lo que el proceso de compra tiene que registrar para que un pedido se pueda facturar.
+La factura la emite el sistema de gestión ante ARCA y se envía por mail al comprador. Esto es lo que el proceso de compra de la tienda tiene que pedirle al comprador para que su pedido se pueda facturar.
 
 | Dato | Por qué |
 |---|---|
@@ -195,5 +324,5 @@ La facturación de los pedidos web la hace el sistema de gestión: emite la fact
 | Email | A esa dirección se envía la factura |
 | DNI o CUIT | Identifica al receptor ante ARCA, y permite reconocer al comprador si ya es cliente del local |
 | Condición frente al IVA | Consumidor final, responsable inscripto, monotributo o exento. Define la clase de comprobante: un responsable inscripto requiere factura A, con su CUIT |
-| Forma de pago | Pagado en la web o a pagar en el local: determina si el sistema factura al recibir el pedido o al cobrarlo en la caja |
+| Forma de pago | Pagado en la web o a pagar en el local: determina si la venta queda cobrada o esperando en la caja |
 | Entrega | Retiro en el local o envío, con el domicilio en ese caso |

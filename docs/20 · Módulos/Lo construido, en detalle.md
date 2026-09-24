@@ -592,7 +592,7 @@ Decisiones que importan:
 
 ### ✅ 13a. La API de la tienda: leer el catálogo (18/09)
 
-Primera pieza de V1-B, adelantada para que Zubu arranque la tienda en paralelo. **Sólo lectura**: productos con nombre público, precio, clasificaciones, stock con el colchón y la frescura. Los pedidos son la segunda etapa. Para Zubu: [`api-tienda.md`](../api-tienda.md). El diseño se aprobó antes de construir, con una página propia.
+Primera pieza de V1-B, adelantada para que Zubu arranque la tienda en paralelo. Los dos caminos de lectura: productos con nombre público, precio, clasificaciones, stock con el colchón y la frescura. Los pedidos están abajo, en 13b. Para Zubu: [`api-tienda.md`](../api-tienda.md). El diseño se aprobó antes de construir, con una página propia.
 
 **Cómo entra Zubu.** Con una clave atada al canal «Tienda online» (`clave_api`), que se guarda como huella SHA-256 y nunca en claro. **No es un usuario del sistema.** La puerta es la Edge Function `api-tienda` (`verify_jwt = false`, porque la clave no es un token de Supabase), y entra a la base con la **llave pública**, no con la de servicio: `anon` no lee ninguna tabla, y lo único que puede ejecutar son `api_tienda_catalogo` y `api_tienda_clasificaciones`. Si la puerta tuviera un error, no tiene con qué llegar a los costos. Sin CORS, a propósito: la clave tiene que vivir en el servidor de Zubu.
 
@@ -615,6 +615,37 @@ Primera pieza de V1-B, adelantada para que Zubu arranque la tienda en paralelo. 
 - **Se rompió a propósito de siete maneras y las siete fueron atrapadas.** En la base: el stock sin colchón, el costo en la respuesta, una clave anulada que entra y un producto apagado que sale. En la puerta: un límite sin tope y un pedido sin clave.
 - **La séptima, la marca de agua, con dos sesiones a la vez.** Se guardó un cambio con la transacción abierta 25 segundos mientras la «tienda» consultaba. Con el código bien, la marca devuelta fue *exactamente* el comienzo de ese guardado y el cambio llegó en la consulta siguiente. Con la marca rota, el cambio **se perdió**.
 - **Punto 16 de la definición de terminado:** una salida de stock en el local y la tienda pasó de ver 9 a ver 8 en la consulta siguiente. Se hizo con un ajuste de −1 y otro de +1 en DEMO-051, que quedan en su historial con el motivo.
+
+### ✅ 13b. La API de la tienda: recibir pedidos (24/09)
+
+Segunda pieza de V1-B. `POST /pedidos` por la misma puerta y con la misma clave: la tienda registra la compra y el sistema la convierte en una venta. Para Zubu: [`api-tienda.md`](../api-tienda.md).
+
+**Entra por el camino del mostrador, no por uno propio.** `app.registrar_pedido_de_la_tienda` inserta `venta` + `venta_linea` —los totales los hace el disparador `venta_linea_totales`— y, si el pedido viene pagado, `venta_pago` y `public.cobrar_venta(venta, null, null)`, sin caja ni cajero porque no hubo ninguno. El descuento de stock, el IVA y la numeración salen del mismo código que usa la caja: **no hay una segunda manera de vender**.
+
+**El medio de pago de la tienda** (`canal.medio_pago_id`) es «Tienda online», creado inactivo y con `afecta_caja = false`: no se ofrece en el mostrador y no entra al arqueo, porque esa plata no está en el cajón. Un disparador impide darlo de baja mientras un canal lo use.
+
+**La idempotencia es el número del pedido de la tienda.** `pedido_tienda` tiene `unique (canal_id, numero_externo)`: si llega repetido, se devuelve la respuesta de la primera vez con `repetido: true`, sin crear otra venta. Un error habría dejado a la tienda sin saber si el pedido entró.
+
+**Tres reglas de la base enseñaron el diseño**, y cada una salió de una prueba que falló:
+
+- **`venta_linea_modificacion_justificada`**: una línea con un precio distinto del de lista exige quién lo cambió y por qué. En un pedido web no hay ningún quién, así que **el precio que informa la tienda es el precio de lista de la línea**; la diferencia contra el precio del sistema —si pasa `tienda.tolerancia_precio_porcentaje`, 5 por defecto— queda anotada en `pedido_tienda.revisar`.
+- **`cliente_ri_requiere_cuit`**: quien se declara responsable inscripto pero manda un DNI entra como consumidor final y queda marcado. Perder el pedido de alguien que ya pagó sería peor.
+- **`venta_pago_importe_check`**: un pago de cero no existe, así que un pedido pagado de total cero no registra cobro.
+
+**Nada se rechaza por falta de stock**: el pedido entra marcado. Lo que sí se rechaza, con `PT400` y un nombre estable, es un pedido mal armado: sin número, sin productos, sin comprador, con una entrega que no existe, con un producto desconocido, con cantidades o precios inválidos. **Un rechazo no deja media venta**: la función corre en una sola transacción.
+
+**La puerta.** `reglas.ts` acepta `POST` sólo en `/pedidos` y `GET` sólo en los otros dos caminos, y contesta el método que va en el encabezado `Allow`. El cuerpo se lee **después** de validar clave y camino —un pedido sin clave se rechaza sin leer un byte— y de él sólo se comprueba que sea un objeto JSON de menos de 200.000 caracteres: qué campos lleva lo decide la base, porque dos lugares decidiendo lo mismo se contradicen solos. De los errores de la base sale el código, nunca el detalle interno; la única excepción es el identificador del producto desconocido, que lo mandó la tienda.
+
+> ⚠️ **Al desplegar: `verify_jwt = false`.** Viene prendida por omisión y, prendida, la plataforma rechaza la clave de la tienda antes de llegar a la función: la API contesta «Invalid JWT» a todo. Pasó en el primer despliegue del 24/09 y lo encontraron las pruebas por internet en el minuto siguiente.
+
+**La facturación no es automática, y es una decisión, no una limitación.** El pedido entra con `documentacion = 'fiscal'` y espera: el encargado lo revisa, arma el paquete y recién entonces factura, para que el comprobante diga lo que realmente se entrega. Facturar primero y corregir después significa notas de crédito.
+
+**Cómo se verificó:**
+
+- **43 comprobaciones contra la base real** ([`supabase/pruebas/pedidos-de-la-tienda.sql`](../../supabase/pruebas/pedidos-de-la-tienda.sql)), en una transacción que se deshace sola.
+- **55 comprobaciones por internet** contra la función publicada, incluido un pedido que entra de verdad y su reintento. Ese tramo va detrás de `API_TIENDA_ESCRIBIR=1` porque escribe una venta real; lo que dejó se borró después.
+- **25 pruebas nuevas de la puerta** en la suite de la app, que pasó de 353 a 378.
+- **Se rompió a propósito de siete maneras y las siete fueron atrapadas:** sin idempotencia, con lo no pagado descontando stock, con la puerta sin mirar la clave, sin avisar del precio raro, sin avisar de la falta de stock, deshaciendo el arreglo del precio de la línea, y desarmando el guardián del medio de pago. Y otras tres en la puerta: `/pedidos` aceptando `GET`, una lista pasando por pedido, y el detalle interno de Postgres saliendo al exterior.
 
 ### 🟢 5. Deploy y empaquetado
 Cloudflare Pages (10 minutos cuando haya algo que publicar) y Tauri para las 4 PC del mostrador, con impresión ESC/POS a la Hasar por red.
