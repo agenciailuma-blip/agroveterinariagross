@@ -1,5 +1,7 @@
 import { supabase } from '@/lib/supabase'
 import type { EstadoStock } from '@/lib/tipos'
+import { definirColchonTienda, definirVentaOnline, estadoEnTienda } from '@/lib/api/ventaOnline'
+import type { EstadoEnTienda } from '@/lib/api/ventaOnline'
 
 export interface FilaListado {
   producto_id: string
@@ -137,7 +139,18 @@ export async function listarProductosDeBaja(texto: string) {
   return { filas: (data ?? []) as Baja[], total: count ?? 0 }
 }
 
-export async function listarProductos(texto: string, soloSinRevisar: boolean) {
+/*
+  La categoría y la marca filtran igual que la acción de «vender online
+  la categoría entera» en la base (definir_venta_online_por_clasificacion):
+  los que no están dados de baja, de esa categoría y esa marca. Así el
+  total que muestra la lista es el que se confirma al prenderlos.
+*/
+export async function listarProductos(
+  texto: string,
+  soloSinRevisar: boolean,
+  categoriaId: string | null = null,
+  marcaId: string | null = null,
+) {
   let q = supabase
     .from('vista_stock')
     .select(
@@ -155,6 +168,8 @@ export async function listarProductos(texto: string, soloSinRevisar: boolean) {
     q = q.or(`codigo.ilike.${patron},nombre_interno.ilike.${patron},nombre_publico.ilike.${patron}`)
   }
   if (soloSinRevisar) q = q.is('revisado_en', null)
+  if (categoriaId) q = q.eq('categoria_id', categoriaId)
+  if (marcaId) q = q.eq('marca_id', marcaId)
 
   const { data, error, count } = await q
   if (error) throw new Error(error.message)
@@ -193,7 +208,7 @@ export interface UmbralDelProducto {
 }
 
 export async function obtenerProducto(id: string) {
-  const [producto, codigos, animales, etapas, umbralPropio, vigente] = await Promise.all([
+  const [producto, codigos, animales, etapas, umbralPropio, vigente, tienda] = await Promise.all([
     supabase.from('producto').select('*').eq('id', id).single<ProductoDetalle>(),
     supabase
       .from('producto_codigo_barra')
@@ -213,6 +228,14 @@ export async function obtenerProducto(id: string) {
       .select('umbral_bajo, umbral_critico')
       .eq('producto_id', id)
       .maybeSingle<{ umbral_bajo: number; umbral_critico: number }>(),
+    /*
+      Cómo está en la tienda online. Si esa consulta falla, la ficha se
+      abre igual: no poder ver la línea de la tienda no puede impedir
+      corregir un precio.
+    */
+    estadoEnTienda([id])
+      .then((m) => m.get(id) ?? null)
+      .catch(() => null as EstadoEnTienda | null),
   ])
 
   if (producto.error) throw new Error(producto.error.message)
@@ -229,6 +252,7 @@ export async function obtenerProducto(id: string) {
     animales: (animales.data ?? []).map((a) => a.animal_id as string),
     etapas: (etapas.data ?? []).map((e) => e.etapa_vida_id as string),
     umbral,
+    tienda,
   }
 }
 
@@ -319,6 +343,14 @@ export interface DatosGuardado {
   stockActual: number
   marcarRevisado: boolean
   usuarioId: string
+  /*
+    «Vender online» y el colchón del producto, como están en el
+    formulario y como estaban al abrirlo. Se mandan sólo si cambiaron:
+    cada escritura le mueve la fecha al producto, y eso se lo vuelve a
+    mandar a la tienda y a las terminales.
+  */
+  tienda: { vender: boolean; colchon: number | null }
+  tiendaAntes: { vender: boolean; colchon: number | null }
 }
 
 /*
@@ -442,6 +474,21 @@ export async function guardarProducto(datos: DatosGuardado): Promise<string> {
       errorUmbral.message.includes('umbral_critico_menor_o_igual')
         ? 'El nivel crítico tiene que ser menor o igual que el nivel bajo.'
         : `No se pudo guardar el aviso de stock: ${errorUmbral.message}`,
+    )
+  }
+
+  try {
+    if (datos.tienda.colchon !== datos.tiendaAntes.colchon) {
+      await definirColchonTienda(productoId, datos.tienda.colchon)
+    }
+    if (datos.tienda.vender !== datos.tiendaAntes.vender) {
+      await definirVentaOnline([productoId], datos.tienda.vender)
+    }
+  } catch (e) {
+    // El producto ya quedó guardado; lo que falló es sólo la tienda, y
+    // el mensaje tiene que decirlo para que nadie lo vuelva a cargar.
+    throw new Error(
+      `El producto se guardó, pero no se pudo cambiar la venta online: ${e instanceof Error ? e.message : e}`,
     )
   }
 

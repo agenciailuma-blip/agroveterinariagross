@@ -41,8 +41,8 @@ El catálogo. Es la pantalla donde se carga y se corrige todo lo que se vende.
 | | |
 |---|---|
 | **Contiene** | Los 2.261 productos, con su ficha completa. |
-| **Qué hago** | Buscar por código, nombre o código de barra · abrir la ficha y editarla · crear uno nuevo · **importar la planilla de Excel** · dar de baja de a uno o en masa · restaurar los dados de baja · filtrar por "sólo los que faltan revisar". |
-| **Qué veo** | Listado con precio, stock y el semáforo (*En stock / Stock bajo / Crítico / Sobrevendido*) · el **avance del operativo de carga**: cuántos productos ya revisó una persona sobre el total. |
+| **Qué hago** | Buscar por código, nombre o código de barra · **filtrar por categoría y por marca** · abrir la ficha y editarla · crear uno nuevo · **importar la planilla de Excel** · dar de baja de a uno o en masa · restaurar los dados de baja · filtrar por "sólo los que faltan revisar" · **prender «Vender online»** de a uno, a un grupo marcado o a una categoría entera. |
+| **Qué veo** | Listado con precio, stock y el semáforo (*En stock / Stock bajo / Crítico / Sobrevendido*) · la marca **Web** en los que se venden online, en ámbar si están prendidos pero no salen · el **avance del operativo de carga**: cuántos productos ya revisó una persona sobre el total. |
 | **Qué exporto** | Nada. 🔜 La exportación del catálogo entra con los reportes de V1-B. |
 
 **Lo que tiene la ficha del producto:**
@@ -54,7 +54,10 @@ El catálogo. Es la pantalla donde se carga y se corrige todo lo que se vende.
 - **Proveedor** — a quién se le compra. Es lo que permite ajustarle el precio a todos los productos de ese laboratorio de una sola vez, desde Proveedores.
 - **Clasificación** — rubro, marca, presentación, animal y etapa de vida.
 - **Códigos de barra** — todos los que tenga.
+- **Tienda online** — el interruptor **Vender online** y el **colchón** de ese producto, y una línea que dice qué ve la tienda: *"Se vende online: la tienda ve 3 unidades a $6.900"*, o *"Prendido, pero no sale: le falta el nombre público"*.
 - **Trazabilidad y normativa** — producto veterinario, requiere receta, fitosanitario, controla vencimiento.
+
+> **Vender online.** Nada sale a la tienda web hasta que alguien lo prende. Se prende en la ficha, a un grupo marcado, o **a una categoría o marca entera** —eligiéndola en el filtro, que muestra la cantidad y la prende toda, no sólo los primeros 100 de la lista—. Prendido, sale sólo si tiene **nombre público** y **precio**; si le falta algo, la ficha lo dice y el aviso cuenta cuántos quedaron afuera. Con qué lista de precios se publica se elige en **Precios → Tienda online**.
 
 > **Importar la planilla** (`Productos → Importar planilla`) acepta `.xlsx` y `.csv`. El sistema propone a qué campo corresponde cada columna y la persona confirma, viendo un dato de ejemplo — porque los encabezados mienten: una columna que dice "Precio" puede tener el costo. **Reimportar no duplica**: reconoce por código y actualiza. Una celda vacía no borra lo que ya había; un valor distinto sí lo pisa.
 

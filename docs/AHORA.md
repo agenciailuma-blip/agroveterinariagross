@@ -12,9 +12,9 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Publicado: 0.5.0** (18/09), con **la factura que sale sin internet** —la caja emite con CAEA y el ticket sale solo—. Antes, la 0.4.4 con la red del local que ahora **dice qué le pasa**, el cortacircuito que hace que la Caja abra rápido sin internet, y la cola de la caja que se actualiza al cambiar el medio de pago. Antes, ese mismo día, la 0.4.2 con el recargo por cuotas arreglado, los acentos del ticket y la impresión automática al cobrar. **La 0.4.1 quedó instalada en el local el 17/09, en todas menos la de Windows 7** — las dos versiones nuevas entran solas con *Actualizar ahora*. **336 pruebas verdes en la app y 11 en el programa**, 80 migraciones aplicadas.
+**Publicado: 0.5.0** (18/09), con **la factura que sale sin internet** —la caja emite con CAEA y el ticket sale solo—. Antes, la 0.4.4 con la red del local que ahora **dice qué le pasa**, el cortacircuito que hace que la Caja abra rápido sin internet, y la cola de la caja que se actualiza al cambiar el medio de pago. Antes, ese mismo día, la 0.4.2 con el recargo por cuotas arreglado, los acentos del ticket y la impresión automática al cobrar. **La 0.4.1 quedó instalada en el local el 17/09, en todas menos la de Windows 7** — las dos versiones nuevas entran solas con *Actualizar ahora*. **353 pruebas verdes en la app y 11 en el programa**, 83 migraciones aplicadas.
 
-**Y la API para Zubu, publicada el 18/09 a la tarde** — la primera pieza de V1-B, sin tocar nada de lo que anda. Ver abajo.
+**Y la API para Zubu, publicada el 18/09** — la primera pieza de V1-B. **Zubu ya tiene su clave y su documentación** (24/09). Ver abajo.
 
 ⚠️ **Lo que está construido pero NO verificado.** Un chat nuevo no puede darlo por probado:
 
@@ -40,7 +40,41 @@ estado: en curso
 
 ---
 
-## Lo último que pasó — 18 de septiembre, a la tarde: la API para Zubu
+## Lo último que pasó — 24 de septiembre
+
+🔴 **Lo más importante del día no estaba en el plan: la sincronización estaba rota desde el 18/09, y no se veía.**
+
+Verificando la pantalla nueva aparecieron errores en la consola del navegador. La terminal baja cada tabla filtrando por `actualizado_en`, y **la tabla del CAEA no tiene esa columna**: el pedido volvía con «column caea.actualizado_en does not exist» y **la bajada se cortaba ahí**.
+
+> **Cómo se lo contás a Lucas:** el código con el que la caja factura cuando se corta internet tiene que estar guardado en la máquina antes del corte. Por un error nuestro, ese código no estaba bajando. Lo encontramos y lo arreglamos; **si se hubiera cortado internet en el local, la caja no habría podido facturar**.
+
+Lo que arrastraba, en orden de gravedad:
+
+- **El CAEA no llegaba a ninguna máquina.** Es lo único que permite facturar durante un corte, y pedirlo también necesita internet.
+- **Lo que viene después en la lista tampoco bajaba:** la numeración desde la que emite la terminal sin conexión, y los saldos de cuenta corriente.
+- **Y nadie se enteraba.** El aviso al servidor se mandaba sólo cuando la sincronización terminaba bien, así que desde el servidor una terminal rota se veía igual que una apagada. La última sincronización registrada era del 22/09.
+
+**Las tres cosas están arregladas:**
+
+1. La tabla del CAEA tiene su columna, como todas las demás tablas maestras. **Verificado en la copia local del navegador: el CAEA `86370874703771` ya está en la máquina**, junto con la numeración y los saldos.
+2. **Una sincronización que falla ahora deja constancia en el servidor**, así aparece en *La red del local*, en el diagnóstico, y hace que la tienda online deje de confiar en el stock.
+3. **Hay una prueba nueva que lo hubiera encontrado sola**: `node supabase/pruebas/columnas-de-sincronizacion.mjs` lee lo que la terminal le pide a cada tabla y se lo pregunta a la base. Hoy revisa 22 tablas. Se rompió a propósito —pidiéndole a una tabla una columna inventada— y la atrapó.
+
+> **Por qué ninguna prueba lo había visto:** las de la aplicación corren sin base, y las de la base no saben qué le pide la terminal. La prueba nueva une esas dos puntas. Es la misma lección del 17/09: lo que no se puede ver no se puede arreglar.
+
+**Y lo que sí estaba en el plan: «Vender online».**
+
+> **Cómo se lo contás a Lucas:** ahora vos decidís qué se vende en la web. En la ficha de cada producto hay un interruptor *Vender online*; también se puede prender a varios de una, o a una categoría entera —«todos los Alimentos»—. Un producto sale a la tienda sólo si además tiene nombre público y precio, y si le falta algo la ficha te lo dice en una línea.
+
+- **En la ficha:** el interruptor, el colchón de ese producto, y la línea que dice qué ve la tienda —*"Se vende online: la tienda ve 3 unidades a $6.900"*, *"Prendido, pero no sale: le falta el nombre público"*—. La cuenta la hace la base, la misma que usa la API: la ficha no puede decir «se vende» de algo que la tienda no ve.
+- **En la lista:** filtro por categoría y marca, *Marcar todos*, las acciones sobre lo marcado, y la marca **Web** en cada fila (ámbar si está prendido pero no sale).
+- **Una categoría entera la prende la base, no la pantalla.** La lista muestra de a 100: «marcar todos» prendería 100 de una categoría de 800. La acción va sobre todos los que coinciden, con la cantidad a la vista antes de confirmar.
+- **Prender una categoría avisa cuántos no salen.** Esto apareció verificando en pantalla: el aviso decía cuántos se prendieron pero no cuántos quedaban afuera por faltarles el nombre o el precio. Con 800 productos nadie mira fila por fila.
+- **En Precios:** con qué lista se publican los precios de la tienda. Esa lista no se puede dar de baja mientras la tienda la use — **verificado en pantalla**: la base lo impide y el mensaje dice qué hacer.
+
+Verificado contra la base real: **30 comprobaciones** de «Vender online» y **353 pruebas** en la app. Se rompió a propósito de dos maneras —prender sin controlar el permiso, y que el colchón prenda un producto de paso— y las dos fueron atrapadas. Y en la aplicación de verdad: se le puso el nombre público que le faltaba a un producto, se guardó, **y apareció en la API con su precio y su stock**; al apagarlo, le llegó a la tienda como baja.
+
+## Lo que pasó el 18 de septiembre, a la tarde: la API para Zubu
 
 **La tienda online ya puede leer el catálogo.** Es la primera pieza de V1-B, adelantada para que Zubu arme la tienda en paralelo, y es **todo nuevo al costado de lo que anda**: no hizo falta publicar una versión del programa. El diseño se aprobó antes de construir. Para Zubu: [`api-tienda.md`](api-tienda.md), que un desarrollador de afuera puede leer sin nosotros.
 
@@ -275,7 +309,7 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 > - **Los atajos de teclado** se definen con Lucas la **primera semana de octubre**.
 > - **La capacitación ya se viene haciendo** en cada visita, fuera de horario, y Lucas y los empleados siguen el sistema al detalle. No es un pendiente.
 > - **La base de datos sigue en plan gratis, por decisión de Gross**, conociendo el riesgo: sin copias de seguridad recuperables. Se contrata más adelante. Dicho una vez y anotado.
-> - ~~**Lo que sigue: adelantar V1-B, empezando por la API para Zubu**~~ ✅ **La API de lectura está publicada (18/09).** Lo que sigue en esta línea es **el interruptor «Vender online» en Productos**: en la ficha, a un grupo marcado y a una categoría entera, con el colchón por producto y la lista de la tienda elegible en Precios. Necesita versión nueva del programa. Y **darle a Zubu la clave y el documento**.
+> - ~~**Lo que sigue: adelantar V1-B, empezando por la API para Zubu**~~ ✅ **Hecho.** La API de lectura se publicó el 18/09 y **«Vender online» el 24/09** (0.6.0). **Zubu ya tiene su clave y su documentación.** Lo que sigue de la tienda son los pedidos, con la factura automática por mail — y eso espera la dirección de correo de Gross.
 
 0. 🔴 **Que la venta llegue a la caja sin internet.** Falló en el local el 17/09. **El sistema ya dice qué pasa** (0.4.3) — eso era lo que faltaba para poder arreglarlo. **Lo que sigue es una prueba de dos minutos en el local**, con las dos máquinas prendidas y el programa instalado en las dos: Configuración → La red del local → *Probar la conexión*, y después una venta con internet cortado.
    - Si dice **«no sé cuál es la caja»**: esa terminal no sincronizó desde que la caja se presentó. Se resuelve sincronizando una vez con internet.
@@ -346,6 +380,7 @@ Está andando y verificado. Si algo de acá se rompe, es una regresión:
 - **Las métricas de venta se comparan por tramo del mes, no contra el mes anterior completo.** Cambiarlo deja el mes en curso en baja permanente hasta el día 30, todos los meses.
 - **El recargo por cuotas va en el precio de la venta, no en el importe del pago.** Sumarlo al pago —como estaba hasta el 17/09— deja la venta valiendo menos que lo que el cliente paga, y como el cobro exige que los pagos cierren con el total, cobrar en cuotas se vuelve imposible. Además la factura saldría por menos de lo cobrado.
 - **El ticket va en la página 437, la de MS-DOS, y no en el alfabeto de Windows.** Es lo que la impresora lee de fábrica. Con el de Windows, "Oberá" sale impreso "Oberß" y cada importe arrastra un `$á`.
+- **La tabla `caea` necesita `actualizado_en`, como toda tabla maestra.** La terminal pagina por esa columna: sin ella la bajada se corta, el CAEA no llega a la máquina y la caja no puede facturar durante un corte. Lo mismo vale para cualquier tabla nueva que se sume a la sincronización — lo comprueba `supabase/pruebas/columnas-de-sincronizacion.mjs`.
 - **La API de la tienda entra a la base con la llave pública, no con la de servicio.** Es lo que hace que un error en la puerta no pueda llegar a los costos ni a los clientes. Con la de servicio, la puerta lo ve todo.
 - **La lista de campos que sale a la tienda está escrita a mano**, y una prueba la compara. Armarla «con lo que tenga la tabla» publicaría el próximo campo interno que se agregue.
 - **La marca de agua de la API mira las transacciones abiertas.** Si devuelve «ahora», un precio que se guarda mientras Zubu consulta no llega nunca a la web. Se probó rompiéndola.

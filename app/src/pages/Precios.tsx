@@ -13,7 +13,9 @@ import {
   previsualizarPrecio,
 } from '@/lib/api/precios'
 import type { ListaPrecio, MedioPago } from '@/lib/api/precios'
+import { elegirListaDeLaTienda, listaDeLaTienda } from '@/lib/api/ventaOnline'
 import { moneda } from '@/lib/tipos'
+import { campoDeFiltro } from '@/estilos'
 
 /*
   Precios y medios de pago.
@@ -45,6 +47,7 @@ export default function Precios() {
   // Del servidor y no de la copia local: acá se administra, y hay que
   // ver el efecto del cambio enseguida, no en la próxima sincronización.
   const datos = useQuery({ queryKey: ['precios-admin'], queryFn: cargarPreciosServidor })
+  const listaTienda = useQuery({ queryKey: ['lista-tienda'], queryFn: listaDeLaTienda })
 
   function avisar(texto: string) {
     setAviso(texto)
@@ -104,6 +107,17 @@ export default function Precios() {
   const bajaMedio = useMutation({
     mutationFn: (id: string) => darDeBajaMedioPago(id),
     onSuccess: alGuardar('Medio de pago dado de baja'),
+    onError: alFallar,
+  })
+
+  const mutarListaTienda = useMutation({
+    mutationFn: (id: string) => elegirListaDeLaTienda(id),
+    onSuccess: () => {
+      avisar('Lista de la tienda cambiada')
+      qc.invalidateQueries({ queryKey: ['lista-tienda'] })
+      qc.invalidateQueries({ queryKey: ['tienda-listado'] })
+      qc.invalidateQueries({ queryKey: ['producto'] })
+    },
     onError: alFallar,
   })
 
@@ -240,6 +254,64 @@ export default function Precios() {
           </tbody>
         </table>
       </div>
+
+      {/*
+        ── La tienda online ──
+
+        Con qué lista se le publican los precios a la tienda de Zubu. Puede
+        ser la de contado o una creada para la web. Mientras la use la
+        tienda, esa lista no se puede dar de baja: la base lo impide,
+        porque la tienda quedaría publicando con una lista que no existe.
+      */}
+      {(() => {
+        const elegida = listas.find((l) => l.id === listaTienda.data)
+        return (
+          <div className="rounded-xl bg-white px-5 py-4 shadow-sm ring-1 ring-borde">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <h2 className="font-medium text-tinta">Tienda online</h2>
+                <p className="text-sm text-piedra-500">
+                  Con qué lista se publican los precios en la tienda web.
+                </p>
+              </div>
+              <select
+                aria-label="Lista de la tienda online"
+                value={listaTienda.data ?? ''}
+                disabled={listaTienda.isPending || mutarListaTienda.isPending}
+                onChange={async (e) => {
+                  const nueva = listas.find((l) => l.id === e.target.value)
+                  if (!nueva) return
+                  const sigue = await confirmar({
+                    titulo: `¿Publicar la tienda con la lista "${nueva.nombre}"?`,
+                    detalle: `Cambian todos los precios de la tienda en su próxima consulta. Un producto de ${moneda.format(PRECIO_EJEMPLO)} se publicaría a ${moneda.format(previsualizarPrecio(PRECIO_EJEMPLO, nueva, 0))}.`,
+                    aceptar: 'Cambiar la lista',
+                  })
+                  if (sigue) mutarListaTienda.mutate(nueva.id)
+                }}
+                className={campoDeFiltro}
+              >
+                {!listaTienda.data && <option value="">Sin lista: el precio de la ficha</option>}
+                {listas
+                  .filter((l) => l.activo)
+                  .map((l) => (
+                    <option key={l.id} value={l.id}>
+                      {l.nombre}
+                    </option>
+                  ))}
+              </select>
+            </div>
+            {elegida && (
+              <p className="mt-2 text-xs text-piedra-500">
+                Un producto de {moneda.format(PRECIO_EJEMPLO)} se publica a{' '}
+                <strong className="text-tinta">
+                  {moneda.format(previsualizarPrecio(PRECIO_EJEMPLO, elegida, 0))}
+                </strong>
+                . Qué productos salen a la tienda se decide en Productos, con «Vender online».
+              </p>
+            )}
+          </div>
+        )
+      })()}
 
       {/* ── Medios de pago ── */}
       <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-borde">

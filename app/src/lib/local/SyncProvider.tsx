@@ -94,7 +94,34 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       }
     } catch (e) {
       if (e instanceof BaseLocalBloqueada) setBloqueada(e)
-      setError(e instanceof Error ? e.message : 'No se pudo sincronizar.')
+      const mensaje = e instanceof Error ? e.message : 'No se pudo sincronizar.'
+      setError(mensaje)
+
+      /*
+        Una sincronización que falla también deja constancia en el
+        servidor.
+
+        Hasta el 24/09 sólo se avisaba cuando salía bien, y por eso una
+        terminal que no podía bajar nada se veía desde el servidor igual
+        que una apagada. Así estuvo seis días el CAEA sin llegar a
+        ninguna máquina —la bajada se cortaba con un error— sin que
+        nadie lo notara. Ahora ese error aparece en La red del local, en
+        el diagnóstico, y hace que la tienda online deje de confiar en
+        el stock.
+      */
+      if (terminal) {
+        try {
+          await supabase.rpc('registrar_sincronizacion', {
+            p_terminal_id: terminal.id,
+            p_direccion: 'completa',
+            p_resultado: 'error',
+            p_error_mensaje: mensaje.slice(0, 500),
+          })
+        } catch {
+          // Si tampoco se puede avisar, no hay nada que hacer: es el
+          // caso en que no hay servidor del otro lado.
+        }
+      }
     } finally {
       await refrescarPendientes()
       setSincronizando(false)

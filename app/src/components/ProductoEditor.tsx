@@ -5,6 +5,8 @@ import type { Referencia, ProductoDetalle, Referencias } from '@/lib/api/catalog
 import { ChipsConAlta, SelectConAlta } from '@/components/SelectConAlta'
 import { numero } from '@/lib/tipos'
 import { boton } from '@/estilos'
+import { describirEnTienda } from '@/lib/api/ventaOnline'
+import type { EstadoEnTienda, TonoEnTienda } from '@/lib/api/ventaOnline'
 
 export interface EstadoFormulario {
   campos: Partial<ProductoDetalle>
@@ -21,6 +23,12 @@ export interface EstadoFormulario {
     Apagarlo borra el umbral del producto y lo devuelve a heredar.
   */
   umbral: { bajo: string; critico: string; propio: boolean }
+  /*
+    «Vender online» y el colchón de este producto. El colchón va como
+    texto porque vacío quiere decir «el de la tienda», que no es lo mismo
+    que cero.
+  */
+  tienda: { vender: boolean; colchon: string }
 }
 
 interface Props {
@@ -43,6 +51,10 @@ interface Props {
   */
   puedeUmbrales: boolean
   onReferenciaCreada: (grupo: keyof Referencias, nueva: Referencia) => void
+  /** Cómo está en la tienda lo GUARDADO. null en un producto nuevo. */
+  enTienda: EstadoEnTienda | null
+  /** Si en el formulario hay cambios sin guardar que cambian lo que ve la tienda. */
+  tiendaPendiente: boolean
 }
 
 function Campo({
@@ -67,6 +79,13 @@ function Campo({
 
 const claseInput =
   'w-full rounded-lg border border-borde px-2.5 py-1.5 text-sm text-tinta outline-none focus:border-marca-500 focus:ring-2 focus:ring-marca-500/20'
+
+const TONO_EN_TIENDA: Record<TonoEnTienda, string> = {
+  sale: 'bg-verde-50 text-verde-800 ring-verde-200',
+  no_sale: 'bg-amber-50 text-amber-800 ring-amber-200',
+  apagado: 'bg-piedra-50 text-piedra-600 ring-borde',
+  pendiente: 'bg-marca-50 text-marca-800 ring-marca-200',
+}
 
 function Seccion({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
@@ -93,6 +112,8 @@ export default function ProductoEditor({
   onDarDeBaja,
   puedeUmbrales,
   onReferenciaCreada,
+  enTienda,
+  tiendaPendiente,
 }: Props) {
   const [codigoBarra, setCodigoBarra] = useState('')
   const refNombre = useRef<HTMLInputElement>(null)
@@ -143,6 +164,15 @@ export default function ProductoEditor({
   const objetivo = estado.campos.margen_sobre_costo ?? null
   const desvio = margenReal !== null && objetivo !== null ? margenReal - objetivo : null
   const puedeCalcular = !!costo && costo > 0 && objetivo !== null
+
+  const enLaTienda = describirEnTienda(enTienda, {
+    esNuevo,
+    pendiente: tiendaPendiente,
+    unidad: estado.campos.unidad_medida ?? 'unidad',
+  })
+  const colchonDeLaTienda = enTienda?.colchon_canal ?? 2
+  const setTienda = (parcial: Partial<EstadoFormulario['tienda']>) =>
+    onCambio({ ...estado, tienda: { ...estado.tienda, ...parcial } })
 
   return (
     <div className="flex h-full flex-col">
@@ -303,6 +333,58 @@ export default function ProductoEditor({
               )}
             </div>
           )}
+        </Seccion>
+
+        {/*
+          «Vender online». Nada sale a la tienda hasta que se prende acá,
+          a un grupo marcado o a una categoría entera desde la lista. La
+          línea de abajo dice qué ve la tienda con lo guardado: esa cuenta
+          la hace la base, la misma que usa la API de Zubu, para que la
+          ficha no diga «se vende» de algo que la tienda no ve.
+        */}
+        <Seccion titulo="Tienda online">
+          <div className="col-span-2 flex items-center sm:col-span-2">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={estado.tienda.vender}
+              onClick={() => setTienda({ vender: !estado.tienda.vender })}
+              className="group flex items-center gap-3 rounded-lg py-1 text-sm font-medium text-tinta focus-visible:ring-2 focus-visible:ring-marca-500/40 focus-visible:outline-none"
+            >
+              <span
+                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
+                  estado.tienda.vender ? 'bg-marca-700' : 'bg-piedra-300'
+                }`}
+              >
+                <span
+                  className={`inline-block size-5 rounded-full bg-white shadow transition-transform ${
+                    estado.tienda.vender ? 'translate-x-5.5' : 'translate-x-0.5'
+                  }`}
+                />
+              </span>
+              Vender online
+            </button>
+          </div>
+          <Campo
+            etiqueta="Colchón"
+            ancho="col-span-2"
+            ayuda={`Unidades que la tienda no ve. Vacío: el de la tienda (${numero.format(colchonDeLaTienda)}).`}
+          >
+            <input
+              type="number"
+              step="1"
+              min="0"
+              value={estado.tienda.colchon}
+              onChange={(e) => setTienda({ colchon: e.target.value })}
+              className={`${claseInput} text-right tabular-nums`}
+              placeholder={numero.format(colchonDeLaTienda)}
+            />
+          </Campo>
+          <p
+            className={`col-span-2 rounded-lg px-3 py-2 text-xs ring-1 sm:col-span-4 ${TONO_EN_TIENDA[enLaTienda.tono]}`}
+          >
+            {enLaTienda.texto}
+          </p>
         </Seccion>
 
         <Seccion titulo="Impuestos">

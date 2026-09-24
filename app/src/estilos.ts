@@ -65,6 +65,18 @@ export const barraDeAvance = {
 /** El recuadro blanco sobre el que se apoya casi todo. */
 export const tarjeta = 'rounded-xl bg-white shadow-sm ring-1 ring-borde'
 
+/*
+  El mismo campo, del ancho de su contenido. Para los filtros de una
+  barra, donde un desplegable a todo el ancho se come la fila.
+
+  Va aparte y no como `${campo} w-auto`: las dos son utilidades de
+  ancho, y cuál gana lo decide el orden en la hoja de estilos, no el
+  orden en el que se escriben. Con `campo` el select salía a todo el
+  ancho igual.
+*/
+export const campoDeFiltro =
+  'rounded-lg border border-borde bg-white px-2.5 py-2 text-sm text-tinta outline-none focus:border-marca-500 focus:ring-2 focus:ring-marca-500/20'
+
 /** Un campo de texto. */
 export const campo =
   'w-full rounded-lg border border-borde px-2.5 py-1.5 text-sm text-tinta outline-none focus:border-marca-500 focus:ring-2 focus:ring-marca-500/20'

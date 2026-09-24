@@ -17,7 +17,15 @@ import type { FilaListado, Referencias } from '@/lib/api/catalogo'
 import ProductoEditor from '@/components/ProductoEditor'
 import type { EstadoFormulario } from '@/components/ProductoEditor'
 import { ESTADO_STOCK, moneda, numero } from '@/lib/tipos'
-import { barraDeAvance, boton } from '@/estilos'
+import { barraDeAvance, boton, campoDeFiltro } from '@/estilos'
+import {
+  cambiaLoQueVeLaTienda,
+  definirVentaOnline,
+  definirVentaOnlinePorClasificacion,
+  estadoEnTienda,
+  normalizarColchon,
+} from '@/lib/api/ventaOnline'
+import type { EstadoEnTienda } from '@/lib/api/ventaOnline'
 
 const FORM_VACIO: EstadoFormulario = {
   campos: {
@@ -38,6 +46,30 @@ const FORM_VACIO: EstadoFormulario = {
   // Un producto nuevo hereda el aviso de su categoría o el general.
   // Ponerle uno propio es una decisión, no el estado inicial.
   umbral: { bajo: '', critico: '', propio: false },
+  // Nada sale a la tienda hasta que alguien lo decide.
+  tienda: { vender: false, colchon: '' },
+}
+
+function tiendaDelFormulario(e: EstadoEnTienda | null): EstadoFormulario['tienda'] {
+  return {
+    vender: e?.vender_online ?? false,
+    colchon: e?.colchon_propio === null || e?.colchon_propio === undefined ? '' : String(e.colchon_propio),
+  }
+}
+
+/*
+  Lo que se avisa después de prender o apagar. Cuenta lo que cambió de
+  verdad, y si alguno quedó prendido sin cumplir las condiciones lo dice:
+  si no, alguien lo busca en la web y no lo encuentra.
+*/
+function avisoDeVentaOnline(cambiados: number, sinSalir: number, vender: boolean) {
+  const cuantos = `${numero.format(cambiados)} ${cambiados === 1 ? 'producto' : 'productos'}`
+  if (cambiados === 0) {
+    return vender ? 'Ya estaban todos a la venta online.' : 'Ninguno estaba a la venta online.'
+  }
+  const hecho = vender ? `${cuantos} a la venta online.` : `${cuantos} dejaron de venderse online.`
+  if (!sinSalir) return hecho
+  return `${hecho} ${numero.format(sinSalir)} todavía no ${sinSalir === 1 ? 'sale' : 'salen'} a la tienda: abrí la ficha para ver qué le falta.`
 }
 
 export default function Productos() {
@@ -47,6 +79,8 @@ export default function Productos() {
   const [texto, setTexto] = useState('')
   const [debounced, setDebounced] = useState('')
   const [soloSinRevisar, setSoloSinRevisar] = useState(false)
+  const [categoriaId, setCategoriaId] = useState<string | null>(null)
+  const [marcaId, setMarcaId] = useState<string | null>(null)
   const [seleccionado, setSeleccionado] = useState<string | null>(null)
   const [creando, setCreando] = useState(false)
   const [form, setForm] = useState<EstadoFormulario>(FORM_VACIO)
@@ -54,6 +88,7 @@ export default function Productos() {
   const [verBajas, setVerBajas] = useState(false)
   const [marcados, setMarcados] = useState<Set<string>>(new Set())
   const [aviso, setAviso] = useState<string | null>(null)
+  const [errorLista, setErrorLista] = useState<string | null>(null)
   const inputBusqueda = useRef<HTMLInputElement>(null)
 
   const puedeEditar = tienePermiso('productos.editar')
@@ -70,8 +105,24 @@ export default function Productos() {
   }, [])
 
   const listado = useQuery({
-    queryKey: ['productos', debounced, soloSinRevisar],
-    queryFn: () => listarProductos(debounced, soloSinRevisar),
+    queryKey: ['productos', debounced, soloSinRevisar, categoriaId, marcaId],
+    queryFn: () => listarProductos(debounced, soloSinRevisar, categoriaId, marcaId),
+  })
+
+  /*
+    Cómo está en la tienda cada producto que se ve. Es una consulta
+    aparte y no una columna del listado: la cuenta la hace la base con
+    las mismas reglas que la API, y el listado lo usa también el
+    mostrador, que no tiene por qué pagarla.
+  */
+  const idsVisibles = useMemo(
+    () => (listado.data?.filas ?? []).map((f) => f.producto_id),
+    [listado.data],
+  )
+  const enTienda = useQuery({
+    queryKey: ['tienda-listado', idsVisibles],
+    queryFn: () => estadoEnTienda(idsVisibles),
+    enabled: idsVisibles.length > 0,
   })
 
   const avance = useQuery({ queryKey: ['avance-carga'], queryFn: contarAvance })
@@ -84,6 +135,7 @@ export default function Productos() {
 
   function avisar(texto: string) {
     setAviso(texto)
+    setErrorLista(null)
     setTimeout(() => setAviso(null), 6000)
   }
 
@@ -91,8 +143,38 @@ export default function Productos() {
     qc.invalidateQueries({ queryKey: ['productos'] })
     qc.invalidateQueries({ queryKey: ['productos-baja'] })
     qc.invalidateQueries({ queryKey: ['avance-carga'] })
+    qc.invalidateQueries({ queryKey: ['tienda-listado'] })
     setMarcados(new Set())
   }
+
+  // Vender online a un grupo marcado, o dejar de venderlo.
+  const ventaOnline = useMutation({
+    mutationFn: async ({ ids, vender }: { ids: string[]; vender: boolean }) => {
+      const cambiados = await definirVentaOnline(ids, vender)
+      const estados = vender ? await estadoEnTienda(ids) : new Map<string, EstadoEnTienda>()
+      const sinSalir = [...estados.values()].filter((e) => e.vender_online && e.motivo).length
+      return { cambiados, sinSalir, vender }
+    },
+    onSuccess: ({ cambiados, sinSalir, vender }) => {
+      avisar(avisoDeVentaOnline(cambiados, sinSalir, vender))
+      refrescarListados()
+      qc.invalidateQueries({ queryKey: ['producto'] })
+    },
+    onError: (e) => setErrorLista(e instanceof Error ? e.message : 'No se pudo cambiar la venta online.'),
+  })
+
+  // Una categoría o una marca entera: la hace la base, sobre todos los
+  // del grupo y no sólo los 100 que muestra la lista.
+  const ventaOnlineDelGrupo = useMutation({
+    mutationFn: ({ vender }: { vender: boolean }) =>
+      definirVentaOnlinePorClasificacion(categoriaId, marcaId, vender),
+    onSuccess: ({ cambiados, sinSalir }, { vender }) => {
+      avisar(avisoDeVentaOnline(cambiados, sinSalir, vender))
+      refrescarListados()
+      qc.invalidateQueries({ queryKey: ['producto'] })
+    },
+    onError: (e) => setErrorLista(e instanceof Error ? e.message : 'No se pudo cambiar la venta online.'),
+  })
 
   /*
     Dar de baja. Es baja lógica: el producto sale del catálogo y del
@@ -160,6 +242,7 @@ export default function Productos() {
         critico: String(detalle.data.umbral.critico),
         propio: detalle.data.umbral.propio,
       },
+      tienda: tiendaDelFormulario(detalle.data.tienda),
     })
     setErrorGuardado(null)
   }, [detalle.data])
@@ -198,12 +281,20 @@ export default function Productos() {
           : null,
         marcarRevisado,
         usuarioId: perfil!.id,
+        tienda: { vender: form.tienda.vender, colchon: normalizarColchon(form.tienda.colchon) },
+        tiendaAntes: creando
+          ? { vender: false, colchon: null }
+          : {
+              vender: detalle.data?.tienda?.vender_online ?? false,
+              colchon: detalle.data?.tienda?.colchon_propio ?? null,
+            },
       }),
     onSuccess: (_id, variables) => {
       setErrorGuardado(null)
       qc.invalidateQueries({ queryKey: ['productos'] })
       qc.invalidateQueries({ queryKey: ['avance-carga'] })
       qc.invalidateQueries({ queryKey: ['producto', seleccionado] })
+      qc.invalidateQueries({ queryKey: ['tienda-listado'] })
 
       if (variables.avanzar) {
         const siguiente = siguienteSinRevisar(seleccionado)
@@ -240,6 +331,52 @@ export default function Productos() {
     : 0
 
   const editorAbierto = creando || !!seleccionado
+
+  /*
+    ¿Hay cambios sin guardar que cambian lo que ve la tienda? Entonces la
+    línea de la ficha no describe lo guardado: diría «le falta el nombre
+    público» con el nombre recién escrito.
+  */
+  const tiendaPendiente = useMemo(() => {
+    if (creando || !detalle.data) return false
+    const g = detalle.data.producto
+    return cambiaLoQueVeLaTienda(
+      {
+        ...tiendaDelFormulario(detalle.data.tienda),
+        nombre_publico: g.nombre_publico,
+        precio_venta: g.precio_venta,
+        activo: g.activo,
+        es_fitosanitario: g.es_fitosanitario,
+      },
+      {
+        ...form.tienda,
+        nombre_publico: form.campos.nombre_publico,
+        precio_venta: form.campos.precio_venta,
+        activo: form.campos.activo,
+        es_fitosanitario: form.campos.es_fitosanitario,
+      },
+    )
+  }, [creando, detalle.data, form])
+
+  /*
+    Con una categoría o una marca elegida, y nada más filtrando, lo que
+    se ve es el grupo entero —aunque la lista muestre los primeros 100—
+    y se lo puede prender o apagar de una. Con la búsqueda o «sólo sin
+    revisar» encima, el total ya no es el del grupo y la acción se
+    esconde: prendería más de lo que dice la pantalla.
+  */
+  const puedeMarcar = puedeDarDeBaja || puedeEditar
+  const grupoEntero =
+    puedeEditar && !verBajas && !debounced && !soloSinRevisar && (!!categoriaId || !!marcaId)
+  const nombreDelGrupo = [
+    categoriaId && `la categoría «${referencias.data?.categorias.find((c) => c.id === categoriaId)?.nombre ?? ''}»`,
+    marcaId && `la marca «${referencias.data?.marcas.find((m) => m.id === marcaId)?.nombre ?? ''}»`,
+  ]
+    .filter(Boolean)
+    .join(' y ')
+  const visibles = listado.data?.filas ?? []
+  const todosMarcados = visibles.length > 0 && visibles.every((f) => marcados.has(f.producto_id))
+  const conCasillas = verBajas ? puedeDarDeBaja : puedeMarcar
 
   return (
     <div className="flex h-full flex-col gap-4">
@@ -333,6 +470,42 @@ export default function Productos() {
             Sólo sin revisar
           </label>
         )}
+        {!verBajas && referencias.data && (
+          <>
+            <select
+              aria-label="Categoría"
+              value={categoriaId ?? ''}
+              onChange={(e) => {
+                setCategoriaId(e.target.value || null)
+                setMarcados(new Set())
+              }}
+              className={campoDeFiltro}
+            >
+              <option value="">Todas las categorías</option>
+              {referencias.data.categorias.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.nombre}
+                </option>
+              ))}
+            </select>
+            <select
+              aria-label="Marca"
+              value={marcaId ?? ''}
+              onChange={(e) => {
+                setMarcaId(e.target.value || null)
+                setMarcados(new Set())
+              }}
+              className={campoDeFiltro}
+            >
+              <option value="">Todas las marcas</option>
+              {referencias.data.marcas.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.nombre}
+                </option>
+              ))}
+            </select>
+          </>
+        )}
         {puedeDarDeBaja && (
           <button
             onClick={() => {
@@ -352,6 +525,52 @@ export default function Productos() {
           {aviso}
         </p>
       )}
+      {errorLista && (
+        <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 ring-1 ring-red-200">
+          {errorLista}
+        </p>
+      )}
+
+      {grupoEntero && listado.data && listado.data.total > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-marca-50 px-4 py-2.5 ring-1 ring-marca-200">
+          <span className="text-sm text-marca-900">
+            Toda {nombreDelGrupo}: <strong>{numero.format(listado.data.total)}</strong>{' '}
+            {listado.data.total === 1 ? 'producto' : 'productos'}
+          </span>
+          <div className="flex gap-2">
+            <button
+              onClick={async () => {
+                const n = listado.data!.total
+                const sigue = await confirmar({
+                  titulo: `¿Vender online ${numero.format(n)} ${n === 1 ? 'producto' : 'productos'}?`,
+                  detalle: `Todos los de ${nombreDelGrupo} que hay hoy. Los que se carguen después se prenden en su ficha. Salen a la tienda los que tengan nombre público y precio.`,
+                  aceptar: 'Vender online',
+                })
+                if (sigue) ventaOnlineDelGrupo.mutate({ vender: true })
+              }}
+              disabled={ventaOnlineDelGrupo.isPending}
+              className={boton.principal}
+            >
+              Vender online todos
+            </button>
+            <button
+              onClick={async () => {
+                const n = listado.data!.total
+                const sigue = await confirmar({
+                  titulo: `¿Dejar de vender online ${numero.format(n)} ${n === 1 ? 'producto' : 'productos'}?`,
+                  detalle: `Todos los de ${nombreDelGrupo}. Salen de la tienda en la próxima consulta de la tienda.`,
+                  aceptar: 'Dejar de vender online',
+                })
+                if (sigue) ventaOnlineDelGrupo.mutate({ vender: false })
+              }}
+              disabled={ventaOnlineDelGrupo.isPending}
+              className={boton.secundario}
+            >
+              Dejar de vender online
+            </button>
+          </div>
+        </div>
+      )}
 
       {/*
         Barra de acciones sobre lo marcado. Aparece sólo cuando hay algo
@@ -363,7 +582,7 @@ export default function Productos() {
           <span className="text-sm">
             {marcados.size} {marcados.size === 1 ? 'seleccionado' : 'seleccionados'}
           </span>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setMarcados(new Set())}
               className="rounded-lg px-3 py-1.5 text-sm text-piedra-300 hover:bg-white/10"
@@ -379,6 +598,26 @@ export default function Productos() {
                 {restaurar.isPending ? 'Restaurando…' : 'Restaurar'}
               </button>
             ) : (
+              <>
+                {puedeEditar && (
+                  <>
+                    <button
+                      onClick={() => ventaOnline.mutate({ ids: [...marcados], vender: true })}
+                      disabled={ventaOnline.isPending}
+                      className="rounded-lg bg-white px-4 py-1.5 text-sm font-medium text-tinta hover:bg-piedra-100 disabled:opacity-50"
+                    >
+                      Vender online
+                    </button>
+                    <button
+                      onClick={() => ventaOnline.mutate({ ids: [...marcados], vender: false })}
+                      disabled={ventaOnline.isPending}
+                      className="rounded-lg px-3 py-1.5 text-sm text-white ring-1 ring-white/30 hover:bg-white/10 disabled:opacity-50"
+                    >
+                      Dejar de vender online
+                    </button>
+                  </>
+                )}
+                {puedeDarDeBaja && (
               <button
                 onClick={async () => {
                   const n = marcados.size
@@ -396,6 +635,8 @@ export default function Productos() {
               >
                 {darDeBaja.isPending ? 'Dando de baja…' : 'Dar de baja'}
               </button>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -419,7 +660,24 @@ export default function Productos() {
             <table className="w-full text-sm">
               <thead className="sticky top-0 border-b border-borde bg-piedra-50 text-left text-xs tracking-wide text-piedra-500 uppercase">
                 <tr>
-                  {puedeDarDeBaja && <th className="hidden w-10 px-4 py-2.5 sm:table-cell" />}
+                  {conCasillas && (
+                    <th className="hidden w-10 px-4 py-2.5 sm:table-cell">
+                      {/* Marca los que se ven. Para una categoría entera, el
+                          filtro de arriba: la lista muestra de a 100. */}
+                      {!verBajas && (
+                        <input
+                          type="checkbox"
+                          aria-label="Marcar todos los que se ven"
+                          title="Marcar todos los que se ven"
+                          checked={todosMarcados}
+                          onChange={() =>
+                            setMarcados(todosMarcados ? new Set() : new Set(visibles.map((f) => f.producto_id)))
+                          }
+                          className="size-4 rounded border-borde text-marca-600 focus:ring-marca-500"
+                        />
+                      )}
+                    </th>
+                  )}
                   <th className="hidden px-4 py-2.5 font-medium sm:table-cell">Código</th>
                   <th className="px-4 py-2.5 font-medium">Producto</th>
                   <th className="px-4 py-2.5 text-right font-medium">Precio</th>
@@ -463,7 +721,7 @@ export default function Productos() {
                 {verBajas &&
                   bajas.data?.filas.map((p) => (
                     <tr key={p.id} className="hover:bg-piedra-50">
-                      {puedeDarDeBaja && (
+                      {conCasillas && (
                         <td className="hidden px-4 py-2.5 sm:table-cell">
                           <input
                             type="checkbox"
@@ -496,7 +754,7 @@ export default function Productos() {
                         key={p.producto_id}
                         className={activa ? 'bg-marca-50' : 'hover:bg-piedra-50'}
                       >
-                        {puedeDarDeBaja && (
+                        {conCasillas && (
                           <td className="hidden px-4 py-2.5 sm:table-cell">
                             <input
                               type="checkbox"
@@ -535,6 +793,7 @@ export default function Productos() {
                               />
                             )}
                             <span className="font-medium text-tinta">{p.nombre_interno}</span>
+                            <MarcaWeb estado={enTienda.data?.get(p.producto_id)} />
                           </div>
                           {/* Sin la columna del código, va debajo del nombre. */}
                           <p className="font-mono text-xs text-piedra-400 sm:hidden">{p.codigo}</p>
@@ -597,6 +856,8 @@ export default function Productos() {
                       }
                     : undefined
                 }
+                enTienda={creando ? null : (detalle.data?.tienda ?? null)}
+                tiendaPendiente={tiendaPendiente}
                 onReferenciaCreada={(grupo, nueva) =>
                   qc.setQueryData(['referencias'], (prev: Referencias | undefined) =>
                     prev ? { ...prev, [grupo]: [...prev[grupo], nueva] } : prev,
@@ -608,5 +869,26 @@ export default function Productos() {
         )}
       </div>
     </div>
+  )
+}
+
+/*
+  «Web» al lado del nombre: verde si la tienda lo muestra, ámbar si está
+  prendido pero no sale (el motivo, al pasar el mouse). Apagado no se
+  marca: en un catálogo de 3.000 productos, marcar lo que NO se vende
+  llenaría la lista de ruido.
+*/
+function MarcaWeb({ estado }: { estado: EstadoEnTienda | undefined }) {
+  if (!estado?.vender_online) return null
+  const sale = estado.motivo === null
+  return (
+    <span
+      title={sale ? 'Se vende online' : `Prendido, pero no sale: ${estado.motivo}`}
+      className={`shrink-0 rounded-full px-1.5 py-px text-[10px] font-semibold tracking-wide uppercase ring-1 ${
+        sale ? 'bg-verde-50 text-verde-700 ring-verde-200' : 'bg-amber-50 text-amber-700 ring-amber-200'
+      }`}
+    >
+      Web
+    </span>
   )
 }
