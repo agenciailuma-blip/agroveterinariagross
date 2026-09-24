@@ -1,5 +1,5 @@
 ---
-actualizado: 2026-09-18
+actualizado: 2026-09-24
 estado: en curso
 ---
 
@@ -12,7 +12,7 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Publicado: 0.5.0** (18/09), con **la factura que sale sin internet** —la caja emite con CAEA y el ticket sale solo—. Antes, la 0.4.4 con la red del local que ahora **dice qué le pasa**, el cortacircuito que hace que la Caja abra rápido sin internet, y la cola de la caja que se actualiza al cambiar el medio de pago. Antes, ese mismo día, la 0.4.2 con el recargo por cuotas arreglado, los acentos del ticket y la impresión automática al cobrar. **La 0.4.1 quedó instalada en el local el 17/09, en todas menos la de Windows 7** — las dos versiones nuevas entran solas con *Actualizar ahora*. **353 pruebas verdes en la app y 11 en el programa**, 83 migraciones aplicadas.
+**Publicado: 0.6.0** (24/09), con **«Vender online»** —qué productos salen a la tienda web se decide desde Productos— y con **el arreglo de la sincronización que impedía que el CAEA llegara a las máquinas**. Antes, la 0.5.0 con **la factura que sale sin internet** —la caja emite con CAEA y el ticket sale solo—. Antes, la 0.4.4 con la red del local que ahora **dice qué le pasa**, el cortacircuito que hace que la Caja abra rápido sin internet, y la cola de la caja que se actualiza al cambiar el medio de pago. Antes, ese mismo día, la 0.4.2 con el recargo por cuotas arreglado, los acentos del ticket y la impresión automática al cobrar. **La 0.4.1 quedó instalada en el local el 17/09, en todas menos la de Windows 7** — las versiones nuevas entran solas con *Actualizar ahora*. **353 pruebas verdes en la app y 11 en el programa**, 83 migraciones aplicadas.
 
 **Y la API para Zubu, publicada el 18/09** — la primera pieza de V1-B. **Zubu ya tiene su clave y su documentación** (24/09). Ver abajo.
 
@@ -22,8 +22,9 @@ estado: en curso
 |---|---|
 | ~~La impresión por impresora de Windows~~ | ✅ **Imprimió el 17/09.** Falta ver en papel lo corregido después: los acentos y el ticket que sale solo al cobrar |
 | **La venta que llega a la caja sin internet** | 🔴 **Se probó el 17/09 y NO funcionó.** Ver *Lo que sigue* |
-| El actualizador de punta a punta | Apretando *Actualizar ahora* en una PC, sin desinstalar antes. **La 0.5.0 es la oportunidad** |
-| **Facturar sin internet, con CAEA** | 🔴 En el local, con la conexión cortada de verdad: cobrar en la caja y que salga el ticket con el CAEA |
+| El actualizador de punta a punta | Apretando *Actualizar ahora* en una PC, sin desinstalar antes. **La 0.6.0 es la oportunidad** |
+| **Facturar sin internet, con CAEA** | 🔴 En el local, con la conexión cortada de verdad: cobrar en la caja y que salga el ticket con el CAEA. **Recién ahora es posible probarlo**: hasta el 24/09 el CAEA no llegaba a las máquinas (abajo). Cada PC tiene que sincronizar **una vez con internet** después de actualizar a la 0.6.0, y recién ahí tiene el código guardado |
+| **Que la sincronización llegue completa en las PC del local** | 🟡 Arreglado y verificado en el navegador el 24/09. En el local se comprueba en la pantalla de inicio: el indicador de arriba tiene que decir *Copia local lista* y **Configuración → La red del local** no tiene que mostrar errores |
 | ~~Las pantallas de **La red del local** y **Percepciones**~~ | ✅ **Vistas el 11/09.** Percepciones entera, con datos de agosto y el caso de la nota de crédito. De La red del local sólo se puede ver en el navegador el aviso de que hace falta el programa instalado: es así a propósito |
 
 🟡 **`cargo test` falla en esta máquina, y ya se sabe por qué: hay tres antivirus instalados.** Norton Security y Avast conviven con Windows Defender —que quedó desactivado, porque los otros dos le sacaron el control—. Cada `.exe` que el compilador crea lo intercepta el antivirus antes de que termine de escribirse, y el enlazador falla con `LNK1104`, «no se puede abrir el archivo». El archivo, efectivamente, no está: lo hicieron desaparecer.
@@ -36,7 +37,9 @@ estado: en curso
 
 🔴 **Que la venta llegue a la caja sin internet.** Se probó en el local el 17/09 y no llegó. Es la promesa grande del sistema —el punto 2-bis— y lo único de V1-A que se probó y falló. Lo primero es que el mostrador **avise** cuando no encuentra a la caja: hoy no lo intenta y no dice nada, así que no se puede ni saber por qué falló.
 
-🟡 **El actualizador sigue sin probarse de punta a punta.** La 0.2.2 entró bien, pero desinstalando la versión vieja primero, así que **el arreglo del archivo tomado no se ejercitó**. **La 0.5.0 es la oportunidad**: en una sola PC, *Actualizar ahora*, sin desinstalar nada. Molesta después del 26/10, cuando una corrección tenga que llegar a las 4 PC sin viajar a Oberá.
+🔴 **Que cada PC sincronice una vez con internet, y que el CAEA quede guardado.** Hasta el 24/09 la bajada se cortaba y **el código para facturar sin internet no estaba en ninguna máquina** (ver *Lo último que pasó*). La base ya está arreglada, así que alcanza con abrir el sistema en cada PC estando en línea. **Cómo se comprueba**: el indicador de arriba dice *Copia local lista* y *La red del local* no muestra errores. Sin eso, la prueba del corte de internet vuelve a fallar y por el mismo motivo de fondo: el papel no sale.
+
+🟡 **El actualizador sigue sin probarse de punta a punta.** La 0.2.2 entró bien, pero desinstalando la versión vieja primero, así que **el arreglo del archivo tomado no se ejercitó**. **La 0.6.0 es la oportunidad**: en una sola PC, *Actualizar ahora*, sin desinstalar nada. Molesta después del 26/10, cuando una corrección tenga que llegar a las 4 PC sin viajar a Oberá.
 
 ---
 
@@ -318,6 +321,7 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
    - ~~**Que la Caja no tarde un minuto en abrir sin conexión.**~~ ✅ **Hecho** con el cortacircuito.
 1. ~~🔴 **Probar la impresión en el local, con la impresora delante.**~~ ✅ **Hecho el 17/09: imprime.** Quedaron dos correcciones en la 0.4.2 —las letras acentuadas y el ticket que ahora sale solo al cobrar— que **falta ver en papel**.
 2. 🔴 **CAEA** — el alta del punto de venta 9 llegó y está cargada (16/09). **Falta el certificado de producción**: el ambiente de pruebas no ve el punto de venta, y la última prueba sólo se puede hacer con la ARCA real. El pedido está armado: [`certificado-produccion.md`](certificado-produccion.md).
+   - ⚠️ **Y antes que eso: que el CAEA esté en cada máquina.** Se arregló el 24/09 lo que lo impedía; hace falta que cada PC sincronice una vez con internet. Es lo primero de la próxima visita, porque sin eso la prueba del corte no puede salir bien.
 3. ~~**Cifrado de la base local.**~~ ✅ **Hecho y publicado el 14/09 (0.4.0).** Se instala limpio, PC por PC, esta semana: [paso 9 del guion](instalacion-en-el-local.md).
 4. ~~**Devoluciones parciales**~~ ✅ **Hechas el 11/09 y publicadas el 14/09** en la 0.3.1.
 5. ~~**Reportes**~~ ✅ **Hecha y publicada el 11/09** en la 0.3.0.
