@@ -1,5 +1,5 @@
 ---
-actualizado: 2026-09-24
+actualizado: 2026-09-25
 estado: en curso
 ---
 
@@ -12,9 +12,9 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Publicado: 0.6.0** (24/09), con **«Vender online»** —qué productos salen a la tienda web se decide desde Productos— y con **el arreglo de la sincronización que impedía que el CAEA llegara a las máquinas**. Antes, la 0.5.0 con **la factura que sale sin internet** —la caja emite con CAEA y el ticket sale solo—. Antes, la 0.4.4 con la red del local que ahora **dice qué le pasa**, el cortacircuito que hace que la Caja abra rápido sin internet, y la cola de la caja que se actualiza al cambiar el medio de pago. Antes, ese mismo día, la 0.4.2 con el recargo por cuotas arreglado, los acentos del ticket y la impresión automática al cobrar. **La 0.4.1 quedó instalada en el local el 17/09, en todas menos la de Windows 7** — las versiones nuevas entran solas con *Actualizar ahora*. **378 pruebas verdes en la app y 11 en el programa**, 86 migraciones aplicadas.
+**Publicado: 0.6.0** (24/09), con **«Vender online»** —qué productos salen a la tienda web se decide desde Productos— y con **el arreglo de la sincronización que impedía que el CAEA llegara a las máquinas**. Antes, la 0.5.0 con **la factura que sale sin internet** —la caja emite con CAEA y el ticket sale solo—. Antes, la 0.4.4 con la red del local que ahora **dice qué le pasa**, el cortacircuito que hace que la Caja abra rápido sin internet, y la cola de la caja que se actualiza al cambiar el medio de pago. Antes, ese mismo día, la 0.4.2 con el recargo por cuotas arreglado, los acentos del ticket y la impresión automática al cobrar. **La 0.4.1 quedó instalada en el local el 17/09, en todas menos la de Windows 7** — las versiones nuevas entran solas con *Actualizar ahora*. **405 pruebas verdes en la app y 11 en el programa**, 91 migraciones aplicadas.
 
-**Y la API de la tienda online.** Leer el catálogo desde el 18/09; **mandar pedidos desde el 24/09**. Zubu ya tiene su clave y su documentación. Ver abajo.
+**Y la API de la tienda online.** Leer el catálogo desde el 18/09; **mandar pedidos desde el 24/09**; **preguntar en qué está cada pedido desde el 25/09**. Zubu ya tiene su clave y su documentación. Del lado del local, **la pantalla Pedidos web** (25/09), que llega a las PC con la próxima versión. Ver abajo.
 
 ⚠️ **Lo que está construido pero NO verificado.** Un chat nuevo no puede darlo por probado:
 
@@ -43,7 +43,39 @@ estado: en curso
 
 ---
 
-## Lo último que pasó — 24 de septiembre
+## Lo último que pasó — 25 de septiembre
+
+🔴 **Lo más importante del día tampoco estaba en el plan: desde el 11/09, ninguna devolución parcial se podía registrar desde la aplicación.** Ni desde Facturación ni desde ningún lado. Contestaba *«new row violates row-level security policy»* y en la base había **cero devoluciones**.
+
+> **Cómo se lo contás a Lucas:** el botón *Devolver parte* de Facturación no andaba: si un cliente traía una bolsa de tres, el sistema no la podía registrar. Nadie lo había usado todavía, así que no hay nada que corregir hacia atrás. **Ya está arreglado, y como el arreglo es del servidor, anda en todas las PC sin instalar nada.**
+
+- **Por qué no se vio el 11/09:** la base no dejaba escribir la devolución a nadie más que a la función que la registra, pero esa función corre con los permisos de quien la usa. Las pruebas de ese día corrieron como dueño de la base, que se saltea esos controles.
+- **Tenía una segunda mitad, peor:** con el alta arreglada, la devolución se registraba pero no quedaba atada a su nota de crédito. La base ignoraba ese último paso sin avisar. La pantalla decía *«la venta no estaba facturada»* y **la nota de crédito quedaba sin pedirle el CAE a ARCA**, con el stock ya devuelto.
+- **Arreglado y verificado en la aplicación:** una devolución desde la pantalla sale con la nota de crédito autorizada por ARCA en el acto. Y una devolución ya no se puede editar: si estuvo mal, se registra otra.
+- **Las pruebas de las devoluciones ahora corren como un usuario de verdad**, no como dueño de la base. Se rompió a propósito cada arreglo y las pruebas lo atraparon.
+
+> ⚠️ **La lección, que vale para lo que queda:** una prueba que corre como dueño de la base no ve las reglas de acceso. Lo que use funciones que corren con los permisos del usuario se prueba como usuario.
+
+**Y lo que sí estaba en el plan: la pantalla Pedidos web**, lo que el local hace con un pedido después de que entra.
+
+> **Cómo se lo contás a Lucas:** en el menú hay una entrada *Pedidos web* con un número al lado: lo que espera que alguien haga algo. Cada pedido muestra si el cliente pagó en la web o paga en el local, cómo se entrega, y **hace cuánto espera factura** —en rojo si ya pasó el día del cobro—. Desde ahí se marca preparado, se emite el remito del envío, se factura y se marca entregado. **Lo que se cobró en la web no se puede entregar sin factura: lo impide el sistema.**
+
+- **Facturar** usa el mismo circuito de siempre. Si el pedido está marcado para revisar, hay que confirmar *«lo revisé»* y queda el nombre de quien lo hizo. **Si la factura saldría por más de lo que el cliente pagó** —pasa cuando le corresponde percepción de IIBB—, **no factura**: frena y dice por qué, sin perder el número de comprobante.
+- **Cancelar** antes de entregar anula la venta y devuelve el stock; si ya estaba facturado, sale la nota de crédito. **Lo entregado vuelve por devolución**, con el *Devolver parte* de siempre.
+- **El reintegro:** si el cliente pagó en la web, la plata la tiene la pasarela de la tienda y el sistema no la puede devolver. Cada cancelación o devolución deja un pendiente *«a devolver por la tienda»*, a la vista hasta que alguien anota que se devolvió, con la referencia. **Si alguien anula la venta desde Facturación** sin saber que era de la web, el pedido queda cancelado y el reintegro se anota igual.
+- **En Facturación**, un pedido web no aparece en el panel rojo mientras está dentro del día; si se pasa, aparece con la etiqueta *Pedido web* y el enlace para facturarlo desde Pedidos, porque desde Facturación se saltearía el control de la percepción.
+- **Permiso nuevo:** *tienda.pedidos*, para Administrador y Encargado.
+- **Y la tienda pregunta:** `GET /pedidos/{numero}` le dice a Zubu en qué está el pedido, si tiene factura y cuánto hay que devolver. Documentación al día en [`api-tienda.md`](api-tienda.md) y en la página que se le comparte, que dicen lo mismo.
+
+Verificado contra la base real: **49 comprobaciones** de Pedidos web, las 41 de pedidos anteriores siguen verdes, **64 por internet** contra la API publicada, y **405 pruebas** en la app. Se rompió a propósito de **nueve maneras** —entregar sin factura, facturar por más de lo cobrado, sin el control de permiso, sin la cancelación que sigue a la venta, sin el reintegro de la devolución, la tienda viendo una factura sin CAE, y las tres de las devoluciones— y **las nueve fueron atrapadas**. La del permiso **pasó la primera vez por un error de la prueba**, no del código: aceptaba cualquier error como bueno. Se corrigió en los ocho lugares donde estaba.
+
+Y en la aplicación de verdad, contra ARCA de homologación: un pedido facturado con CAE, con remito del envío y entregado; otro marcado, confirmado, facturado y cancelado con nota de crédito autorizada y el reintegro anotado; dos devoluciones con su nota de crédito. **Salieron tres cosas que las pruebas no veían**, ya corregidas: las devoluciones de arriba; **el remito del pedido web**, que fallaba porque intentaba guardarse primero en la copia local de la PC, donde las ventas de la web no están; y la factura que figuraba sin decir si era A o B.
+
+⚠️ **Lo que queda de los pedidos es el mail con la factura**, y espera la dirección de correo de Gross. Mientras tanto la factura se abre para imprimir o guardar en PDF. El día que llegue hay que decidir si va adjunta en PDF —lo habitual, pero hay que generarlo en el servidor— o en el cuerpo del mail con el QR de ARCA.
+
+🟡 **Para las 4 PC:** la pantalla de Pedidos está en el código, **no en una versión publicada**; llega con la próxima. El arreglo de las devoluciones, en cambio, ya anda en todas.
+
+## Lo que pasó el 24 de septiembre
 
 🔴 **Lo más importante del día no estaba en el plan: la sincronización estaba rota desde el 18/09, y no se veía.**
 
@@ -99,11 +131,7 @@ Verificado contra la base real: **43 comprobaciones** de pedidos y **55 por inte
 
 ⚠️ **Al desplegar la puerta hay que apagar la verificación de JWT.** Viene prendida por omisión y, prendida, rechaza la clave de la tienda antes de llegar a nuestro código: la API queda contestando «Invalid JWT» a todo. Pasó hoy en el primer despliegue, se detectó en el minuto siguiente con las pruebas por internet, y quedó anotado en el encabezado de la función.
 
-**Lo que sigue de los pedidos**, en orden:
-
-1. **La pantalla Pedidos web:** lo que hay que preparar, con sus estados, cuáles esperan factura y hace cuánto, el remito del envío, y la consulta de estado para la tienda.
-2. **El botón «Facturar y enviar»:** pide el CAE a ARCA por el circuito que ya existe y deja la factura lista.
-3. **El mail con la factura**, por Resend. Necesita una dirección de correo de Gross con acceso al dominio: es lo único de esto que depende de Lucas.
+**Lo que seguía de los pedidos:** ~~la pantalla Pedidos web~~ y ~~el botón de facturar~~ ✅ **hechos el 25/09** (arriba). Queda **el mail con la factura**, que espera la dirección de correo de Gross.
 
 ## Lo que pasó el 18 de septiembre, a la tarde: la API para Zubu
 
@@ -340,7 +368,7 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 > - **Los atajos de teclado** se definen con Lucas la **primera semana de octubre**.
 > - **La capacitación ya se viene haciendo** en cada visita, fuera de horario, y Lucas y los empleados siguen el sistema al detalle. No es un pendiente.
 > - **La base de datos sigue en plan gratis, por decisión de Gross**, conociendo el riesgo: sin copias de seguridad recuperables. Se contrata más adelante. Dicho una vez y anotado.
-> - ~~**Lo que sigue: adelantar V1-B, empezando por la API para Zubu**~~ ✅ **Hecho.** El catálogo se publicó el 18/09, **«Vender online» el 24/09** (0.6.0) y **los pedidos el 24/09**. **Zubu ya tiene su clave y su documentación.** Lo que sigue de la tienda es la pantalla de Pedidos y el botón de facturar; el mail con la factura espera la dirección de correo de Gross.
+> - ~~**Lo que sigue: adelantar V1-B, empezando por la API para Zubu**~~ ✅ **Hecho.** El catálogo se publicó el 18/09, **«Vender online» el 24/09** (0.6.0) y **los pedidos el 24/09** y **la pantalla Pedidos web con la facturación el 25/09**. **Zubu ya tiene su clave y su documentación.** De la tienda queda el mail con la factura, que espera la dirección de correo de Gross.
 
 0. 🔴 **Que la venta llegue a la caja sin internet.** Falló en el local el 17/09. **El sistema ya dice qué pasa** (0.4.3) — eso era lo que faltaba para poder arreglarlo. **Lo que sigue es una prueba de dos minutos en el local**, con las dos máquinas prendidas y el programa instalado en las dos: Configuración → La red del local → *Probar la conexión*, y después una venta con internet cortado.
    - Si dice **«no sé cuál es la caja»**: esa terminal no sincronizó desde que la caja se presentó. Se resuelve sincronizando una vez con internet.
@@ -417,6 +445,10 @@ Está andando y verificado. Si algo de acá se rompe, es una regresión:
 - **La lista de campos que sale a la tienda está escrita a mano**, y una prueba la compara. Armarla «con lo que tenga la tabla» publicaría el próximo campo interno que se agregue.
 - **La marca de agua de la API mira las transacciones abiertas.** Si devuelve «ahora», un precio que se guarda mientras Zubu consulta no llega nunca a la web. Se probó rompiéndola.
 - **Todo lo que cambia lo que ve la tienda le mueve la fecha al producto** (animales, etapas, códigos de barra, «Vender online», precio en una lista). Sacar esos disparadores deja a la tienda con datos viejos, sin ningún error.
+- **Un pedido web pagado no se entrega sin factura, y no se factura por un importe distinto del cobrado.** Lo hace cumplir la base (`pedido_web_marcar`, `pedido_web_facturar`), no la pantalla. El segundo freno es el que impide facturar una percepción de IIBB que la web no cobró.
+- **El pedido sigue a su venta.** Anular la venta por cualquier camino cancela el pedido y anota el reintegro, y cada devolución de un pedido pagado en la web anota el suyo: son disparadores de la base. Sacarlos deja plata del cliente sin devolver, sin ningún aviso.
+- **El remito de un pedido web se emite en el servidor, no en la copia local.** Las ventas de la tienda no bajan a las terminales: por el camino de siempre falla con «la venta no está en esta computadora».
+- **Las devoluciones necesitan sus permisos de la base:** dar de alta la devolución y sus líneas, y anotarle la nota de crédito una sola vez. Sin el último, la nota queda sin CAE y la pantalla dice que la venta no estaba facturada. Se prueban **como usuario**, nunca como dueño de la base.
 - **La impresora se guarda por terminal, no en la configuración del comercio.** Volverla a un solo valor para todo el local deja tres de las cuatro PC imprimiendo a un nombre que en su lista no existe. Y el nombre se elige de la lista de Windows: escribirlo a mano falla en silencio.
 
 ## Cómo arrancar

@@ -1,6 +1,6 @@
 # API de la tienda online
 
-Documentación de la API con la que una tienda online lee el catálogo del sistema de gestión —nombre público, descripción, precio, clasificaciones y stock disponible— y le registra las compras.
+Documentación de la API con la que una tienda online lee el catálogo del sistema de gestión —nombre público, descripción, precio, clasificaciones y stock disponible—, le registra las compras y consulta en qué está cada una.
 
 > **La versión que se le entrega a la tienda** es la página con la marca de Gross: https://claude.ai/artifact/VXHehNGKU5HF9Ltbbe7LgB — esta copia es la misma documentación, en el repositorio, para que no dependa de un enlace.
 >
@@ -13,7 +13,7 @@ Documentación de la API con la que una tienda online lee el catálogo del siste
 | | |
 |---|---|
 | **Dirección** | `https://ywggnhoifhtoncnxrodh.supabase.co/functions/v1/api-tienda` |
-| **Caminos** | `GET /catalogo`, `GET /clasificaciones` y `POST /pedidos` |
+| **Caminos** | `GET /catalogo`, `GET /clasificaciones`, `POST /pedidos` y `GET /pedidos/{numero}` |
 | **Autenticación** | Encabezado `Authorization: Bearer <clave>`. La clave se entrega por separado |
 | **Formato** | JSON en UTF-8. Fechas ISO 8601 en UTC (`2026-09-24T12:30:15.807035Z`). Importes en pesos, finales, con IVA |
 | **Origen** | Las consultas se hacen desde el servidor de la tienda. La API no responde a pedidos de un navegador |
@@ -244,10 +244,87 @@ Para la tienda esto significa dos cosas:
 
 - La respuesta de `POST /pedidos` **no trae número de factura**, y no hay que esperarlo.
 - El mail de «recibimos tu pedido» lo envía la tienda. El de la factura lo envía el sistema, más tarde.
+- Cuándo quedó facturado se ve en [`GET /pedidos/{numero}`](#get-pedidosnumero).
 
 ### Responsable inscripto
 
 Un responsable inscripto necesita factura A, y para eso hace falta el CUIT. Si el pedido dice `responsable_inscripto` pero no trae un CUIT, el comprador se registra como consumidor final y el pedido queda marcado, para que el local lo hable antes de facturar. El pedido entra igual.
+
+---
+
+## `GET /pedidos/{numero}`
+
+En qué está un pedido: si se preparó, si salió, si ya tiene factura y si hay plata para devolverle al comprador. Es lo que la tienda necesita para contestarle «¿está listo?».
+
+```bash
+curl -s "https://ywggnhoifhtoncnxrodh.supabase.co/functions/v1/api-tienda/pedidos/1042"   -H "Authorization: Bearer $CLAVE_GROSS"
+```
+
+`{numero}` es el mismo `numero` con el que se envió el pedido, **codificado para URL** (`encodeURIComponent`): un número como `2026/0001` va como `2026%2F0001`. Se respetan mayúsculas y minúsculas.
+
+```json
+{
+  "numero": "1042",
+  "estado": "entregado",
+  "entrega": "envio",
+  "pagado_en_la_web": true,
+  "cobrado": true,
+  "factura": "B 00003-00000123",
+  "reintegros": [
+    { "motivo": "devolucion", "importe": 6900, "devuelto": false, "devuelto_en": null }
+  ],
+  "actualizado": "2026-09-25T14:02:11.518204Z"
+}
+```
+
+| Campo | Qué es |
+|---|---|
+| `numero` | El `numero` que envió la tienda |
+| `estado` | `recibido` → `preparado` → `entregado`, o `cancelado` |
+| `entrega` | `retira` o `envio`, como vino en el pedido |
+| `pagado_en_la_web` | Como vino en el pedido |
+| `cobrado` | Si el sistema ya registró el cobro. Un pedido a pagar en el local pasa a `true` cuando se cobra en la caja |
+| `factura` | La clase y el número del comprobante, con el punto de venta: `B 00003-00000123`. `null` mientras no esté autorizado por ARCA |
+| `reintegros` | Plata que hay que devolverle al comprador, si la hay. Ver abajo |
+| `actualizado` | El último cambio de cualquiera de las partes del pedido: su estado, la factura o un reintegro |
+
+**Cada cuánto consultar:** no hace falta más de una vez cada algunos minutos por pedido abierto, ni seguir consultando uno `entregado` sin reintegros pendientes o `cancelado` con todo devuelto. `actualizado` sirve para saber si algo cambió desde la última vez.
+
+### Los estados
+
+| Estado | Qué significa para el comprador |
+|---|---|
+| `recibido` | El pedido entró y el local lo tiene a la vista |
+| `preparado` | La mercadería está armada. Si retira, ya puede pasar |
+| `entregado` | Lo retiró o salió con el envío |
+| `cancelado` | No se entrega. Si pagó en la web, se le devuelve la plata (ver abajo) |
+
+Lo que ya se cobró en la web **no se entrega sin factura**: un pedido pagado pasa a `entregado` con su factura emitida. Uno a pagar en el local pasa a `entregado` después de cobrarse en la caja.
+
+### Cancelaciones y devoluciones
+
+Una cancelación la decide el local, y la API no permite cancelar. Si el comprador se arrepiente, la tienda se lo avisa al local.
+
+Cuando se cancela o se devuelve algo **que se pagó en la web**, el sistema no puede devolver la plata: la cobró la pasarela de la tienda. Lo que hace es anotar un **reintegro**, que aparece en `reintegros`:
+
+| Campo | Qué es |
+|---|---|
+| `motivo` | `cancelacion` (el pedido entero) o `devolucion` (lo que el comprador devolvió después de recibirlo) |
+| `importe` | Lo que hay que devolverle, en pesos |
+| `devuelto` | `true` cuando el local anotó que la tienda ya lo devolvió |
+| `devuelto_en` | Cuándo se anotó, o `null` |
+
+Una devolución puede ser parcial, y puede haber más de una: cada una es un reintegro aparte. **El reintegro lo hace la tienda** por su pasarela, y le avisa al local la referencia para que quede anotado.
+
+### Errores de `GET /pedidos/{numero}`
+
+| Estado | `codigo` | Qué significa |
+|---|---|---|
+| `404` | `pedido_desconocido` | No hay ningún pedido con ese `numero` para esta clave |
+| `400` | `numero_invalido` | El número del camino vino vacío o no se pudo decodificar |
+| `405` | `metodo_no_permitido` | Se usó otro método que `GET` |
+
+Un número con una codificación rota (`%E0%A4%A`) puede ser rechazado por la infraestructura antes de llegar a la API, con un `500` en texto plano en lugar del JSON de siempre. Codificar el número con `encodeURIComponent` lo evita.
 
 ---
 
@@ -289,7 +366,7 @@ Tres comportamientos a tener en cuenta:
 | `400` | `parametro_desconocido` | Un parámetro que esa consulta no acepta. El mensaje lo nombra |
 | `400` | `desde_invalido` | `desde` no es un `siguiente` devuelto por la API |
 | `400` | `limite_invalido` | `limite` no es un entero entre 1 y 1000 |
-| `404` | `ruta_desconocida` | El camino no existe. Los disponibles son `/catalogo`, `/clasificaciones` y `/pedidos` |
+| `404` | `ruta_desconocida` | El camino no existe. Los disponibles son `/catalogo`, `/clasificaciones`, `/pedidos` y `/pedidos/{numero}` |
 | `405` | `metodo_no_permitido` | El camino no acepta ese método. El encabezado `Allow` dice cuál va |
 | `500` | `error_interno` | Falla del lado del sistema. Conviene reintentar espaciando los intentos y, si persiste, reportarlo con la hora del pedido |
 

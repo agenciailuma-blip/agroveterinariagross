@@ -138,6 +138,53 @@ export async function emitirNoFiscal(
 }
 
 /*
+  El remito de un pedido de la tienda online.
+
+  No pasa por la copia local como el de arriba, y no es un descuido: la
+  venta de un pedido web nace en el servidor y no baja a las terminales,
+  así que guardarla acá primero falla con «la venta no está en esta
+  computadora». Pasó al verificar la pantalla de Pedidos. Esa pantalla
+  necesita internet de todos modos —el pedido llegó por internet—, así
+  que el remito se emite directo en el servidor.
+
+  El número sale igual del contador de la terminal, para que no choque
+  con los remitos que esta misma máquina emite sin conexión.
+*/
+export async function emitirRemitoDePedido(
+  ventaId: string,
+  terminalId: string | null,
+  opciones: { serie?: string | null; observaciones?: string | null; entrega: DatosEntrega },
+): Promise<{ id: string; serie: string; numero: number }> {
+  if (!navigator.onLine) throw new Error('Hace falta conexión para emitir el remito de un pedido web.')
+
+  const serie = (opciones.serie ?? '').trim() || 'T'
+  const id = crypto.randomUUID()
+  const numero = await reservarNumeroNoFiscal('remito', serie)
+
+  const { error } = await supabase.rpc('emitir_comprobante_no_fiscal', {
+    p_venta_id: ventaId,
+    p_tipo_clave: 'remito',
+    p_terminal_id: terminalId,
+    p_lineas: null,
+    p_observaciones: opciones.observaciones ?? null,
+    p_valido_hasta: null,
+    p_entrega_domicilio: opciones.entrega.domicilio ?? null,
+    p_entrega_localidad: opciones.entrega.localidad ?? null,
+    p_entrega_contacto: opciones.entrega.contacto ?? null,
+    p_transportista: opciones.entrega.transportista ?? null,
+    p_id: id,
+    p_serie: serie,
+    p_numero: numero,
+    p_ocurrido_en: new Date().toISOString(),
+    // Nunca fuerza el descuento: el pedido pagado ya descontó al entrar,
+    // y la base no descuenta dos veces.
+    p_descuenta_stock: true,
+  })
+  if (error) throw new Error(error.message)
+  return { id, serie, numero }
+}
+
+/*
   ─────────────────────────────────────────────────────────────
   El remito que nace solo
 

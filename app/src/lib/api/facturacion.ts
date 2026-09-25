@@ -44,6 +44,41 @@ export interface VentaSinFacturar {
   total: number
   ocurrido_en: string
   cliente: { nombre: string } | null
+  /* Si es un pedido de la tienda pagado en la web: se factura desde Pedidos. */
+  pedido_web?: boolean
+}
+
+/*
+  El día de Oberá de un momento, como AAAA-MM-DD.
+
+  Argentina está en UTC−3 todo el año —no cambia la hora en verano—, así
+  que alcanza con correr el reloj tres horas. Depender de la base de
+  husos horarios de cada PC sería sumar algo que puede faltar en una
+  máquina vieja.
+*/
+const TRES_HORAS = 3 * 60 * 60 * 1000
+
+export function diaDeObera(momento: Date): string {
+  return new Date(momento.getTime() - TRES_HORAS).toISOString().slice(0, 10)
+}
+
+/*
+  Qué ventas sin factura van al panel rojo.
+
+  Un pedido de la tienda pagado en la web está cobrado y sin factura a
+  propósito mientras se prepara: la factura la emite una persona desde
+  Pedidos, cuando sabe qué se entrega. Si entrara al panel desde el
+  primer minuto, el panel se llenaría de casos normales y dejaría de
+  mirarse. Entra cuando se pasó del día del cobro, que es cuando ya es
+  un problema.
+*/
+export function vaAlPanelRojo(
+  venta: Pick<VentaSinFacturar, 'id' | 'ocurrido_en'>,
+  pedidosPagados: Set<string>,
+  ahora: Date = new Date(),
+): boolean {
+  if (!pedidosPagados.has(venta.id)) return true
+  return diaDeObera(new Date(venta.ocurrido_en)) !== diaDeObera(ahora)
 }
 
 export const ETIQUETA_SEMAFORO: Record<Semaforo, string> = {
@@ -90,6 +125,11 @@ export async function ventasSinFacturar(): Promise<VentaSinFacturar[]> {
 
   const yaFacturadas = new Set((conComprobante ?? []).map((c) => c.venta_id as string))
 
+  // Sin permiso para verlos, la consulta vuelve vacía y el panel queda
+  // como antes: todo lo que no tiene factura, a la vista.
+  const { data: pedidos } = await supabase.from('pedido_tienda').select('venta_id').eq('pagado_en_la_web', true)
+  const pedidosPagados = new Set((pedidos ?? []).map((p) => p.venta_id as string))
+
   /*
     Sólo las que se cobraron CON la promesa de una factura.
 
@@ -109,7 +149,9 @@ export async function ventasSinFacturar(): Promise<VentaSinFacturar[]> {
     .limit(200)
   if (error) throw new Error(error.message)
 
-  return ((data ?? []) as unknown as VentaSinFacturar[]).filter((v) => !yaFacturadas.has(v.id))
+  return ((data ?? []) as unknown as VentaSinFacturar[])
+    .filter((v) => !yaFacturadas.has(v.id) && vaAlPanelRojo(v, pedidosPagados))
+    .map((v) => ({ ...v, pedido_web: pedidosPagados.has(v.id) }))
 }
 
 /** Cuántos comprobantes esperan resolución. Para el aviso del menú. */

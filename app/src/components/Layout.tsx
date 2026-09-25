@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import { contarPedidosPendientes } from '@/lib/api/pedidos'
 import AvisoDeActualizacion from '@/components/AvisoDeActualizacion'
 import AvisoBaseBloqueada from '@/components/AvisoBaseBloqueada'
 import { useAuth } from '@/auth/AuthProvider'
@@ -10,6 +12,8 @@ interface ItemMenu {
   etiqueta: string
   permiso?: string
   icono: string
+  /* Un número al lado: cuánto espera que alguien haga algo. */
+  contador?: 'pedidos'
 }
 
 /* Trazos de íconos, en línea para no sumar una dependencia por cinco dibujos. */
@@ -80,6 +84,20 @@ const MENU: ItemMenu[] = [
     etiqueta: 'Caja',
     permiso: 'ventas.cobrar',
     icono: 'M3 10h18M3 10l2-5h14l2 5M3 10v9a1 1 0 001 1h16a1 1 0 001-1v-9M9 15h6',
+  },
+  {
+    /*
+      Pedidos web va pegado a la Caja porque es lo mismo del otro lado:
+      ventas que hay que cerrar. Lleva un número porque los pedidos
+      entran solos, sin que nadie en el local haga nada: si no se ve
+      desde cualquier pantalla, un pedido pagado puede pasar el día sin
+      factura.
+    */
+    a: '/pedidos',
+    etiqueta: 'Pedidos web',
+    permiso: 'tienda.pedidos',
+    icono: 'M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z',
+    contador: 'pedidos',
   },
   {
     a: '/clientes',
@@ -195,6 +213,18 @@ function ContenidoMenu({
   const { perfil, salir, tienePermiso } = useAuth()
   const visibles = MENU.filter((i) => !i.permiso || tienePermiso(i.permiso))
 
+  const pedidosPendientes = useQuery({
+    queryKey: ['pedidos-pendientes'],
+    queryFn: contarPedidosPendientes,
+    enabled: tienePermiso('tienda.pedidos') && navigator.onLine,
+    refetchInterval: 60_000,
+    // Sin conexión no hay número: mejor nada que uno viejo.
+    retry: false,
+  })
+  const contadores: Record<NonNullable<ItemMenu['contador']>, number> = {
+    pedidos: pedidosPendientes.data ?? 0,
+  }
+
   return (
     <>
       <div
@@ -231,8 +261,18 @@ function ContenidoMenu({
               }`
             }
           >
-            <Icono d={item.icono} />
-            {!colapsado && item.etiqueta}
+            <span className="relative">
+              <Icono d={item.icono} />
+              {colapsado && item.contador && contadores[item.contador] > 0 && (
+                <span className="absolute -top-1 -right-1 size-2 rounded-full bg-acento-400" aria-hidden />
+              )}
+            </span>
+            {!colapsado && <span className="flex-1">{item.etiqueta}</span>}
+            {!colapsado && item.contador && contadores[item.contador] > 0 && (
+              <span className="rounded-full bg-acento-400 px-1.5 text-xs font-semibold text-marca-950 tabular-nums">
+                {contadores[item.contador]}
+              </span>
+            )}
           </NavLink>
         ))}
       </nav>

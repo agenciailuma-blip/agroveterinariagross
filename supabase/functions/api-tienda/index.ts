@@ -10,8 +10,9 @@ import {
 // API DE LA TIENDA ONLINE — la puerta
 //
 // La tienda lee el catálogo por acá —GET /catalogo y
-// GET /clasificaciones— y manda las compras por POST /pedidos, con su
-// clave en Authorization: Bearer. Documentación: docs/api-tienda.md.
+// GET /clasificaciones—, manda las compras por POST /pedidos y pregunta
+// en qué está cada una por GET /pedidos/{numero}, con su clave en
+// Authorization: Bearer. Documentación: docs/api-tienda.md.
 //
 // Se despliega con verify_jwt = false porque la clave de la tienda no
 // es un token de inicio de sesión de Supabase: la tienda no es un

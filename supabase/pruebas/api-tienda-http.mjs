@@ -264,6 +264,36 @@ comprobar(
 )
 comprobar(rechazados.every((r) => r.estado !== 500), 'ningún pedido mal armado se contesta como error nuestro')
 
+console.log('\nEl estado de un pedido: lo que se rechaza')
+{
+  const r = await pedir('/pedidos/NO-EXISTE-NUNCA-123')
+  comprobar(r.estado === 404 && r.cuerpo?.error?.codigo === 'pedido_desconocido',
+    `un pedido que no existe: 404 pedido_desconocido (${r.estado} ${r.cuerpo?.error?.codigo ?? '?'})`)
+}
+{
+  const r = await pedir('/pedidos/NO-EXISTE', { clave: null })
+  comprobar(r.estado === 401 && r.cuerpo?.error?.codigo === 'falta_clave', `sin clave: 401 (${r.estado})`)
+}
+{
+  const r = await pedir('/pedidos/NO-EXISTE', { clave: 'gross_estaClaveNoExisteNiVaAExistirNunca0123456789' })
+  comprobar(r.estado === 401 && r.cuerpo?.error?.codigo === 'clave_invalida', `clave inventada: 401 (${r.estado})`)
+}
+{
+  const r = await pedir('/pedidos/NO-EXISTE', { metodo: 'POST', cuerpo: {} })
+  comprobar(r.estado === 405 && r.encabezados.get('allow') === 'GET', `mandarle algo: 405 con Allow: GET (${r.estado})`)
+}
+{
+  /*
+    Un número mal codificado no llega a la función: lo corta antes la
+    plataforma de Supabase, con un 500 suyo en texto plano. La regla de
+    la puerta (400 numero_invalido) está probada con las pruebas de la
+    aplicación; acá sólo se mira que no pase nada y no salga nada.
+  */
+  const r = await pedir('/pedidos/T%E0%A4%A')
+  comprobar(r.estado >= 400 && !r.texto.includes(CLAVE) && !/pedido_tienda|venta/.test(r.texto),
+    `un número mal codificado se rechaza sin contar nada (${r.estado})`)
+}
+
 /*
   Hasta acá nada dejó rastro: un pedido rechazado no crea ni media
   venta. Lo que sigue sí escribe, y por eso hay que pedirlo.
@@ -302,6 +332,22 @@ if (!process.env.API_TIENDA_ESCRIBIR) {
   const otra = await pedir('/pedidos', { metodo: 'POST', cuerpo })
   comprobar(otra.estado === 200 && otra.cuerpo?.repetido === true, 'mandado dos veces, la segunda avisa que ya estaba')
   comprobar(otra.cuerpo?.venta === r.cuerpo?.venta, 'y contesta la misma venta, no una nueva')
+
+  // Y la tienda pregunta por él, con el número tal cual lo mandó.
+  const estado = await pedir(`/pedidos/${encodeURIComponent(numero)}`)
+  comprobar(estado.estado === 200, `el estado responde 200 (${estado.estado})`)
+  comprobar(
+    Object.keys(estado.cuerpo ?? {}).sort().join(',') ===
+      'actualizado,cobrado,entrega,estado,factura,numero,pagado_en_la_web,reintegros',
+    `trae los campos acordados (${Object.keys(estado.cuerpo ?? {}).sort().join(',')})`,
+  )
+  comprobar(
+    estado.cuerpo?.numero === numero && estado.cuerpo?.estado === 'recibido' &&
+      estado.cuerpo?.cobrado === false && estado.cuerpo?.factura === null &&
+      Array.isArray(estado.cuerpo?.reintegros) && estado.cuerpo.reintegros.length === 0,
+    'recién entrado: recibido, sin cobrar, sin factura y sin nada que devolver',
+  )
+  comprobar(!/Prueba de la API|prueba@ejemplo|WEB-/.test(estado.texto), 'no devuelve datos del comprador ni la venta interna')
 
   console.log(`\n  Quedo creado en la base: pedido ${numero}, venta ${r.cuerpo?.venta}. Borralo cuando termines.`)
 }

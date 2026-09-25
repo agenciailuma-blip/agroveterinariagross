@@ -71,6 +71,21 @@ describe('las consultas que pasan', () => {
     })
   })
 
+  it('el estado de un pedido, con el número tal cual lo mandó la tienda', () => {
+    expect(pedir('/api-tienda/pedidos/T-1045')).toEqual({
+      tipo: 'consulta',
+      funcion: 'api_tienda_estado_pedido',
+      argumentos: { p_clave: CLAVE, p_numero: 'T-1045' },
+    })
+  })
+
+  it('un número con barra o espacios llega entero, decodificado', () => {
+    expect(pedir('/api-tienda/pedidos/2026%2F0001')).toMatchObject({ argumentos: { p_numero: '2026/0001' } })
+    expect(pedir('/api-tienda/pedidos/Pedido%20N%C2%BA%207')).toMatchObject({ argumentos: { p_numero: 'Pedido Nº 7' } })
+    // Sin codificar también: todo lo que viene después de "pedidos/" es el número.
+    expect(pedir('/api-tienda/pedidos/2026/0001')).toMatchObject({ argumentos: { p_numero: '2026/0001' } })
+  })
+
   it('con la dirección de desarrollo local y con barra al final', () => {
     expect(pedir('/functions/v1/api-tienda/catalogo/')).toMatchObject({ funcion: 'api_tienda_catalogo' })
   })
@@ -90,7 +105,12 @@ describe('lo que se rechaza', () => {
     ['borrar', '/api-tienda/catalogo', BEARER, 'DELETE', 'metodo_no_permitido', 405],
     ['la pregunta previa de un navegador', '/api-tienda/catalogo', null, 'OPTIONS', 'metodo_no_permitido', 405],
     ['un camino que no existe', '/api-tienda/clientes', BEARER, 'GET', 'ruta_desconocida', 404],
-    ['leer los pedidos, que todavía no se puede', '/api-tienda/pedidos', BEARER, 'GET', 'metodo_no_permitido', 405],
+    ['leer la lista de pedidos, que no existe', '/api-tienda/pedidos', BEARER, 'GET', 'metodo_no_permitido', 405],
+    ['mandar un pedido a la dirección de uno', '/api-tienda/pedidos/T-1', BEARER, 'POST', 'metodo_no_permitido', 405],
+    ['consultar un pedido sin clave', '/api-tienda/pedidos/T-1', null, 'GET', 'falta_clave', 401],
+    ['un parámetro en la consulta de un pedido', '/api-tienda/pedidos/T-1?campos=todo', BEARER, 'GET', 'parametro_desconocido', 400],
+    ['un número mal codificado', '/api-tienda/pedidos/T%E0%A4%A', BEARER, 'GET', 'numero_invalido', 400],
+    ['un número hecho de espacios', '/api-tienda/pedidos/%20%20', BEARER, 'GET', 'numero_invalido', 400],
     ['mandar un pedido sin clave', '/api-tienda/pedidos', null, 'POST', 'falta_clave', 401],
     ['un parámetro en los pedidos', '/api-tienda/pedidos?estado=x', BEARER, 'POST', 'parametro_desconocido', 400],
     ['la raíz', '/api-tienda', BEARER, 'GET', 'ruta_desconocida', 404],
@@ -229,6 +249,22 @@ describe('los errores que contesta la base', () => {
     expect(interpretarErrorDeLaBase({ code: 'PT401', message: 'clave_invalida' })).toEqual({
       estado: 401,
       codigo: 'clave_invalida',
+    })
+  })
+
+  it('un pedido que no existe es un 404 con su nombre', () => {
+    expect(interpretarErrorDeLaBase({ code: 'PT404', message: 'pedido_desconocido' })).toEqual({
+      estado: 404,
+      codigo: 'pedido_desconocido',
+    })
+  })
+
+  // Un 404 de la base que no sea el del pedido no es «no existe»: es algo
+  // nuestro, y contestarle a la tienda que su pedido no está sería mentirle.
+  it('otro 404 de la base es un error nuestro', () => {
+    expect(interpretarErrorDeLaBase({ code: 'PT404', message: 'otra cosa' })).toEqual({
+      estado: 500,
+      codigo: 'error_interno',
     })
   })
 

@@ -231,7 +231,14 @@ export default function Facturacion() {
               {pendientes.map((v) => (
                 <tr key={v.id}>
                   <td className="px-5 py-2.5 font-mono text-xs text-piedra-400">{v.codigo}</td>
-                  <td className="py-2.5 text-tinta">{v.cliente?.nombre}</td>
+                  <td className="py-2.5 text-tinta">
+                    {v.cliente?.nombre}
+                    {v.pedido_web && (
+                      <span className="ml-2 rounded bg-marca-50 px-1.5 py-0.5 text-xs font-medium text-marca-700">
+                        Pedido web
+                      </span>
+                    )}
+                  </td>
                   <td className="py-2.5 text-xs text-piedra-500">
                     {new Date(v.ocurrido_en).toLocaleDateString('es-AR')}
                   </td>
@@ -239,7 +246,16 @@ export default function Facturacion() {
                     {moneda.format(v.total)}
                   </td>
                   <td className="px-5 py-2.5 text-right">
-                    {puedeEmitir && (
+                    {/*
+                      Un pedido web se factura desde Pedidos y no desde acá:
+                      allá se confirma que se revisó y se frena si la
+                      factura diría otra cosa que lo cobrado en la web.
+                    */}
+                    {v.pedido_web ? (
+                      <Link to="/pedidos" className="text-xs font-medium text-red-700 underline">
+                        Facturar en Pedidos
+                      </Link>
+                    ) : puedeEmitir && (
                       <button
                         onClick={() => facturar.mutate(v.id)}
                         disabled={trabajando}

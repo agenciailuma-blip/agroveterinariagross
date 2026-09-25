@@ -8,8 +8,9 @@
   que estar probado como lo demás.
 
   Lo que decide QUÉ SE VE y QUÉ ENTRA no está acá sino en la base
-  (api_tienda_catalogo, api_tienda_registrar_pedido). Acá sólo se
-  decide si la consulta está bien hecha y cómo se contesta cuando no.
+  (api_tienda_catalogo, api_tienda_registrar_pedido,
+  api_tienda_estado_pedido). Acá sólo se decide si la consulta está
+  bien hecha y cómo se contesta cuando no.
   ─────────────────────────────────────────────────────────────
 */
 
@@ -41,6 +42,8 @@ export type CodigoDeError =
   | 'entrega_invalida'
   | 'falta_el_comprador'
   | 'pedido_invalido'
+  | 'numero_invalido'
+  | 'pedido_desconocido'
   | 'error_interno'
 
 /*
@@ -53,9 +56,9 @@ export type CodigoDeError =
 export const MENSAJES: Record<CodigoDeError, string> = {
   falta_clave: 'Falta la clave. Mandala en el encabezado Authorization: Bearer <clave>.',
   clave_invalida: 'La clave no es válida o fue anulada. Si la cambiaron, usá la nueva; si no, pedí una.',
-  ruta_desconocida: 'No existe ese camino. Los que hay son /catalogo, /clasificaciones y /pedidos.',
+  ruta_desconocida: 'No existe ese camino. Los que hay son /catalogo, /clasificaciones, /pedidos y /pedidos/{numero}.',
   metodo_no_permitido:
-    'Ese camino no acepta ese método: el catálogo y las clasificaciones se consultan con GET, y los pedidos se mandan con POST.',
+    'Ese camino no acepta ese método: el catálogo, las clasificaciones y el estado de un pedido se consultan con GET, y los pedidos se mandan con POST a /pedidos.',
   parametro_desconocido: 'Esta consulta no acepta ese parámetro.',
   desde_invalido: 'El parámetro desde tiene que ser un valor de "siguiente" tal como lo devolvió esta API, sin tocarlo.',
   limite_invalido: `El parámetro limite tiene que ser un número entero entre 1 y ${LIMITE_MAXIMO}.`,
@@ -69,6 +72,8 @@ export const MENSAJES: Record<CodigoDeError, string> = {
   entrega_invalida: 'El tipo de entrega tiene que ser "retira" o "envio".',
   falta_el_comprador: 'Falta el nombre del comprador en "comprador.nombre".',
   pedido_invalido: 'El pedido está mal armado: revisá que los identificadores, las cantidades y los precios tengan el formato esperado.',
+  numero_invalido: 'El número del pedido en el camino no se pudo leer. Mandalo codificado para URL, el mismo "numero" con el que se envió el pedido.',
+  pedido_desconocido: 'No hay ningún pedido con ese número. Es el mismo "numero" con el que se envió el pedido, respetando mayúsculas.',
   error_interno: 'Algo falló de nuestro lado. Probá de nuevo en un rato; si sigue, avisanos con la hora del pedido.',
 }
 
@@ -90,6 +95,8 @@ const ESTADO: Record<CodigoDeError, number> = {
   entrega_invalida: 400,
   falta_el_comprador: 400,
   pedido_invalido: 400,
+  numero_invalido: 400,
+  pedido_desconocido: 404,
   error_interno: 500,
 }
 
@@ -111,6 +118,11 @@ export type Consulta =
     rechaza sin haber leído un solo byte de lo que manda.
   */
   | { tipo: 'pedido'; funcion: 'api_tienda_registrar_pedido'; clave: string }
+  | {
+      tipo: 'consulta'
+      funcion: 'api_tienda_estado_pedido'
+      argumentos: { p_clave: string; p_numero: string }
+    }
   | ErrorDeLaPuerta
 
 export type ErrorDeLaPuerta = { tipo: 'error'; estado: number; codigo: CodigoDeError; detalle?: string }
@@ -123,6 +135,9 @@ const RUTAS: Record<string, { metodo: string; parametros: string[] }> = {
   catalogo: { metodo: 'GET', parametros: ['desde', 'limite'] },
   clasificaciones: { metodo: 'GET', parametros: [] },
   pedidos: { metodo: 'POST', parametros: [] },
+  // El estado de un pedido: /pedidos/{numero}. El número es de la tienda
+  // y viaja en el camino, así que se lee aparte (ver interpretarPedido).
+  'pedidos/*': { metodo: 'GET', parametros: [] },
 }
 
 /*
@@ -137,7 +152,15 @@ function rutaDe(url: URL): string {
 }
 
 export function interpretarPedido(metodo: string, url: URL, autorizacion: string | null): Consulta {
-  const ruta = rutaDe(url)
+  const completa = rutaDe(url)
+  /*
+    El número del pedido lo elige la tienda y puede traer cualquier
+    cosa, incluso una barra codificada. Se toma todo lo que viene
+    después de "pedidos/" y recién ahí se decodifica: partir el camino
+    por las barras antes cortaría un número como "2026/0001".
+  */
+  const delPedido = /^pedidos\/(.+)$/.exec(completa)?.[1]
+  const ruta = delPedido !== undefined ? 'pedidos/*' : completa
   const definicion = RUTAS[ruta]
   if (!definicion) return error('ruta_desconocida')
   // El método se mira antes que la clave: a la pregunta previa de un
@@ -166,6 +189,17 @@ export function interpretarPedido(metodo: string, url: URL, autorizacion: string
 
   if (ruta === 'pedidos') {
     return { tipo: 'pedido', funcion: 'api_tienda_registrar_pedido', clave }
+  }
+
+  if (delPedido !== undefined) {
+    let numero: string
+    try {
+      numero = decodeURIComponent(delPedido)
+    } catch {
+      return error('numero_invalido')
+    }
+    if (numero.trim() === '') return error('numero_invalido')
+    return { tipo: 'consulta', funcion: 'api_tienda_estado_pedido', argumentos: { p_clave: clave, p_numero: numero } }
   }
 
   const desde = url.searchParams.get('desde')
@@ -230,15 +264,18 @@ const ERRORES_DE_LA_BASE: CodigoDeError[] = [
 ]
 
 /*
-  La base contesta los errores esperables con códigos propios —PT401 y
-  PT400, que PostgREST convierte en 401 y 400—. Todo lo demás es un
-  error nuestro y se contesta como tal, sin pasarle afuera el detalle
-  interno: puede nombrar tablas o funciones.
+  La base contesta los errores esperables con códigos propios —PT401,
+  PT404 y PT400, que PostgREST convierte en 401, 404 y 400—. Todo lo
+  demás es un error nuestro y se contesta como tal, sin pasarle afuera
+  el detalle interno: puede nombrar tablas o funciones.
 */
 export function interpretarErrorDeLaBase(
   cuerpo: { code?: string; message?: string; details?: string } | null,
 ): { estado: number; codigo: CodigoDeError; detalle?: string } {
   if (cuerpo?.code === 'PT401') return { estado: 401, codigo: 'clave_invalida' }
+  if (cuerpo?.code === 'PT404' && cuerpo.message === 'pedido_desconocido') {
+    return { estado: 404, codigo: 'pedido_desconocido' }
+  }
 
   if (cuerpo?.code === 'PT400' && ERRORES_DE_LA_BASE.includes(cuerpo.message as CodigoDeError)) {
     const codigo = cuerpo.message as CodigoDeError
