@@ -12,9 +12,9 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Publicado: 0.6.0** (24/09), con **«Vender online»** —qué productos salen a la tienda web se decide desde Productos— y con **el arreglo de la sincronización que impedía que el CAEA llegara a las máquinas**. Antes, la 0.5.0 con **la factura que sale sin internet** —la caja emite con CAEA y el ticket sale solo—. Antes, la 0.4.4 con la red del local que ahora **dice qué le pasa**, el cortacircuito que hace que la Caja abra rápido sin internet, y la cola de la caja que se actualiza al cambiar el medio de pago. Antes, ese mismo día, la 0.4.2 con el recargo por cuotas arreglado, los acentos del ticket y la impresión automática al cobrar. **La 0.4.1 quedó instalada en el local el 17/09, en todas menos la de Windows 7** — las versiones nuevas entran solas con *Actualizar ahora*. **405 pruebas verdes en la app y 11 en el programa**, 91 migraciones aplicadas.
+**Publicado: 0.7.0** (25/09), con **la pantalla Pedidos web**: preparar, facturar, entregar y cancelar lo que entra de la tienda. Antes, la 0.6.0 (24/09), con **«Vender online»** —qué productos salen a la tienda web se decide desde Productos— y con **el arreglo de la sincronización que impedía que el CAEA llegara a las máquinas**. Antes, la 0.5.0 con **la factura que sale sin internet** —la caja emite con CAEA y el ticket sale solo—. Antes, la 0.4.4 con la red del local que ahora **dice qué le pasa**, el cortacircuito que hace que la Caja abra rápido sin internet, y la cola de la caja que se actualiza al cambiar el medio de pago. Antes, ese mismo día, la 0.4.2 con el recargo por cuotas arreglado, los acentos del ticket y la impresión automática al cobrar. **La 0.4.1 quedó instalada en el local el 17/09, en todas menos la de Windows 7** — las versiones nuevas entran solas con *Actualizar ahora*. **405 pruebas verdes en la app y 11 en el programa**, 91 migraciones aplicadas.
 
-**Y la API de la tienda online.** Leer el catálogo desde el 18/09; **mandar pedidos desde el 24/09**; **preguntar en qué está cada pedido desde el 25/09**. Zubu ya tiene su clave y su documentación. Del lado del local, **la pantalla Pedidos web** (25/09), que llega a las PC con la próxima versión. Ver abajo.
+**Y la API de la tienda online.** Leer el catálogo desde el 18/09; **mandar pedidos desde el 24/09**; **preguntar en qué está cada pedido desde el 25/09**. Zubu ya tiene su clave y su documentación. Del lado del local, **la pantalla Pedidos web**, publicada en la 0.7.0 el 25/09. Ver abajo.
 
 ⚠️ **Lo que está construido pero NO verificado.** Un chat nuevo no puede darlo por probado:
 
@@ -22,7 +22,7 @@ estado: en curso
 |---|---|
 | ~~La impresión por impresora de Windows~~ | ✅ **Imprimió el 17/09.** Falta ver en papel lo corregido después: los acentos y el ticket que sale solo al cobrar |
 | **La venta que llega a la caja sin internet** | 🔴 **Se probó el 17/09 y NO funcionó.** Ver *Lo que sigue* |
-| El actualizador de punta a punta | Apretando *Actualizar ahora* en una PC, sin desinstalar antes. **La 0.6.0 es la oportunidad** |
+| El actualizador de punta a punta | Apretando *Actualizar ahora* en una PC, sin desinstalar antes. **La 0.7.0 es la oportunidad** |
 | **Facturar sin internet, con CAEA** | 🔴 En el local, con la conexión cortada de verdad: cobrar en la caja y que salga el ticket con el CAEA. **Recién ahora es posible probarlo**: hasta el 24/09 el CAEA no llegaba a las máquinas (abajo). Cada PC tiene que sincronizar **una vez con internet** después de actualizar a la 0.6.0, y recién ahí tiene el código guardado |
 | **Que la sincronización llegue completa en las PC del local** | 🟡 Arreglado y verificado en el navegador el 24/09. En el local se comprueba en la pantalla de inicio: el indicador de arriba tiene que decir *Copia local lista* y **Configuración → La red del local** no tiene que mostrar errores |
 | ~~Las pantallas de **La red del local** y **Percepciones**~~ | ✅ **Vistas el 11/09.** Percepciones entera, con datos de agosto y el caso de la nota de crédito. De La red del local sólo se puede ver en el navegador el aviso de que hace falta el programa instalado: es así a propósito |
@@ -39,7 +39,7 @@ estado: en curso
 
 🔴 **Que cada PC sincronice una vez con internet, y que el CAEA quede guardado.** Hasta el 24/09 la bajada se cortaba y **el código para facturar sin internet no estaba en ninguna máquina** (ver *Lo último que pasó*). La base ya está arreglada, así que alcanza con abrir el sistema en cada PC estando en línea. **Cómo se comprueba**: el indicador de arriba dice *Copia local lista* y *La red del local* no muestra errores. Sin eso, la prueba del corte de internet vuelve a fallar y por el mismo motivo de fondo: el papel no sale.
 
-🟡 **El actualizador sigue sin probarse de punta a punta.** La 0.2.2 entró bien, pero desinstalando la versión vieja primero, así que **el arreglo del archivo tomado no se ejercitó**. **La 0.6.0 es la oportunidad**: en una sola PC, *Actualizar ahora*, sin desinstalar nada. Molesta después del 26/10, cuando una corrección tenga que llegar a las 4 PC sin viajar a Oberá.
+🟡 **El actualizador sigue sin probarse de punta a punta.** La 0.2.2 entró bien, pero desinstalando la versión vieja primero, así que **el arreglo del archivo tomado no se ejercitó**. **La 0.7.0 es la oportunidad**: en una sola PC, *Actualizar ahora*, sin desinstalar nada. Molesta después del 26/10, cuando una corrección tenga que llegar a las 4 PC sin viajar a Oberá.
 
 ---
 
@@ -73,7 +73,7 @@ Y en la aplicación de verdad, contra ARCA de homologación: un pedido facturado
 
 ⚠️ **Lo que queda de los pedidos es el mail con la factura**, y espera la dirección de correo de Gross. Mientras tanto la factura se abre para imprimir o guardar en PDF. El día que llegue hay que decidir si va adjunta en PDF —lo habitual, pero hay que generarlo en el servidor— o en el cuerpo del mail con el QR de ARCA.
 
-🟡 **Para las 4 PC:** la pantalla de Pedidos está en el código, **no en una versión publicada**; llega con la próxima. El arreglo de las devoluciones, en cambio, ya anda en todas.
+✅ **Publicada en la 0.7.0 el 25/09**: las 4 PC la reciben con *Actualizar ahora*. El arreglo de las devoluciones, que es del servidor, ya anda en todas, también en las que siguen con una versión vieja.
 
 ## Lo que pasó el 24 de septiembre
 
