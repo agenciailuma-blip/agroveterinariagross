@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ivaSugerido, numeroDeComprobante, totalDeLaCarga } from '@/lib/api/compras'
+import { costoConIva, ivaSugerido, numeroDeComprobante, totalDeLaCarga, variacionDeCosto } from '@/lib/api/compras'
 
 /*
   Cargar una factura de compra.
@@ -87,5 +87,42 @@ describe('el total que se muestra antes de guardar', () => {
     })
 
     expect(total).toBe(0)
+  })
+})
+
+/*
+  El costo que queda en el producto al recibir la mercadería.
+
+  Tiene que dar lo mismo que app.costo_con_iva en la base: la pantalla lo
+  muestra antes de confirmar, y si las dos cuentas no coincidieran, lo
+  que se ve no sería lo que se guarda. Los números son los mismos que usa
+  la prueba de la base (supabase/pruebas/recepcion-de-mercaderia.sql).
+*/
+describe('el costo con IVA al recibir', () => {
+  it('en una A le suma la alícuota del producto', () => {
+    expect(costoConIva(1000, 'A', 21)).toBe(1210)
+    expect(costoConIva(200, 'A', 10.5)).toBe(221)
+  })
+
+  it('en una B o una C lo deja como está, porque ya trae el IVA', () => {
+    expect(costoConIva(1300, 'B', 21)).toBe(1300)
+    expect(costoConIva(1300, 'C', 21)).toBe(1300)
+  })
+
+  it('a un producto exento no le suma nada, aunque la factura sea A', () => {
+    expect(costoConIva(300, 'A', 21, false)).toBe(300)
+  })
+})
+
+describe('cuánto cambió el costo', () => {
+  it('da el porcentaje con un decimal', () => {
+    expect(variacionDeCosto(1000, 1210)).toBe(21)
+    expect(variacionDeCosto(1210, 1300)).toBe(7.4)
+    expect(variacionDeCosto(1000, 900)).toBe(-10)
+  })
+
+  it('no inventa una variación si antes no había costo', () => {
+    expect(variacionDeCosto(null, 1210)).toBeNull()
+    expect(variacionDeCosto(0, 1210)).toBeNull()
   })
 })

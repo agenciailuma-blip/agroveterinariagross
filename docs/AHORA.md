@@ -1,5 +1,5 @@
 ---
-actualizado: 2026-09-25
+actualizado: 2026-09-28
 estado: en curso
 ---
 
@@ -43,7 +43,32 @@ estado: en curso
 
 ---
 
-## Lo último que pasó — 25 de septiembre
+## Lo último que pasó — 28 de septiembre
+
+**La recepción de mercadería.** Sobre una factura de compra ya cargada se reciben los productos: entra el stock y el costo se actualiza. Todavía no está publicada en ninguna versión.
+
+> **Cómo se lo contás a Lucas:** en Compras, cada factura tiene un botón *Recibir*. Al guardar una factura nueva, el sistema pregunta si la mercadería ya está: si está, se recibe en el momento; si no, se recibe cuando llegue, y la puede hacer otra persona. Se pasa el lector o se escribe el código, se pone cantidad y costo, y entra al stock. **El precio de venta no cambia solo:** al terminar, el sistema muestra el precio que corresponde según el margen de cada producto, y se aplica con un clic a los que elijas.
+
+Las decisiones, tomadas por vos el 28/09:
+- **El costo de la factura pisa el del producto.** Es el último costo, no un promedio.
+- **El precio se propone y no se aplica solo.** Es la misma regla que tenía la ficha desde agosto.
+- **Si llega un producto que no está en el catálogo, se da de alta ahí mismo**, con código, nombre e IVA. Queda sin precio y sin revisar, y la pantalla avisa que no se puede vender hasta ponerle precio.
+
+Y dos que salieron de construirlo:
+- **El costo se guarda con IVA**, porque el precio de venta es con IVA y la ficha compara uno contra el otro. En una factura A se copia el unitario sin IVA, como está impreso, y el sistema le suma la alícuota de cada producto. En una B o una C va como está. La ficha ahora dice *Costo (con IVA)*.
+- **Dar de baja una factura que ya entró al stock la saca del stock**, con un ajuste. El costo no vuelve atrás: puede haber entrado otra factura después.
+
+**Y el Excel de compras para el contador**, en la misma pantalla que ventas y percepciones: una fila por alícuota, las notas de crédito en negativo y las percepciones separadas por concepto (IVA, IIBB y otros). No es imprescindible, porque el contador baja las compras de ARCA, pero le sirve para controlar que no falte ninguna.
+
+Verificado contra la base real: **26 comprobaciones** en [`supabase/pruebas/recepcion-de-mercaderia.sql`](../supabase/pruebas/recepcion-de-mercaderia.sql), corriendo como usuario y no como dueño de la base. Se rompió a propósito sacándole el IVA al costo, y la prueba lo atrapó. **414 pruebas** en la app.
+
+**Y en la aplicación de verdad, el 28/09:** se cargó una factura A, se recibió un producto existente (pasándole el código) y uno nuevo dado de alta ahí mismo, se aplicó el precio sugerido, y se dio de baja la factura: el stock volvió solo. Salieron dos detalles de pantalla, ya corregidos: la tabla de Compras se cortaba en monitores chicos y el botón *Dar de baja* se partía en tres renglones. Los datos de prueba quedaron como estaban.
+
+⚠️ **Falta publicarla en una versión.** La base ya está aplicada; la pantalla llega con la próxima.
+
+**La percepción de IIBB, resuelta el 28/09:** va con la factura, a donde vaya la plata. Si pasa en la caja, al elegir un cliente responsable inscripto la caja muestra el total ya con la percepción. El vendedor le pregunta *«¿facturamos ahora?»* y, si dice que sí, le da ese precio final. Falta construirlo.
+
+## Lo que pasó el 25 de septiembre
 
 🔴 **Lo más importante del día tampoco estaba en el plan: desde el 11/09, ninguna devolución parcial se podía registrar desde la aplicación.** Ni desde Facturación ni desde ningún lado. Contestaba *«new row violates row-level security policy»* y en la base había **cero devoluciones**.
 
@@ -383,6 +408,7 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 5. ~~**Reportes**~~ ✅ **Hecha y publicada el 11/09** en la 0.3.0.
 6. ~~**La versión móvil**~~ ✅ **Hecha y publicada el 14/09 (0.4.1).** Lo prometido en la primera reunión: *consultar stock, ver reportes o pasar un precio desde el depósito*; vender sigue siendo en la PC con el lector. Cómo se instala en el celular: [paso 10](instalacion-en-el-local.md). **Falta probarla en un teléfono de verdad.**
 7. **Todo con teclado** — **en espera**: Gross tiene que confirmar qué atajos prefiere. Cuando se haga, van definidos en un solo lugar del código y Configuración los **muestra** en una lista; que se puedan editar por PC, sólo si lo piden (cada máquina con teclas distintas complica capacitar y dar soporte).
+8. **Que Gross dé de alta sus cajas y mostradores desde el sistema.** Pedido por Francisco el 28/09, **para después de la cuenta corriente de proveedores y la percepción en la caja**. Hoy una terminal nueva la da de alta alguien de nuestro lado; con dos locales en camino, Gross tiene que poder hacerlo solo desde Configuración.
 
 > ✅ **Los desplegables de *Percepciones* ya usan el estilo común**, así que muestran el recuadro de foco como el resto del sistema — un paso menos para el punto 6. La pantalla tenía además el botón y la tarjeta escritos a mano; los tres ahora salen de [`estilos.ts`](../app/src/estilos.ts).
 
@@ -393,12 +419,12 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 | El **Excel con la columna de IVA** por producto | Lucas | 🔴 Lo que más bloquea |
 | ~~**Alta del punto de venta CAEA** en ARCA~~ | — | ✅ **El 00009, alta del 11/09.** Cargado en el sistema el 16/09 |
 | **Certificado de producción** de ARCA | Lucas | 🔴 Ahora bloquea también la última prueba del CAEA. **El pedido está armado**; el trámite, paso a paso: [`certificado-produccion.md`](certificado-produccion.md) |
-| **Dónde se cobra la percepción de IIBB** | Lucas | 🟡 **Casi resuelto el 18/09**: el mayorista pide y se le manda, casi siempre en cuenta corriente. La percepción va con la factura, a donde vaya la plata. Falta que Lucas lo confirme y construirlo |
+| ~~**Dónde se cobra la percepción de IIBB**~~ | — | ✅ **Resuelto el 28/09**: va con la factura, a donde vaya la plata. En la caja, el total se muestra con la percepción antes de facturar. **Falta construirlo** |
 | Qué es un **"comprobante de percepción"** | Lucas | 🟡 Sin definir desde el 03/09 |
 | ~~¿Reciben cheques?~~ | — | ✅ **Contestado el 10/09: sí, y también le pagan a proveedores con cheque.** Es alcance nuevo y no está en ningún lado: [`cheques.md`](cheques.md) |
 | **¿Cómo se llama el segundo local?** | Lucas | 🟢 Se carga en Configuración → Depósitos cuando abra. Los cinco de OBTech quedaron descartados como referencia |
 | ~~Las **fotos de cómo cargan facturas de compra**~~ | Lucas | ✅ Llegaron el 10/09, con tres audios. Análisis en [`compras-e-iva.md`](compras-e-iva.md) |
-| **¿La cuenta corriente de proveedores entra al alcance?** | Lucas | 🔴 Hay plan con tamaños: [`plan-compras.md`](plan-compras.md). Son cuatro preguntas de cinco minutos |
+| ~~**¿La cuenta corriente de proveedores entra al alcance?**~~ | — | ✅ **Sí, decidido el 28/09**, y va antes del corte. Es lo próximo. Plan: [`plan-compras.md`](plan-compras.md) |
 | Qué **columnas** quiere el contador en el Excel | Contador | 🟡 Ya se exporta con lo estándar |
 | **La dirección desde la que salen los mails** | Lucas | 🟡 El servicio ya está elegido (Resend). La necesitan las facturas de la tienda y el pedido 17 |
 

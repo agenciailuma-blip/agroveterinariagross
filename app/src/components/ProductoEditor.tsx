@@ -261,7 +261,7 @@ export default function ProductoEditor({
               className={`${claseInput} text-right tabular-nums`}
             />
           </Campo>
-          <Campo etiqueta="Costo">
+          <Campo etiqueta="Costo (con IVA)">
             <input
               type="number"
               step="0.01"

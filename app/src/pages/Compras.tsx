@@ -13,6 +13,7 @@ import {
   totalDeLaCarga,
 } from '@/lib/api/compras'
 import type { AlicuotaCargada, TributoCargado } from '@/lib/api/compras'
+import RecepcionDeMercaderia from '@/components/RecepcionDeMercaderia'
 import { listarProveedores } from '@/lib/api/proveedores'
 import { enCastellano } from '@/lib/errores'
 import { moneda } from '@/lib/tipos'
@@ -22,8 +23,9 @@ import { boton, campo } from '@/estilos'
   Las facturas de compra.
 
   Se carga lo que dice el papel: quién la emitió, cuál es, cuándo, y el
-  desglose por alícuota. Nada de líneas de producto — eso es recepción de
-  mercadería y es de V1-B.
+  desglose por alícuota. La mercadería se recibe en un paso aparte, sobre
+  la factura ya guardada: en el momento o después, y la puede hacer otra
+  persona (Lucas, audio 3 del 10/09).
 
   La pantalla está armada para que se pueda cargar mirando la factura y
   sin levantar la vista: los campos van en el mismo orden en el que están
@@ -58,7 +60,11 @@ const CONCEPTOS_DE_TRIBUTO = [
 export default function Compras() {
   const { tienePermiso } = useAuth()
   const [cargando, setCargando] = useState(false)
+  // La factura recién guardada, para ofrecer recibir su mercadería de una.
+  const [recienGuardada, setRecienGuardada] = useState<string | null>(null)
+  const [recibiendoId, setRecibiendoId] = useState<string | null>(null)
   const qc = useQueryClient()
+  const puedeRecibir = tienePermiso('compras.registrar') && tienePermiso('stock.ajustar')
 
   const compras = useQuery({ queryKey: ['compras'], queryFn: () => listarCompras() })
 
@@ -67,10 +73,12 @@ export default function Compras() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['compras'] }),
   })
 
-  async function darDeBaja(id: string, etiqueta: string) {
+  async function darDeBaja(id: string, etiqueta: string, recibida: boolean) {
     const ok = await confirmar({
       titulo: `¿Dar de baja ${etiqueta}?`,
-      detalle: 'Deja de contar, pero no desaparece: queda registrada como dada de baja.',
+      detalle: recibida
+        ? 'Deja de contar, pero no desaparece. Su mercadería ya había entrado: sale del stock con un ajuste. El costo de los productos no vuelve atrás.'
+        : 'Deja de contar, pero no desaparece: queda registrada como dada de baja.',
       aceptar: 'Dar de baja',
       peligro: true,
     })
@@ -78,6 +86,7 @@ export default function Compras() {
   }
 
   const total = (compras.data ?? []).reduce((t, c) => t + Number(c.total), 0)
+  const recibiendo = compras.data?.find((c) => c.id === recibiendoId) ?? null
 
   return (
     <div className="space-y-6">
@@ -85,8 +94,8 @@ export default function Compras() {
         <div>
           <h1 className="text-xl font-semibold tracking-tight text-tinta">Compras</h1>
           <p className="text-sm text-piedra-500">
-            Las facturas que emiten los proveedores. Se carga la factura, no la mercadería: el
-            ingreso al stock se hace por Stock.
+            Las facturas que emiten los proveedores. Primero se carga la factura; su mercadería se
+            recibe después, en el momento o cuando llegue, y entra al stock con su costo.
           </p>
         </div>
 
@@ -102,15 +111,40 @@ export default function Compras() {
 
       {cargando && (
         <FormularioDeCompra
-          onListo={() => {
+          onListo={(id) => {
             setCargando(false)
+            setRecienGuardada(id)
             qc.invalidateQueries({ queryKey: ['compras'] })
           }}
           onCancelar={() => setCargando(false)}
         />
       )}
 
-      <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-borde">
+      {recienGuardada && !recibiendo && puedeRecibir && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-emerald-50 px-4 py-3 text-sm ring-1 ring-emerald-200">
+          <span className="text-emerald-800">Factura guardada. ¿La mercadería ya está acá?</span>
+          <div className="flex gap-2">
+            <button onClick={() => setRecienGuardada(null)} className={boton.suave}>
+              Después
+            </button>
+            <button
+              onClick={() => {
+                setRecibiendoId(recienGuardada)
+                setRecienGuardada(null)
+              }}
+              className={boton.principal}
+            >
+              Recibir la mercadería
+            </button>
+          </div>
+        </div>
+      )}
+
+      {recibiendo && (
+        <RecepcionDeMercaderia compra={recibiendo} onCerrar={() => setRecibiendoId(null)} />
+      )}
+
+      <div className="overflow-x-auto rounded-xl bg-white shadow-sm ring-1 ring-borde">
         <table className="w-full text-sm">
           <thead className="border-b border-piedra-100 text-left text-xs text-piedra-500">
             <tr>
@@ -121,13 +155,14 @@ export default function Compras() {
               <th className="px-4 py-2.5 text-right font-medium">IVA</th>
               <th className="px-4 py-2.5 text-right font-medium">Percepciones</th>
               <th className="px-4 py-2.5 text-right font-medium">Total</th>
+              <th className="px-4 py-2.5 font-medium">Mercadería</th>
               <th />
             </tr>
           </thead>
           <tbody>
             {compras.isPending && (
               <tr>
-                <td colSpan={8} className="px-4 py-6 text-center text-piedra-400">
+                <td colSpan={9} className="px-4 py-6 text-center text-piedra-400">
                   Cargando…
                 </td>
               </tr>
@@ -135,7 +170,7 @@ export default function Compras() {
 
             {compras.data?.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-sm text-piedra-400">
+                <td colSpan={9} className="px-4 py-8 text-center text-sm text-piedra-400">
                   Todavía no hay facturas de compra cargadas.
                 </td>
               </tr>
@@ -168,6 +203,25 @@ export default function Compras() {
                   {c.tipo?.signo === -1 ? '−' : ''}
                   {moneda.format(Number(c.total))}
                 </td>
+                <td className="whitespace-nowrap px-4 py-2.5">
+                  {/* Una nota de crédito no trae mercadería: no hay nada que recibir. */}
+                  {c.tipo?.signo === -1 ? (
+                    <span className="text-piedra-300">—</span>
+                  ) : c.recibida_en ? (
+                    <span className="text-xs text-emerald-700">
+                      Recibida {new Date(c.recibida_en).toLocaleDateString('es-AR')}
+                    </span>
+                  ) : puedeRecibir ? (
+                    <button
+                      onClick={() => setRecibiendoId(c.id)}
+                      className="rounded-lg px-2 py-1 text-xs font-medium text-marca-700 ring-1 ring-borde hover:bg-marca-50"
+                    >
+                      Recibir
+                    </button>
+                  ) : (
+                    <span className="text-xs text-amber-700">Sin recibir</span>
+                  )}
+                </td>
                 <td className="px-2 py-2.5 text-right">
                   {tienePermiso('compras.registrar') && (
                     <button
@@ -175,9 +229,10 @@ export default function Compras() {
                         darDeBaja(
                           c.id,
                           `${c.tipo?.descripcion ?? 'La factura'} ${numeroDeComprobante(c.punto_venta, c.numero)}`,
+                          !!c.recibida_en,
                         )
                       }
-                      className="rounded-lg px-2 py-1 text-xs text-piedra-400 hover:bg-red-50 hover:text-red-700"
+                      className="whitespace-nowrap rounded-lg px-2 py-1 text-xs text-piedra-400 hover:bg-red-50 hover:text-red-700"
                     >
                       Dar de baja
                     </button>
@@ -196,7 +251,7 @@ export default function Compras() {
                 <td className="px-4 py-2.5 text-right font-medium tabular-nums text-tinta">
                   {moneda.format(total)}
                 </td>
-                <td />
+                <td colSpan={2} />
               </tr>
             </tfoot>
           )}
@@ -217,7 +272,7 @@ function FormularioDeCompra({
   onListo,
   onCancelar,
 }: {
-  onListo: () => void
+  onListo: (id: string) => void
   onCancelar: () => void
 }) {
   const proveedores = useQuery({ queryKey: ['proveedores'], queryFn: () => listarProveedores() })

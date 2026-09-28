@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { comoFilaDePercepcion, percepcionesACsv, totalesDePercepciones } from '@/lib/api/libroIva'
-import type { CrudoTributo, FilaPercepcion } from '@/lib/api/libroIva'
+import { comoFilaDePercepcion, comoFilasDeCompra, percepcionesACsv, totalesDeCompras, totalesDePercepciones } from '@/lib/api/libroIva'
+import type { CrudoCompra, CrudoTributo, FilaPercepcion } from '@/lib/api/libroIva'
 
 /*
   El archivo de percepciones de IIBB para Rentas.
@@ -114,5 +114,70 @@ describe('el archivo que abre en Excel', () => {
 
   it('un mes sin percepciones sale con encabezado y sin filas', () => {
     expect(percepcionesACsv([]).split('\n')).toHaveLength(1)
+  })
+})
+
+/*
+  El libro de compras. Lo que importa es lo mismo que en el de ventas:
+  que sumar una columna dé el mes. Por eso se prueba con una factura de
+  dos alícuotas y una nota de crédito.
+*/
+describe('las compras para el contador', () => {
+  const factura: CrudoCompra = {
+    fecha: '2026-09-10',
+    punto_venta: 3,
+    numero: 45678,
+    neto_no_gravado: 0,
+    exento: 50,
+    total: 1455.5,
+    proveedor: { nombre: 'Laboratorio', numero_documento: '30111111118' },
+    tipo: { descripcion: 'Factura A', clase: 'A', signo: 1 },
+    compra_alicuota: [
+      { alicuota_iva_id: 5, base_imponible: 1000, importe: 210, alicuota: { porcentaje: 21 } },
+      { alicuota_iva_id: 4, base_imponible: 100, importe: 10.5, alicuota: { porcentaje: 10.5 } },
+    ],
+    compra_tributo: [
+      { descripcion: 'Percepción de IVA', importe: 30 },
+      { descripcion: 'Percepción de IIBB', importe: 50 },
+      { descripcion: 'Impuestos internos', importe: 5 },
+    ],
+  }
+
+  it('desarma la factura en un renglón por alícuota', () => {
+    const filas = comoFilasDeCompra(factura)
+    expect(filas).toHaveLength(2)
+    expect(filas.map((f) => [f.alicuota, f.neto_gravado, f.iva])).toEqual([
+      [21, 1000, 210],
+      [10.5, 100, 10.5],
+    ])
+  })
+
+  it('separa las percepciones por concepto y las pone sólo en el primer renglón', () => {
+    const [a, b] = comoFilasDeCompra(factura)
+    expect([a.percepcion_iva, a.percepcion_iibb, a.otros_tributos, a.total, a.exento]).toEqual([30, 50, 5, 1455.5, 50])
+    expect([b.percepcion_iva, b.percepcion_iibb, b.otros_tributos, b.total, b.exento]).toEqual([0, 0, 0, 0, 0])
+  })
+
+  it('la nota de crédito resta, así la suma da el mes', () => {
+    const nota: CrudoCompra = {
+      ...factura,
+      numero: 45679,
+      exento: 0,
+      total: 121,
+      tipo: { descripcion: 'Nota de Crédito A', clase: 'A', signo: -1 },
+      compra_alicuota: [{ alicuota_iva_id: 5, base_imponible: 100, importe: 21, alicuota: { porcentaje: 21 } }],
+      compra_tributo: [],
+    }
+    const t = totalesDeCompras([...comoFilasDeCompra(factura), ...comoFilasDeCompra(nota)])
+    expect(t.comprobantes).toBe(2)
+    expect(t.neto).toBe(1000)
+    expect(t.iva).toBe(199.5)
+    expect(t.total).toBe(1334.5)
+  })
+
+  it('una factura C sin alícuotas va igual, en un renglón', () => {
+    const filas = comoFilasDeCompra({ ...factura, tipo: { descripcion: 'Factura C', clase: 'C', signo: 1 }, compra_alicuota: [] })
+    expect(filas).toHaveLength(1)
+    expect(filas[0].alicuota).toBeNull()
   })
 })

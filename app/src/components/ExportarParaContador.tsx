@@ -2,9 +2,12 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   aCsv,
+  comprasACsv,
+  comprasParaElContador,
   percepcionesACsv,
   percepcionesParaRentas,
   totales,
+  totalesDeCompras,
   totalesDePercepciones,
   ventasParaElContador,
 } from '@/lib/api/libroIva'
@@ -73,6 +76,22 @@ export default function ExportarParaContador() {
 
   const p = percepciones.data ? totalesDePercepciones(percepciones.data) : null
 
+  /*
+    Las compras del mes. El contador las baja de ARCA igual; con esto
+    puede controlar lo cargado contra lo que tiene ARCA.
+  */
+  const compras = useQuery({
+    queryKey: ['compras-contador', desde, hasta],
+    queryFn: () => comprasParaElContador(desde, hasta),
+  })
+
+  const k = compras.data ? totalesDeCompras(compras.data) : null
+
+  function bajarCompras() {
+    if (!compras.data?.length) return
+    descargarCsv(`compras-${anio}-${String(mes).padStart(2, '0')}.csv`, comprasACsv(compras.data))
+  }
+
   function bajar() {
     if (!filas.data?.length) return
     descargarCsv(`ventas-${anio}-${String(mes).padStart(2, '0')}.csv`, aCsv(filas.data))
@@ -94,7 +113,7 @@ export default function ExportarParaContador() {
     <div className={`${tarjeta} p-5`}>
       <h2 className="font-medium text-tinta">Ventas para el contador</h2>
       <p className="mt-1 text-sm text-piedra-500">
-        El archivo del mes, para mandarle. Las facturas de compra las baja él de ARCA.
+        Los archivos del mes, para mandarle: ventas, percepciones y compras.
       </p>
 
       <div className="mt-4 flex flex-wrap items-end gap-3">
@@ -195,6 +214,43 @@ export default function ExportarParaContador() {
 
             <button onClick={bajarPercepciones} className={`mt-3 ${boton.principal}`}>
               Bajar las percepciones
+            </button>
+          </>
+        )}
+      </div>
+
+      <div className="mt-5 border-t border-borde pt-4">
+        <h3 className="text-sm font-medium text-tinta">Compras — IVA crédito fiscal</h3>
+        <p className="mt-1 text-sm text-piedra-500">
+          Las facturas de compra cargadas en el mes. El contador también las tiene en ARCA: sirve para
+          controlar que no falte ninguna de un lado ni del otro.
+        </p>
+
+        {compras.isPending ? (
+          <p className="mt-3 text-sm text-piedra-500">Buscando…</p>
+        ) : !compras.data?.length ? (
+          <p className="mt-3 rounded-lg bg-piedra-50 px-3 py-2.5 text-sm text-piedra-600 ring-1 ring-borde">
+            No hay facturas de compra cargadas en {MESES[mes - 1]} de {anio}.
+          </p>
+        ) : (
+          <>
+            <div className="mt-3 rounded-lg bg-piedra-50 p-3 ring-1 ring-borde">
+              <dl className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm sm:grid-cols-4">
+                <Dato k="Comprobantes" v={numero.format(k!.comprobantes)} />
+                <Dato k="Neto gravado" v={moneda.format(k!.neto)} />
+                <Dato k="IVA crédito fiscal" v={moneda.format(k!.iva)} />
+                <Dato k="Total" v={moneda.format(k!.total)} />
+              </dl>
+              {k!.percepciones !== 0 && (
+                <p className="mt-2 text-xs text-piedra-500">
+                  Incluye {moneda.format(k!.percepciones)} de percepciones que le cobraron a Gross,
+                  separadas por concepto en el archivo.
+                </p>
+              )}
+            </div>
+
+            <button onClick={bajarCompras} className={`mt-3 ${boton.principal}`}>
+              Bajar las compras
             </button>
           </>
         )}

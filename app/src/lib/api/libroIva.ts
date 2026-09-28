@@ -413,3 +413,153 @@ export function totales(filas: FilaLibroIva[]) {
     total: filas.reduce((s, f) => s + f.total, 0),
   }
 }
+
+/*
+  ─────────────────────────────────────────────────────────────
+  Las compras del mes, para el contador
+
+  El contador baja las facturas de compra de ARCA (Mis Comprobantes), así
+  que esto no es imprescindible para él. Existe porque las facturas ya se
+  cargan en el sistema desde el 10/09, y con este archivo puede
+  controlar lo cargado contra lo que tiene ARCA sin pedirle nada a nadie.
+  Decidido el 28/09.
+
+  La misma forma que el de ventas: una fila por alícuota, las notas de
+  crédito en negativo, y lo que es del comprobante —no gravado, exento,
+  percepciones, total— sólo en el primer renglón, para que sumar la
+  columna dé el mes. Las percepciones van separadas por concepto, porque
+  la de IVA y la de IIBB se computan en declaraciones distintas.
+  ─────────────────────────────────────────────────────────────
+*/
+
+export interface FilaLibroCompras {
+  signo: number
+  fecha: string
+  tipo: string
+  clase: string | null
+  punto_venta: number
+  numero: number
+  proveedor: string
+  cuit: string | null
+  alicuota: number | null
+  neto_gravado: number
+  iva: number
+  no_gravado: number
+  exento: number
+  percepcion_iva: number
+  percepcion_iibb: number
+  otros_tributos: number
+  total: number
+}
+
+export interface CrudoCompra {
+  fecha: string
+  punto_venta: number
+  numero: number
+  neto_no_gravado: number | string
+  exento: number | string
+  total: number | string
+  proveedor: { nombre: string; numero_documento: string | null } | { nombre: string; numero_documento: string | null }[] | null
+  tipo: { descripcion: string; clase: string | null; signo: number } | { descripcion: string; clase: string | null; signo: number }[] | null
+  compra_alicuota: CrudoAlicuota[] | null
+  compra_tributo: { descripcion: string; importe: number | string }[] | null
+}
+
+/** Una factura de compra, desarmada en sus renglones del libro. */
+export function comoFilasDeCompra(c: CrudoCompra): FilaLibroCompras[] {
+  const tipo = uno(c.tipo)
+  const proveedor = uno(c.proveedor)
+  const signo = tipo?.signo ?? 1
+
+  const tributos = c.compra_tributo ?? []
+  const sumar = (f: (d: string) => boolean) =>
+    signo * tributos.filter((t) => f(t.descripcion)).reduce((s, t) => s + Number(t.importe), 0)
+  const esIva = (d: string) => d === 'Percepción de IVA'
+  const esIibb = (d: string) => d === 'Percepción de IIBB'
+
+  const cabecera = {
+    signo,
+    fecha: c.fecha,
+    tipo: tipo?.descripcion ?? '',
+    clase: tipo?.clase ?? null,
+    punto_venta: c.punto_venta,
+    numero: c.numero,
+    proveedor: proveedor?.nombre ?? '',
+    cuit: proveedor?.numero_documento ?? null,
+    no_gravado: signo * Number(c.neto_no_gravado),
+    exento: signo * Number(c.exento),
+    percepcion_iva: sumar(esIva),
+    percepcion_iibb: sumar(esIibb),
+    otros_tributos: sumar((d) => !esIva(d) && !esIibb(d)),
+    total: signo * Number(c.total),
+  }
+
+  const alicuotas = c.compra_alicuota ?? []
+  // Una factura C o una íntegramente exenta no tiene alícuotas: va igual,
+  // en un renglón, para que no quede un hueco.
+  if (alicuotas.length === 0) return [{ ...cabecera, alicuota: null, neto_gravado: 0, iva: 0 }]
+
+  return alicuotas.map((a, i) => ({
+    ...cabecera,
+    alicuota: Number(uno(a.alicuota)?.porcentaje ?? 0),
+    neto_gravado: signo * Number(a.base_imponible),
+    iva: signo * Number(a.importe),
+    ...(i > 0
+      ? { no_gravado: 0, exento: 0, percepcion_iva: 0, percepcion_iibb: 0, otros_tributos: 0, total: 0 }
+      : {}),
+  }))
+}
+
+export async function comprasParaElContador(desde: string, hasta: string): Promise<FilaLibroCompras[]> {
+  const { data, error } = await supabase
+    .from('compra')
+    .select(
+      `fecha, punto_venta, numero, neto_no_gravado, exento, total,
+       proveedor:proveedor_id(nombre, numero_documento),
+       tipo:tipo_comprobante_id(descripcion, clase, signo),
+       compra_alicuota(alicuota_iva_id, base_imponible, importe, alicuota:alicuota_iva_id(porcentaje)),
+       compra_tributo(descripcion, importe)`,
+    )
+    .is('eliminado_en', null)
+    .gte('fecha', desde)
+    .lte('fecha', hasta)
+    .order('fecha')
+    .order('numero')
+
+  if (error) throw new Error(error.message)
+  return ((data ?? []) as unknown as CrudoCompra[]).flatMap(comoFilasDeCompra)
+}
+
+const COLUMNAS_COMPRAS: { clave: keyof FilaLibroCompras; titulo: string }[] = [
+  { clave: 'fecha', titulo: 'Fecha' },
+  { clave: 'tipo', titulo: 'Tipo de comprobante' },
+  { clave: 'clase', titulo: 'Letra' },
+  { clave: 'signo', titulo: 'Signo' },
+  { clave: 'punto_venta', titulo: 'Punto de venta' },
+  { clave: 'numero', titulo: 'Número' },
+  { clave: 'proveedor', titulo: 'Proveedor' },
+  { clave: 'cuit', titulo: 'CUIT' },
+  { clave: 'alicuota', titulo: 'Alícuota %' },
+  { clave: 'neto_gravado', titulo: 'Neto gravado' },
+  { clave: 'iva', titulo: 'IVA crédito fiscal' },
+  { clave: 'no_gravado', titulo: 'No gravado' },
+  { clave: 'exento', titulo: 'Exento' },
+  { clave: 'percepcion_iva', titulo: 'Percepción IVA' },
+  { clave: 'percepcion_iibb', titulo: 'Percepción IIBB' },
+  { clave: 'otros_tributos', titulo: 'Otros tributos' },
+  { clave: 'total', titulo: 'Total' },
+]
+
+export function comprasACsv(filas: FilaLibroCompras[]): string {
+  return armarCsv(filas, COLUMNAS_COMPRAS)
+}
+
+export function totalesDeCompras(filas: FilaLibroCompras[]) {
+  return {
+    comprobantes: new Set(filas.map((f) => `${f.cuit ?? f.proveedor}-${f.tipo}-${f.punto_venta}-${f.numero}`)).size,
+    neto: filas.reduce((s, f) => s + f.neto_gravado, 0),
+    iva: filas.reduce((s, f) => s + f.iva, 0),
+    percepciones: filas.reduce((s, f) => s + f.percepcion_iva + f.percepcion_iibb + f.otros_tributos, 0),
+    total: filas.reduce((s, f) => s + f.total, 0),
+  }
+}
