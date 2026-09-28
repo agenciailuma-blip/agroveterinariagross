@@ -14,7 +14,7 @@ import {
   proponerMapeo,
 } from '@/lib/importacion/planilla'
 import type { Campo, FilaImportada } from '@/lib/importacion/planilla'
-import { importarProductos } from '@/lib/api/importacion'
+import { aFilasDelArchivo, importarProductos } from '@/lib/api/importacion'
 import type { ResumenImportacion } from '@/lib/api/importacion'
 import { numero } from '@/lib/tipos'
 import { barraDeAvance } from '@/estilos'
@@ -106,7 +106,7 @@ export default function ImportarProductos() {
       )
     },
     onSuccess: (r) => {
-      setResumen(r)
+      setResumen(aFilasDelArchivo(r, validas.map((f) => f.linea)))
       setAvance(null)
       qc.invalidateQueries({ queryKey: ['productos'] })
       qc.invalidateQueries({ queryKey: ['avance-carga'] })

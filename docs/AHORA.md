@@ -56,7 +56,11 @@ estado: en curso
 - **Permisos:** clientes con saldo piden *clientes.editar* y *cuentacorriente.limite*; proveedores, *proveedores.gestionar* y *proveedores.pagar*. Administrador y Encargado.
 - ⚠️ **Falta saber qué exporta OBTech** y en qué formato. La pantalla reconoce muchos nombres de columna, y lo que no, se elige a mano. Conviene pedirle a Lucas una exportación de prueba ahora, no el 25/10.
 
-Verificado contra la base real: **26 comprobaciones** en [`supabase/pruebas/importar-clientes-y-saldos.sql`](../supabase/pruebas/importar-clientes-y-saldos.sql). **La prueba encontró un error real** —una fila con aviso fallaba entera— y se corrigió en una migración aparte. Se rompió a propósito que el saldo se sume en vez de reemplazarse, y la prueba lo atrapó. **444 pruebas** en la app.
+Verificado contra la base real: **26 comprobaciones** en [`supabase/pruebas/importar-clientes-y-saldos.sql`](../supabase/pruebas/importar-clientes-y-saldos.sql). **La prueba encontró un error real** —una fila con aviso fallaba entera— y se corrigió en una migración aparte. Se rompió a propósito que el saldo se sume en vez de reemplazarse, y la prueba lo atrapó. **445 pruebas** en la app.
+
+**Y en pantalla, el 28/09:** una planilla de clientes con título arriba, columnas escritas como *Cód.*, *C.U.I.T.*, *Cond. IVA*, *Cta. Cte.* y números en formato argentino: reconoció las diez columnas sin ayuda, mostró la suma de los saldos, importó tres y rechazó el CUIT mal tipeado. Reimportada, actualizó los tres sin duplicar la deuda. Lo mismo con una de proveedores. **Salió un error que las pruebas no veían**, ya corregido: los mensajes decían «fila 3» cuando en el Excel era la 5, porque contaban desde las filas que se mandaban y no desde el archivo. **La importación de productos tenía lo mismo**, y se corrigió también. Los datos de prueba quedaron dados de baja y con saldo cero.
+
+⚠️ **Falta publicarla** para que esté en el sistema de la web y en las PC.
 
 
 ✅ **Publicada la 0.9.0 el 28/09**, con *Factura después* y *Cajas y mostradores*. Con esto, todo lo que describe el manual en PDF está en las PC: las 4 la reciben con *Actualizar ahora*. **Falta ver en pantalla la opción *Factura después* de la caja**, que pide PIN.

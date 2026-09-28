@@ -28,6 +28,21 @@ export interface ResumenImportacion {
 */
 const TANDA = 200
 
+/*
+  El número de fila que ve la persona en su Excel.
+
+  La base devuelve la posición de la fila entre las que se mandaron, y
+  eso no es la fila del archivo: arriba puede haber un título y el
+  encabezado, y en el medio filas vacías o con error que no viajaron.
+  Decir «fila 3» cuando en el Excel es la 5 manda a corregir la fila
+  equivocada. Se vio el 28/09 probando la importación de clientes; la de
+  productos tenía lo mismo.
+*/
+export function aFilasDelArchivo(resumen: ResumenImportacion, lineas: number[]): ResumenImportacion {
+  const traducir = (f: ResultadoFila) => ({ ...f, fila: lineas[f.fila - 1] ?? f.fila })
+  return { ...resumen, errores: resumen.errores.map(traducir), avisos: resumen.avisos.map(traducir) }
+}
+
 export async function importarProductos(
   filas: Partial<Record<Campo, string>>[],
   crearReferencias: boolean,
@@ -46,9 +61,9 @@ export async function importarProductos(
     if (error) throw new Error(`No se pudo importar desde la fila ${i + 1}: ${error.message}`)
 
     for (const cruda of (data ?? []) as ResultadoFila[]) {
-      // La función numera dentro de su tanda; acá se traduce al número
-      // de fila del archivo, que es el único que le sirve a la persona
-      // que lo tiene abierto en Excel.
+      // La función numera dentro de su tanda; acá se pasa a la posición
+      // entre todas las filas que se mandaron. El número de fila del
+      // Excel lo pone aFilasDelArchivo(), en la pantalla.
       const fila = { ...cruda, fila: cruda.fila + i }
 
       if (fila.resultado === 'error') resumen.errores.push(fila)

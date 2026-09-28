@@ -8,7 +8,7 @@ import type { HojaLeida } from '@/lib/importacion/archivo'
 import { CLIENTES, SALDOS_PROVEEDORES } from '@/lib/importacion/definiciones'
 import { codigosDuplicados, detectarEncabezado, elegirHoja, prepararFilas, proponerMapeo } from '@/lib/importacion/planilla'
 import type { DefinicionPlanilla, FilaImportada } from '@/lib/importacion/planilla'
-import { importarClientes, importarSaldosProveedores } from '@/lib/api/importacion'
+import { aFilasDelArchivo, importarClientes, importarSaldosProveedores } from '@/lib/api/importacion'
 import type { ResumenImportacion, ResultadoFila } from '@/lib/api/importacion'
 import { moneda, numero } from '@/lib/tipos'
 import { barraDeAvance, boton, campo, tarjeta } from '@/estilos'
@@ -142,7 +142,7 @@ export default function ImportarSaldos({ tipo }: { tipo: Tipo }) {
       )
     },
     onSuccess: (r) => {
-      setResumen(r)
+      setResumen(aFilasDelArchivo(r, validas.map((f) => f.linea)))
       setAvance(null)
       qc.invalidateQueries({ queryKey: ['clientes'] })
       qc.invalidateQueries({ queryKey: ['saldos-proveedores'] })
@@ -397,10 +397,12 @@ function Resultado({ resumen, c, onOtra }: { resumen: ResumenImportacion; c: Con
           <Dato valor={numero.format(resumen.actualizados)} etiqueta="actualizados" tono="bien" />
           {resumen.errores.length > 0 && <Dato valor={numero.format(resumen.errores.length)} etiqueta="con error" tono="mal" />}
         </div>
-        <p className="mt-3 text-sm text-verde-900">
-          Las filas con error no entraron: se corrigen en la planilla y se vuelve a importar el archivo
-          entero. Lo que ya entró no se duplica.
-        </p>
+        {resumen.errores.length > 0 && (
+          <p className="mt-3 text-sm text-verde-900">
+            Las filas con error no entraron: se corrigen en la planilla y se vuelve a importar el
+            archivo entero. Lo que ya entró no se duplica.
+          </p>
+        )}
       </div>
 
       {resumen.errores.length > 0 && (
