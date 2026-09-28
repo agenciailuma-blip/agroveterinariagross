@@ -48,6 +48,7 @@ Nos informaron que Gross es **agente de retención y de percepción** de Ingreso
 - ¿Qué sujetos quedan excluidos y cómo se acredita la exclusión?
 - **Retenciones:** ¿en qué operaciones corresponde practicarlas?
 - ¿Cómo se declaran hoy y qué información necesita usted del sistema para hacerlo?
+- **Factura que agrupa varias ventas.** Hay clientes que se llevan mercadería a cuenta corriente y se les factura después, a veces juntando las compras del mes en una sola factura. La percepción de esa factura, ¿se calcula sobre el total de la factura o venta por venta? No da lo mismo: al juntar varias compras, el mínimo no sujeto se supera más seguido. El sistema admite las dos formas y hoy calcula sobre el total.
 
 ## 4. Régimen de Transparencia Fiscal (Ley 27.743)
 

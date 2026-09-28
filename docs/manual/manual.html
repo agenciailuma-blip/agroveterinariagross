@@ -183,8 +183,10 @@
       <li>Precios</li>
       <li>Proveedores</li>
       <li>Compras</li>
+      <li>Cuentas de proveedores</li>
       <li>Ventas · el mostrador</li>
       <li>Caja</li>
+      <li>Pedidos web</li>
       <li>Clientes</li>
       <li>Facturación</li>
       <li>Remitos</li>
@@ -225,15 +227,17 @@
       <p style="margin:3mm 0 1mm"><b>Lo que tiene la ficha del producto</b></p>
       <ul class="limpia">
         <li><b>Identificación</b> — código, unidad, nombre interno (el que ve el vendedor), nombre público (el que ve el cliente) y descripción.</li>
-        <li><b>Precio y rentabilidad</b> — precio de venta con IVA, costo, margen objetivo y el margen real que está dando, <b>sobre el costo y sobre la venta</b>, porque «margen» significa las dos cosas según quién lo diga.</li>
+        <li><b>Precio y rentabilidad</b> — precio de venta con IVA, <b>costo con IVA</b>, margen objetivo y el margen real que está dando, <b>sobre el costo y sobre la venta</b>, porque «margen» significa las dos cosas según quién lo diga. El costo se actualiza solo al recibir mercadería (ver <b>Compras</b>).</li>
         <li><b>Impuestos</b> — alícuota de IVA y rubro de ARCA.</li>
         <li><b>Stock</b> — cuánto hay y el <b>aviso de stock bajo</b> en dos niveles. Si no se le pone uno propio, hereda el de su categoría o el general.</li>
         <li><b>Proveedor</b> — a quién se le compra. Es lo que permite después subirle el precio a todo un laboratorio de una sola vez.</li>
         <li><b>Clasificación</b> — rubro, marca, presentación, animal y etapa de vida.</li>
         <li><b>Códigos de barra</b> — todos los que tenga, no uno solo.</li>
         <li><b>Trazabilidad</b> — producto veterinario, requiere receta, fitosanitario, controla vencimiento.</li>
+        <li><b>Vender online</b> — el interruptor que decide si el producto sale a la tienda web, y cuántas unidades se guardan sin mostrar. Debajo, una línea dice qué ve la tienda: <i>«Se vende online: la tienda ve 3 unidades a $6.900»</i>, o qué le falta para salir.</li>
       </ul>
 
+      <div class="nota verde"><b>Vender online, de a muchos.</b> En el listado se filtra por categoría y marca, se marcan los productos y se prenden o apagan juntos, o se prende una categoría entera: el sistema dice antes cuántos son y, después, cuántos no salen por faltarles el nombre público o el precio. Los que se venden online llevan la marca <b>Web</b> en la lista; en ámbar si están prendidos pero no salen.</div>
       <div class="nota"><b>Importar la planilla no duplica.</b> Acepta Excel y CSV. El sistema propone a qué campo corresponde cada columna y la persona confirma viendo un dato de ejemplo, porque los encabezados mienten: una columna que dice «Precio» puede tener el costo. Al reimportar reconoce por código y actualiza: una celda vacía no borra lo que había, un valor distinto sí lo pisa.</div>
     </div>
   </section>
@@ -268,6 +272,7 @@
       <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">Nada.</div></div>
       <div class="nota"><b>El precio que se cotiza es el de tarjeta</b>, y el efectivo se presenta como descuento. No es estético: define qué número lee el vendedor en voz alta. Si dice el de contado y la caja cobra más, queda pegado con el cliente adelante.</div>
       <div class="nota"><b>El recargo por cuotas se edita acá.</b> Cada medio de pago que admite cuotas tiene un casillero por plan —1, 2, 3 cuotas— con su porcentaje. Se escribe el número y queda guardado al salir del casillero. Debajo, la pantalla muestra cuánto se cobra una venta de $100.000 con cada plan, para comparar contra el posnet sin sacar la cuenta.</div>
+      <div class="nota"><b>La lista de la tienda web</b> se elige acá: es la que define el precio que ve el comprador online. Mientras la tienda la use, esa lista no se puede dar de baja.</div>
       <div class="nota"><b>Ese recargo va adentro del precio.</b> Al elegir el plan en la caja, el total de la venta sube y la factura sale por ese importe: no aparece como un renglón aparte al pie del ticket. Es como se cobra hoy, y es lo que corresponde.</div>
     </div>
   </section>
@@ -292,18 +297,48 @@
   </section>
 
   <section class="pantalla">
-    <header><span class="numero">7</span><div><h3>Compras</h3><p class="lema">La factura que llega del proveedor, registrada.</p></div></header>
+    <header><span class="numero">7</span><div><h3>Compras</h3><p class="lema">La factura del proveedor, y la mercadería que trae.</p></div></header>
     <div class="cuerpo">
-      <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Dejar registrado lo que dice el papel del proveedor: cuánto se le compró, con qué IVA y qué percepciones le cargaron.</div></div>
-      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Las facturas cargadas, con proveedor, tipo, número, fecha y total · al cargar una, el <b>total se arma solo</b> para compararlo con el papel antes de guardar.</div></div>
-      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Cargar una factura: proveedor, tipo, punto de venta y número, fecha, <b>desglose por alícuota de IVA</b> y percepciones · el IVA se sugiere al escribir el neto y se puede corregir, porque manda el papel.</div></div>
-      <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">Nada.</div></div>
-      <div class="nota"><b>La misma factura no entra dos veces.</b> El sistema la reconoce por proveedor, tipo y número, y avisa antes de duplicarla.</div>
+      <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Dejar registrado lo que dice el papel del proveedor —cuánto se le compró, con qué IVA y qué percepciones le cargaron— y hacer entrar la mercadería al stock con su costo.</div></div>
+      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Las facturas cargadas, con proveedor, tipo, número, fecha, total y si <b>la mercadería ya se recibió</b> · al cargar una, el <b>total se arma solo</b> para compararlo con el papel antes de guardar.</div></div>
+      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Cargar una factura: proveedor, tipo, punto de venta y número, fecha, <b>vencimiento</b>, <b>desglose por alícuota de IVA</b> y percepciones · el IVA se sugiere al escribir el neto y se puede corregir, porque manda el papel · <b>recibir la mercadería</b> · dar de baja una factura.</div></div>
+      <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">Las compras del mes van en el archivo para el contador (ver <b>Facturación</b>).</div></div>
+
+      <p style="margin:3mm 0 1mm"><b>Recibir la mercadería, paso a paso</b></p>
+      <ul class="limpia">
+        <li>Al guardar una factura, el sistema pregunta si la mercadería ya llegó. Si llegó, se recibe en el momento; si no, se recibe después con el botón <b>Recibir</b> de esa factura, y puede hacerlo otra persona desde otra computadora.</li>
+        <li>Se <b>pasa el lector</b> o se escribe el código o el nombre, y el producto se agrega. Se pone la <b>cantidad</b> y el <b>costo unitario como está impreso</b>: en una factura A, sin IVA; en una B o una C, con IVA. El sistema muestra al lado cuánto va a quedar el costo, ya con IVA, y cuánto subió.</li>
+        <li>Abajo se ve la <b>suma de los renglones contra el neto de la factura</b>. Si no coinciden, puede ser un flete o una bonificación, o una cantidad mal tipeada.</li>
+        <li>Si llega un producto que <b>no está en el catálogo</b>, se da de alta ahí mismo con código, nombre e IVA. Queda sin precio de venta y sin revisar, y aparece primero en Productos para completarlo.</li>
+        <li>Al confirmar, <b>entra al stock</b> y el costo del producto pasa a ser el de esta factura.</li>
+      </ul>
+
+      <div class="nota verde"><b>El precio de venta no cambia solo.</b> Al terminar, el sistema muestra, producto por producto, el costo de antes y el de ahora, el precio actual y el <b>precio que corresponde según el margen</b> cargado en la ficha. Vienen marcados los que cambiarían, y se aplican con un botón. Un producto sin margen cargado dice «sin margen»: no hay precio que proponer.</div>
+      <div class="nota"><b>La misma factura no entra dos veces.</b> El sistema la reconoce por proveedor, tipo y número. <b>Dar de baja una factura que ya entró al stock saca esa mercadería</b>, con un ajuste; el costo no vuelve atrás. Y una factura que ya tiene pagos imputados no se puede dar de baja: primero se anula el pago.</div>
     </div>
   </section>
 
   <section class="pantalla">
-    <header><span class="numero">8</span><div><h3>Ventas · el mostrador</h3><p class="lema">Armar la venta y mandarla a la caja.</p></div></header>
+    <header><span class="numero">8</span><div><h3>Cuentas de proveedores</h3><p class="lema">Cuánto se le debe a cada uno, y los pagos.</p></div></header>
+    <div class="cuerpo">
+      <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Saber cuánto se le debe a cada proveedor, qué está vencido y qué se le fue pagando. Cada factura de compra suma a su cuenta y cada pago resta.</div></div>
+      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Arriba, <b>cuánto se les debe en total</b> y <b>cuánto está vencido</b>. Debajo, un renglón por proveedor con su saldo, lo vencido, el próximo vencimiento y el último pago · al entrar a uno: <b>lo que falta pagar</b>, factura por factura, y el <b>resumen de cuenta</b> con el saldo después de cada movimiento.</div></div>
+      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor"><b>Registrar un pago</b> · cargar el <b>saldo inicial</b> de cada proveedor · <b>anular un pago</b>, con motivo.</div></div>
+      <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">Nada.</div></div>
+
+      <p style="margin:3mm 0 1mm"><b>Registrar un pago</b></p>
+      <ul class="limpia">
+        <li>Se pone <b>con qué se paga</b>: transferencia, efectivo, cheque propio o de tercero —con banco, número y fecha de cobro— u otro. Un pago puede ir en partes: una transferencia y un cheque.</li>
+        <li>Las facturas vienen <b>marcadas de la más vieja a la más nueva</b>, descontando primero las notas de crédito. Se pueden cambiar a mano.</li>
+        <li>Lo que sobra queda <b>a cuenta</b>: baja el saldo sin cancelar ninguna factura en particular.</li>
+      </ul>
+      <div class="nota"><b>El saldo inicial</b> es lo que se le debía a cada proveedor el día que se empezó a usar el sistema. Se carga una vez por proveedor, con esa fecha. Las facturas de antes de esa fecha <b>no se cargan</b>: ya están adentro de ese número. Se le pueden imputar pagos como a una factura.</div>
+      <div class="nota verde"><b>Toda factura va a la cuenta.</b> Una factura que se paga en el momento es una factura y un pago del mismo día: el saldo queda en cero y el resumen cuenta la historia entera. Anular un pago no lo borra: queda anulado con el motivo, y las facturas que pagaba vuelven a figurar pendientes.</div>
+    </div>
+  </section>
+
+  <section class="pantalla">
+    <header><span class="numero">9</span><div><h3>Ventas · el mostrador</h3><p class="lema">Armar la venta y mandarla a la caja.</p></div></header>
     <div class="cuerpo">
       <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Es la pantalla donde más tiempo pasa el día: el vendedor atiende, arma la venta y se la pasa a la caja, sin dejar de atender.</div></div>
       <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">El detalle con precios y subtotal · <b>el total en efectivo y con tarjeta al mismo tiempo</b> · aviso si no hay stock suficiente · el borrador se conserva si la pantalla se refresca por accidente.</div></div>
@@ -322,22 +357,38 @@
   </section>
 
   <section class="pantalla">
-    <header><span class="numero">9</span><div><h3>Caja</h3><p class="lema">Cobra lo que el mostrador armó, y cierra el turno.</p></div></header>
+    <header><span class="numero">10</span><div><h3>Caja</h3><p class="lema">Cobra lo que el mostrador armó, y cierra el turno.</p></div></header>
     <div class="cuerpo">
       <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Separar al que atiende del que cobra: el vendedor sigue en el salón y la caja concentra la plata, la factura y la impresora.</div></div>
       <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">La cola de ventas esperando cobro, con el nombre para llamar a cada cliente · el detalle de la venta · el total actualizado según el medio de pago · el saldo de cuenta corriente del cliente y su límite · al cerrar, lo esperado contra lo declarado y <b>la diferencia</b>.</div></div>
-      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor"><b>Abrir la caja</b> con el monto inicial · elegir una venta de la cola · <b>corregirla</b> (quitar, cambiar cantidades, agregar) · elegir medio de pago y cuotas · <b>hacer un descuento</b> por porcentaje o llevando el total a un número, con motivo · elegir <b>con factura o sin factura</b> · <b>cobrar</b> · cobrar una cuenta corriente · <b>cerrar la caja</b> con el arqueo.</div></div>
+      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor"><b>Abrir la caja</b> con el monto inicial · elegir una venta de la cola · <b>corregirla</b> (quitar, cambiar cantidades, agregar) · elegir medio de pago y cuotas · <b>hacer un descuento</b> por porcentaje o llevando el total a un número, con motivo · elegir <b>con factura, sin factura o factura después</b> · <b>cobrar</b> · cobrar una cuenta corriente · <b>cerrar la caja</b> con el arqueo.</div></div>
       <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">El <b>comprobante impreso</b> —factura, ticket no fiscal o comprobante interno— en ticket de 80 mm o A4.</div></div>
 
       <div class="nota"><b>Al cobrar se factura y se imprime solo.</b> El cajero no tiene que ir a otra pantalla ni apretar nada más: al confirmar el cobro se pide la factura y el ticket sale por la impresora del mostrador. El botón que queda al lado es para verlo o darle una copia al cliente. Si el ticket no salió, el sistema lo dice.</div>
       <div class="nota"><b>Si el pago es en cuotas, el total ya viene con el recargo.</b> La pantalla lo aclara —cuánto es y cuánto sería de contado—, y el importe a cobrar coincide con el del posnet. El porcentaje de cada plan se carga en <b>Precios</b>.</div>
       <div class="nota"><b>Sin internet, la caja factura igual.</b> Se cobra como siempre y el ticket sale con el código de contingencia (CAEA). Lo único que cambia en la pantalla es que el cartel verde lo aclara.</div>
       <div class="nota"><b>«Sin factura» tiene permiso propio</b>, que no tienen ni el cajero ni el vendedor. Y a un Responsable Inscripto no se le ofrece: compra para descargar IVA.</div>
+      <div class="nota verde"><b>«Factura después»</b> aparece para los clientes con cuenta corriente, también para un Responsable Inscripto. La venta va <b>entera a la cuenta corriente</b> y sale un <b>comprobante interno</b>. La factura la emite el encargado más tarde desde <b>Facturación → Por facturar</b>: sola, o junto con otras ventas del mismo cliente.</div>
+      <div class="nota"><b>La percepción de IIBB se cobra con la factura.</b> Cuando el cliente es Responsable Inscripto y la compra pasa el mínimo, el panel de cobro muestra <i>Productos</i>, <i>Percepción IIBB Misiones</i> y el total con las dos cosas: ése es el precio final que se le dice al cliente. Si paga en el momento se cobra entero; si va a cuenta corriente, la deuda es la factura entera. La cola de la izquierda muestra el mismo total, con la leyenda <i>con percepción IIBB</i>.</div>
     </div>
   </section>
 
   <section class="pantalla">
-    <header><span class="numero">10</span><div><h3>Clientes</h3><p class="lema">La ficha del cliente y su cuenta corriente.</p></div></header>
+    <header><span class="numero">11</span><div><h3>Pedidos web</h3><p class="lema">Lo que se compró en la tienda online, hasta que se entrega.</p></div></header>
+    <div class="cuerpo">
+      <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Preparar, facturar y entregar lo que entra por la tienda web. Cada pedido entra solo al sistema como una venta, con el comprador y lo que compró, y <b>descuenta el stock</b>. <b>Nada se factura solo</b>: la factura sale cuando se sabe lo que realmente se entrega.</div></div>
+      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">En el menú, un número al lado de <b>Pedidos web</b>: los que esperan que alguien haga algo · por pedido: si el cliente <b>pagó en la web o paga en el local</b>, cómo se entrega y <b>hace cuánto espera factura</b>, en rojo si ya pasó el día del cobro · los reintegros <b>a devolver por la tienda</b>.</div></div>
+      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Marcar <b>preparado</b> · emitir el <b>remito del envío</b> · <b>facturar</b> · marcar <b>entregado</b> · <b>cancelar</b> · anotar que un reintegro ya se devolvió, con su referencia.</div></div>
+      <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">La factura y el remito, impresos o guardados en PDF.</div></div>
+
+      <div class="nota"><b>Lo que se cobró en la web no se entrega sin factura</b>, y la factura no puede salir por más de lo que el cliente pagó. Pasa cuando al comprador le corresponde percepción de IIBB: el sistema frena y dice por qué, para hablarlo con el cliente antes. Un pedido marcado <i>para revisar</i> pide confirmar «lo revisé», y queda el nombre de quien lo hizo.</div>
+      <div class="nota verde"><b>Cancelar y devolver.</b> Cancelar antes de entregar anula la venta y devuelve el stock; si ya estaba facturado, sale la nota de crédito. Lo entregado vuelve por <b>Devolver parte</b>, en Facturación. Si el cliente pagó en la web, la plata la tiene la pasarela de pago de la tienda: cada cancelación o devolución deja un pendiente <i>«a devolver por la tienda»</i>, a la vista hasta que alguien anota que se devolvió.</div>
+      <div class="nota">Si el cliente eligió <b>pagar en el local</b>, la venta le aparece a la caja como cualquier otra.</div>
+    </div>
+  </section>
+
+  <section class="pantalla">
+    <header><span class="numero">12</span><div><h3>Clientes</h3><p class="lema">La ficha del cliente y su cuenta corriente.</p></div></header>
     <div class="cuerpo">
       <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Tener los datos con los que se factura y, para el que compra en cuenta, saber cuánto debe, desde cuándo y hasta cuánto puede seguir comprando.</div></div>
       <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Datos fiscales (condición de IVA, CUIT o DNI, domicilio) · <b>saldo actual</b>, límite de crédito y crédito disponible · los movimientos de la cuenta con su origen.</div></div>
@@ -349,18 +400,26 @@
   </section>
 
   <section class="pantalla">
-    <header><span class="numero">11</span><div><h3>Facturación</h3><p class="lema">El semáforo de todo lo que se le informa a ARCA.</p></div></header>
+    <header><span class="numero">13</span><div><h3>Facturación</h3><p class="lema">El semáforo de todo lo que se le informa a ARCA.</p></div></header>
     <div class="cuerpo">
       <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Ver de un vistazo si todo lo que se cobró tiene su comprobante, y resolver lo que quedó en el camino.</div></div>
-      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">El semáforo por comprobante —autorizado e impreso, autorizado sin imprimir, esperando autorización, rechazado— · <b>el motivo exacto del rechazo</b> · el aviso de los días que quedan para pedir el código de autorización · y el <b>panel rojo</b> de ventas cobradas sin comprobante, que es el caso grave: la plata entró y falta el respaldo.</div></div>
-      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Pedir la autorización de un comprobante pendiente · <b>reintentar</b> los rechazados · <b>devolver una venta entera</b> · <b>devolver parte</b> de una venta · imprimir.</div></div>
-      <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">La <b>factura impresa</b> con QR de ARCA, en ticket u hoja A4 · el <b>Excel de ventas del mes</b> para el contador · el <b>archivo de percepciones de IIBB</b> del mes, para presentar ante Rentas.</div></div>
+      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">El semáforo por comprobante —autorizado e impreso, autorizado sin imprimir, esperando autorización, rechazado— · <b>el motivo exacto del rechazo</b> · el aviso de los días que quedan para pedir el código de autorización · y el <b>panel rojo</b> de ventas cobradas sin comprobante, que es el caso grave: la plata entró y falta el respaldo · el cuadro <b>Por facturar</b>, con lo que los clientes se llevaron a cuenta para facturar después.</div></div>
+      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Pedir la autorización de un comprobante pendiente · <b>reintentar</b> los rechazados · <b>devolver una venta entera</b> · <b>devolver parte</b> de una venta · <b>facturar lo que quedó para después</b>, de a una o varias juntas · imprimir.</div></div>
+      <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">La <b>factura impresa</b> con QR de ARCA, en ticket u hoja A4 · el <b>Excel de ventas del mes</b> para el contador · el <b>archivo de percepciones de IIBB</b> del mes, para presentar ante Rentas · el <b>Excel de compras del mes</b>.</div></div>
 
       <p style="margin:3mm 0 1mm"><b>Devolver parte de una venta</b></p>
       <ul class="limpia">
         <li>Se abre la lista de lo que el cliente se llevó y se marca <b>cuánto vuelve de cada producto</b>. El total a devolver se ve antes de confirmar.</li>
         <li>Vuelve el stock de lo marcado, se descuenta de la cuenta corriente la parte que estaba en cuenta y sale la <b>nota de crédito</b> por ese importe. La venta no se anula: queda con lo devuelto restado.</li>
         <li><b>Se puede devolver varias veces</b>: una bolsa hoy y otra la semana que viene. El sistema lleva la cuenta de lo que queda y no deja devolver más de lo que se llevó.</li>
+      </ul>
+
+      <p style="margin:3mm 0 1mm"><b>Por facturar: lo que el cliente se llevó a cuenta</b></p>
+      <ul class="limpia">
+        <li>El cuadro <b>Por facturar</b> muestra las ventas que salieron de la caja con «Factura después», <b>juntas por cliente</b> y todas marcadas.</li>
+        <li>Se desmarca lo que no va y se aprieta <b>Facturar</b>: sale <b>una sola factura</b> con todo lo marcado, que es lo del mes de ese cliente. También se puede facturar una venta sola.</li>
+        <li>Si al cliente le corresponde <b>percepción de IIBB</b>, se calcula en esa factura y se suma a su cuenta corriente: la deuda termina siendo la factura entera.</li>
+        <li>Una factura que junta varias ventas se devuelve <b>venta por venta</b>: en su renglón, <b>Ver ventas</b>, se elige la venta y <b>Devolver parte</b>. La nota de crédito sale por esa venta, asociada a la factura, con su parte de la percepción.</li>
       </ul>
 
       <p style="margin:3mm 0 1mm"><b>Lo que se facturó durante un corte de internet</b></p>
@@ -370,12 +429,12 @@
         <li>Cada una dice si <b>ya llegó al servidor</b> o todavía está esperando. Informarle a ARCA lo emitido lo hace el sistema solo, todos los días.</li>
       </ul>
 
-      <div class="nota"><b>El archivo para el contador</b> se baja de esta misma pantalla: se elige el mes y, antes de bajarlo, se ven los totales para controlar que el mes sea el correcto. Lleva <b>una fila por alícuota</b> —una factura con 21% y 10,5% ocupa dos renglones— y las notas de crédito van en negativo, así sumar la columna da el neto del mes.</div>
+      <div class="nota"><b>El archivo para el contador</b> se baja de esta misma pantalla: se elige el mes y, antes de bajarlo, se ven los totales para controlar que el mes sea el correcto. Lleva <b>una fila por alícuota</b> —una factura con 21% y 10,5% ocupa dos renglones— y las notas de crédito van en negativo, así sumar la columna da el neto del mes. En la misma pantalla están el archivo de <b>percepciones de IIBB</b> —una fila por percepción, con el CUIT del cliente, la base y la alícuota— y el de <b>compras</b>, con el IVA crédito fiscal y las percepciones que le cobraron a Gross separadas por concepto, para controlar contra ARCA que no falte ninguna.</div>
     </div>
   </section>
 
   <section class="pantalla">
-    <header><span class="numero">12</span><div><h3>Remitos</h3><p class="lema">La mercadería que sale del local, con su comprobante de entrega.</p></div></header>
+    <header><span class="numero">14</span><div><h3>Remitos</h3><p class="lema">La mercadería que sale del local, con su comprobante de entrega.</p></div></header>
     <div class="cuerpo">
       <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Que lo que sale en la camioneta tenga un papel que alguien firma, y que el stock salga una sola vez.</div></div>
       <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor"><b>Entregado y sin cobrar</b>, arriba y en ámbar: mercadería que salió y plata que no entró, con cuántos días lleva · el listado con destino, transporte, si descontó stock y a qué venta corresponde.</div></div>
@@ -388,7 +447,7 @@
   </section>
 
   <section class="pantalla">
-    <header><span class="numero">13</span><div><h3>Presupuestos</h3><p class="lema">El archivo de los comprobantes que numera Gross.</p></div></header>
+    <header><span class="numero">15</span><div><h3>Presupuestos</h3><p class="lema">El archivo de los comprobantes que numera Gross.</p></div></header>
     <div class="cuerpo">
       <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Tener juntos los papeles propios —presupuestos, remitos e internos— separados de los que numera y controla ARCA.</div></div>
       <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Número, fecha, cliente, total y estado, con los presupuestos <b>vencidos</b> marcados.</div></div>
@@ -399,7 +458,7 @@
   </section>
 
   <section class="pantalla">
-    <header><span class="numero">14</span><div><h3>Reportes</h3><p class="lema">Cómo viene el mes y quién tiene plata de Gross en la calle.</p></div></header>
+    <header><span class="numero">16</span><div><h3>Reportes</h3><p class="lema">Cómo viene el mes y quién tiene plata de Gross en la calle.</p></div></header>
     <div class="cuerpo">
       <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Mirar el negocio con tiempo, no de paso: la venta comparada contra el período anterior, y la deuda de los clientes junta, que en la ficha se ve de a un cliente por vez.</div></div>
       <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Ventas de hoy, de los últimos 7 días y del mes, cada una <b>comparada contra el período anterior</b> · cuánta plata hay en la calle, cuánta está vencida y cuánta por vencer · cuántos clientes pasaron su límite · y por cliente: cuánto debe, cuánto está vencido, cuántos días de atraso y su teléfono.</div></div>
@@ -410,7 +469,7 @@
   </section>
 
   <section class="pantalla">
-    <header><span class="numero">15</span><div><h3>Usuarios</h3><p class="lema">Quién entra, qué puede hacer y con qué PIN.</p></div></header>
+    <header><span class="numero">17</span><div><h3>Usuarios</h3><p class="lema">Quién entra, qué puede hacer y con qué PIN.</p></div></header>
     <div class="cuerpo">
       <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Que cada uno vea y pueda hacer lo de su puesto, y que toda operación quede con nombre y apellido.</div></div>
       <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Los usuarios, su rol, y los permisos de cada rol agrupados por tema.</div></div>
@@ -421,7 +480,7 @@
   </section>
 
   <section class="pantalla">
-    <header><span class="numero">16</span><div><h3>Configuración</h3><p class="lema">Lo que puede cambiar sin depender de una actualización.</p></div></header>
+    <header><span class="numero">18</span><div><h3>Configuración</h3><p class="lema">Lo que puede cambiar sin depender de una actualización.</p></div></header>
     <div class="cuerpo">
       <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Que lo que cambia por resolución, por costumbre del mostrador o por cómo está armado el local se pueda tocar sin llamar a nadie.</div></div>
       <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Ver el cuadro de abajo.</div></div>
@@ -429,7 +488,8 @@
 
       <table class="datos">
         <tr><th style="width:52mm">Bloque</th><th>Para qué</th></tr>
-        <tr><td><b>Percepción de IIBB — Misiones</b></td><td>Alícuota y mínimo no sujeto a percepción. Los fija la DGR y cambian por resolución.</td></tr>
+        <tr><td><b>Percepción de IIBB — Misiones</b></td><td>Alícuota y mínimo no sujeto a percepción. Los fija la DGR y cambian por resolución. Y cómo se calcula en una factura que agrupa varias ventas: sobre el total o venta por venta, según lo que indique el contador.</td></tr>
+        <tr><td><b>Cajas y mostradores</b></td><td>Las computadoras del local, con su prefijo, su punto de venta y cuándo se conectó cada una por última vez. <b>Agregar</b> propone el nombre y el prefijo que siguen —<i>Mostrador 3, MOS3</i>—; después, en la PC nueva, se abre el sistema y se la elige en <b>Ventas</b>. El prefijo encabeza cada número de venta de esa máquina y <b>no se cambia después</b>. No se puede dar de baja la caja que escucha a las demás ni una caja abierta.</td></tr>
         <tr><td><b>Ritmo del mostrador</b></td><td>Si al agregar un producto se pregunta la cantidad. Se prueba unos días y se deja como le sirva al mostrador.</td></tr>
         <tr><td><b>Impresora del mostrador</b></td><td>Se elige de la <b>lista de impresoras de Windows</b>, como al imprimir desde el Word, y se guarda <b>en cada computadora</b>. Tiene un botón para imprimir una prueba.</td></tr>
         <tr><td><b>La red del local</b></td><td>Qué computadora escucha a las demás cuando no hay internet — conviene que sea la de la caja. Desde cada mostrador se puede probar la conexión.</td></tr>
@@ -449,13 +509,14 @@
 
   <table class="datos">
     <tr><th style="width:52mm">Documento</th><th style="width:48mm">Dónde se emite</th><th>Formato</th></tr>
-    <tr><td><b>Factura y nota de crédito</b></td><td>Caja (al cobrar) y Facturación</td><td>Ticket de 80 mm · Hoja A4 · con QR de ARCA</td></tr>
+    <tr><td><b>Factura y nota de crédito</b></td><td>Caja (al cobrar), Facturación y Pedidos web</td><td>Ticket de 80 mm · Hoja A4 · con QR de ARCA</td></tr>
     <tr><td><b>Presupuesto</b></td><td>Ventas</td><td>Ticket de 80 mm · Hoja A4</td></tr>
-    <tr><td><b>Remito</b></td><td>Remitos</td><td>Ticket de 80 mm · Hoja A4 · sin precios</td></tr>
-    <tr><td><b>Comprobante interno</b></td><td>Caja (cobrando «sin factura»)</td><td>Ticket de 80 mm · Hoja A4</td></tr>
+    <tr><td><b>Remito</b></td><td>Remitos y Pedidos web</td><td>Ticket de 80 mm · Hoja A4 · sin precios</td></tr>
+    <tr><td><b>Comprobante interno</b></td><td>Caja (cobrando «sin factura» o «factura después»)</td><td>Ticket de 80 mm · Hoja A4</td></tr>
     <tr><td><b>Resumen de cuenta corriente</b></td><td>Clientes y Reportes</td><td>Hoja A4 · se guarda como PDF</td></tr>
     <tr><td><b>Ventas del mes para el contador</b></td><td>Facturación</td><td>Archivo de Excel</td></tr>
     <tr><td><b>Percepciones de IIBB del mes</b></td><td>Facturación</td><td>Archivo de Excel</td></tr>
+    <tr><td><b>Compras del mes</b></td><td>Facturación</td><td>Archivo de Excel</td></tr>
     <tr><td><b>Listado de presupuestos y remitos</b></td><td>Presupuestos</td><td>Archivo de Excel</td></tr>
     <tr><td><b>Lista de faltantes</b></td><td>Stock</td><td>Al portapapeles, para pegar en WhatsApp</td></tr>
     <tr><td><b>Arqueo de caja</b></td><td>Caja (al cerrar)</td><td>En pantalla</td></tr>
