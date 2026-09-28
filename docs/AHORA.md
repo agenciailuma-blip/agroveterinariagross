@@ -12,7 +12,7 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Publicado: 0.7.0** (25/09), con **la pantalla Pedidos web**: preparar, facturar, entregar y cancelar lo que entra de la tienda. Antes, la 0.6.0 (24/09), con **«Vender online»** —qué productos salen a la tienda web se decide desde Productos— y con **el arreglo de la sincronización que impedía que el CAEA llegara a las máquinas**. Antes, la 0.5.0 con **la factura que sale sin internet** —la caja emite con CAEA y el ticket sale solo—. Antes, la 0.4.4 con la red del local que ahora **dice qué le pasa**, el cortacircuito que hace que la Caja abra rápido sin internet, y la cola de la caja que se actualiza al cambiar el medio de pago. Antes, ese mismo día, la 0.4.2 con el recargo por cuotas arreglado, los acentos del ticket y la impresión automática al cobrar. **La 0.4.1 quedó instalada en el local el 17/09, en todas menos la de Windows 7** — las versiones nuevas entran solas con *Actualizar ahora*. **405 pruebas verdes en la app y 11 en el programa**, 91 migraciones aplicadas.
+**Publicado: 0.9.0** (28/09), con *Factura después* y *Cajas y mostradores*; antes, la 0.8.0 ese mismo día, con la recepción de mercadería, las cuentas de proveedores y la percepción en la caja. Antes, la 0.7.0 (25/09), con **la pantalla Pedidos web**: preparar, facturar, entregar y cancelar lo que entra de la tienda. Antes, la 0.6.0 (24/09), con **«Vender online»** —qué productos salen a la tienda web se decide desde Productos— y con **el arreglo de la sincronización que impedía que el CAEA llegara a las máquinas**. Antes, la 0.5.0 con **la factura que sale sin internet** —la caja emite con CAEA y el ticket sale solo—. Antes, la 0.4.4 con la red del local que ahora **dice qué le pasa**, el cortacircuito que hace que la Caja abra rápido sin internet, y la cola de la caja que se actualiza al cambiar el medio de pago. Antes, ese mismo día, la 0.4.2 con el recargo por cuotas arreglado, los acentos del ticket y la impresión automática al cobrar. **La 0.4.1 quedó instalada en el local el 17/09, en todas menos la de Windows 7** — las versiones nuevas entran solas con *Actualizar ahora*. **405 pruebas verdes en la app y 11 en el programa**, 91 migraciones aplicadas.
 
 **Y la API de la tienda online.** Leer el catálogo desde el 18/09; **mandar pedidos desde el 24/09**; **preguntar en qué está cada pedido desde el 25/09**. Zubu ya tiene su clave y su documentación. Del lado del local, **la pantalla Pedidos web**, publicada en la 0.7.0 el 25/09. Ver abajo.
 
@@ -45,7 +45,10 @@ estado: en curso
 
 ## Lo último que pasó — 28 de septiembre
 
-**Gross da de alta sus cajas y mostradores.** Configuración → *Cajas y mostradores*: la lista de las máquinas con su prefijo, su punto de venta y cuándo se conectó cada una por última vez, y el botón *Agregar*. Todavía no está publicado.
+✅ **Publicada la 0.9.0 el 28/09**, con *Factura después* y *Cajas y mostradores*. Con esto, todo lo que describe el manual en PDF está en las PC: las 4 la reciben con *Actualizar ahora*. **Falta ver en pantalla la opción *Factura después* de la caja**, que pide PIN.
+
+
+**Gross da de alta sus cajas y mostradores.** Configuración → *Cajas y mostradores*: la lista de las máquinas con su prefijo, su punto de venta y cuándo se conectó cada una por última vez, y el botón *Agregar*. Publicado en la 0.9.0.
 
 > **Cómo se lo contás a Lucas:** para sumar una PC, en Configuración se agrega la terminal —el sistema propone el nombre y el prefijo que siguen, por ejemplo *Mostrador 3* y *MOS3*— y después, en la PC nueva, se abre el sistema y se la elige en Ventas. Una caja necesita su punto de venta de ARCA.
 
@@ -59,7 +62,7 @@ Verificado contra la base real: **16 comprobaciones** en [`supabase/pruebas/alta
 ✅ **Publicada la 0.8.0 el 28/09**, con la recepción de mercadería, las cuentas de proveedores, la percepción en la caja y la cola de la caja mostrando el total con percepción. Las 4 PC la reciben con *Actualizar ahora*. Lo de la base ya andaba en todas desde que se aplicó.
 
 
-**La caja cobra la percepción de IIBB.** Hasta hoy la Factura A a un mayorista sumaba la percepción, pero la caja cobraba sin ella: la factura decía un número y lo que entraba —o lo que quedaba debiendo— era otro. Todavía no está publicada en ninguna versión.
+**La caja cobra la percepción de IIBB.** Hasta hoy la Factura A a un mayorista sumaba la percepción, pero la caja cobraba sin ella: la factura decía un número y lo que entraba —o lo que quedaba debiendo— era otro. Publicada en la 0.8.0.
 
 > **Cómo se lo contás a Lucas:** cuando el cliente es Responsable Inscripto y la compra pasa el mínimo, la caja muestra *Productos*, *Percepción IIBB Misiones* y el total con las dos cosas. Ése es el precio final que se le dice al cliente. Si paga en el momento, se cobra entero; si va a cuenta corriente, la deuda es la factura entera. Funciona igual sin internet.
 
@@ -73,7 +76,7 @@ Verificado contra la base real: **14 comprobaciones** en [`supabase/pruebas/perc
 
 ### También el 28/09
 
-**La cuenta corriente de los proveedores.** Es lo que el 26/10 desaparecía con OBTech sin reemplazo: cuánto se le debe a cada proveedor. Menú **Cuentas proveedores**, debajo de Compras. Todavía no está publicada en ninguna versión.
+**La cuenta corriente de los proveedores.** Es lo que el 26/10 desaparecía con OBTech sin reemplazo: cuánto se le debe a cada proveedor. Menú **Cuentas proveedores**, debajo de Compras. Publicada en la 0.8.0.
 
 > **Cómo se lo contás a Lucas:** arriba está cuánto se les debe en total y cuánto de eso está vencido; abajo, un renglón por proveedor. Al entrar a uno se ve qué falta pagar, factura por factura, y el resumen de cuenta con el saldo después de cada movimiento. Para pagar se pone con qué (transferencia, efectivo, cheque) y las facturas ya vienen marcadas de la más vieja a la más nueva, descontando primero las notas de crédito; se pueden cambiar. Lo que sobra queda a cuenta. El día del corte se carga el saldo que muestra OBTech, uno por proveedor.
 
@@ -90,11 +93,11 @@ Y las que salieron de construirlo:
 
 Verificado contra la base real: **31 comprobaciones** en [`supabase/pruebas/cuenta-de-proveedores.sql`](../supabase/pruebas/cuenta-de-proveedores.sql), como usuario. Se rompió a propósito el control de imputar de más, y la prueba lo atrapó. **423 pruebas** en la app. Y en la aplicación de verdad: saldo inicial, un pago por transferencia con la sugerencia de facturas, y la anulación. **Salió un error que las pruebas no veían**, ya corregido: los importes que escribe la base salían en formato inglés («150,000.00»). Ahora hay una sola función que escribe pesos, `app.pesos`, y la prueba lo controla.
 
-⚠️ **Falta publicarla en una versión**, junto con la recepción de mercadería.
+✅ Publicada en la 0.8.0.
 
 ### También el 28/09
 
-**La recepción de mercadería.** Sobre una factura de compra ya cargada se reciben los productos: entra el stock y el costo se actualiza. Todavía no está publicada en ninguna versión.
+**La recepción de mercadería.** Sobre una factura de compra ya cargada se reciben los productos: entra el stock y el costo se actualiza. Publicada en la 0.8.0.
 
 > **Cómo se lo contás a Lucas:** en Compras, cada factura tiene un botón *Recibir*. Al guardar una factura nueva, el sistema pregunta si la mercadería ya está: si está, se recibe en el momento; si no, se recibe cuando llegue, y la puede hacer otra persona. Se pasa el lector o se escribe el código, se pone cantidad y costo, y entra al stock. **El precio de venta no cambia solo:** al terminar, el sistema muestra el precio que corresponde según el margen de cada producto, y se aplica con un clic a los que elijas.
 
@@ -113,7 +116,7 @@ Verificado contra la base real: **26 comprobaciones** en [`supabase/pruebas/rece
 
 **Y en la aplicación de verdad, el 28/09:** se cargó una factura A, se recibió un producto existente (pasándole el código) y uno nuevo dado de alta ahí mismo, se aplicó el precio sugerido, y se dio de baja la factura: el stock volvió solo. Salieron dos detalles de pantalla, ya corregidos: la tabla de Compras se cortaba en monitores chicos y el botón *Dar de baja* se partía en tres renglones. Los datos de prueba quedaron como estaban.
 
-⚠️ **Falta publicarla en una versión.** La base ya está aplicada; la pantalla llega con la próxima.
+✅ Publicada en la 0.8.0.
 
 **La percepción de IIBB, resuelta el 28/09:** va con la factura, a donde vaya la plata. Si pasa en la caja, al elegir un cliente responsable inscripto la caja muestra el total ya con la percepción. El vendedor le pregunta *«¿facturamos ahora?»* y, si dice que sí, le da ese precio final. **Construido el mismo día** (ver arriba).
 
