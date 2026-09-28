@@ -14,6 +14,7 @@ import Precios from '@/pages/Precios'
 import Proveedores from '@/pages/Proveedores'
 import Compras from '@/pages/Compras'
 import CuentaProveedores from '@/pages/CuentaProveedores'
+import ImportarSaldos from '@/pages/ImportarSaldos'
 import PuntoDeVenta from '@/pages/PuntoDeVenta'
 import Caja from '@/pages/Caja'
 import PedidosWeb from '@/pages/PedidosWeb'
@@ -122,10 +123,12 @@ function Rutas() {
         <Route path="proveedores" element={<Proveedores />} />
         <Route path="compras" element={<Compras />} />
         <Route path="proveedores/cuentas" element={<CuentaProveedores />} />
+        <Route path="proveedores/cuentas/importar" element={<ImportarSaldos tipo="proveedores" />} />
         <Route path="ventas" element={<PuntoDeVenta />} />
         <Route path="caja" element={<Caja />} />
         <Route path="pedidos" element={<PedidosWeb />} />
         <Route path="clientes" element={<Clientes />} />
+        <Route path="clientes/importar" element={<ImportarSaldos tipo="clientes" />} />
         <Route path="usuarios" element={<Usuarios />} />
         <Route path="configuracion" element={<Configuracion />} />
         <Route path="facturacion" element={<Facturacion />} />

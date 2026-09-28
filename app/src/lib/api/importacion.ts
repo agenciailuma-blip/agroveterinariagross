@@ -66,3 +66,69 @@ export async function importarProductos(
 
   return resumen
 }
+
+/*
+  ─────────────────────────────────────────────────────────────
+  Clientes con su saldo, y saldos de proveedores
+
+  Las dos planillas del día del corte. Van de a tandas por la misma razón
+  que los productos, y cada fila vuelve con su resultado: creada,
+  actualizada, con un aviso para mirar, o rechazada y por qué.
+  ─────────────────────────────────────────────────────────────
+*/
+
+async function importarEnTandas(
+  funcion: 'importar_clientes' | 'importar_saldos_proveedores',
+  parametros: (tanda: Record<string, string>[]) => Record<string, unknown>,
+  filas: Record<string, string>[],
+  onAvance?: (procesadas: number, total: number) => void,
+): Promise<ResumenImportacion> {
+  const resumen: ResumenImportacion = { creados: 0, actualizados: 0, errores: [], avisos: [] }
+
+  for (let i = 0; i < filas.length; i += TANDA) {
+    const { data, error } = await supabase.rpc(funcion, parametros(filas.slice(i, i + TANDA)))
+    if (error) throw new Error(`No se pudo importar desde la fila ${i + 1}: ${error.message}`)
+
+    for (const cruda of (data ?? []) as ResultadoFila[]) {
+      const fila = { ...cruda, fila: cruda.fila + i }
+      if (fila.resultado === 'error') resumen.errores.push(fila)
+      else {
+        if (fila.resultado === 'creado') resumen.creados++
+        else resumen.actualizados++
+        if (fila.detalle) resumen.avisos.push(fila)
+      }
+    }
+
+    onAvance?.(Math.min(i + TANDA, filas.length), filas.length)
+  }
+
+  return resumen
+}
+
+/** Clientes, con el saldo que debe cada uno a la fecha del corte. */
+export function importarClientes(
+  filas: Record<string, string>[],
+  fechaSaldo: string,
+  onAvance?: (procesadas: number, total: number) => void,
+): Promise<ResumenImportacion> {
+  return importarEnTandas(
+    'importar_clientes',
+    (tanda) => ({ p_filas: tanda, p_fecha_saldo: fechaSaldo }),
+    filas,
+    onAvance,
+  )
+}
+
+/** Proveedores, con lo que se les debe a la fecha del corte. */
+export function importarSaldosProveedores(
+  filas: Record<string, string>[],
+  fecha: string,
+  onAvance?: (procesadas: number, total: number) => void,
+): Promise<ResumenImportacion> {
+  return importarEnTandas(
+    'importar_saldos_proveedores',
+    (tanda) => ({ p_filas: tanda, p_fecha: fecha }),
+    filas,
+    onAvance,
+  )
+}

@@ -323,7 +323,7 @@
     <div class="cuerpo">
       <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Saber cuánto se le debe a cada proveedor, qué está vencido y qué se le fue pagando. Cada factura de compra suma a su cuenta y cada pago resta.</div></div>
       <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Arriba, <b>cuánto se les debe en total</b> y <b>cuánto está vencido</b>. Debajo, un renglón por proveedor con su saldo, lo vencido, el próximo vencimiento y el último pago · al entrar a uno: <b>lo que falta pagar</b>, factura por factura, y el <b>resumen de cuenta</b> con el saldo después de cada movimiento.</div></div>
-      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor"><b>Registrar un pago</b> · cargar el <b>saldo inicial</b> de cada proveedor · <b>anular un pago</b>, con motivo.</div></div>
+      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor"><b>Registrar un pago</b> · cargar el <b>saldo inicial</b> de cada proveedor, de a uno o <b>importando una planilla</b> con todos · <b>anular un pago</b>, con motivo.</div></div>
       <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">Nada.</div></div>
 
       <p style="margin:3mm 0 1mm"><b>Registrar un pago</b></p>
@@ -332,7 +332,7 @@
         <li>Las facturas vienen <b>marcadas de la más vieja a la más nueva</b>, descontando primero las notas de crédito. Se pueden cambiar a mano.</li>
         <li>Lo que sobra queda <b>a cuenta</b>: baja el saldo sin cancelar ninguna factura en particular.</li>
       </ul>
-      <div class="nota"><b>El saldo inicial</b> es lo que se le debía a cada proveedor el día que se empezó a usar el sistema. Se carga una vez por proveedor, con esa fecha. Las facturas de antes de esa fecha <b>no se cargan</b>: ya están adentro de ese número. Se le pueden imputar pagos como a una factura.</div>
+      <div class="nota"><b>El saldo inicial</b> es lo que se le debía a cada proveedor el día que se empezó a usar el sistema. Se carga una vez por proveedor, con esa fecha. Las facturas de antes de esa fecha <b>no se cargan</b>: ya están adentro de ese número. Se le pueden imputar pagos como a una factura. Con <i>Importar saldos</i> se cargan todos de una vez desde una planilla —proveedor, CUIT y saldo—, viendo antes la suma; los proveedores que no existan se crean.</div>
       <div class="nota verde"><b>Toda factura va a la cuenta.</b> Una factura que se paga en el momento es una factura y un pago del mismo día: el saldo queda en cero y el resumen cuenta la historia entera. Anular un pago no lo borra: queda anulado con el motivo, y las facturas que pagaba vuelven a figurar pendientes.</div>
     </div>
   </section>
@@ -392,9 +392,10 @@
     <div class="cuerpo">
       <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Tener los datos con los que se factura y, para el que compra en cuenta, saber cuánto debe, desde cuándo y hasta cuánto puede seguir comprando.</div></div>
       <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Datos fiscales (condición de IVA, CUIT o DNI, domicilio) · <b>saldo actual</b>, límite de crédito y crédito disponible · los movimientos de la cuenta con su origen.</div></div>
-      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Buscar · crear y editar · definir si tiene <b>cuenta corriente</b> y con qué <b>límite</b> · fijarle un <b>descuento</b> propio y una lista de precios · cargar la <b>exclusión de percepción de IIBB</b> con su certificado y vigencia · <b>registrar una cobranza</b>.</div></div>
+      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Buscar · crear y editar · definir si tiene <b>cuenta corriente</b> y con qué <b>límite</b> · fijarle un <b>descuento</b> propio y una lista de precios · cargar la <b>exclusión de percepción de IIBB</b> con su certificado y vigencia · <b>registrar una cobranza</b> · <b>importar la planilla de clientes</b>, con el saldo que debe cada uno.</div></div>
       <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">El <b>resumen de cuenta corriente en PDF</b>, para mandarle al cliente.</div></div>
 
+      <div class="nota"><b>Importar la planilla de clientes</b> —botón <i>Importar planilla</i>— trae todos los clientes de una vez, con el <b>saldo que debe cada uno a una fecha</b>. El sistema reconoce las columnas y las muestra con un dato de ejemplo para confirmarlas. Antes de importar muestra <b>la suma de todos los saldos</b>: ése es el número que hay que comparar con el total del sistema anterior. Se puede importar la misma planilla las veces que haga falta: cada cliente se reconoce por su código o su CUIT y el saldo queda <b>igual</b> al de la planilla, no se suma. Un CUIT con el último dígito mal no entra, porque ARCA rechazaría la factura.</div>
       <div class="nota verde"><b>El resumen de cuenta</b> tiene la forma de un resumen del banco: saldo anterior, cada factura, pago y nota de crédito con el saldo que va quedando, y el saldo al cierre. Se elige el período —este mes, el mes pasado o todo— y se guarda como PDF con el nombre del cliente ya puesto, listo para adjuntar a un mail. Si el resumen llega hasta hoy, dice además cuánto de ese saldo está vencido y desde cuándo.</div>
     </div>
   </section>

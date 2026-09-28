@@ -72,6 +72,40 @@ const SINONIMOS: Record<Campo, string[]> = {
   codigo_barra: ['codigo de barra', 'codigo barra', 'ean', 'barra', 'codigo ean', 'cod barra'],
 }
 
+/*
+  ─────────────────────────────────────────────────────────────
+  Qué planilla se está leyendo
+
+  La lectura es la misma para cualquier planilla —productos, clientes,
+  saldos de proveedores—: lo que cambia es qué columnas se esperan, con
+  qué nombres pueden venir, cuáles son obligatorias y cuáles son
+  números. Eso es una definición. La de productos es la de siempre, y es
+  la que se usa si no se dice otra.
+  ─────────────────────────────────────────────────────────────
+*/
+export interface DefinicionPlanilla<C extends string = string> {
+  campos: Record<C, string>
+  obligatorios: C[]
+  numericos: C[]
+  sinonimos: Record<C, string[]>
+  /** Números que pueden ser negativos: un saldo a favor, por ejemplo. */
+  negativos?: C[]
+  /**
+    El campo que identifica la fila. Sirve para saltear la fila de
+    ejemplo de una plantilla —la que dice «(ejemplo)»— y para avisar
+    cuando el mismo valor aparece dos veces.
+  */
+  clave: C
+}
+
+export const PRODUCTOS: DefinicionPlanilla<Campo> = {
+  campos: CAMPOS,
+  obligatorios: OBLIGATORIOS,
+  numericos: NUMERICOS,
+  sinonimos: SINONIMOS,
+  clave: 'codigo',
+}
+
 function normalizar(texto: string): string {
   return texto
     .normalize('NFD')
@@ -82,14 +116,17 @@ function normalizar(texto: string): string {
 }
 
 /** Adivina a qué campo corresponde cada columna del archivo. */
-export function proponerMapeo(encabezados: string[]): Record<number, Campo | null> {
-  const mapeo: Record<number, Campo | null> = {}
-  const usados = new Set<Campo>()
+export function proponerMapeo<C extends string = Campo>(
+  encabezados: string[],
+  def: DefinicionPlanilla<C> = PRODUCTOS as unknown as DefinicionPlanilla<C>,
+): Record<number, C | null> {
+  const mapeo: Record<number, C | null> = {}
+  const usados = new Set<C>()
 
   encabezados.forEach((encabezado, i) => {
     const limpio = normalizar(encabezado ?? '')
-    const campo = (Object.keys(SINONIMOS) as Campo[]).find(
-      (c) => !usados.has(c) && SINONIMOS[c].includes(limpio),
+    const campo = (Object.keys(def.sinonimos) as C[]).find(
+      (c) => !usados.has(c) && def.sinonimos[c].includes(limpio),
     )
     if (campo) usados.add(campo)
     mapeo[i] = campo ?? null
@@ -158,10 +195,10 @@ export function aNumero(valor: unknown): number | null {
   return Number.isFinite(numero) ? numero : null
 }
 
-export interface FilaImportada {
+export interface FilaImportada<C extends string = Campo> {
   /** Número de fila en el archivo, contando el encabezado. Para el informe. */
   linea: number
-  datos: Partial<Record<Campo, string>>
+  datos: Partial<Record<C, string>>
   errores: string[]
 }
 
@@ -172,9 +209,9 @@ export interface FilaImportada {
   abierto al lado: decirle "la fila 340 tiene el precio mal" mientras
   puede corregirlo vale mucho más que rechazar 3.000 filas al final.
 */
-export function prepararFilas(
+export function prepararFilas<C extends string = Campo>(
   filas: unknown[][],
-  mapeo: Record<number, Campo | null>,
+  mapeo: Record<number, C | null>,
   /*
     Número de la primera fila de datos EN EL ARCHIVO, contando desde 1
     como lo hace Excel. Por defecto 2, que es el caso de siempre:
@@ -184,11 +221,12 @@ export function prepararFilas(
     peor que no decirle nada.
   */
   primeraLinea = 2,
-): FilaImportada[] {
-  const preparadas: FilaImportada[] = []
+  def: DefinicionPlanilla<C> = PRODUCTOS as unknown as DefinicionPlanilla<C>,
+): FilaImportada<C>[] {
+  const preparadas: FilaImportada<C>[] = []
 
   filas.forEach((fila, i) => {
-    const datos: Partial<Record<Campo, string>> = {}
+    const datos: Partial<Record<C, string>> = {}
     const errores: string[] = []
 
     for (const [indice, campo] of Object.entries(mapeo)) {
@@ -199,14 +237,14 @@ export function prepararFilas(
       const texto = String(crudo).trim()
       if (!texto) continue
 
-      if (NUMERICOS.includes(campo)) {
+      if (def.numericos.includes(campo)) {
         const numero = aNumero(texto)
         if (numero === null) {
-          errores.push(`${CAMPOS[campo]}: no se entiende el número “${texto}”.`)
+          errores.push(`${def.campos[campo]}: no se entiende el número “${texto}”.`)
           continue
         }
-        if (numero < 0) {
-          errores.push(`${CAMPOS[campo]}: no puede ser negativo.`)
+        if (numero < 0 && !def.negativos?.includes(campo)) {
+          errores.push(`${def.campos[campo]}: no puede ser negativo.`)
           continue
         }
         datos[campo] = String(numero)
@@ -227,10 +265,10 @@ export function prepararFilas(
       columna. Nadie lo borra —no molesta a la vista— y sin esto se
       importaría como un producto más, con precio y todo.
     */
-    if (/^\(.*\)$/.test(datos.codigo?.trim() ?? '')) return
+    if (/^\(.*\)$/.test(datos[def.clave]?.trim() ?? '')) return
 
-    for (const obligatorio of OBLIGATORIOS) {
-      if (!datos[obligatorio]) errores.push(`Falta ${CAMPOS[obligatorio].toLowerCase()}.`)
+    for (const obligatorio of def.obligatorios) {
+      if (!datos[obligatorio]) errores.push(`Falta ${def.campos[obligatorio].toLowerCase()}.`)
     }
 
     preparadas.push({ linea: i + primeraLinea, datos, errores })
@@ -240,10 +278,13 @@ export function prepararFilas(
 }
 
 /** Códigos repetidos dentro del mismo archivo. */
-export function codigosDuplicados(filas: FilaImportada[]): Map<string, number[]> {
+export function codigosDuplicados<C extends string = Campo>(
+  filas: FilaImportada<C>[],
+  clave: C = 'codigo' as C,
+): Map<string, number[]> {
   const vistos = new Map<string, number[]>()
   for (const f of filas) {
-    const codigo = f.datos.codigo?.toUpperCase()
+    const codigo = f.datos[clave]?.toUpperCase()
     if (!codigo) continue
     vistos.set(codigo, [...(vistos.get(codigo) ?? []), f.linea])
   }
@@ -348,21 +389,27 @@ export function aPayloadImportacion(
 */
 
 /** Cuántos campos se reconocen si se toma esta fila como encabezado. */
-export function camposReconocidos(fila: unknown[]): number {
+export function camposReconocidos<C extends string = Campo>(
+  fila: unknown[],
+  def: DefinicionPlanilla<C> = PRODUCTOS as unknown as DefinicionPlanilla<C>,
+): number {
   const textos = fila.map((c) => String(c ?? ''))
-  const mapeo = proponerMapeo(textos)
+  const mapeo = proponerMapeo(textos, def)
   return Object.values(mapeo).filter(Boolean).length
 }
 
 /** Sólo se buscan en las primeras filas: un encabezado no está en la 40. */
 const FILAS_A_MIRAR = 10
 
-export function detectarEncabezado(filas: unknown[][]): number {
+export function detectarEncabezado<C extends string = Campo>(
+  filas: unknown[][],
+  def: DefinicionPlanilla<C> = PRODUCTOS as unknown as DefinicionPlanilla<C>,
+): number {
   let mejor = 0
   let puntaje = -1
 
   for (let i = 0; i < Math.min(filas.length, FILAS_A_MIRAR); i++) {
-    const p = camposReconocidos(filas[i] ?? [])
+    const p = camposReconocidos(filas[i] ?? [], def)
     // Estricto: ante un empate gana la fila de más arriba, que es la
     // que una persona señalaría con el dedo.
     if (p > puntaje) {
@@ -386,13 +433,16 @@ export interface HojaElegida {
   Gross eso deja afuera la hoja "Listas" —que sólo tiene los valores
   permitidos— sin que nadie tenga que saber que existe.
 */
-export function elegirHoja(hojas: { filas: unknown[][] }[]): HojaElegida {
+export function elegirHoja<C extends string = Campo>(
+  hojas: { filas: unknown[][] }[],
+  def: DefinicionPlanilla<C> = PRODUCTOS as unknown as DefinicionPlanilla<C>,
+): HojaElegida {
   let elegida: HojaElegida = { indice: 0, encabezado: 0 }
   let puntaje = -1
 
   hojas.forEach((hoja, indice) => {
-    const encabezado = detectarEncabezado(hoja.filas)
-    const p = camposReconocidos(hoja.filas[encabezado] ?? [])
+    const encabezado = detectarEncabezado(hoja.filas, def)
+    const p = camposReconocidos(hoja.filas[encabezado] ?? [], def)
     if (p > puntaje) {
       puntaje = p
       elegida = { indice, encabezado }

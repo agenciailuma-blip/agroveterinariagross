@@ -45,6 +45,20 @@ estado: en curso
 
 ## Lo último que pasó — 28 de septiembre
 
+**Importar clientes con su saldo, y los saldos de los proveedores.** Era lo que más bloqueaba el corte de nuestro lado: el punto 12 del alcance pide los clientes y sus saldos «cargados y verificados», y sólo había importación de productos. Clientes → *Importar planilla*, y Cuentas proveedores → *Importar saldos*.
+
+> **Cómo se lo contás a Lucas:** el día del corte se exporta de OBTech la lista de clientes con lo que debe cada uno, y la de proveedores con lo que se les debe. Se arrastra la planilla, el sistema reconoce las columnas y, **antes de importar, muestra la suma de todos los saldos**: ése es el número que hay que comparar con el total de OBTech. Si coincide, se importa. Se puede repetir las veces que haga falta sin duplicar nada.
+
+- **Se reconoce cada cliente** por su código, después por su CUIT o DNI, y como último recurso por el nombre exacto. Una celda vacía no borra lo que ya estaba.
+- **El saldo queda igual al de la planilla, no se suma.** Una planilla corregida deja un movimiento por la diferencia, con fecha y responsable, y lo avisa.
+- **El saldo vence a los días de plazo del cliente** desde la fecha del corte: no hay forma de saber cuánto de lo que trae OBTech ya estaba vencido.
+- **Un CUIT con el dígito verificador mal no entra.** Un cliente con saldo marcado sin cuenta corriente, se la habilita y lo avisa.
+- **Permisos:** clientes con saldo piden *clientes.editar* y *cuentacorriente.limite*; proveedores, *proveedores.gestionar* y *proveedores.pagar*. Administrador y Encargado.
+- ⚠️ **Falta saber qué exporta OBTech** y en qué formato. La pantalla reconoce muchos nombres de columna, y lo que no, se elige a mano. Conviene pedirle a Lucas una exportación de prueba ahora, no el 25/10.
+
+Verificado contra la base real: **26 comprobaciones** en [`supabase/pruebas/importar-clientes-y-saldos.sql`](../supabase/pruebas/importar-clientes-y-saldos.sql). **La prueba encontró un error real** —una fila con aviso fallaba entera— y se corrigió en una migración aparte. Se rompió a propósito que el saldo se sume en vez de reemplazarse, y la prueba lo atrapó. **444 pruebas** en la app.
+
+
 ✅ **Publicada la 0.9.0 el 28/09**, con *Factura después* y *Cajas y mostradores*. Con esto, todo lo que describe el manual en PDF está en las PC: las 4 la reciben con *Actualizar ahora*. **Falta ver en pantalla la opción *Factura después* de la caja**, que pide PIN.
 
 

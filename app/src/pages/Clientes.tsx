@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/auth/AuthProvider'
 import {
@@ -115,14 +116,25 @@ export default function Clientes() {
             {listado.data ? `${numero.format(listado.data.total)} en total` : 'Cargando…'}
           </p>
         </div>
-        {puedeCrear && (
-          <button
-            onClick={nuevo}
-            className="rounded-lg bg-marca-700 px-4 py-2 text-sm font-medium text-white hover:bg-marca-600"
-          >
-            Nuevo cliente
-          </button>
-        )}
+        <div className="flex flex-wrap gap-2">
+          {/* La planilla del día del corte: clientes con lo que debe cada uno. */}
+          {puedeEditar && tienePermiso('cuentacorriente.limite') && (
+            <Link
+              to="/clientes/importar"
+              className="rounded-lg px-4 py-2 text-sm font-medium text-marca-700 ring-1 ring-borde hover:bg-marca-50"
+            >
+              Importar planilla
+            </Link>
+          )}
+          {puedeCrear && (
+            <button
+              onClick={nuevo}
+              className="rounded-lg bg-marca-700 px-4 py-2 text-sm font-medium text-white hover:bg-marca-600"
+            >
+              Nuevo cliente
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/auth/AuthProvider'
 import { pedirTexto } from '@/components/Dialogo'
@@ -51,6 +51,7 @@ const numeroDe = (t: string) => {
 }
 
 export default function CuentaProveedores() {
+  const { tienePermiso } = useAuth()
   const [params, setParams] = useSearchParams()
   const elegido = params.get('p')
 
@@ -64,11 +65,19 @@ export default function CuentaProveedores() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight text-tinta">Cuentas de proveedores</h1>
-        <p className="text-sm text-piedra-500">
-          Cuánto se le debe a cada proveedor. Cada factura de compra suma y cada pago resta.
-        </p>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-semibold tracking-tight text-tinta">Cuentas de proveedores</h1>
+          <p className="text-sm text-piedra-500">
+            Cuánto se le debe a cada proveedor. Cada factura de compra suma y cada pago resta.
+          </p>
+        </div>
+        {/* Lo que se le debe a cada uno el día que se deja OBTech, de una vez. */}
+        {!proveedor && tienePermiso('proveedores.gestionar') && tienePermiso('proveedores.pagar') && (
+          <Link to="/proveedores/cuentas/importar" className={boton.secundario}>
+            Importar saldos
+          </Link>
+        )}
       </div>
 
       {proveedor ? (
