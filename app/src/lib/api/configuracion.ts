@@ -26,7 +26,7 @@ export async function obtenerConfiguracion(claves: string[]): Promise<FilaConfig
   }))
 }
 
-export async function guardarValorConfiguracion(clave: string, valor: number) {
+export async function guardarValorConfiguracion(clave: string, valor: number | string) {
   const { error } = await supabase.from('configuracion').update({ valor }).eq('clave', clave)
   if (error) throw new Error(error.message)
 }

@@ -17,6 +17,13 @@ import {
 
 const CLAVE_ALICUOTA = 'arca.iibb_percepcion_alicuota'
 const CLAVE_MINIMO = 'arca.iibb_percepcion_minimo'
+/*
+  Cómo se calcula la percepción de una factura que agrupa varias ventas
+  (Facturación → Por facturar). Lo define el contador: sobre el total de
+  la factura, o venta por venta. No da lo mismo: juntar el mes pasa el
+  mínimo más seguido.
+*/
+const CLAVE_AGRUPADA = 'arca.iibb_percepcion_factura_agrupada'
 
 const claseInput =
   'w-full rounded-lg border border-borde px-2.5 py-1.5 text-sm text-tinta outline-none focus:border-marca-500 focus:ring-2 focus:ring-marca-500/20'
@@ -33,13 +40,14 @@ export default function Configuracion() {
   const qc = useQueryClient()
   const [alicuota, setAlicuota] = useState('')
   const [minimo, setMinimo] = useState('')
+  const [agrupada, setAgrupada] = useState('por_factura')
   const [aviso, setAviso] = useState<string | null>(null)
 
   const puedeGestionar = tienePermiso('configuracion.gestionar')
 
   const config = useQuery({
     queryKey: ['configuracion', 'arca.iibb'],
-    queryFn: () => obtenerConfiguracion([CLAVE_ALICUOTA, CLAVE_MINIMO]),
+    queryFn: () => obtenerConfiguracion([CLAVE_ALICUOTA, CLAVE_MINIMO, CLAVE_AGRUPADA]),
     enabled: puedeGestionar,
   })
 
@@ -48,6 +56,7 @@ export default function Configuracion() {
     const porClave = new Map(config.data.map((f) => [f.clave, f.valor]))
     setAlicuota(String(porClave.get(CLAVE_ALICUOTA) ?? ''))
     setMinimo(String(porClave.get(CLAVE_MINIMO) ?? ''))
+    setAgrupada(String(porClave.get(CLAVE_AGRUPADA) ?? 'por_factura'))
   }, [config.data])
 
   const guardar = useMutation({
@@ -55,6 +64,7 @@ export default function Configuracion() {
       await Promise.all([
         guardarValorConfiguracion(CLAVE_ALICUOTA, Number(alicuota)),
         guardarValorConfiguracion(CLAVE_MINIMO, Number(minimo)),
+        guardarValorConfiguracion(CLAVE_AGRUPADA, agrupada),
       ])
     },
     onSuccess: () => {
@@ -133,6 +143,18 @@ export default function Configuracion() {
               El mínimo es sobre el importe de la percepción ya calculada, no sobre el monto de la
               venta: así lo indicó el contador.
             </p>
+            <label className="col-span-2 block">
+              <span className="mb-1 block text-xs font-medium text-piedra-600">
+                En una factura que agrupa varias ventas (Por facturar)
+              </span>
+              <select value={agrupada} onChange={(e) => setAgrupada(e.target.value)} className={claseInput}>
+                <option value="por_factura">Se calcula sobre el total de la factura</option>
+                <option value="por_venta">Se calcula venta por venta, y se suma</option>
+              </select>
+              <span className="mt-1 block text-xs text-piedra-400">
+                Lo define el contador. Juntar varias ventas hace que se pase el mínimo más seguido.
+              </span>
+            </label>
           </div>
         )}
 

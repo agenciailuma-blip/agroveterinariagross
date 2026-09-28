@@ -37,6 +37,9 @@ import {
 import { emitirConCaeaLocal, sePuedeEmitirConCaea } from '@/lib/local/caea'
 import { moneda, numero } from '@/lib/tipos'
 
+/** Con qué documento sale la venta. Ver marcar_documentacion_venta() en la base. */
+type Documentacion = 'fiscal' | 'no_fiscal' | 'a_facturar'
+
 export default function Caja() {
   const { terminal, cargando: cargandoTerminal } = useTerminal()
   const { operador, identificar, salir } = useOperador()
@@ -58,7 +61,7 @@ export default function Caja() {
     sin factura porque la anterior salió así, y eso no puede pasar por
     inercia.
   */
-  const [documentacion, setDocumentacion] = useState<'fiscal' | 'no_fiscal'>('fiscal')
+  const [documentacion, setDocumentacion] = useState<Documentacion>('fiscal')
   const [noFiscalEmitido, setNoFiscalEmitido] = useState<{ texto: string; id: string } | null>(
     null,
   )
@@ -127,7 +130,9 @@ export default function Caja() {
 
   /** Lo que la venta cuesta después de un cambio, con su percepción si le toca. */
   async function conPercepcion(total: number): Promise<number> {
-    if (!esResponsableInscripto) return total
+    // Sólo con factura ahora: si se factura después, la percepción la
+    // calcula la factura y entra a la cuenta en ese momento.
+    if (!esResponsableInscripto || documentacion !== 'fiscal') return total
     return Math.round((total + (await percepcionACobrar(seleccionada!))) * 100) / 100
   }
 
@@ -228,11 +233,15 @@ export default function Caja() {
   */
   useEffect(() => {
     if (pagos.length !== 1 || !esResponsableInscripto || percepcion.data === undefined) return
-    const venta0 = Math.round((venta.data?.total ?? 0) * 100) / 100
-    if (Math.abs(pagos[0].importe - venta0) < 0.01 && percepcionAhora > 0) {
+    const sola = Math.round((venta.data?.total ?? 0) * 100) / 100
+    const conElla = Math.round((sola + percepcion.data) * 100) / 100
+    // También al revés: si pasa a «factura después», la percepción sale.
+    const importe = pagos[0].importe
+    if ((Math.abs(importe - sola) < 0.01 || Math.abs(importe - conElla) < 0.01) &&
+        Math.abs(importe - totalACobrar) >= 0.01) {
       setPagos([{ ...pagos[0], importe: totalACobrar }])
     }
-  }, [pagos, percepcion.data, percepcionAhora, totalACobrar, esResponsableInscripto, venta.data?.total])
+  }, [pagos, percepcion.data, totalACobrar, esResponsableInscripto, venta.data?.total])
 
   /*
     Cobrar y facturar son dos cosas distintas, y el orden importa.
@@ -249,7 +258,9 @@ export default function Caja() {
   const cobrarVenta = useMutation({
     mutationFn: async () => {
       const codigo = venta.data?.codigo
-      const sinFactura = documentacion === 'no_fiscal'
+      // Sin factura ahora: sin factura del todo, o a cuenta para facturar
+      // después. Las dos se marcan antes y salen con comprobante interno.
+      const sinFactura = documentacion !== 'fiscal'
 
       /*
         La marca va ANTES del cobro, y es a propósito.
@@ -260,7 +271,7 @@ export default function Caja() {
         cliente todavía sin pagar; no después, con la plata adentro y un
         documento que no se puede emitir.
       */
-      if (sinFactura) await marcarDocumentacion(seleccionada!, 'no_fiscal')
+      if (sinFactura) await marcarDocumentacion(seleccionada!, documentacion)
 
       const { subida } = await cobrar(seleccionada!, caja.data!.id, operador!.usuario_id, pagos)
 
@@ -383,7 +394,10 @@ export default function Caja() {
         // escondido en otra pantalla. El cliente está parado adelante.
         setNoFiscalEmitido({
           id: noFiscal.id,
-          texto: `Venta ${codigo} cobrada sin factura. Comprobante interno ${noFiscal.numero}.`,
+          texto:
+            documentacion === 'a_facturar'
+              ? `Venta ${codigo} a cuenta corriente, para facturar después. Comprobante interno ${noFiscal.numero}.`
+              : `Venta ${codigo} cobrada sin factura. Comprobante interno ${noFiscal.numero}.`,
         })
         imprimirSolo(() => imprimirNoFiscal(noFiscal.id, terminal))
       } else {
@@ -905,8 +919,8 @@ function PanelCobro({
   cobrando: boolean
   ajustando: boolean
   puedeAjustar: boolean
-  documentacion: 'fiscal' | 'no_fiscal'
-  onDocumentacion: (d: 'fiscal' | 'no_fiscal') => void
+  documentacion: Documentacion
+  onDocumentacion: (d: Documentacion) => void
   puedeVenderSinFactura: boolean
   enLinea: boolean
   puedeEditar: boolean
@@ -945,6 +959,25 @@ function PanelCobro({
   // 1 es "IVA Responsable Inscripto" en la tabla de ARCA.
   const esResponsableInscripto = venta.cliente?.condicion_iva_id === 1
   const nuevoSaldo = saldoActual + (pagos.find((p) => p.medio_pago_id === medio?.id)?.importe ?? 0)
+  /*
+    Con qué documento puede salir la venta.
+
+    · Sin factura: con permiso, y nunca a un Responsable Inscripto —
+      compra para descargar el IVA—. La base rechaza lo mismo.
+    · A cuenta, factura después: a quien tiene cuenta corriente, también
+      a un Responsable Inscripto. La factura sale igual, más tarde
+      (pedido del 28/09).
+  */
+  const opciones: [Documentacion, string, string][] = [
+    ['fiscal', 'Con factura', 'Factura de ARCA con CAE'],
+    ...(puedeVenderSinFactura && !esResponsableInscripto
+      ? [['no_fiscal', 'Sin factura', 'Comprobante interno'] as [Documentacion, string, string]]
+      : []),
+    ...(venta.cliente?.cuenta_corriente
+      ? [['a_facturar', 'Factura después', 'A cuenta corriente'] as [Documentacion, string, string]]
+      : []),
+  ]
+
   const excede =
     esCuentaCorriente &&
     venta.cliente?.limite_credito != null &&
@@ -1300,21 +1333,21 @@ function PanelCobro({
           entregarle otra cosa es un problema para él. La base rechaza
           las dos cosas igual; esto sólo evita ofrecer lo que va a fallar.
         */}
-        {puedeVenderSinFactura && !esResponsableInscripto && (
+        {opciones.length > 1 && (
           <div className="mt-4 rounded-lg border border-borde p-1">
-            <div className="grid grid-cols-2 gap-1">
-              {(
-                [
-                  ['fiscal', 'Con factura', 'Factura de ARCA con CAE'],
-                  ['no_fiscal', 'Sin factura', 'Comprobante interno'],
-                ] as const
-              ).map(([valor, titulo, detalle]) => (
+            <div className={`grid gap-1 ${opciones.length === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
+              {opciones.map(([valor, titulo, detalle]) => (
                 <button
                   key={valor}
                   type="button"
                   aria-pressed={documentacion === valor}
-                  disabled={valor === 'no_fiscal' && !enLinea}
-                  onClick={() => onDocumentacion(valor)}
+                  disabled={valor !== 'fiscal' && !enLinea}
+                  onClick={() => {
+                    onDocumentacion(valor)
+                    // Factura después va entera a la cuenta: se elige sola.
+                    const cc = medios.find((m) => m.tipo === 'cuenta_corriente')
+                    if (valor === 'a_facturar' && cc && medio?.id !== cc.id) onElegirMedio(cc)
+                  }}
                   className={`rounded-md px-3 py-2 text-left transition disabled:opacity-40 ${
                     documentacion === valor
                       ? valor === 'fiscal'
@@ -1346,15 +1379,26 @@ function PanelCobro({
                 registra igual: descuenta stock, queda en la cuenta del cliente y lleva tu nombre.
               </p>
             )}
+            {enLinea && documentacion === 'a_facturar' && (
+              <p className="px-3 pb-1.5 pt-2 text-[11px] leading-snug text-piedra-500">
+                Va entera a la cuenta corriente y sale un comprobante interno. La factura la emite
+                el encargado después, desde Facturación → Por facturar: sola o junto con otras
+                ventas del cliente.
+                {esResponsableInscripto && ' La percepción de IIBB, si le toca, va en esa factura.'}
+              </p>
+            )}
           </div>
         )}
 
         <div className="mt-4 flex gap-2">
           <button
             onClick={onCobrar}
-            disabled={!medio || Math.abs(diferencia) > 0.009 || cobrando || aplicando || calculandoPercepcion}
+            disabled={
+              !medio || Math.abs(diferencia) > 0.009 || cobrando || aplicando || calculandoPercepcion ||
+              (documentacion === 'a_facturar' && !esCuentaCorriente)
+            }
             className={`flex-1 rounded-lg px-4 py-3 font-medium text-white disabled:opacity-40 ${
-              documentacion === 'no_fiscal'
+              documentacion !== 'fiscal'
                 ? 'bg-tinta hover:bg-tinta/90'
                 : 'bg-verde-600 hover:bg-verde-500'
             }`}
@@ -1363,7 +1407,9 @@ function PanelCobro({
               ? 'Cobrando…'
               : documentacion === 'no_fiscal'
                 ? 'Cobrar sin factura'
-                : 'Cobrar'}
+                : documentacion === 'a_facturar'
+                  ? 'A cuenta, factura después'
+                  : 'Cobrar'}
           </button>
           <button
             onClick={onCancelar}

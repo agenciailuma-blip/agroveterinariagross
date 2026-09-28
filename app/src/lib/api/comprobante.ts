@@ -132,12 +132,27 @@ async function desdeElServidor(id: string): Promise<ComprobanteCompleto> {
   const cond = uno(c.condicion as never) as { descripcion: string } | null
   const doc = uno(c.documento as never) as { sigla: string } | null
 
+  /*
+    Las ventas que cubre: la suya, o las de una factura agrupada desde
+    «Por facturar», que no tiene una venta sino varias. Sin esto la
+    factura del mes salía impresa sin ningún renglón.
+  */
+  let ventas: string[] = c.venta_id ? [c.venta_id as string] : []
+  if (!c.venta_id) {
+    const { data: agrupadas } = await supabase
+      .from('comprobante_venta')
+      .select('venta_id')
+      .eq('comprobante_id', id)
+    ventas = (agrupadas ?? []).map((a) => a.venta_id as string)
+  }
+
   const [lineas, alicuotas, tributos, emisor] = await Promise.all([
-    c.venta_id
+    ventas.length
       ? supabase
           .from('venta_linea')
           .select('orden, codigo_producto, descripcion, cantidad, precio_unitario, importe, alicuota_iva_id')
-          .eq('venta_id', c.venta_id)
+          .in('venta_id', ventas)
+          .order('venta_id')
           .order('orden')
       : Promise.resolve({ data: [] }),
     supabase

@@ -10,12 +10,14 @@ import {
   facturarVenta,
   listarComprobantes,
   solicitarCae,
+  ventasDeFactura,
   ventasSinFacturar,
 } from '@/lib/api/facturacion'
 import type { FilaComprobante, Semaforo, VentanaCae } from '@/lib/api/facturacion'
 import PanelContingencia from '@/components/PanelContingencia'
 import EmitidasEnElCorte from '@/components/EmitidasEnElCorte'
 import DevolucionParcial from '@/components/DevolucionParcial'
+import PorFacturar from '@/components/PorFacturar'
 import { emitirConCaea, estadoContingencia } from '@/lib/api/contingencia'
 import { moneda } from '@/lib/tipos'
 
@@ -42,6 +44,8 @@ export default function Facturacion() {
     vuelve a pedir, y un estado dentro de la fila se perderia a la mitad.
   */
   const [devolviendoParte, setDevolviendoParte] = useState<FilaComprobante | null>(null)
+  // La factura agrupada cuyas ventas se están mirando, para devolverlas de a una.
+  const [agrupada, setAgrupada] = useState<FilaComprobante | null>(null)
 
   const puedeVer = tienePermiso('facturacion.ver')
   const puedeEmitir = tienePermiso('facturacion.emitir')
@@ -272,7 +276,22 @@ export default function Facturacion() {
         </div>
       )}
 
-      <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-borde">
+      <PorFacturar puedeEmitir={puedeEmitir} onAviso={avisar} onError={setError} />
+
+      {agrupada && (
+        <VentasDeLaFactura
+          factura={agrupada}
+          onCerrar={() => setAgrupada(null)}
+          onDevolverParte={(ventaId, codigo) => {
+            setDevolviendoParte({ ...agrupada, venta_id: ventaId, comprobante: `${agrupada.comprobante} · venta ${codigo}` })
+            setAgrupada(null)
+          }}
+        />
+      )}
+
+      {/* Con scroll a los costados: en un monitor chico los botones de la
+          última columna quedaban cortados y no se podían apretar. */}
+      <div className="overflow-x-auto rounded-xl bg-white shadow-sm ring-1 ring-borde">
         <table className="w-full text-sm">
           <thead className="border-b border-borde bg-piedra-50 text-left text-xs tracking-wide text-piedra-500 uppercase">
             <tr>
@@ -325,6 +344,7 @@ export default function Facturacion() {
                   porContingencia.mutate({ id: c.id, motivo })
                 }}
                 onDevolverParte={() => setDevolviendoParte(c)}
+                onVerVentas={() => setAgrupada(c)}
                 onDevolver={async () => {
                   if (!c.venta_id) return
                   const motivo = await pedirTexto({
@@ -409,6 +429,7 @@ function Fila({
   onContingencia,
   onDevolver,
   onDevolverParte,
+  onVerVentas,
 }: {
   c: FilaComprobante
   puedeEmitir: boolean
@@ -419,6 +440,7 @@ function Fila({
   onContingencia: () => void
   onDevolver: () => void
   onDevolverParte: () => void
+  onVerVentas: () => void
 }) {
   const puedeReintentar = c.estado === 'pendiente' || c.estado === 'rechazado'
   const ventana = c.ventana_cae && c.ventana_cae !== 'en_plazo' ? AVISO_VENTANA[c.ventana_cae] : null
@@ -448,6 +470,12 @@ function Fila({
     c.estado === 'autorizado' &&
     c.queda_por_devolver &&
     !!c.venta_id
+
+  /*
+    Una factura agrupada no tiene una venta sino varias: se devuelve
+    venta por venta, desde la lista de sus ventas.
+  */
+  const esAgrupada = c.familia === 'factura' && !c.venta_id
 
   return (
     <tr>
@@ -531,6 +559,15 @@ function Fila({
             Devolver
           </button>
         )}
+        {esAgrupada && puedeEmitir && c.estado === 'autorizado' && (
+          <button
+            onClick={onVerVentas}
+            disabled={trabajando}
+            className="ml-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-medium text-piedra-500 ring-1 ring-borde hover:bg-marca-50 hover:text-marca-700 disabled:opacity-40"
+          >
+            Ver ventas
+          </button>
+        )}
         {puedeDevolverParte && (
           <button
             onClick={onDevolverParte}
@@ -553,5 +590,58 @@ function Fila({
         )}
       </td>
     </tr>
+  )
+}
+
+/*
+  Las ventas de una factura agrupada. Para devolver algo se elige la
+  venta: la nota de crédito sale por esa venta sola, asociada a la
+  factura agrupada, con su parte de la percepción.
+*/
+function VentasDeLaFactura({
+  factura,
+  onCerrar,
+  onDevolverParte,
+}: {
+  factura: FilaComprobante
+  onCerrar: () => void
+  onDevolverParte: (ventaId: string, codigo: string) => void
+}) {
+  const ventas = useQuery({
+    queryKey: ['ventas-de-factura', factura.id],
+    queryFn: () => ventasDeFactura(factura.id),
+  })
+
+  return (
+    <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-borde">
+      <div className="flex items-baseline justify-between gap-3">
+        <div>
+          <p className="font-medium text-tinta">
+            {factura.tipo} {factura.comprobante}
+          </p>
+          <p className="text-xs text-piedra-500">
+            {factura.receptor_nombre} · agrupa {ventas.data?.length ?? '…'} ventas
+          </p>
+        </div>
+        <button onClick={onCerrar} className="text-sm text-piedra-500 hover:text-tinta">
+          Cerrar
+        </button>
+      </div>
+      <ul className="mt-3 divide-y divide-piedra-100 text-sm">
+        {ventas.data?.map((v) => (
+          <li key={v.id} className="flex items-center gap-3 py-2">
+            <span className="font-mono text-xs text-piedra-400">{v.codigo}</span>
+            <span className="text-xs text-piedra-500">{new Date(v.ocurrido_en).toLocaleDateString('es-AR')}</span>
+            <span className="ml-auto tabular-nums text-tinta">{moneda.format(v.total)}</span>
+            <button
+              onClick={() => onDevolverParte(v.id, v.codigo)}
+              className="rounded-lg px-3 py-1.5 text-xs font-medium text-piedra-500 ring-1 ring-borde hover:bg-marca-50 hover:text-marca-700"
+            >
+              Devolver parte
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }

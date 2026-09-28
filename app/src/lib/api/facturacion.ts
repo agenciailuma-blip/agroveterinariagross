@@ -255,3 +255,102 @@ export async function facturarVenta(ventaId: string): Promise<{ comprobanteId: s
   const { cae } = await solicitarCae(comprobanteId as string)
   return { comprobanteId: comprobanteId as string, cae }
 }
+
+/*
+  ─────────────────────────────────────────────────────────────
+  Por facturar: ventas a cuenta corriente que esperan su factura
+
+  Se cobraron a cuenta y sin factura a propósito —el cliente no la quiso
+  en el momento— y el encargado las factura después: de a una, o juntas
+  en una sola factura, que es lo del mes de ese cliente.
+
+  No van al panel rojo: no son una fuga, son una decisión. El panel rojo
+  existe para la plata que entró sin respaldo por un problema.
+  ─────────────────────────────────────────────────────────────
+*/
+
+export interface VentaPorFacturar {
+  id: string
+  codigo: string
+  cliente_id: string
+  cliente: string
+  condicion_iva_id: number
+  ocurrido_en: string
+  total: number
+  tiene_devoluciones: boolean
+}
+
+export interface ClientePorFacturar {
+  cliente_id: string
+  cliente: string
+  ventas: VentaPorFacturar[]
+  total: number
+}
+
+export async function ventasPorFacturar(): Promise<VentaPorFacturar[]> {
+  const { data, error } = await supabase
+    .from('vista_venta_por_facturar')
+    .select('*')
+    .order('ocurrido_en')
+  if (error) throw new Error(error.message)
+  return ((data ?? []) as VentaPorFacturar[]).map((v) => ({ ...v, total: Number(v.total) }))
+}
+
+/** Las ventas pendientes, juntas por cliente, el que más debe arriba. */
+export function agruparPorCliente(ventas: VentaPorFacturar[]): ClientePorFacturar[] {
+  const porCliente = new Map<string, ClientePorFacturar>()
+  for (const v of ventas) {
+    const c = porCliente.get(v.cliente_id) ?? { cliente_id: v.cliente_id, cliente: v.cliente, ventas: [], total: 0 }
+    c.ventas.push(v)
+    c.total = Math.round((c.total + v.total) * 100) / 100
+    porCliente.set(v.cliente_id, c)
+  }
+  return [...porCliente.values()].sort((a, b) => b.total - a.total)
+}
+
+/*
+  Una factura con las ventas elegidas, y el CAE.
+
+  Igual que facturar una venta: si el armado anduvo y ARCA falló, la
+  factura ya existe con su número y queda en la lista para reintentar.
+*/
+export async function facturarPendientes(
+  ventaIds: string[],
+): Promise<{ comprobanteId: string; cae: string | null; problema: string | null }> {
+  const { data: comprobanteId, error } = await supabase.rpc('facturar_ventas_pendientes', {
+    p_venta_ids: ventaIds,
+  })
+  if (error) throw new Error(error.message)
+
+  try {
+    const { cae } = await solicitarCae(comprobanteId as string)
+    return { comprobanteId: comprobanteId as string, cae, problema: null }
+  } catch (e) {
+    return {
+      comprobanteId: comprobanteId as string,
+      cae: null,
+      problema: e instanceof Error ? e.message : 'ARCA no respondió.',
+    }
+  }
+}
+
+export interface VentaDeFactura {
+  id: string
+  codigo: string
+  total: number
+  ocurrido_en: string
+}
+
+/** Las ventas que cubre una factura agrupada. Para devolverlas de a una. */
+export async function ventasDeFactura(comprobanteId: string): Promise<VentaDeFactura[]> {
+  const { data, error } = await supabase
+    .from('comprobante_venta')
+    .select('venta:venta_id(id, codigo, total, ocurrido_en)')
+    .eq('comprobante_id', comprobanteId)
+  if (error) throw new Error(error.message)
+  return ((data ?? []) as unknown as { venta: VentaDeFactura | VentaDeFactura[] }[])
+    .map((f) => (Array.isArray(f.venta) ? f.venta[0] : f.venta))
+    .filter(Boolean)
+    .map((v) => ({ ...v, total: Number(v.total) }))
+    .sort((a, b) => a.ocurrido_en.localeCompare(b.ocurrido_en))
+}

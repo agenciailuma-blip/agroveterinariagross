@@ -319,7 +319,7 @@ export async function noFiscalesDeVenta(ventaId: string): Promise<ResumenNoFisca
 */
 export async function marcarDocumentacion(
   ventaId: string,
-  documentacion: 'fiscal' | 'no_fiscal',
+  documentacion: 'fiscal' | 'no_fiscal' | 'a_facturar',
 ): Promise<void> {
   const { error } = await supabase.rpc('marcar_documentacion_venta', {
     p_venta_id: ventaId,
