@@ -560,8 +560,13 @@ export default function Caja() {
               >
                 <div className="flex items-baseline justify-between gap-2">
                   <span className="font-mono text-xs text-piedra-400">{v.codigo}</span>
-                  <span className="font-semibold tabular-nums text-tinta">
-                    {moneda.format(v.total)}
+                  <span className="text-right">
+                    <span className="block font-semibold tabular-nums text-tinta">
+                      {moneda.format(Math.round((v.total + v.percepcion) * 100) / 100)}
+                    </span>
+                    {v.percepcion > 0 && (
+                      <span className="block text-[11px] text-piedra-500">con percepción IIBB</span>
+                    )}
                   </span>
                 </div>
                 {/*

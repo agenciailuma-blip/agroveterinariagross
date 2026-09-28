@@ -33,6 +33,11 @@ export interface VentaEnCola {
   nombre_para_llamar: string | null
   cliente: { nombre: string } | null
   vendedor: { nombre: string } | null
+  /**
+    La percepción de IIBB que va a llevar, para que la cola muestre lo
+    mismo que el panel de cobro. Cero salvo a un Responsable Inscripto.
+  */
+  percepcion: number
 }
 
 export interface LineaCobro {
@@ -175,13 +180,25 @@ export async function listarVentasEnCola(): Promise<VentaEnCola[]> {
   const { data, error } = await supabase
     .from('venta')
     .select(
-      'id, codigo, total, ocurrido_en, enviada_caja_en, nombre_para_llamar, cliente:cliente_id(nombre), vendedor:vendedor_id(nombre)',
+      'id, codigo, total, ocurrido_en, enviada_caja_en, nombre_para_llamar, cliente:cliente_id(nombre, condicion_iva_id), vendedor:vendedor_id(nombre)',
     )
     .eq('estado', 'en_caja')
     .order('enviada_caja_en', { ascending: true })
 
   if (error) return listarColaLocal()
-  return (data ?? []) as unknown as VentaEnCola[]
+
+  /*
+    La percepción, sólo para los Responsables Inscriptos: son pocos en la
+    cola, y a los demás no les toca. Sin esto la lista decía un total y
+    el panel de cobro otro, para la misma venta.
+  */
+  const filas = (data ?? []) as unknown as (VentaEnCola & { cliente: { nombre: string; condicion_iva_id: number } | null })[]
+  return Promise.all(
+    filas.map(async (v) => ({
+      ...v,
+      percepcion: v.cliente?.condicion_iva_id === 1 ? await percepcionACobrar(v.id) : 0,
+    })),
+  )
 }
 
 export async function obtenerVentaCompleta(id: string): Promise<VentaCompleta> {

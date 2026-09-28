@@ -45,6 +45,9 @@ estado: en curso
 
 ## Lo último que pasó — 28 de septiembre
 
+✅ **Publicada la 0.8.0 el 28/09**, con la recepción de mercadería, las cuentas de proveedores, la percepción en la caja y la cola de la caja mostrando el total con percepción. Las 4 PC la reciben con *Actualizar ahora*. Lo de la base ya andaba en todas desde que se aplicó.
+
+
 **La caja cobra la percepción de IIBB.** Hasta hoy la Factura A a un mayorista sumaba la percepción, pero la caja cobraba sin ella: la factura decía un número y lo que entraba —o lo que quedaba debiendo— era otro. Todavía no está publicada en ninguna versión.
 
 > **Cómo se lo contás a Lucas:** cuando el cliente es Responsable Inscripto y la compra pasa el mínimo, la caja muestra *Productos*, *Percepción IIBB Misiones* y el total con las dos cosas. Ése es el precio final que se le dice al cliente. Si paga en el momento, se cobra entero; si va a cuenta corriente, la deuda es la factura entera. Funciona igual sin internet.
@@ -53,7 +56,7 @@ estado: en curso
 - **La factura dice lo que se cobró**, aunque cambie la alícuota en Configuración entre el cobro y la factura.
 - **El cobro acepta también el total sin percepción.** Lo usan los pedidos web pagados en la tienda —ahí sigue el freno antes de facturar— y las cajas que todavía tienen la versión anterior. Una caja con la versión nueva siempre la cobra.
 - ⚠️ **Para confirmar con Lucas:** a un Responsable Inscripto la caja no le ofrece «sin factura»: sale siempre Factura A, y con ella la percepción. Si imaginaba que el mayorista pudiera decir «factura después», hoy eso no existe.
-- 🟡 **Detalle pendiente:** la cola de la izquierda de la Caja sigue mostrando el total de los productos, sin la percepción. El panel de cobro muestra el total correcto.
+- ✅ **La cola de la izquierda de la Caja también muestra el total con la percepción**, con la leyenda *con percepción IIBB* (corregido antes de publicar la 0.8.0).
 
 Verificado contra la base real: **14 comprobaciones** en [`supabase/pruebas/percepcion-en-la-caja.sql`](../supabase/pruebas/percepcion-en-la-caja.sql), como usuario; se rompió a propósito que la factura use la percepción cobrada y la prueba lo atrapó. **429 pruebas** en la app, con 6 nuevas del cálculo sin internet. **Y en la aplicación de verdad, contra ARCA de homologación:** una venta de $1.960.000 a un mayorista en cuenta corriente mostró $53.616,53 de percepción; se cobró $2.013.616,53, la deuda quedó por lo mismo, salió la Factura A con CAE por lo mismo, y al devolverla la Nota de Crédito A devolvió la percepción entera y la cuenta volvió a cero.
 

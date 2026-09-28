@@ -46,6 +46,8 @@ export interface VentaCola {
   nombre_para_llamar: string | null
   cliente: { nombre: string } | null
   vendedor: { nombre: string } | null
+  /** La percepción de IIBB que va a llevar. Cero salvo a un Responsable Inscripto. */
+  percepcion: number
 }
 
 export async function listarColaLocal(): Promise<VentaCola[]> {
@@ -58,11 +60,11 @@ export async function listarColaLocal(): Promise<VentaCola[]> {
   // lista entera, cada refresco de la cola abriría todos los nombres.
   const ids = [...new Set(ventas.map((v) => v.cliente_id))]
   const guardados = (await db.cliente.bulkGet(ids)).filter((c) => c !== undefined)
-  const clientes = new Map(
-    (await Promise.all(guardados.map(abrirCliente))).map((c) => [c.id, c.nombre]),
-  )
+  const abiertos = await Promise.all(guardados.map(abrirCliente))
+  const clientes = new Map(abiertos.map((c) => [c.id, c.nombre]))
+  const inscriptos = new Set(abiertos.filter((c) => c.condicion_iva_id === 1).map((c) => c.id))
 
-  return ventas.map((v) => ({
+  return Promise.all(ventas.map(async (v) => ({
     id: v.id,
     codigo: v.codigo,
     total: Number(v.total),
@@ -73,7 +75,8 @@ export async function listarColaLocal(): Promise<VentaCola[]> {
     // El nombre del vendedor no está en la base local: no se replican
     // usuarios. Sin conexión la caja ve la venta igual, sin ese dato.
     vendedor: null,
-  }))
+    percepcion: inscriptos.has(v.cliente_id) ? await percepcionDeVentaLocal(v.id) : 0,
+  })))
 }
 
 export async function hayColaLocal(): Promise<boolean> {
