@@ -286,6 +286,7 @@ function FormularioDeCompra({
   const [puntoVenta, setPuntoVenta] = useState('')
   const [numero, setNumero] = useState('')
   const [fecha, setFecha] = useState(hoy)
+  const [vencimiento, setVencimiento] = useState('')
   const [lineas, setLineas] = useState<AlicuotaCargada[]>([
     { alicuota_iva_id: 5, base_imponible: 0, importe: 0 },
   ])
@@ -319,6 +320,7 @@ function FormularioDeCompra({
         punto_venta: numeroDe(puntoVenta),
         numero: numeroDe(numero),
         fecha,
+        vencimiento: vencimiento || null,
         neto_no_gravado: numeroDe(noGravado),
         exento: numeroDe(exento),
         observaciones,
@@ -332,7 +334,8 @@ function FormularioDeCompra({
   })
 
   const falta =
-    !proveedorId || numeroDe(puntoVenta) <= 0 || numeroDe(numero) <= 0 || !fecha || total <= 0
+    !proveedorId || numeroDe(puntoVenta) <= 0 || numeroDe(numero) <= 0 || !fecha || total <= 0 ||
+    (!!vencimiento && vencimiento < fecha)
 
   function cambiarLinea(i: number, cambio: Partial<AlicuotaCargada>) {
     setLineas((ls) => ls.map((l, j) => (i === j ? { ...l, ...cambio } : l)))
@@ -412,7 +415,20 @@ function FormularioDeCompra({
             className={campo}
           />
         </label>
-        <label className="block lg:col-span-4">
+        <label className="block">
+          <span className="mb-1 block text-xs font-medium text-piedra-600">
+            Vencimiento <span className="font-normal text-piedra-400">(opcional)</span>
+          </span>
+          {/* Es lo que ordena qué se le paga primero al proveedor. */}
+          <input
+            type="date"
+            value={vencimiento}
+            min={fecha}
+            onChange={(e) => setVencimiento(e.target.value)}
+            className={campo}
+          />
+        </label>
+        <label className="block lg:col-span-3">
           <span className="mb-1 block text-xs font-medium text-piedra-600">
             Observaciones <span className="font-normal text-piedra-400">(opcional)</span>
           </span>

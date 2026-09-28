@@ -64,6 +64,8 @@ export interface CompraNueva {
   punto_venta: number
   numero: number
   fecha: string
+  /** Cuándo hay que pagarla. Opcional: sin él nunca figura vencida. */
+  vencimiento: string | null
   neto_no_gravado: number
   exento: number
   observaciones: string
@@ -141,6 +143,7 @@ export async function registrarCompra(c: CompraNueva): Promise<string> {
     p_observaciones: c.observaciones,
     p_alicuotas: c.alicuotas,
     p_tributos: c.tributos,
+    p_vencimiento: c.vencimiento,
   })
 
   if (error) throw new Error(error.message)

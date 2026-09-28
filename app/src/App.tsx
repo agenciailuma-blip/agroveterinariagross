@@ -13,6 +13,7 @@ import Stock from '@/pages/Stock'
 import Precios from '@/pages/Precios'
 import Proveedores from '@/pages/Proveedores'
 import Compras from '@/pages/Compras'
+import CuentaProveedores from '@/pages/CuentaProveedores'
 import PuntoDeVenta from '@/pages/PuntoDeVenta'
 import Caja from '@/pages/Caja'
 import PedidosWeb from '@/pages/PedidosWeb'
@@ -120,6 +121,7 @@ function Rutas() {
         <Route path="precios" element={<Precios />} />
         <Route path="proveedores" element={<Proveedores />} />
         <Route path="compras" element={<Compras />} />
+        <Route path="proveedores/cuentas" element={<CuentaProveedores />} />
         <Route path="ventas" element={<PuntoDeVenta />} />
         <Route path="caja" element={<Caja />} />
         <Route path="pedidos" element={<PedidosWeb />} />

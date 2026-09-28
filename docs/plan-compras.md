@@ -1,6 +1,6 @@
 ---
-actualizado: 2026-09-10
-estado: propuesta — falta la decisión de Lucas
+actualizado: 2026-09-28
+estado: A y B construidas el 28/09
 ---
 
 # Plan de Compras
@@ -15,9 +15,9 @@ estado: propuesta — falta la decisión de Lucas
 |---|---|---|
 | Proveedores | La ficha: nombre, CUIT, contacto | ✅ Hecho el 09/09 |
 | Registración de Comprobantes de Compras | La factura del proveedor, con su desglose de IVA | ✅ Hecho el 10/09 |
-| Consolidación de Saldos | Cuánto se le debe a cada proveedor | ❌ |
-| Resumen de Ctas. Ctes. Proveedores | El detalle de esa cuenta | ❌ |
-| Órdenes de Pago | Lo que se le paga, y contra qué facturas | ❌ |
+| Consolidación de Saldos | Cuánto se le debe a cada proveedor | ✅ Hecho el 28/09 (Cuentas proveedores) |
+| Resumen de Ctas. Ctes. Proveedores | El detalle de esa cuenta | ✅ Hecho el 28/09 |
+| Órdenes de Pago | Lo que se le paga, y contra qué facturas | ✅ Hecho el 28/09 |
 | Comprobantes de Retención IIBB | Retenciones | ❌ — y hay que confirmar si las usan |
 | Exportar Comprobantes de Retención IIBB | Lo mismo, para el contador | ❌ |
 
@@ -27,7 +27,7 @@ estado: propuesta — falta la decisión de Lucas
 
 ## Las piezas que faltan
 
-### A · La cuenta corriente del proveedor 🔴
+### A · La cuenta corriente del proveedor → ✅ **construida el 28/09**
 
 **Qué es:** cuánto le debe Gross a cada proveedor, cómo se formó ese saldo, y qué se le fue pagando.
 
@@ -44,7 +44,7 @@ estado: propuesta — falta la decisión de Lucas
 
 > 🔴 **Y desde el 10/09 arrastra una cosa más: le pagan con cheque.** Francisco lo confirmó. La pantalla de pago tiene que poder entregar un cheque —propio o endosado— y eso obliga a que los cheques existan primero. Está desarrollado aparte en [`cheques.md`](cheques.md), porque además cruza las ventas: **también los reciben**.
 
-### B · La entrada de mercadería por la factura 🟠
+### B · La entrada de mercadería por la factura → ✅ **construida el 28/09**
 
 **Qué es:** que al cargar la factura se puedan cargar también sus líneas, y que eso ingrese el stock y actualice los costos.
 

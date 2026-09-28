@@ -74,6 +74,16 @@ const MENU: ItemMenu[] = [
     icono: 'M9 12h6m-6 4h6M9 8h6M5 21h14a1 1 0 001-1V6.4L16.6 3H6a1 1 0 00-1 1v16a1 1 0 001 1z',
   },
   {
+    /*
+      Después de Compras porque es su consecuencia: cada factura que se
+      carga suma a lo que se le debe al proveedor, y acá se le paga.
+    */
+    a: '/proveedores/cuentas',
+    etiqueta: 'Cuentas proveedores',
+    permiso: 'compras.ver',
+    icono: 'M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z',
+  },
+  {
     a: '/ventas',
     etiqueta: 'Ventas',
     permiso: 'ventas.crear',
@@ -246,7 +256,9 @@ function ContenidoMenu({
           <NavLink
             key={item.a}
             to={item.a}
-            end={item.a === '/'}
+            // Proveedores también: si no, se prende junto con Cuentas
+            // proveedores, que cuelga de su dirección.
+            end={item.a === '/' || item.a === '/proveedores'}
             /* Achicado, el nombre sólo existe al pasar el mouse por
                encima: sin esto habría que aprenderse quince íconos. */
             title={colapsado ? item.etiqueta : undefined}

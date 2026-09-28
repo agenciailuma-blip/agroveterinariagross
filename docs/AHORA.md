@@ -45,6 +45,27 @@ estado: en curso
 
 ## Lo último que pasó — 28 de septiembre
 
+**La cuenta corriente de los proveedores.** Es lo que el 26/10 desaparecía con OBTech sin reemplazo: cuánto se le debe a cada proveedor. Menú **Cuentas proveedores**, debajo de Compras. Todavía no está publicada en ninguna versión.
+
+> **Cómo se lo contás a Lucas:** arriba está cuánto se les debe en total y cuánto de eso está vencido; abajo, un renglón por proveedor. Al entrar a uno se ve qué falta pagar, factura por factura, y el resumen de cuenta con el saldo después de cada movimiento. Para pagar se pone con qué (transferencia, efectivo, cheque) y las facturas ya vienen marcadas de la más vieja a la más nueva, descontando primero las notas de crédito; se pueden cambiar. Lo que sobra queda a cuenta. El día del corte se carga el saldo que muestra OBTech, uno por proveedor.
+
+Las decisiones, tomadas el 28/09:
+- **Al pagar se eligen las facturas, con las más viejas ya marcadas.** La base no deja imputarle a una factura más de lo que le falta, ni imputar más plata de la que sale.
+- **El cheque, por ahora, es un dato del pago**: banco, número y fecha de cobro. El módulo de cheques sigue aparte ([`cheques.md`](cheques.md)).
+- **El saldo de OBTech se carga a mano**, uno por proveedor, con la fecha del corte. Se le imputan pagos como a una factura. **Las facturas anteriores a esa fecha no se cargan: ya están adentro del saldo.**
+
+Y las que salieron de construirlo:
+- **Toda factura va a la cuenta.** No hay marca de «contado»: una factura pagada en el momento es una factura y un pago del mismo día.
+- **La factura de compra tiene vencimiento**, opcional. Es lo que ordena qué se paga primero y lo que figura vencido.
+- **Un pago se anula con motivo, no se borra.** Anularlo devuelve lo pendiente de las facturas que pagaba. **Una factura con pagos no se da de baja**: primero se anula el pago.
+- **Permiso nuevo:** *proveedores.pagar*, para Administrador y Encargado. Ver las cuentas pide *compras.ver*, así que el Cajero y el Vendedor no ven cuánto se le debe a cada proveedor.
+
+Verificado contra la base real: **31 comprobaciones** en [`supabase/pruebas/cuenta-de-proveedores.sql`](../supabase/pruebas/cuenta-de-proveedores.sql), como usuario. Se rompió a propósito el control de imputar de más, y la prueba lo atrapó. **423 pruebas** en la app. Y en la aplicación de verdad: saldo inicial, un pago por transferencia con la sugerencia de facturas, y la anulación. **Salió un error que las pruebas no veían**, ya corregido: los importes que escribe la base salían en formato inglés («150,000.00»). Ahora hay una sola función que escribe pesos, `app.pesos`, y la prueba lo controla.
+
+⚠️ **Falta publicarla en una versión**, junto con la recepción de mercadería.
+
+### También el 28/09
+
 **La recepción de mercadería.** Sobre una factura de compra ya cargada se reciben los productos: entra el stock y el costo se actualiza. Todavía no está publicada en ninguna versión.
 
 > **Cómo se lo contás a Lucas:** en Compras, cada factura tiene un botón *Recibir*. Al guardar una factura nueva, el sistema pregunta si la mercadería ya está: si está, se recibe en el momento; si no, se recibe cuando llegue, y la puede hacer otra persona. Se pasa el lector o se escribe el código, se pone cantidad y costo, y entra al stock. **El precio de venta no cambia solo:** al terminar, el sistema muestra el precio que corresponde según el margen de cada producto, y se aplica con un clic a los que elijas.
@@ -424,7 +445,7 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 | ~~¿Reciben cheques?~~ | — | ✅ **Contestado el 10/09: sí, y también le pagan a proveedores con cheque.** Es alcance nuevo y no está en ningún lado: [`cheques.md`](cheques.md) |
 | **¿Cómo se llama el segundo local?** | Lucas | 🟢 Se carga en Configuración → Depósitos cuando abra. Los cinco de OBTech quedaron descartados como referencia |
 | ~~Las **fotos de cómo cargan facturas de compra**~~ | Lucas | ✅ Llegaron el 10/09, con tres audios. Análisis en [`compras-e-iva.md`](compras-e-iva.md) |
-| ~~**¿La cuenta corriente de proveedores entra al alcance?**~~ | — | ✅ **Sí, decidido el 28/09**, y va antes del corte. Es lo próximo. Plan: [`plan-compras.md`](plan-compras.md) |
+| ~~**¿La cuenta corriente de proveedores entra al alcance?**~~ | — | ✅ **Sí, decidido y construido el 28/09.** Falta publicarla |
 | Qué **columnas** quiere el contador en el Excel | Contador | 🟡 Ya se exporta con lo estándar |
 | **La dirección desde la que salen los mails** | Lucas | 🟡 El servicio ya está elegido (Resend). La necesitan las facturas de la tienda y el pedido 17 |
 
