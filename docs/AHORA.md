@@ -45,6 +45,17 @@ estado: en curso
 
 ## Lo último que pasó — 28 de septiembre
 
+**Gross da de alta sus cajas y mostradores.** Configuración → *Cajas y mostradores*: la lista de las máquinas con su prefijo, su punto de venta y cuándo se conectó cada una por última vez, y el botón *Agregar*. Todavía no está publicado.
+
+> **Cómo se lo contás a Lucas:** para sumar una PC, en Configuración se agrega la terminal —el sistema propone el nombre y el prefijo que siguen, por ejemplo *Mostrador 3* y *MOS3*— y después, en la PC nueva, se abre el sistema y se la elige en Ventas. Una caja necesita su punto de venta de ARCA.
+
+- **El prefijo y el tipo no se cambian después**: el prefijo encabeza cada número de venta de esa máquina. Si se cargó mal, se da de baja y se crea otra.
+- **No se puede dar de baja la caja que escucha a las demás** —primero se elige otra en *La red del local*— **ni una caja abierta.** Lo impide la base, con el mensaje que dice qué hacer.
+- **Reusar un prefijo no choca con ventas viejas**: la numeración sigue desde el último número de ese prefijo.
+
+Verificado contra la base real: **16 comprobaciones** en [`supabase/pruebas/alta-de-terminales.sql`](../supabase/pruebas/alta-de-terminales.sql); se rompió a propósito el freno de la caja que escucha y la prueba lo atrapó. **435 pruebas** en la app. Y en pantalla: se creó *Mostrador 3* con lo propuesto, se intentó dar de baja *Caja 1* y lo frenó con el mensaje correcto, y se dio de baja *Mostrador 3*.
+
+
 ✅ **Publicada la 0.8.0 el 28/09**, con la recepción de mercadería, las cuentas de proveedores, la percepción en la caja y la cola de la caja mostrando el total con percepción. Las 4 PC la reciben con *Actualizar ahora*. Lo de la base ya andaba en todas desde que se aplicó.
 
 
@@ -446,7 +457,7 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 5. ~~**Reportes**~~ ✅ **Hecha y publicada el 11/09** en la 0.3.0.
 6. ~~**La versión móvil**~~ ✅ **Hecha y publicada el 14/09 (0.4.1).** Lo prometido en la primera reunión: *consultar stock, ver reportes o pasar un precio desde el depósito*; vender sigue siendo en la PC con el lector. Cómo se instala en el celular: [paso 10](instalacion-en-el-local.md). **Falta probarla en un teléfono de verdad.**
 7. **Todo con teclado** — **en espera**: Gross tiene que confirmar qué atajos prefiere. Cuando se haga, van definidos en un solo lugar del código y Configuración los **muestra** en una lista; que se puedan editar por PC, sólo si lo piden (cada máquina con teclas distintas complica capacitar y dar soporte).
-8. **Que Gross dé de alta sus cajas y mostradores desde el sistema.** Pedido por Francisco el 28/09, **para después de la cuenta corriente de proveedores y la percepción en la caja**. Hoy una terminal nueva la da de alta alguien de nuestro lado; con dos locales en camino, Gross tiene que poder hacerlo solo desde Configuración.
+8. ~~**Que Gross dé de alta sus cajas y mostradores desde el sistema.**~~ ✅ **Hecho el 28/09.** Pedido por Francisco el 28/09, **para después de la cuenta corriente de proveedores y la percepción en la caja**. Hoy una terminal nueva la da de alta alguien de nuestro lado; con dos locales en camino, Gross tiene que poder hacerlo solo desde Configuración.
 
 > ✅ **Los desplegables de *Percepciones* ya usan el estilo común**, así que muestran el recuadro de foco como el resto del sistema — un paso menos para el punto 6. La pantalla tenía además el botón y la tarjeta escritos a mano; los tres ahora salen de [`estilos.ts`](../app/src/estilos.ts).
 

@@ -5,6 +5,7 @@ import DiagnosticoTerminal from '@/components/DiagnosticoTerminal'
 import DatosDelEmisor from '@/components/DatosDelEmisor'
 import Depositos from '@/components/Depositos'
 import RedDelLocal from '@/components/RedDelLocal'
+import CajasYMostradores from '@/components/CajasYMostradores'
 import ImpresoraDelMostrador from '@/components/ImpresoraDelMostrador'
 import RitmoDelMostrador from '@/components/RitmoDelMostrador'
 import {
@@ -184,6 +185,8 @@ export default function Configuracion() {
       <DatosDelEmisor />
 
       <ImpresoraDelMostrador />
+
+      <CajasYMostradores />
 
       <RedDelLocal />
 
