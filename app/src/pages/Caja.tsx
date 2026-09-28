@@ -16,6 +16,7 @@ import {
   editarVentaEnCaja,
   listarVentasEnCola,
   obtenerVentaCompleta,
+  percepcionACobrar,
   resumenCaja,
   saldoCuentaCorriente,
 } from '@/lib/api/caja'
@@ -107,6 +108,30 @@ export default function Caja() {
   const medios = precios.data?.medios ?? []
 
   /*
+    La percepción de IIBB, que va con la factura a donde vaya la plata
+    (regla del 28/09). Sólo le toca a un Responsable Inscripto, y a él la
+    venta siempre sale con factura: el total que ve el cajero ya la
+    incluye, y ése es el precio final que se le dice al cliente.
+
+    Se vuelve a preguntar cada vez que cambia el total, porque se calcula
+    sobre el neto: un descuento o un recargo la mueven.
+  */
+  const esResponsableInscripto = venta.data?.cliente?.condicion_iva_id === 1
+  const percepcion = useQuery({
+    queryKey: ['percepcion-venta', seleccionada, venta.data?.total],
+    queryFn: () => percepcionACobrar(seleccionada!),
+    enabled: !!venta.data && esResponsableInscripto,
+  })
+  const percepcionAhora =
+    esResponsableInscripto && documentacion === 'fiscal' ? (percepcion.data ?? 0) : 0
+
+  /** Lo que la venta cuesta después de un cambio, con su percepción si le toca. */
+  async function conPercepcion(total: number): Promise<number> {
+    if (!esResponsableInscripto) return total
+    return Math.round((total + (await percepcionACobrar(seleccionada!))) * 100) / 100
+  }
+
+  /*
     Al elegir con qué se paga, la venta se recalcula con la lista de ese
     medio y con el recargo de ese plan de cuotas. Siempre desde el precio
     acordado, así cambiar de opinión no acumula recargos ni pisa las
@@ -122,7 +147,7 @@ export default function Caja() {
     mutationFn: async ({ m, n }: { m: MedioPago; n: number }) => {
       const recargo = m.medio_pago_cuota.find((c) => c.cuotas === n)?.recargo_porcentaje ?? 0
       const total = await aplicarLista(seleccionada!, m.lista_precio_id, Number(recargo) || 0)
-      return { total }
+      return { total: await conPercepcion(total) }
     },
     onSuccess: ({ total }, { m, n }) => {
       setPagos([{ medio_pago_id: m.id, importe: total, cuotas: n, referencia: null }])
@@ -149,8 +174,8 @@ export default function Caja() {
   }
 
   const ajustar = useMutation({
-    mutationFn: ({ nuevo, motivo }: { nuevo: number; motivo: string }) =>
-      ajustarTotal(seleccionada!, nuevo, motivo, operador!.usuario_id),
+    mutationFn: async ({ nuevo, motivo }: { nuevo: number; motivo: string }) =>
+      conPercepcion(await ajustarTotal(seleccionada!, nuevo, motivo, operador!.usuario_id)),
     onSuccess: (nuevoTotal) => {
       setPagos((prev) =>
         prev.length === 1 ? [{ ...prev[0], importe: nuevoTotal }] : prev,
@@ -191,9 +216,23 @@ export default function Caja() {
       .filter((l): l is LineaDeseada => l !== null)
   }
 
-  const totalVenta = venta.data?.total ?? 0
+  const totalACobrar = Math.round(((venta.data?.total ?? 0) + percepcionAhora) * 100) / 100
   const totalPagos = pagos.reduce((s, p) => s + p.importe, 0)
-  const diferencia = Math.round((totalPagos - totalVenta) * 100) / 100
+  const diferencia = Math.round((totalPagos - totalACobrar) * 100) / 100
+
+  /*
+    Si la percepción llega después de elegir el medio —la consulta tarda
+    más que el recálculo—, el único pago se lleva al total nuevo. Con
+    varios pagos no se toca nada: el cajero los armó a mano y el cartel
+    de «falta cubrir» le dice cuánto.
+  */
+  useEffect(() => {
+    if (pagos.length !== 1 || !esResponsableInscripto || percepcion.data === undefined) return
+    const venta0 = Math.round((venta.data?.total ?? 0) * 100) / 100
+    if (Math.abs(pagos[0].importe - venta0) < 0.01 && percepcionAhora > 0) {
+      setPagos([{ ...pagos[0], importe: totalACobrar }])
+    }
+  }, [pagos, percepcion.data, percepcionAhora, totalACobrar, esResponsableInscripto, venta.data?.total])
 
   /*
     Cobrar y facturar son dos cosas distintas, y el orden importa.
@@ -696,6 +735,8 @@ export default function Caja() {
             pagos={pagos}
             setPagos={setPagos}
             diferencia={diferencia}
+            percepcion={percepcionAhora}
+            calculandoPercepcion={esResponsableInscripto && percepcion.isPending}
             saldoActual={saldo.data ?? 0}
             aplicando={aplicar.isPending}
             cobrando={cobrarVenta.isPending}
@@ -822,6 +863,8 @@ function PanelCobro({
   pagos,
   setPagos,
   diferencia,
+  percepcion,
+  calculandoPercepcion,
   saldoActual,
   aplicando,
   cobrando,
@@ -850,6 +893,8 @@ function PanelCobro({
   pagos: PagoNuevo[]
   setPagos: (p: PagoNuevo[]) => void
   diferencia: number
+  percepcion: number
+  calculandoPercepcion: boolean
   saldoActual: number
   aplicando: boolean
   cobrando: boolean
@@ -1088,10 +1133,36 @@ function PanelCobro({
                   </button>
                 )}
                 <span className="text-2xl font-semibold tabular-nums text-tinta">
-                  {moneda.format(venta.total)}
+                  {moneda.format(Math.round((venta.total + percepcion) * 100) / 100)}
                 </span>
               </div>
             </div>
+
+            {/*
+              La percepción, a la vista y aparte. Es el número que el
+              cajero le dice al cliente antes de facturar: sin el
+              desglose, un total más alto que el del mostrador parece un
+              error.
+            */}
+            {percepcion > 0 && (
+              <div className="rounded-lg bg-piedra-50 px-3 py-2 text-sm ring-1 ring-borde">
+                <div className="flex justify-between text-piedra-600">
+                  <span>Productos</span>
+                  <span className="tabular-nums">{moneda.format(venta.total)}</span>
+                </div>
+                <div className="flex justify-between text-piedra-600">
+                  <span>Percepción IIBB Misiones</span>
+                  <span className="tabular-nums">{moneda.format(percepcion)}</span>
+                </div>
+                <p className="mt-1 text-xs text-piedra-500">
+                  Es Responsable Inscripto: la factura A lleva la percepción, y se cobra con ella
+                  {esCuentaCorriente ? ' — en cuenta corriente, la deuda es la factura entera' : ''}.
+                </p>
+              </div>
+            )}
+            {calculandoPercepcion && (
+              <p className="text-xs text-piedra-500">Calculando la percepción de IIBB…</p>
+            )}
 
             {/*
               Por qué el total subió. El recargo va adentro del precio
@@ -1276,7 +1347,7 @@ function PanelCobro({
         <div className="mt-4 flex gap-2">
           <button
             onClick={onCobrar}
-            disabled={!medio || Math.abs(diferencia) > 0.009 || cobrando || aplicando}
+            disabled={!medio || Math.abs(diferencia) > 0.009 || cobrando || aplicando || calculandoPercepcion}
             className={`flex-1 rounded-lg px-4 py-3 font-medium text-white disabled:opacity-40 ${
               documentacion === 'no_fiscal'
                 ? 'bg-tinta hover:bg-tinta/90'

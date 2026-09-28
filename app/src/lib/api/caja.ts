@@ -9,6 +9,7 @@ import {
   editarVentaLocal,
   listarColaLocal,
   obtenerVentaLocal,
+  percepcionDeVentaLocal,
   saldoCuentaCorrienteLocal,
 } from '@/lib/local/caja'
 import type { LineaDeseada } from '@/lib/local/caja'
@@ -344,6 +345,23 @@ export async function ajustarTotal(
   })
   if (error) throw new Error(error.message)
   return Number(data)
+}
+
+/*
+  La percepción de IIBB que va con esta venta si se factura.
+
+  Con internet la cuenta la hace la base, que es la misma que después
+  controla el cobro y arma la factura. Sin internet, la copia local, con
+  la misma fórmula. La pantalla la suma al total antes de cobrar: es
+  la regla del 28/09, la percepción va con la factura a donde vaya la
+  plata.
+*/
+export async function percepcionACobrar(ventaId: string): Promise<number> {
+  if (navigator.onLine) {
+    const { data, error } = await supabase.rpc('percepcion_de_venta', { p_venta_id: ventaId })
+    if (!error) return Number(data ?? 0)
+  }
+  return percepcionDeVentaLocal(ventaId)
 }
 
 export async function saldoCuentaCorriente(clienteId: string): Promise<number> {

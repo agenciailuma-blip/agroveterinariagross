@@ -6,6 +6,7 @@ import {
   cobrarLocal,
   listarColaLocal,
   obtenerVentaLocal,
+  percepcionDeVentaLocal,
   saldoCuentaCorrienteLocal,
 } from '@/lib/local/caja'
 
@@ -43,6 +44,10 @@ interface Escenario {
   saldo?: number
   /** Existencia del producto antes de vender. */
   stock?: number
+  /** Condición frente al IVA. 1 = Responsable Inscripto. */
+  condicion?: number
+  /** Precio de cada una de las dos unidades, con IVA al 21%. */
+  precio?: number
 }
 
 /** Deja la base local con una venta de $1.000 esperando en la caja. */
@@ -56,14 +61,22 @@ async function sembrar(e: Escenario = {}) {
     db.saldo.clear(),
     db.saldo_cuenta_corriente.clear(),
     db.outbox.clear(),
+    db.configuracion.clear(),
+    db.alicuota_iva.clear(),
   ])
+
+  await db.configuracion.bulkPut([
+    { clave: 'arca.iibb_percepcion_alicuota', valor: 3.31, actualizado_en: AHORA },
+    { clave: 'arca.iibb_percepcion_minimo', valor: 24000, actualizado_en: AHORA },
+  ] as never)
+  await db.alicuota_iva.put({ id: 5, descripcion: '21%', porcentaje: 21, activo: true })
 
   await db.cliente.put(await sellarCliente({
     id: CLIENTE,
     codigo: 'C1',
     nombre: 'Cliente de Prueba',
     numero_documento: null,
-    condicion_iva_id: 5,
+    condicion_iva_id: e.condicion ?? 5,
     descuento_porcentaje: 0,
     lista_precio_id: null,
     cuenta_corriente: e.cuentaCorriente ?? false,
@@ -109,7 +122,7 @@ async function sembrar(e: Escenario = {}) {
 
   await db.venta.put({
     id: VENTA, codigo: 'CAJA1-000001', estado: 'en_caja', cliente_id: CLIENTE,
-    vendedor_id: 'u-1', total: 1000, descuento_total: 0, lista_precio_id: LISTA_CONTADO,
+    vendedor_id: 'u-1', total: 2 * (e.precio ?? 500), descuento_total: 0, lista_precio_id: LISTA_CONTADO,
     observaciones: null, ocurrido_en: AHORA, enviada_caja_en: AHORA, actualizado_en: AHORA,
     medio_pago_previsto_id: null, cuotas_previstas: null,
   })
@@ -117,7 +130,7 @@ async function sembrar(e: Escenario = {}) {
   await db.venta_linea.put({
     id: 'linea-1', venta_id: VENTA, orden: 1, producto_id: PRODUCTO,
     codigo_producto: 'P1', descripcion: 'Producto de prueba', cantidad: 2,
-    precio_original: 500, precio_acordado: 500, precio_unitario: 500,
+    precio_original: e.precio ?? 500, precio_acordado: e.precio ?? 500, precio_unitario: e.precio ?? 500,
     motivo_modificacion: null, alicuota_iva_id: 5, condicion_iva: 'gravado',
     actualizado_en: AHORA,
   })
@@ -158,6 +171,46 @@ describe('validaciones antes de aceptar el cobro', () => {
   it('no permite cobrar dos veces la misma venta', async () => {
     await cobrar(1000)
     await expect(cobrar(1000)).rejects.toThrow(/está cobrada y no se puede cobrar/)
+  })
+})
+
+/*
+  La percepción de IIBB, que va con la factura a donde vaya la plata
+  (28/09). Los números son los mismos de la prueba de la base
+  (supabase/pruebas/percepcion-en-la-caja.sql): $1.210.000 con IVA al
+  21% son $1.000.000 de neto, y el 3,31% da $33.100.
+*/
+describe('la percepción de IIBB al cobrar', () => {
+  it('a un Responsable Inscripto le calcula lo mismo que la base', async () => {
+    await sembrar({ condicion: 1, precio: 605000 })
+    expect(await percepcionDeVentaLocal(VENTA)).toBe(33100)
+  })
+
+  it('cobra la venta más la percepción', async () => {
+    await sembrar({ condicion: 1, precio: 605000 })
+    await expect(cobrar(1243100)).resolves.toBeUndefined()
+  })
+
+  it('no deja cobrar sólo la venta: la factura saldría por más de lo cobrado', async () => {
+    await sembrar({ condicion: 1, precio: 605000 })
+    await expect(cobrar(1210000)).rejects.toThrow(/33100 de percepción de IIBB/)
+  })
+
+  it('en cuenta corriente, la deuda es la factura entera', async () => {
+    await sembrar({ condicion: 1, precio: 605000, cuentaCorriente: true, saldo: 0 })
+    await cobrar(1243100, CUENTA_CORRIENTE)
+    expect(await saldoCuentaCorrienteLocal(CLIENTE)).toBe(1243100)
+  })
+
+  it('por debajo del mínimo no hay percepción', async () => {
+    await sembrar({ condicion: 1, precio: 30250 }) // $50.000 de neto: $1.655
+    expect(await percepcionDeVentaLocal(VENTA)).toBe(0)
+    await expect(cobrar(60500)).resolves.toBeUndefined()
+  })
+
+  it('a un consumidor final no le corresponde, venda lo que venda', async () => {
+    await sembrar({ condicion: 5, precio: 605000 })
+    expect(await percepcionDeVentaLocal(VENTA)).toBe(0)
   })
 })
 

@@ -45,6 +45,20 @@ estado: en curso
 
 ## Lo último que pasó — 28 de septiembre
 
+**La caja cobra la percepción de IIBB.** Hasta hoy la Factura A a un mayorista sumaba la percepción, pero la caja cobraba sin ella: la factura decía un número y lo que entraba —o lo que quedaba debiendo— era otro. Todavía no está publicada en ninguna versión.
+
+> **Cómo se lo contás a Lucas:** cuando el cliente es Responsable Inscripto y la compra pasa el mínimo, la caja muestra *Productos*, *Percepción IIBB Misiones* y el total con las dos cosas. Ése es el precio final que se le dice al cliente. Si paga en el momento, se cobra entero; si va a cuenta corriente, la deuda es la factura entera. Funciona igual sin internet.
+
+- **La percepción queda guardada en la venta, aparte del total.** Los reportes y las métricas siguen mostrando lo vendido: la percepción es plata de Rentas, no venta.
+- **La factura dice lo que se cobró**, aunque cambie la alícuota en Configuración entre el cobro y la factura.
+- **El cobro acepta también el total sin percepción.** Lo usan los pedidos web pagados en la tienda —ahí sigue el freno antes de facturar— y las cajas que todavía tienen la versión anterior. Una caja con la versión nueva siempre la cobra.
+- ⚠️ **Para confirmar con Lucas:** a un Responsable Inscripto la caja no le ofrece «sin factura»: sale siempre Factura A, y con ella la percepción. Si imaginaba que el mayorista pudiera decir «factura después», hoy eso no existe.
+- 🟡 **Detalle pendiente:** la cola de la izquierda de la Caja sigue mostrando el total de los productos, sin la percepción. El panel de cobro muestra el total correcto.
+
+Verificado contra la base real: **14 comprobaciones** en [`supabase/pruebas/percepcion-en-la-caja.sql`](../supabase/pruebas/percepcion-en-la-caja.sql), como usuario; se rompió a propósito que la factura use la percepción cobrada y la prueba lo atrapó. **429 pruebas** en la app, con 6 nuevas del cálculo sin internet. **Y en la aplicación de verdad, contra ARCA de homologación:** una venta de $1.960.000 a un mayorista en cuenta corriente mostró $53.616,53 de percepción; se cobró $2.013.616,53, la deuda quedó por lo mismo, salió la Factura A con CAE por lo mismo, y al devolverla la Nota de Crédito A devolvió la percepción entera y la cuenta volvió a cero.
+
+### También el 28/09
+
 **La cuenta corriente de los proveedores.** Es lo que el 26/10 desaparecía con OBTech sin reemplazo: cuánto se le debe a cada proveedor. Menú **Cuentas proveedores**, debajo de Compras. Todavía no está publicada en ninguna versión.
 
 > **Cómo se lo contás a Lucas:** arriba está cuánto se les debe en total y cuánto de eso está vencido; abajo, un renglón por proveedor. Al entrar a uno se ve qué falta pagar, factura por factura, y el resumen de cuenta con el saldo después de cada movimiento. Para pagar se pone con qué (transferencia, efectivo, cheque) y las facturas ya vienen marcadas de la más vieja a la más nueva, descontando primero las notas de crédito; se pueden cambiar. Lo que sobra queda a cuenta. El día del corte se carga el saldo que muestra OBTech, uno por proveedor.
@@ -87,7 +101,7 @@ Verificado contra la base real: **26 comprobaciones** en [`supabase/pruebas/rece
 
 ⚠️ **Falta publicarla en una versión.** La base ya está aplicada; la pantalla llega con la próxima.
 
-**La percepción de IIBB, resuelta el 28/09:** va con la factura, a donde vaya la plata. Si pasa en la caja, al elegir un cliente responsable inscripto la caja muestra el total ya con la percepción. El vendedor le pregunta *«¿facturamos ahora?»* y, si dice que sí, le da ese precio final. Falta construirlo.
+**La percepción de IIBB, resuelta el 28/09:** va con la factura, a donde vaya la plata. Si pasa en la caja, al elegir un cliente responsable inscripto la caja muestra el total ya con la percepción. El vendedor le pregunta *«¿facturamos ahora?»* y, si dice que sí, le da ese precio final. **Construido el mismo día** (ver arriba).
 
 ## Lo que pasó el 25 de septiembre
 
@@ -440,7 +454,7 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 | El **Excel con la columna de IVA** por producto | Lucas | 🔴 Lo que más bloquea |
 | ~~**Alta del punto de venta CAEA** en ARCA~~ | — | ✅ **El 00009, alta del 11/09.** Cargado en el sistema el 16/09 |
 | **Certificado de producción** de ARCA | Lucas | 🔴 Ahora bloquea también la última prueba del CAEA. **El pedido está armado**; el trámite, paso a paso: [`certificado-produccion.md`](certificado-produccion.md) |
-| ~~**Dónde se cobra la percepción de IIBB**~~ | — | ✅ **Resuelto el 28/09**: va con la factura, a donde vaya la plata. En la caja, el total se muestra con la percepción antes de facturar. **Falta construirlo** |
+| ~~**Dónde se cobra la percepción de IIBB**~~ | — | ✅ **Resuelto y construido el 28/09**: va con la factura, a donde vaya la plata. Falta publicarlo |
 | Qué es un **"comprobante de percepción"** | Lucas | 🟡 Sin definir desde el 03/09 |
 | ~~¿Reciben cheques?~~ | — | ✅ **Contestado el 10/09: sí, y también le pagan a proveedores con cheque.** Es alcance nuevo y no está en ningún lado: [`cheques.md`](cheques.md) |
 | **¿Cómo se llama el segundo local?** | Lucas | 🟢 Se carga en Configuración → Depósitos cuando abra. Los cinco de OBTech quedaron descartados como referencia |

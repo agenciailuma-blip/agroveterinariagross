@@ -8,7 +8,7 @@ import type {
 import { abrirCliente, abrirVenta, sellarComprobante } from '@/lib/local/cifrado'
 import { encolar } from '@/lib/local/sync'
 import { armarComprobante } from '@/lib/local/factura'
-import type { LineaFiscal } from '@/lib/local/factura'
+import type { DatosPercepcion, LineaFiscal } from '@/lib/local/factura'
 
 /*
   ─────────────────────────────────────────────────────────────
@@ -60,6 +60,24 @@ async function numeroDeConfiguracion(clave: string, porOmision: number): Promise
   const fila = await db.configuracion.get(clave)
   const n = Number(fila?.valor)
   return Number.isFinite(n) ? n : porOmision
+}
+
+/*
+  Lo que hace falta para calcular la percepción de un cliente: su
+  condición, si está excluido, y la alícuota y el mínimo de
+  Configuración. Lo usan la factura por contingencia y la caja al
+  mostrar el total, así las dos llegan al mismo número.
+*/
+export async function datosDePercepcion(cliente: {
+  condicion_iva_id: number
+  iibb_percepcion_excluido?: boolean | null
+}): Promise<DatosPercepcion> {
+  return {
+    condicion_iva_id: cliente.condicion_iva_id,
+    excluido: !!cliente.iibb_percepcion_excluido,
+    alicuota: await numeroDeConfiguracion('arca.iibb_percepcion_alicuota', 0),
+    minimo: await numeroDeConfiguracion('arca.iibb_percepcion_minimo', 0),
+  }
 }
 
 /** El CAEA que rige hoy, del ambiente configurado. */
@@ -229,12 +247,7 @@ export async function emitirConCaeaLocal(
     porcentajes,
     clase: condicion.tipo_comprobante,
     tipo_comprobante_id: tipo.id,
-    percepcion: {
-      condicion_iva_id: cliente.condicion_iva_id,
-      excluido: !!cliente.iibb_percepcion_excluido,
-      alicuota: await numeroDeConfiguracion('arca.iibb_percepcion_alicuota', 0),
-      minimo: await numeroDeConfiguracion('arca.iibb_percepcion_minimo', 0),
-    },
+    percepcion: await datosDePercepcion(cliente),
   })
 
   const numero = await siguienteNumero(puntoVenta.id, tipo.id)

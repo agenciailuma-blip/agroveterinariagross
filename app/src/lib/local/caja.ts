@@ -1,6 +1,8 @@
 import { db } from '@/lib/local/db'
 import { encolar } from '@/lib/local/sync'
 import { abrirCliente, abrirVenta } from '@/lib/local/cifrado'
+import { datosDePercepcion } from '@/lib/local/caea'
+import { alCentavo, desglosarIva, percepcionIibb } from '@/lib/local/factura'
 import type { VentaLineaLocal, VentaLocal } from '@/lib/local/db'
 
 /*
@@ -254,6 +256,39 @@ export interface PagoLocal {
   otra. Cualquier cambio en la función de la base tiene que replicarse
   acá, y al revés.
 */
+/*
+  La percepción de IIBB que se cobra con la venta, calculada en esta
+  computadora: la misma cuenta que percepcion_de_venta() en la base y
+  que la factura por contingencia. Sirve sin internet.
+
+  Sólo alcanza a un Responsable Inscripto, y a un Responsable Inscripto
+  la venta siempre sale con factura: por eso no hace falta mirar si se
+  eligió «sin factura».
+*/
+export async function percepcionDeVentaLocal(ventaId: string): Promise<number> {
+  const guardada = await db.venta.get(ventaId)
+  if (!guardada) return 0
+  const venta = await abrirVenta(guardada)
+  const guardado = await db.cliente.get(venta.cliente_id)
+  if (!guardado) return 0
+  const cliente = await abrirCliente(guardado)
+  if (cliente.condicion_iva_id !== 1) return 0
+
+  const lineas = await db.venta_linea.where('venta_id').equals(ventaId).toArray()
+  const porcentajes = new Map((await db.alicuota_iva.toArray()).map((a) => [a.id, Number(a.porcentaje)]))
+  const neto = alCentavo(
+    desglosarIva(
+      lineas.map((l) => ({
+        importe: Number(l.cantidad) * Number(l.precio_unitario),
+        alicuota_iva_id: l.alicuota_iva_id,
+        condicion_iva: l.condicion_iva,
+      })),
+      porcentajes,
+    ).reduce((s, a) => s + a.base_imponible, 0),
+  )
+  return percepcionIibb(neto, await datosDePercepcion(cliente))
+}
+
 async function validarCobro(
   venta: VentaLocal,
   lineas: VentaLineaLocal[],
@@ -264,9 +299,21 @@ async function validarCobro(
   }
   if (!lineas.length) throw new Error('La venta no tiene productos.')
 
+  /*
+    Lo que hay que cobrar es la venta más la percepción, si le toca. La
+    base acepta también la venta sola —la usan la tienda web y las cajas
+    con una versión anterior—, pero esta caja cobra siempre la factura
+    entera: si no, la factura sale por más de lo que entró.
+  */
   const pagado = Math.round(pagos.reduce((s, p) => s + Number(p.importe), 0) * 100) / 100
-  if (Math.abs(pagado - Number(venta.total)) > 0.01) {
-    throw new Error(`Los pagos suman ${pagado} y el total es ${venta.total}.`)
+  const percepcion = await percepcionDeVentaLocal(venta.id)
+  const aCobrar = alCentavo(Number(venta.total) + percepcion)
+  if (Math.abs(pagado - aCobrar) > 0.01) {
+    throw new Error(
+      percepcion > 0
+        ? `Los pagos suman ${pagado} y hay que cobrar ${aCobrar}: ${venta.total} de la venta más ${percepcion} de percepción de IIBB.`
+        : `Los pagos suman ${pagado} y el total es ${venta.total}.`,
+    )
   }
 
   // Parte financiada en cuenta corriente
