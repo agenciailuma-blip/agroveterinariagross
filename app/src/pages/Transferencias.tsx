@@ -19,7 +19,7 @@ import type { LineaATransferir, ProductoParaTransferir, Transferencia } from '@/
 import { enCastellano } from '@/lib/errores'
 import { useTerminal } from '@/lib/terminal'
 import { numero } from '@/lib/tipos'
-import { boton, botonChico, campo, campoDeFiltro, tarjeta } from '@/estilos'
+import { boton, botonChico, campo, tarjeta } from '@/estilos'
 
 /*
   ─────────────────────────────────────────────────────────────
@@ -246,10 +246,11 @@ function NuevaTransferencia({
     <div className={`${tarjeta} p-5`}>
       <h2 className="font-medium text-tinta">Nueva transferencia</h2>
 
-      <div className="mt-3 flex flex-wrap items-end gap-3">
-        <label className="block min-w-44">
+      {/* Origen ⇄ destino en una fila, también en el celular: cada uno toma la mitad. */}
+      <div className="mt-3 grid max-w-lg grid-cols-[1fr_auto_1fr] items-end gap-2">
+        <label className="block min-w-0">
           <span className="mb-1 block text-xs font-medium text-piedra-600">Sale de</span>
-          <select value={origen ?? ''} onChange={(e) => setOrigen(e.target.value)} className={campoDeFiltro}>
+          <select value={origen ?? ''} onChange={(e) => setOrigen(e.target.value)} className={campo}>
             {depositos.map((d) => (
               <option key={d.id} value={d.id}>
                 {d.nombre}
@@ -261,13 +262,13 @@ function NuevaTransferencia({
           onClick={invertir}
           title="Invertir: que salga del destino y vaya al origen"
           aria-label="Invertir origen y destino"
-          className={`${botonChico.suave} mb-0.5 text-base`}
+          className={`${botonChico.suave} text-base`}
         >
           ⇄
         </button>
-        <label className="block min-w-44">
+        <label className="block min-w-0">
           <span className="mb-1 block text-xs font-medium text-piedra-600">Va a</span>
-          <select value={destino ?? ''} onChange={(e) => setDestino(e.target.value)} className={campoDeFiltro}>
+          <select value={destino ?? ''} onChange={(e) => setDestino(e.target.value)} className={campo}>
             {depositos.map((d) => (
               <option key={d.id} value={d.id}>
                 {d.nombre}
@@ -330,24 +331,31 @@ function NuevaTransferencia({
             )}
           </div>
         )}
-        <input
-          ref={campoCantidad}
-          type="number"
-          min="0"
-          step="0.01"
-          value={cantidad}
-          onChange={(e) => setCantidad(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') agregar()
-            if (e.key === 'Escape') {
-              setElegido(null)
-              setCantidad('')
-            }
-          }}
-          placeholder="Cantidad"
-          disabled={!elegido}
-          className={`${campo} w-28 text-right tabular-nums`}
-        />
+        {/*
+          El ancho va en un envoltorio y no junto a `campo`: las dos son
+          utilidades de ancho y gana la que la hoja de estilos pone
+          última, no la que se escribe después (ver estilos.ts).
+        */}
+        <div className="w-28">
+          <input
+            ref={campoCantidad}
+            type="number"
+            min="0"
+            step="0.01"
+            value={cantidad}
+            onChange={(e) => setCantidad(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') agregar()
+              if (e.key === 'Escape') {
+                setElegido(null)
+                setCantidad('')
+              }
+            }}
+            placeholder="Cantidad"
+            disabled={!elegido}
+            className={`${campo} text-right tabular-nums`}
+          />
+        </div>
         <button onClick={agregar} disabled={!elegido || !(Number(cantidad) > 0)} className={boton.secundario}>
           Agregar
         </button>
@@ -388,8 +396,17 @@ function NuevaTransferencia({
                     <td className="py-2 pr-3">
                       <p className="text-tinta">{l.nombre_interno}</p>
                       <p className="font-mono text-xs text-piedra-400">{l.codigo}</p>
+                      {/* En el celular, las dos columnas de «queda» van acá. */}
+                      {!existencias.isPending && (
+                        <p className="text-xs text-piedra-500 sm:hidden">
+                          Queda en {nombreDe(origen)}:{' '}
+                          <span className={queda < 0 ? 'font-medium text-red-700' : ''}>{numero.format(queda)}</span>
+                          {' · '}en {nombreDe(destino)}:{' '}
+                          {numero.format(hay(l.producto_id, destino) + (Number(l.cantidad) || 0))}
+                        </p>
+                      )}
                     </td>
-                    <td className="py-2 pr-3 text-right">
+                    <td className="w-28 py-2 pr-3 text-right">
                       <input
                         type="number"
                         min="0"
@@ -403,7 +420,7 @@ function NuevaTransferencia({
                           )
                         }
                         aria-label={`Cantidad de ${l.nombre_interno}`}
-                        className={`${campo} ml-auto w-24 text-right tabular-nums`}
+                        className={`${campo} text-right tabular-nums`}
                       />
                     </td>
                     <td
@@ -511,7 +528,7 @@ function Historial({ puedeAnular, onAviso }: { puedeAnular: boolean; onAviso: (a
           {error}
         </p>
       )}
-      <div className="mt-2 overflow-x-auto">
+      <div className="mt-2">
         <table className="w-full text-sm">
           <thead className="border-y border-borde bg-piedra-50 text-left text-xs tracking-wide text-piedra-500 uppercase">
             <tr>
@@ -569,19 +586,21 @@ function Historial({ puedeAnular, onAviso }: { puedeAnular: boolean; onAviso: (a
                   <td className="hidden py-2.5 pr-3 align-top text-piedra-500 sm:table-cell">
                     {t.usuario_nombre ?? '—'}
                   </td>
-                  <td className="whitespace-nowrap px-5 py-2.5 text-right align-top">
-                    <button onClick={() => setAbierta(abierta === t.id ? null : t.id)} className={botonChico.suave}>
-                      {abierta === t.id ? 'Cerrar' : 'Ver'}
-                    </button>
-                    {puedeAnular && !t.anulada_en && (
-                      <button
-                        onClick={() => pedirAnulacion(t)}
-                        disabled={anular.isPending}
-                        className="rounded-lg px-3 py-1.5 text-xs text-piedra-400 hover:bg-red-50 hover:text-red-700 disabled:opacity-40"
-                      >
-                        Anular
+                  <td className="py-2.5 pr-3 text-right align-top sm:px-5">
+                    <div className="flex flex-col items-end gap-1 sm:flex-row sm:justify-end">
+                      <button onClick={() => setAbierta(abierta === t.id ? null : t.id)} className={botonChico.suave}>
+                        {abierta === t.id ? 'Cerrar' : 'Ver'}
                       </button>
-                    )}
+                      {puedeAnular && !t.anulada_en && (
+                        <button
+                          onClick={() => pedirAnulacion(t)}
+                          disabled={anular.isPending}
+                          className="rounded-lg px-3 py-1.5 text-xs text-piedra-400 hover:bg-red-50 hover:text-red-700 disabled:opacity-40"
+                        >
+                          Anular
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
                 {abierta === t.id && (

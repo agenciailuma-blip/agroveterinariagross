@@ -806,7 +806,12 @@ export default function Productos() {
                           }}
                           className="cursor-pointer px-4 py-2.5"
                         >
-                          <div className="flex items-center gap-2">
+                          {/*
+                            flex-wrap: sin él, la fila del nombre y la marca
+                            Web no se parte, y en el celular empujaba la
+                            tabla 43 px más allá del borde.
+                          */}
+                          <div className="flex flex-wrap items-center gap-x-2">
                             {!p.revisado_en && (
                               <span
                                 className="size-1.5 shrink-0 rounded-full bg-amber-400"

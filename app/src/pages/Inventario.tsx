@@ -169,13 +169,19 @@ function Listado({ onAbrir }: { onAbrir: (id: string) => void }) {
       <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-borde">
         <table className="w-full text-sm">
           <thead className="border-b border-borde bg-piedra-50 text-left text-xs tracking-wide text-piedra-500 uppercase">
+            {/*
+              En el celular quedan la toma, la diferencia en pesos y el
+              botón; el estado y los conteos pasan debajo del nombre. Con
+              las seis columnas la tabla medía 465 px en 343, y la
+              tarjeta cortaba lo que sobraba.
+            */}
             <tr>
-              <th className="px-5 py-2.5 font-medium">Toma</th>
-              <th className="py-2.5 font-medium">Estado</th>
-              <th className="py-2.5 text-right font-medium">Contados</th>
-              <th className="py-2.5 text-right font-medium">Con diferencia</th>
+              <th className="px-3 py-2.5 font-medium sm:px-5">Toma</th>
+              <th className="hidden py-2.5 font-medium sm:table-cell">Estado</th>
+              <th className="hidden py-2.5 text-right font-medium md:table-cell">Contados</th>
+              <th className="hidden py-2.5 text-right font-medium md:table-cell">Con diferencia</th>
               <th className="py-2.5 text-right font-medium">Diferencia al costo</th>
-              <th className="px-5 py-2.5" />
+              <th className="px-3 py-2.5 sm:px-5" />
             </tr>
           </thead>
           <tbody className="divide-y divide-piedra-100">
@@ -220,7 +226,7 @@ function FilaToma({
 
   return (
     <tr>
-      <td className="px-5 py-2.5">
+      <td className="px-3 py-2.5 sm:px-5">
         <p className="font-medium text-tinta">{t.nombre}</p>
         <p className="text-xs text-piedra-400">
           {conDeposito && t.deposito ? `${t.deposito} · ` : ''}
@@ -228,14 +234,22 @@ function FilaToma({
           {new Date(t.abierto_en).toLocaleDateString('es-AR')}
           {t.abierto_por_nombre ? ` · ${t.abierto_por_nombre}` : ''}
         </p>
+        <p className="mt-1 text-xs text-piedra-500 md:hidden">
+          <span
+            className={`mr-1.5 inline-flex rounded-full px-2 py-0.5 text-xs font-medium ring-1 sm:hidden ${etiqueta.clase}`}
+          >
+            {etiqueta.texto}
+          </span>
+          {numero.format(t.contados)} contados · {numero.format(t.con_diferencia)} con diferencia
+        </p>
       </td>
-      <td className="py-2.5">
+      <td className="hidden py-2.5 sm:table-cell">
         <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ring-1 ${etiqueta.clase}`}>
           {etiqueta.texto}
         </span>
       </td>
-      <td className="py-2.5 text-right tabular-nums text-tinta">{numero.format(t.contados)}</td>
-      <td className="py-2.5 text-right tabular-nums text-tinta">
+      <td className="hidden py-2.5 text-right tabular-nums text-tinta md:table-cell">{numero.format(t.contados)}</td>
+      <td className="hidden py-2.5 text-right tabular-nums text-tinta md:table-cell">
         {numero.format(t.con_diferencia)}
       </td>
       <td
@@ -245,7 +259,7 @@ function FilaToma({
       >
         {moneda.format(t.diferencia_valorizada)}
       </td>
-      <td className="px-5 py-2.5 text-right">
+      <td className="px-3 py-2.5 text-right sm:px-5">
         <button onClick={() => onAbrir(t.id)} className="text-sm text-marca-700 hover:underline">
           {t.estado === 'abierto' ? 'Seguir contando' : 'Ver'}
         </button>
@@ -511,13 +525,18 @@ function Contando({ id, onSalir }: { id: string; onSalir: () => void }) {
         <div className="h-full overflow-y-auto">
           <table className="w-full text-sm">
             <thead className="sticky top-0 border-b border-borde bg-piedra-50 text-left text-xs tracking-wide text-piedra-500 uppercase">
+              {/*
+                En el celular: producto, contado, diferencia y quitar. Lo
+                que tenía el sistema pasa debajo del nombre, y el valor al
+                costo se ve en el total de la toma.
+              */}
               <tr>
-                <th className="px-5 py-2.5 font-medium">Producto</th>
-                <th className="py-2.5 text-right font-medium">Sistema</th>
-                <th className="py-2.5 text-right font-medium">Contado</th>
-                <th className="py-2.5 text-right font-medium">Diferencia</th>
-                <th className="py-2.5 text-right font-medium">Al costo</th>
-                <th className="px-5 py-2.5" />
+                <th className="px-3 py-2.5 font-medium sm:px-5">Producto</th>
+                <th className="hidden py-2.5 pl-3 text-right font-medium sm:table-cell">Sistema</th>
+                <th className="py-2.5 pl-3 text-right font-medium">Contado</th>
+                <th className="py-2.5 pl-3 text-right font-medium">Diferencia</th>
+                <th className="hidden py-2.5 pl-3 text-right font-medium sm:table-cell">Al costo</th>
+                <th className="px-3 py-2.5 sm:px-5" />
               </tr>
             </thead>
             <tbody className="divide-y divide-piedra-100">
@@ -571,30 +590,33 @@ function FilaConteo({
   const dif = Number(l.diferencia)
   return (
     <tr className={l.aplicado ? 'opacity-60' : ''}>
-      <td className="px-5 py-2">
+      <td className="px-3 py-2 sm:px-5">
         <p className="text-tinta">{l.nombre_interno}</p>
         <p className="font-mono text-xs text-piedra-400">
           {l.codigo}
           {l.contado_por_nombre ? ` · ${l.contado_por_nombre}` : ''}
         </p>
+        <p className="text-xs text-piedra-500 sm:hidden">
+          El sistema tenía {numero.format(Number(l.cantidad_sistema))}
+        </p>
       </td>
-      <td className="py-2 text-right tabular-nums text-piedra-500">
+      <td className="hidden py-2 pl-3 text-right tabular-nums text-piedra-500 sm:table-cell">
         {numero.format(Number(l.cantidad_sistema))}
       </td>
-      <td className="py-2 text-right font-medium tabular-nums text-tinta">
+      <td className="py-2 pl-3 text-right font-medium tabular-nums text-tinta">
         {numero.format(Number(l.cantidad_contada))}
       </td>
       <td
-        className={`py-2 text-right font-medium tabular-nums ${
+        className={`py-2 pl-3 text-right font-medium tabular-nums ${
           dif === 0 ? 'text-piedra-400' : dif < 0 ? 'text-red-700' : 'text-marca-700'
         }`}
       >
         {dif === 0 ? '—' : `${dif > 0 ? '+' : ''}${numero.format(dif)}`}
       </td>
-      <td className="py-2 text-right tabular-nums text-piedra-500">
+      <td className="hidden py-2 pl-3 text-right tabular-nums text-piedra-500 sm:table-cell">
         {dif === 0 ? '—' : moneda.format(Number(l.diferencia_valorizada))}
       </td>
-      <td className="px-5 py-2 text-right">
+      <td className="px-3 py-2 text-right sm:px-5">
         {puedeQuitar && (
           <button onClick={onQuitar} className="text-xs text-piedra-400 hover:text-red-600">
             Quitar

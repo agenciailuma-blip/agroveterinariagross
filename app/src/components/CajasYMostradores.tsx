@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { confirmar } from '@/components/Dialogo'
 import { listarPuntosVenta } from '@/lib/api/configuracion'
@@ -144,71 +144,96 @@ export default function CajasYMostradores() {
         </p>
       )}
 
-      <div className="mt-4 overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="border-b border-piedra-100 text-left text-xs text-piedra-500">
-            <tr>
-              <th className="py-2 pr-3 font-medium">Nombre</th>
-              <th className="py-2 pr-3 font-medium">Tipo</th>
-              <th className="py-2 pr-3 font-medium">Prefijo</th>
-              <th className="py-2 pr-3 font-medium">Punto de venta</th>
-              {conDeposito && <th className="py-2 pr-3 font-medium">Depósito</th>}
-              <th className="py-2 pr-3 font-medium">Última conexión</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {terminales.data?.map((t) =>
-              editando === t.id ? (
-                <FilaEditable
-                  key={t.id}
-                  t={t}
-                  puntos={puntosParaCaja}
-                  depositos={conDeposito ? activos : []}
-                  onListo={() => {
-                    setEditando(null)
-                    refrescar()
-                  }}
-                  onCancelar={() => setEditando(null)}
-                />
-              ) : (
-                <tr key={t.id} className="border-b border-piedra-50 last:border-0">
-                  <td className="py-2 pr-3 text-tinta">
-                    {t.nombre}
-                    {t.es_punto_de_encuentro && (
-                      <span className="ml-2 rounded bg-marca-50 px-1.5 py-0.5 text-[11px] font-medium text-marca-700">
-                        escucha a las demás
-                      </span>
-                    )}
-                  </td>
-                  <td className="py-2 pr-3 text-piedra-600">{ETIQUETA[t.tipo]}</td>
-                  <td className="py-2 pr-3 font-mono text-xs text-piedra-600">{t.prefijo ?? '—'}</td>
-                  <td className="py-2 pr-3 tabular-nums text-piedra-600">
-                    {t.punto_venta ? String(t.punto_venta.numero).padStart(4, '0') : '—'}
-                  </td>
-                  {conDeposito && <td className="py-2 pr-3 text-piedra-600">{nombreDeposito(t.deposito_id)}</td>}
-                  <td className="py-2 pr-3 text-xs text-piedra-500">
+      {/*
+        Sin desplazamiento horizontal, en ningún ancho. En pantallas
+        chicas lo secundario —tipo, prefijo, punto de venta, depósito y
+        última conexión— pasa a un renglón debajo del nombre, y editar
+        abre un formulario a todo el ancho en vez de campos adentro de
+        cada celda.
+      */}
+      <table className="mt-4 w-full text-sm">
+        <thead className="border-b border-piedra-100 text-left text-xs text-piedra-500">
+          <tr>
+            <th className="py-2 pr-3 font-medium">Nombre</th>
+            <th className="hidden py-2 pr-3 font-medium sm:table-cell">Tipo</th>
+            <th className="hidden py-2 pr-3 font-medium sm:table-cell">Prefijo</th>
+            <th className="hidden py-2 pr-3 font-medium md:table-cell">Punto de venta</th>
+            {conDeposito && <th className="hidden py-2 pr-3 font-medium md:table-cell">Depósito</th>}
+            <th className="hidden py-2 pr-3 font-medium lg:table-cell">Última conexión</th>
+            <th />
+          </tr>
+        </thead>
+        <tbody>
+          {terminales.data?.map((t) => (
+            <Fragment key={t.id}>
+              <tr className={editando === t.id ? 'bg-piedra-50/60' : 'border-b border-piedra-50 last:border-0'}>
+                <td className="py-2 pr-3 text-tinta">
+                  {t.nombre}
+                  {t.es_punto_de_encuentro && (
+                    <span className="ml-2 rounded bg-marca-50 px-1.5 py-0.5 text-[11px] font-medium text-marca-700">
+                      escucha a las demás
+                    </span>
+                  )}
+                  <p className="text-xs text-piedra-500 lg:hidden">
+                    <span className="sm:hidden">
+                      {ETIQUETA[t.tipo]} · <span className="font-mono">{t.prefijo ?? '—'}</span> ·{' '}
+                    </span>
+                    <span className="md:hidden">
+                      {t.punto_venta && `PV ${String(t.punto_venta.numero).padStart(4, '0')} · `}
+                      {conDeposito && `${nombreDeposito(t.deposito_id)} · `}
+                    </span>
                     {hace(t.ultima_sincronizacion)}
-                    {t.version_app && <span className="ml-1 text-piedra-400">· {t.version_app}</span>}
-                  </td>
-                  <td className="whitespace-nowrap py-2 text-right">
-                    <button onClick={() => setEditando(t.id)} className={botonChico.suave}>
-                      Editar
-                    </button>
-                    <button
-                      onClick={() => pedirBaja(t)}
-                      disabled={baja.isPending}
-                      className="rounded-lg px-3 py-1.5 text-xs text-piedra-400 hover:bg-red-50 hover:text-red-700 disabled:opacity-40"
-                    >
-                      Dar de baja
-                    </button>
+                  </p>
+                </td>
+                <td className="hidden py-2 pr-3 text-piedra-600 sm:table-cell">{ETIQUETA[t.tipo]}</td>
+                <td className="hidden py-2 pr-3 font-mono text-xs text-piedra-600 sm:table-cell">{t.prefijo ?? '—'}</td>
+                <td className="hidden py-2 pr-3 tabular-nums text-piedra-600 md:table-cell">
+                  {t.punto_venta ? String(t.punto_venta.numero).padStart(4, '0') : '—'}
+                </td>
+                {conDeposito && (
+                  <td className="hidden py-2 pr-3 text-piedra-600 md:table-cell">{nombreDeposito(t.deposito_id)}</td>
+                )}
+                <td className="hidden py-2 pr-3 text-xs text-piedra-500 lg:table-cell">
+                  {hace(t.ultima_sincronizacion)}
+                  {t.version_app && <span className="ml-1 text-piedra-400">· {t.version_app}</span>}
+                </td>
+                <td className="py-2 text-right">
+                  {editando !== t.id && (
+                    <div className="flex flex-col items-end gap-1 sm:flex-row sm:justify-end">
+                      <button onClick={() => setEditando(t.id)} className={botonChico.suave}>
+                        Editar
+                      </button>
+                      <button
+                        onClick={() => pedirBaja(t)}
+                        disabled={baja.isPending}
+                        className="whitespace-nowrap rounded-lg px-3 py-1.5 text-xs text-piedra-400 hover:bg-red-50 hover:text-red-700 disabled:opacity-40"
+                      >
+                        Dar de baja
+                      </button>
+                    </div>
+                  )}
+                </td>
+              </tr>
+              {editando === t.id && (
+                <tr className="border-b border-piedra-50 bg-piedra-50/60 last:border-0">
+                  <td colSpan={conDeposito ? 7 : 6} className="pb-3">
+                    <FormularioEdicion
+                      t={t}
+                      puntos={puntosParaCaja}
+                      depositos={conDeposito ? activos : []}
+                      onListo={() => {
+                        setEditando(null)
+                        refrescar()
+                      }}
+                      onCancelar={() => setEditando(null)}
+                    />
                   </td>
                 </tr>
-              ),
-            )}
-          </tbody>
-        </table>
-      </div>
+              )}
+            </Fragment>
+          ))}
+        </tbody>
+      </table>
     </div>
   )
 }
@@ -335,7 +360,7 @@ function FormularioAlta({
   )
 }
 
-function FilaEditable({
+function FormularioEdicion({
   t,
   puntos,
   depositos,
@@ -363,35 +388,35 @@ function FilaEditable({
   })
 
   return (
-    <tr className="border-b border-piedra-50 bg-piedra-50/60 last:border-0">
-      <td className="py-2 pr-3">
-        <input value={nombre} onChange={(e) => setNombre(e.target.value)} className={campo} />
-        {error && <p className="mt-1 text-xs text-red-700">{error}</p>}
-      </td>
-      <td className="py-2 pr-3 text-piedra-600">{ETIQUETA[t.tipo]}</td>
-      <td className="py-2 pr-3 font-mono text-xs text-piedra-400" title="El prefijo no se cambia">
-        {t.prefijo ?? '—'}
-      </td>
-      <td className="py-2 pr-3">
-        {t.tipo === 'caja' ? (
-          <select value={puntoVenta} onChange={(e) => setPuntoVenta(e.target.value)} className={campo}>
-            {puntos.map((p) => (
-              <option key={p.id} value={p.id}>
-                {String(p.numero).padStart(4, '0')}
-              </option>
-            ))}
-          </select>
-        ) : (
-          '—'
+    <div className="rounded-lg bg-white p-3 ring-1 ring-borde">
+      <div className="grid gap-3 sm:grid-cols-3">
+        <label className="block">
+          <span className="mb-1 block text-xs font-medium text-piedra-600">Nombre</span>
+          <input value={nombre} onChange={(e) => setNombre(e.target.value)} className={campo} />
+        </label>
+        {t.tipo === 'caja' && (
+          <label className="block">
+            <span className="mb-1 block text-xs font-medium text-piedra-600">Punto de venta</span>
+            <select value={puntoVenta} onChange={(e) => setPuntoVenta(e.target.value)} className={campo}>
+              {puntos.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {String(p.numero).padStart(4, '0')} · {p.nombre}
+                </option>
+              ))}
+            </select>
+          </label>
         )}
-      </td>
-      {depositos.length > 0 && (
-        <td className="py-2 pr-3">
-          <SelectDeposito depositos={depositos} valor={deposito} onCambio={setDeposito} />
-        </td>
-      )}
-      <td />
-      <td className="whitespace-nowrap py-2 text-right">
+        {depositos.length > 0 && (
+          <label className="block">
+            <span className="mb-1 block text-xs font-medium text-piedra-600">Vende del depósito</span>
+            <SelectDeposito depositos={depositos} valor={deposito} onCambio={setDeposito} />
+          </label>
+        )}
+      </div>
+      <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
+        <p className="mr-auto text-xs text-piedra-400">
+          El prefijo, <span className="font-mono">{t.prefijo ?? '—'}</span>, no se cambia.
+        </p>
         <button onClick={onCancelar} className={botonChico.suave}>
           Cancelar
         </button>
@@ -402,8 +427,13 @@ function FilaEditable({
         >
           Guardar
         </button>
-      </td>
-    </tr>
+      </div>
+      {error && (
+        <p role="alert" className="mt-2 text-sm text-red-700">
+          {error}
+        </p>
+      )}
+    </div>
   )
 }
 
