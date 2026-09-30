@@ -97,15 +97,20 @@ export default function CuentaProveedores() {
             </div>
           </div>
 
-          <div className={`${tarjeta} overflow-x-auto`}>
+          {/*
+            Sin desplazamiento hacia el costado: en el celular quedan el
+            proveedor y el saldo, y lo vencido y las fechas van debajo del
+            nombre.
+          */}
+          <div className={`${tarjeta} overflow-hidden`}>
             <table className="w-full text-sm">
               <thead className="border-b border-piedra-100 text-left text-xs text-piedra-500">
                 <tr>
                   <th className="px-4 py-2.5 font-medium">Proveedor</th>
                   <th className="px-4 py-2.5 text-right font-medium">Saldo</th>
-                  <th className="px-4 py-2.5 text-right font-medium">Vencido</th>
-                  <th className="px-4 py-2.5 font-medium">Próximo vencimiento</th>
-                  <th className="px-4 py-2.5 font-medium">Último pago</th>
+                  <th className="hidden px-4 py-2.5 text-right font-medium sm:table-cell">Vencido</th>
+                  <th className="hidden px-4 py-2.5 font-medium md:table-cell">Próximo vencimiento</th>
+                  <th className="hidden px-4 py-2.5 font-medium lg:table-cell">Último pago</th>
                 </tr>
               </thead>
               <tbody>
@@ -120,17 +125,27 @@ export default function CuentaProveedores() {
                     onClick={() => setParams({ p: s.proveedor_id })}
                     className="cursor-pointer border-b border-piedra-50 last:border-0 hover:bg-marca-50/50"
                   >
-                    <td className="px-4 py-2.5 text-tinta">{s.nombre}</td>
-                    <td className="px-4 py-2.5 text-right font-medium tabular-nums text-tinta">
+                    <td className="px-4 py-2.5 align-top text-tinta">
+                      {s.nombre}
+                      {s.vencido > 0 && (
+                        <p className="text-xs tabular-nums text-red-700 sm:hidden">{moneda.format(s.vencido)} vencido</p>
+                      )}
+                      {s.proximo_vencimiento && (
+                        <p className="text-xs tabular-nums text-piedra-500 md:hidden">
+                          Vence {fechaCorta(s.proximo_vencimiento)}
+                        </p>
+                      )}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-2.5 text-right align-top font-medium tabular-nums text-tinta">
                       {s.saldo === 0 ? <span className="text-piedra-300">—</span> : moneda.format(s.saldo)}
                     </td>
-                    <td className="px-4 py-2.5 text-right tabular-nums">
+                    <td className="hidden whitespace-nowrap px-4 py-2.5 text-right align-top tabular-nums sm:table-cell">
                       {s.vencido > 0 ? <span className="text-red-700">{moneda.format(s.vencido)}</span> : ''}
                     </td>
-                    <td className="px-4 py-2.5 tabular-nums text-piedra-600">
+                    <td className="hidden px-4 py-2.5 align-top tabular-nums text-piedra-600 md:table-cell">
                       {s.proximo_vencimiento ? fechaCorta(s.proximo_vencimiento) : ''}
                     </td>
-                    <td className="px-4 py-2.5 tabular-nums text-piedra-600">
+                    <td className="hidden px-4 py-2.5 align-top tabular-nums text-piedra-600 lg:table-cell">
                       {s.ultimo_pago ? fechaCorta(s.ultimo_pago) : ''}
                     </td>
                   </tr>
@@ -260,15 +275,15 @@ function Detalle({ proveedor, onVolver }: { proveedor: SaldoProveedor; onVolver:
       )}
 
       {/* ── Qué falta pagar ── */}
-      <div className={`${tarjeta} overflow-x-auto`}>
+      <div className={`${tarjeta} overflow-hidden`}>
         <h3 className="px-4 pt-4 text-sm font-medium text-tinta">Lo que falta pagar</h3>
         <table className="mt-2 w-full text-sm">
           <thead className="border-b border-piedra-100 text-left text-xs text-piedra-500">
             <tr>
               <th className="px-4 py-2 font-medium">Comprobante</th>
-              <th className="px-4 py-2 font-medium">Fecha</th>
-              <th className="px-4 py-2 font-medium">Vence</th>
-              <th className="px-4 py-2 text-right font-medium">Total</th>
+              <th className="hidden px-4 py-2 font-medium md:table-cell">Fecha</th>
+              <th className="hidden px-4 py-2 font-medium sm:table-cell">Vence</th>
+              <th className="hidden px-4 py-2 text-right font-medium md:table-cell">Total</th>
               <th className="px-4 py-2 text-right font-medium">Pendiente</th>
             </tr>
           </thead>
@@ -282,14 +297,25 @@ function Detalle({ proveedor, onVolver }: { proveedor: SaldoProveedor; onVolver:
             )}
             {pendientes.data?.map((p) => (
               <tr key={p.id} className="border-b border-piedra-50 last:border-0">
-                <td className="px-4 py-2 text-tinta">{p.descripcion}</td>
-                <td className="px-4 py-2 tabular-nums text-piedra-600">{fechaCorta(p.fecha)}</td>
-                <td className={`px-4 py-2 tabular-nums ${p.vencida ? 'font-medium text-red-700' : 'text-piedra-600'}`}>
+                <td className="px-4 py-2 align-top text-tinta">
+                  {p.descripcion}
+                  <p className="text-xs tabular-nums text-piedra-500 md:hidden">
+                    {fechaCorta(p.fecha)} · total {moneda.format(p.total)}
+                  </p>
+                  {p.vencimiento && (
+                    <p className={`text-xs tabular-nums sm:hidden ${p.vencida ? 'font-medium text-red-700' : 'text-piedra-500'}`}>
+                      Vence {fechaCorta(p.vencimiento)}
+                      {p.vencida && ' · vencida'}
+                    </p>
+                  )}
+                </td>
+                <td className="hidden px-4 py-2 align-top tabular-nums text-piedra-600 md:table-cell">{fechaCorta(p.fecha)}</td>
+                <td className={`hidden px-4 py-2 align-top tabular-nums sm:table-cell ${p.vencida ? 'font-medium text-red-700' : 'text-piedra-600'}`}>
                   {p.vencimiento ? fechaCorta(p.vencimiento) : ''}
                   {p.vencida && ' · vencida'}
                 </td>
-                <td className="px-4 py-2 text-right tabular-nums text-piedra-600">{moneda.format(p.total)}</td>
-                <td className="px-4 py-2 text-right font-medium tabular-nums text-tinta">
+                <td className="hidden px-4 py-2 text-right align-top tabular-nums text-piedra-600 md:table-cell">{moneda.format(p.total)}</td>
+                <td className="whitespace-nowrap px-4 py-2 text-right align-top font-medium tabular-nums text-tinta">
                   {moneda.format(p.pendiente)}
                 </td>
               </tr>
@@ -299,15 +325,19 @@ function Detalle({ proveedor, onVolver }: { proveedor: SaldoProveedor; onVolver:
       </div>
 
       {/* ── El resumen de cuenta ── */}
-      <div className={`${tarjeta} overflow-x-auto`}>
+      {/*
+        En el celular, la fecha y el debe o el haber van debajo del
+        concepto; quedan el concepto, el saldo y el botón.
+      */}
+      <div className={`${tarjeta} overflow-hidden`}>
         <h3 className="px-4 pt-4 text-sm font-medium text-tinta">Resumen de cuenta</h3>
         <table className="mt-2 w-full text-sm">
           <thead className="border-b border-piedra-100 text-left text-xs text-piedra-500">
             <tr>
-              <th className="px-4 py-2 font-medium">Fecha</th>
+              <th className="hidden px-4 py-2 font-medium sm:table-cell">Fecha</th>
               <th className="px-4 py-2 font-medium">Concepto</th>
-              <th className="px-4 py-2 text-right font-medium">Debe</th>
-              <th className="px-4 py-2 text-right font-medium">Haber</th>
+              <th className="hidden px-4 py-2 text-right font-medium sm:table-cell">Debe</th>
+              <th className="hidden px-4 py-2 text-right font-medium sm:table-cell">Haber</th>
               <th className="px-4 py-2 text-right font-medium">Saldo</th>
               <th />
             </tr>
@@ -322,18 +352,23 @@ function Detalle({ proveedor, onVolver }: { proveedor: SaldoProveedor; onVolver:
             )}
             {resumen.map((m) => (
               <tr key={`${m.tipo}-${m.id}`} className="border-b border-piedra-50 last:border-0">
-                <td className="whitespace-nowrap px-4 py-2 tabular-nums text-piedra-600">{fechaCorta(m.fecha)}</td>
-                <td className="px-4 py-2">
+                <td className="hidden whitespace-nowrap px-4 py-2 align-top tabular-nums text-piedra-600 sm:table-cell">{fechaCorta(m.fecha)}</td>
+                <td className="px-4 py-2 align-top">
                   <span className="text-tinta">{m.descripcion}</span>
                   {m.detalle && <span className="block text-xs text-piedra-500">{m.detalle}</span>}
+                  <span className="block text-xs tabular-nums text-piedra-500 sm:hidden">
+                    {fechaCorta(m.fecha)}
+                    {m.debe ? ` · debe ${moneda.format(m.debe)}` : ''}
+                    {m.haber ? ` · haber ${moneda.format(m.haber)}` : ''}
+                  </span>
                 </td>
-                <td className="px-4 py-2 text-right tabular-nums text-piedra-600">
+                <td className="hidden px-4 py-2 text-right align-top tabular-nums text-piedra-600 sm:table-cell">
                   {m.debe ? moneda.format(m.debe) : ''}
                 </td>
-                <td className="px-4 py-2 text-right tabular-nums text-piedra-600">
+                <td className="hidden px-4 py-2 text-right align-top tabular-nums text-piedra-600 sm:table-cell">
                   {m.haber ? moneda.format(m.haber) : ''}
                 </td>
-                <td className="px-4 py-2 text-right font-medium tabular-nums text-tinta">{moneda.format(m.saldo)}</td>
+                <td className="whitespace-nowrap px-4 py-2 text-right align-top font-medium tabular-nums text-tinta">{moneda.format(m.saldo)}</td>
                 <td className="px-2 py-2 text-right">
                   {m.tipo === 'pago' && puedePagar && (
                     <button

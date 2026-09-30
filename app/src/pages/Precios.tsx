@@ -203,32 +203,45 @@ export default function Precios() {
 
         <table className="w-full text-sm">
           <thead className="border-b border-borde bg-piedra-50 text-left text-xs tracking-wide text-piedra-500 uppercase">
+            {/*
+              En el celular, el ajuste va al lado del nombre y el título
+              del ejemplo se acorta: con «Un producto de $ 10.000,00» la
+              tabla no entraba.
+            */}
             <tr>
-              <th className="px-5 py-2 font-medium">Lista</th>
-              <th className="py-2 text-right font-medium">Ajuste</th>
-              <th className="py-2 text-right font-medium">Un producto de {moneda.format(PRECIO_EJEMPLO)}</th>
-              <th className="w-32 px-5 py-2" />
+              <th className="px-3 py-2 font-medium sm:px-5">Lista</th>
+              <th className="hidden py-2 text-right font-medium sm:table-cell">Ajuste</th>
+              <th className="py-2 pl-3 text-right font-medium">
+                <span className="hidden sm:inline">Un producto de {moneda.format(PRECIO_EJEMPLO)}</span>
+                <span className="sm:hidden">{moneda.format(PRECIO_EJEMPLO)} queda</span>
+              </th>
+              <th className="px-3 py-2 sm:px-5" />
             </tr>
           </thead>
           <tbody className="divide-y divide-piedra-100">
             {listas.map((l) => (
               <tr key={l.id}>
-                <td className="px-5 py-2.5">
+                <td className="px-3 py-2.5 sm:px-5">
                   <span className="font-medium text-tinta">{l.nombre}</span>
+                  <span className="ml-1.5 text-xs tabular-nums text-piedra-500 sm:hidden">
+                    {l.ajuste_porcentaje > 0 ? '+' : ''}
+                    {l.ajuste_porcentaje}%
+                  </span>
                   {l.es_predeterminada && (
-                    <span className="ml-2 rounded-full bg-marca-100 px-2 py-0.5 text-xs text-marca-800">
+                    <span className="ml-2 inline-block rounded-full bg-marca-100 px-2 py-0.5 text-xs text-marca-800">
                       Predeterminada
                     </span>
                   )}
                 </td>
-                <td className="py-2.5 text-right tabular-nums text-piedra-600">
+                <td className="hidden py-2.5 text-right tabular-nums text-piedra-600 sm:table-cell">
                   {l.ajuste_porcentaje > 0 ? '+' : ''}
                   {l.ajuste_porcentaje}%
                 </td>
-                <td className="py-2.5 text-right font-medium tabular-nums text-tinta">
+                <td className="whitespace-nowrap py-2.5 pl-3 text-right font-medium tabular-nums text-tinta">
                   {moneda.format(previsualizarPrecio(PRECIO_EJEMPLO, l, 0))}
                 </td>
-                <td className="px-5 py-2.5 text-right">
+                <td className="px-3 py-2.5 text-right sm:px-5">
+                  <div className="flex flex-col items-end gap-1.5 sm:flex-row sm:justify-end sm:gap-3">
                   <button onClick={() => setEditandoLista(l)} className="text-xs text-marca-700 hover:underline">
                     Editar
                   </button>
@@ -243,11 +256,12 @@ export default function Precios() {
                         })
                         if (sigue) bajaLista.mutate(l.id)
                       }}
-                      className="ml-3 text-xs text-piedra-400 hover:text-red-600"
+                      className="whitespace-nowrap text-xs text-piedra-400 hover:text-red-600"
                     >
                       Dar de baja
                     </button>
                   )}
+                  </div>
                 </td>
               </tr>
             ))}

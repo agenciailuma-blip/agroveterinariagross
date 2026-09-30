@@ -234,22 +234,26 @@ export default function Facturacion() {
             <tbody className="divide-y divide-piedra-100">
               {pendientes.map((v) => (
                 <tr key={v.id}>
-                  <td className="px-5 py-2.5 font-mono text-xs text-piedra-400">{v.codigo}</td>
-                  <td className="py-2.5 text-tinta">
+                  <td className="hidden px-5 py-2.5 font-mono text-xs text-piedra-400 sm:table-cell">{v.codigo}</td>
+                  <td className="py-2.5 pr-3 pl-3 text-tinta sm:pl-0">
                     {v.cliente?.nombre}
                     {v.pedido_web && (
                       <span className="ml-2 rounded bg-marca-50 px-1.5 py-0.5 text-xs font-medium text-marca-700">
                         Pedido web
                       </span>
                     )}
+                    <p className="text-xs text-piedra-500 sm:hidden">
+                      <span className="font-mono">{v.codigo}</span> ·{' '}
+                      {new Date(v.ocurrido_en).toLocaleDateString('es-AR')}
+                    </p>
                   </td>
-                  <td className="py-2.5 text-xs text-piedra-500">
+                  <td className="hidden py-2.5 pr-3 text-xs text-piedra-500 sm:table-cell">
                     {new Date(v.ocurrido_en).toLocaleDateString('es-AR')}
                   </td>
-                  <td className="py-2.5 text-right font-medium tabular-nums text-tinta">
+                  <td className="whitespace-nowrap py-2.5 text-right font-medium tabular-nums text-tinta">
                     {moneda.format(v.total)}
                   </td>
-                  <td className="px-5 py-2.5 text-right">
+                  <td className="px-3 py-2.5 text-right sm:px-5">
                     {/*
                       Un pedido web se factura desde Pedidos y no desde acá:
                       allá se confirma que se revisó y se frena si la
@@ -289,19 +293,24 @@ export default function Facturacion() {
         />
       )}
 
-      {/* Con scroll a los costados: en un monitor chico los botones de la
-          última columna quedaban cortados y no se podían apretar. */}
-      <div className="overflow-x-auto rounded-xl bg-white shadow-sm ring-1 ring-borde">
+      {/*
+        Sin desplazamiento hacia el costado. Antes tenía scroll a los
+        costados porque en un monitor chico los botones de la última
+        columna quedaban cortados; ahora los botones bajan de renglón y lo
+        secundario —estado, receptor, fecha— pasa debajo del comprobante
+        cuando no hay lugar.
+      */}
+      <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-borde">
         <table className="w-full text-sm">
           <thead className="border-b border-borde bg-piedra-50 text-left text-xs tracking-wide text-piedra-500 uppercase">
             <tr>
-              <th className="px-5 py-2.5 font-medium">Estado</th>
-              <th className="py-2.5 font-medium">Comprobante</th>
-              <th className="py-2.5 font-medium">Receptor</th>
-              <th className="py-2.5 font-medium">Fecha</th>
+              <th className="hidden px-5 py-2.5 font-medium md:table-cell">Estado</th>
+              <th className="py-2.5 pr-3 pl-3 font-medium md:pl-0">Comprobante</th>
+              <th className="hidden py-2.5 pr-3 font-medium lg:table-cell">Receptor</th>
+              <th className="hidden py-2.5 pr-3 font-medium xl:table-cell">Fecha</th>
               <th className="py-2.5 text-right font-medium">Total</th>
-              <th className="py-2.5 font-medium">CAE</th>
-              <th className="w-32 px-5 py-2.5" />
+              <th className="hidden py-2.5 pl-3 font-medium xl:table-cell">CAE</th>
+              <th className="px-3 py-2.5 md:pr-5" />
             </tr>
           </thead>
           <tbody className="divide-y divide-piedra-100">
@@ -479,25 +488,42 @@ function Fila({
 
   return (
     <tr>
-      <td className="px-5 py-2.5">
+      <td className="hidden px-5 py-2.5 align-top md:table-cell">
         <span className="flex items-center gap-2">
           <span className={`size-2.5 shrink-0 rounded-full ${COLOR_SEMAFORO[c.semaforo]}`} />
           <span className="text-xs text-piedra-600">{ETIQUETA_SEMAFORO[c.semaforo]}</span>
         </span>
         {ventana && <span className={`mt-0.5 block text-xs ${ventana.clase}`}>{ventana.texto}</span>}
       </td>
-      <td className="py-2.5">
-        <p className="font-mono text-xs text-tinta">{c.comprobante}</p>
+      <td className="py-2.5 pr-3 pl-3 align-top md:pl-0">
+        <p className="flex items-center gap-2 font-mono text-xs text-tinta">
+          {/* Sin la columna Estado, el semáforo va acá. */}
+          <span
+            className={`size-2.5 shrink-0 rounded-full md:hidden ${COLOR_SEMAFORO[c.semaforo]}`}
+            title={ETIQUETA_SEMAFORO[c.semaforo]}
+          />
+          {c.comprobante}
+        </p>
         <p className="text-xs text-piedra-400">{c.tipo}</p>
+        <p className="truncate text-xs text-tinta lg:hidden">{c.receptor_nombre}</p>
+        <p className="text-xs text-piedra-500 xl:hidden">
+          {new Date(`${c.fecha}T00:00:00`).toLocaleDateString('es-AR')}
+        </p>
+        {ventana && <p className={`text-xs md:hidden ${ventana.clase}`}>{ventana.texto}</p>}
+        {c.intentos_fallidos > 0 && (
+          <p className="text-xs text-red-600 xl:hidden">
+            {c.intentos_fallidos} {c.intentos_fallidos === 1 ? 'intento fallido' : 'intentos fallidos'}
+          </p>
+        )}
       </td>
-      <td className="max-w-48 truncate py-2.5 text-tinta">{c.receptor_nombre}</td>
-      <td className="py-2.5 text-xs text-piedra-500">
+      <td className="hidden max-w-48 truncate py-2.5 pr-3 align-top text-tinta lg:table-cell">{c.receptor_nombre}</td>
+      <td className="hidden py-2.5 pr-3 align-top text-xs text-piedra-500 xl:table-cell">
         {new Date(`${c.fecha}T00:00:00`).toLocaleDateString('es-AR')}
       </td>
-      <td className="py-2.5 text-right font-medium tabular-nums text-tinta">
+      <td className="whitespace-nowrap py-2.5 text-right align-top font-medium tabular-nums text-tinta">
         {moneda.format(c.total)}
       </td>
-      <td className="py-2.5">
+      <td className="hidden py-2.5 pl-3 align-top xl:table-cell">
         {c.cae ? (
           <>
             <p className="font-mono text-xs text-piedra-600">{c.cae}</p>
@@ -516,7 +542,13 @@ function Fila({
           </p>
         )}
       </td>
-      <td className="px-5 py-2.5 text-right">
+      {/*
+        Los botones bajan de renglón cuando no entran, en vez de estirar
+        la tabla: una factura puede tener cinco, y en un monitor chico
+        quedaban cortados.
+      */}
+      <td className="py-2.5 pr-3 pl-3 align-top md:pr-5">
+        <div className="flex flex-col items-end gap-1.5 sm:flex-row sm:flex-wrap sm:justify-end">
         {puedeEmitir && puedeReintentar && (
           <button
             onClick={onReintentar}
@@ -537,7 +569,7 @@ function Fila({
           <button
             onClick={onContingencia}
             disabled={trabajando}
-            className="ml-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-violet-700 ring-1 ring-violet-200 hover:bg-violet-50 disabled:opacity-40"
+            className="rounded-lg px-3 py-1.5 text-xs font-medium text-violet-700 ring-1 ring-violet-200 hover:bg-violet-50 disabled:opacity-40"
           >
             Emitir con CAEA
           </button>
@@ -545,7 +577,7 @@ function Fila({
         {c.cae && (
           <Link
             to={`/comprobante/${c.id}`}
-            className="rounded-lg px-3 py-1.5 text-xs font-medium text-marca-700 ring-1 ring-borde hover:bg-marca-50"
+            className="whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-medium text-marca-700 ring-1 ring-borde hover:bg-marca-50"
           >
             Ver / Imprimir
           </Link>
@@ -554,7 +586,7 @@ function Fila({
           <button
             onClick={onDevolver}
             disabled={trabajando}
-            className="ml-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-piedra-500 ring-1 ring-borde hover:bg-red-50 hover:text-red-700 disabled:opacity-40"
+            className="rounded-lg px-3 py-1.5 text-xs font-medium text-piedra-500 ring-1 ring-borde hover:bg-red-50 hover:text-red-700 disabled:opacity-40"
           >
             Devolver
           </button>
@@ -563,7 +595,7 @@ function Fila({
           <button
             onClick={onVerVentas}
             disabled={trabajando}
-            className="ml-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-medium text-piedra-500 ring-1 ring-borde hover:bg-marca-50 hover:text-marca-700 disabled:opacity-40"
+            className="whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-medium text-piedra-500 ring-1 ring-borde hover:bg-marca-50 hover:text-marca-700 disabled:opacity-40"
           >
             Ver ventas
           </button>
@@ -572,7 +604,7 @@ function Fila({
           <button
             onClick={onDevolverParte}
             disabled={trabajando}
-            className="ml-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-piedra-500 ring-1 ring-borde hover:bg-marca-50 hover:text-marca-700 disabled:opacity-40"
+            className="rounded-lg px-3 py-1.5 text-xs font-medium text-piedra-500 ring-1 ring-borde hover:bg-marca-50 hover:text-marca-700 disabled:opacity-40"
           >
             Devolver parte
           </button>
@@ -583,11 +615,12 @@ function Fila({
           «devuelta» ahí sería falso: volvió una bolsa de tres.
         */}
         {c.tiene_nota_credito && !c.queda_por_devolver && (
-          <span className="ml-1.5 text-xs text-piedra-400">Devuelta</span>
+          <span className="text-xs text-piedra-400">Devuelta</span>
         )}
         {c.tiene_devoluciones_parciales && c.queda_por_devolver && (
-          <span className="ml-1.5 text-xs text-piedra-400">Devuelta en parte</span>
+          <span className="text-xs text-piedra-400">Devuelta en parte</span>
         )}
+        </div>
       </td>
     </tr>
   )

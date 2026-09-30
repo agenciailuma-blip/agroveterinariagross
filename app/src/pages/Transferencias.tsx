@@ -56,10 +56,7 @@ function Pantalla({ puedeTransferir, puedeConfigurar }: { puedeTransferir: boole
   return (
     <div className="max-w-5xl space-y-5">
       <div>
-        <Link to="/stock" className="text-sm text-marca-700 hover:underline">
-          ← Stock
-        </Link>
-        <h1 className="mt-1 text-xl font-semibold tracking-tight text-tinta">Transferencias</h1>
+        <h1 className="text-xl font-semibold tracking-tight text-tinta">Transferencias</h1>
         <p className="text-sm text-piedra-500">
           Mercadería que pasa de un depósito a otro. Sale de uno y entra en el otro en el momento; el
           total no cambia.
@@ -77,11 +74,11 @@ function Pantalla({ puedeTransferir, puedeConfigurar }: { puedeTransferir: boole
             Hoy hay uno solo, así que no hay adónde mover la mercadería. Cuando abra el segundo local, se
             agrega en{' '}
             {puedeConfigurar ? (
-              <Link to="/configuracion" className="text-marca-700 hover:underline">
-                Configuración → Depósitos
+              <Link to="/configuracion?pestana=local" className="text-marca-700 hover:underline">
+                Configuración → El local
               </Link>
             ) : (
-              'Configuración → Depósitos'
+              'Configuración → El local'
             )}
             .
           </p>

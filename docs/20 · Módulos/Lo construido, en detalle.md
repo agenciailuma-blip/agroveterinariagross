@@ -501,6 +501,21 @@ Ahora hay un solo lugar donde están definidos ([`estilos.ts`](../../app/src/est
 
 **El menú se achica a sólo íconos**, con un botón abajo de todo. La decisión se guarda **en la computadora y no en el usuario**: la PC de la caja tiene un monitor chico y necesita el espacio para la venta; la de la oficina no. Achicado, el nombre de cada sección aparece al pasar el mouse — sin eso habría que aprenderse quince íconos.
 
+### ✅ El menú en nueve secciones, Configuración en pestañas, y nada que se desplace hacia el costado (30/09)
+
+**Las secciones viven en [`lib/menu.ts`](../../app/src/lib/menu.ts)**, fuera del Layout, para poder probar sin pantalla qué sección corresponde a cada dirección. Cada sección tiene sus pestañas, y cada pestaña su permiso; `conVariosDepositos` esconde Transferencias con un solo depósito. **Las direcciones no cambiaron**: el menú sólo agrupa.
+
+- **A qué sección pertenece una dirección** lo decide la pestaña de dirección más larga que la contiene: `/proveedores/cuentas` es Cuentas proveedores y no Proveedores, y `/productos/importar` sigue en Productos. El Inicio, sólo con la dirección exacta. Se rompió a propósito —gana la más corta— y la prueba lo atrapó.
+- **Cada sección vuelve a su última pestaña en esa computadora** (`gross.ultima_pestana` en el almacenamiento local), si la persona todavía la puede ver. Se recuerda sólo la dirección exacta de una pestaña, no una pantalla de adentro como *Importar planilla*.
+- **Las pestañas van en la franja de arriba**, en el mismo renglón que el indicador de conexión, y no adentro del `main`: la Caja, el Mostrador, Productos y Clientes usan `h-full` para ocupar justo el alto disponible, y una barra adentro los empujaba. Con una sola pestaña visible no se muestra nada.
+- **El menú lateral pasó de `md` (768) a `lg` (1024).** Era la causa de fondo de varias tablas que se desplazaban: las columnas se muestran por ancho de *pantalla*, y a los 768 la barra de 240 píxeles dejaba el contenido en 480 —menos que los 608 de un celular acostado—, justo cuando las columnas `md:` aparecían. Con la barra desde 1024, el ancho del contenido sólo crece con la pantalla y cada `sm:`, `md:`, `lg:` y `xl:` es confiable. Se evaluó usar consultas por contenedor de Tailwind 4; resolvía lo mismo tocando cada tabla.
+
+**Configuración** se partió en tres pestañas —Facturación, El local, Esta computadora— con la pestaña en la dirección (`?pestana=local`), para que otra pantalla pueda llevar directo a un bloque. La percepción de IIBB pasó a su propio componente, como los demás bloques. El diagnóstico va primero en *Esta computadora*: es lo primero que se mira cuando una PC falla.
+
+**Las tablas**, en pantallas chicas, esconden lo secundario (`hidden sm:table-cell`) y lo muestran debajo del nombre (`sm:hidden`), y los botones se apilan. Los contenedores pasaron de `overflow-x-auto` a `overflow-hidden`: con desplazamiento el problema se escondía, y la regla es que no haya. En Compras el pie de la tabla pasó a una sola celda, porque con columnas escondidas quedaba desalineado con el total.
+
+**Cómo se verificó:** un recorrido que abre cada pantalla y busca cualquier elemento más ancho que su caja —dejando de lado los textos recortados con «…» a propósito—, en 375, 640, 768, 1024 y 1280 píxeles. Son los bordes donde cambia qué columnas se ven: el lugar más justo de cada tramo está en su comienzo.
+
 ### ✅ 12a. Las percepciones de IIBB, para Rentas (10/09)
 
 Segundo archivo en **Facturación → Ventas para el contador**: el detalle de lo percibido en el mes, una fila por percepción con el CUIT del cliente, la base, la alícuota y el importe.

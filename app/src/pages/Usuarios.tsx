@@ -301,72 +301,48 @@ function Personas() {
       <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-borde">
         <table className="w-full text-sm">
           <thead className="border-b border-borde bg-piedra-50 text-left text-xs tracking-wide text-piedra-500 uppercase">
+            {/*
+              En el celular, el rol y cómo entra van debajo del nombre, y
+              los botones uno abajo del otro: con las cuatro columnas la
+              tabla medía 497 px en 343.
+            */}
             <tr>
-              <th className="px-4 py-2.5 font-medium">Persona</th>
-              <th className="px-4 py-2.5 font-medium">Rol</th>
-              <th className="px-4 py-2.5 font-medium">Cómo entra</th>
-              <th className="w-64 px-4 py-2.5" />
+              <th className="px-3 py-2.5 font-medium sm:px-4">Persona</th>
+              <th className="hidden px-4 py-2.5 font-medium sm:table-cell">Rol</th>
+              <th className="hidden px-4 py-2.5 font-medium md:table-cell">Cómo entra</th>
+              <th className="px-3 py-2.5 sm:px-4" />
             </tr>
           </thead>
           <tbody className="divide-y divide-piedra-100">
             {usuarios.data?.map((u) => (
               <tr key={u.id} className={u.activo ? '' : 'opacity-50'}>
-                <td className="px-4 py-2.5">
+                <td className="px-3 py-2.5 align-top sm:px-4">
                   <p className="font-medium text-tinta">{u.nombre}</p>
-                  <p className="text-xs text-piedra-400">{u.email ?? 'sin correo'}</p>
-                </td>
-                <td className="px-4 py-2.5 text-piedra-600">{u.rol?.nombre}</td>
-                <td className="px-4 py-2.5">
-                  <div className="flex flex-wrap gap-1.5">
-                    {u.auth_user_id && (
-                      <span className="rounded-full bg-marca-100 px-2 py-0.5 text-xs text-marca-800">
-                        Sesión propia
-                      </span>
-                    )}
-                    {u.opera_con_pin && (
-                      <span className="rounded-full bg-verde-100 px-2 py-0.5 text-xs text-verde-800">
-                        PIN
-                      </span>
-                    )}
-                    {/*
-                      Con correo cargado y sin cuenta todavía, no está
-                      roto: está esperando. La cuenta se vincula sola la
-                      primera vez que la persona entra con ese correo.
-                    */}
-                    {!u.auth_user_id && u.email && (
-                      <span
-                        className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800"
-                        title="Se va a vincular sola la primera vez que entre con este correo"
-                      >
-                        Todavía no entró
-                      </span>
-                    )}
-                    {!u.auth_user_id && !u.email && !u.opera_con_pin && (
-                      <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800">
-                        No puede operar
-                      </span>
-                    )}
-                    {!u.activo && (
-                      <span className="rounded-full bg-piedra-100 px-2 py-0.5 text-xs text-piedra-600">
-                        Inactivo
-                      </span>
-                    )}
+                  <p className="break-all text-xs text-piedra-400">{u.email ?? 'sin correo'}</p>
+                  <p className="text-xs text-piedra-600 sm:hidden">{u.rol?.nombre}</p>
+                  <div className="mt-1 md:hidden">
+                    <ComoEntra u={u} />
                   </div>
                 </td>
-                <td className="px-4 py-2.5 text-right text-xs">
+                <td className="hidden px-4 py-2.5 align-top text-piedra-600 sm:table-cell">{u.rol?.nombre}</td>
+                <td className="hidden px-4 py-2.5 align-top md:table-cell">
+                  <ComoEntra u={u} />
+                </td>
+                <td className="px-3 py-2.5 text-right align-top text-xs sm:px-4">
+                  <div className="flex flex-col items-end gap-1.5 lg:flex-row lg:justify-end lg:gap-3">
                   <button onClick={() => abrir(u)} className="text-marca-700 hover:underline">
                     Editar
                   </button>
                   <button
                     onClick={() => pedirPin(u)}
-                    className="ml-3 text-marca-700 hover:underline"
+                    className="whitespace-nowrap text-marca-700 hover:underline"
                   >
                     {u.opera_con_pin ? 'Cambiar PIN' : 'Dar PIN'}
                   </button>
                   {u.opera_con_pin && (
                     <button
                       onClick={() => sacarPin.mutate(u.id)}
-                      className="ml-3 text-piedra-500 hover:underline"
+                      className="whitespace-nowrap text-piedra-500 hover:underline"
                     >
                       Quitar PIN
                     </button>
@@ -383,11 +359,12 @@ function Personas() {
                         })
                         if (sigue) baja.mutate(u.id)
                       }}
-                      className="ml-3 text-red-600 hover:underline"
+                      className="text-red-600 hover:underline"
                     >
                       Baja
                     </button>
                   )}
+                  </div>
                 </td>
               </tr>
             ))}
@@ -413,6 +390,38 @@ function Personas() {
           Cuando el sistema esté en producción se reemplaza por una invitación por correo desde acá.
         </p>
       </div>
+    </div>
+  )
+}
+
+/*
+  Cómo entra cada persona al sistema. Va en su columna y, en el celular,
+  debajo del nombre: «No puede operar» es justo lo que hay que ver.
+*/
+function ComoEntra({ u }: { u: UsuarioAdmin }) {
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {u.auth_user_id && (
+        <span className="rounded-full bg-marca-100 px-2 py-0.5 text-xs text-marca-800">Sesión propia</span>
+      )}
+      {u.opera_con_pin && <span className="rounded-full bg-verde-100 px-2 py-0.5 text-xs text-verde-800">PIN</span>}
+      {/*
+        Con correo cargado y sin cuenta todavía, no está roto: está
+        esperando. La cuenta se vincula sola la primera vez que la persona
+        entra con ese correo.
+      */}
+      {!u.auth_user_id && u.email && (
+        <span
+          className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800"
+          title="Se va a vincular sola la primera vez que entre con este correo"
+        >
+          Todavía no entró
+        </span>
+      )}
+      {!u.auth_user_id && !u.email && !u.opera_con_pin && (
+        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800">No puede operar</span>
+      )}
+      {!u.activo && <span className="rounded-full bg-piedra-100 px-2 py-0.5 text-xs text-piedra-600">Inactivo</span>}
     </div>
   )
 }

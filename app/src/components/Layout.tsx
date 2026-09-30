@@ -1,162 +1,52 @@
 import { useEffect, useState } from 'react'
-import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { Link, Outlet, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
+import { listarDepositos } from '@/lib/api/depositos'
 import { contarPedidosPendientes } from '@/lib/api/pedidos'
 import AvisoDeActualizacion from '@/components/AvisoDeActualizacion'
 import AvisoBaseBloqueada from '@/components/AvisoBaseBloqueada'
 import { useAuth } from '@/auth/AuthProvider'
 import { IndicadorConexion } from '@/components/IndicadorConexion'
+import {
+  SECCIONES,
+  destinoDe,
+  pestanasVisibles,
+  recordarPestana,
+  seccionDe,
+  ultimaPestana,
+} from '@/lib/menu'
+import type { Contexto, Pestana } from '@/lib/menu'
 
-interface ItemMenu {
-  a: string
-  etiqueta: string
-  permiso?: string
-  icono: string
-  /* Un número al lado: cuánto espera que alguien haga algo. */
-  contador?: 'pedidos'
+/*
+  Lo que decide qué se ve en el menú: los permisos de quien entró y si
+  hay más de un depósito. La consulta de depósitos es la misma que usan
+  Stock y Configuración, así que no suma un viaje.
+*/
+function useContextoMenu(): Contexto {
+  const { tienePermiso } = useAuth()
+  const depositos = useQuery({
+    queryKey: ['depositos'],
+    queryFn: listarDepositos,
+    enabled: tienePermiso('stock.ver'),
+  })
+  return {
+    tienePermiso,
+    variosDepositos: (depositos.data ?? []).filter((d) => d.activo).length > 1,
+  }
 }
 
-/* Trazos de íconos, en línea para no sumar una dependencia por cinco dibujos. */
-const MENU: ItemMenu[] = [
-  { a: '/', etiqueta: 'Inicio', icono: 'M3 12l9-9 9 9M5 10v10h14V10' },
-  {
-    a: '/productos',
-    etiqueta: 'Productos',
-    permiso: 'productos.ver',
-    icono: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4',
-  },
-  {
-    /*
-      Sugerencia 2 de Lucas: el stock como entrada propia.
-
-      Va entre Productos e Inventario porque ese es el orden en que se
-      usa: se mira qué falta, y recién si el número no cierra se va a
-      contar. Inventario queda como lo que es —el conteo físico— y no
-      como el único lugar donde mirar existencias.
-    */
-    a: '/stock',
-    etiqueta: 'Stock',
-    permiso: 'stock.ver',
-    icono: 'M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-4l-1.5 3h-5L8 13H4',
-  },
-  {
-    a: '/inventario',
-    etiqueta: 'Inventario',
-    permiso: 'stock.inventariar',
-    icono: 'M9 12h6m-6 4h6M9 8h6M5 21h14a1 1 0 001-1V6.4L16.6 3H6a1 1 0 00-1 1v16a1 1 0 001 1z',
-  },
-  {
-    a: '/precios',
-    etiqueta: 'Precios',
-    permiso: 'productos.ver',
-    icono: 'M7 7h.01M7 3h5a2 2 0 011.4.6l7 7a2 2 0 010 2.8l-5 5a2 2 0 01-2.8 0l-7-7A2 2 0 015 10V5a2 2 0 012-2z',
-  },
-  {
-    /*
-      Proveedores va después de Precios porque es lo que lo alimenta:
-      el aumento masivo de precios se hace por proveedor, y ese es el
-      motivo por el que el proveedor existe hoy.
-    */
-    a: '/proveedores',
-    etiqueta: 'Proveedores',
-    permiso: 'proveedores.ver',
-    icono: 'M3 3h2l.4 2M7 13h10l4-8H5.4M16 16a2 2 0 100 4 2 2 0 000-4zM8 18a2 2 0 11-4 0 2 2 0 014 0z',
-  },
-  {
-    /*
-      Compras va pegado a Proveedores porque es lo que se hace con ellos:
-      llega la factura del proveedor y se carga. Es lo que hoy hacen en
-      OBTech y desde el 26/10 no van a tener dónde.
-    */
-    a: '/compras',
-    etiqueta: 'Compras',
-    permiso: 'compras.ver',
-    icono: 'M9 12h6m-6 4h6M9 8h6M5 21h14a1 1 0 001-1V6.4L16.6 3H6a1 1 0 00-1 1v16a1 1 0 001 1z',
-  },
-  {
-    /*
-      Después de Compras porque es su consecuencia: cada factura que se
-      carga suma a lo que se le debe al proveedor, y acá se le paga.
-    */
-    a: '/proveedores/cuentas',
-    etiqueta: 'Cuentas proveedores',
-    permiso: 'compras.ver',
-    icono: 'M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z',
-  },
-  {
-    a: '/ventas',
-    etiqueta: 'Ventas',
-    permiso: 'ventas.crear',
-    icono: 'M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.3 2.3M17 17a2 2 0 100 4 2 2 0 000-4zM9 19a2 2 0 11-4 0 2 2 0 014 0z',
-  },
-  {
-    a: '/caja',
-    etiqueta: 'Caja',
-    permiso: 'ventas.cobrar',
-    icono: 'M3 10h18M3 10l2-5h14l2 5M3 10v9a1 1 0 001 1h16a1 1 0 001-1v-9M9 15h6',
-  },
-  {
-    /*
-      Pedidos web va pegado a la Caja porque es lo mismo del otro lado:
-      ventas que hay que cerrar. Lleva un número porque los pedidos
-      entran solos, sin que nadie en el local haga nada: si no se ve
-      desde cualquier pantalla, un pedido pagado puede pasar el día sin
-      factura.
-    */
-    a: '/pedidos',
-    etiqueta: 'Pedidos web',
-    permiso: 'tienda.pedidos',
-    icono: 'M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z',
-    contador: 'pedidos',
-  },
-  {
-    a: '/clientes',
-    etiqueta: 'Clientes',
-    permiso: 'clientes.ver',
-    icono: 'M17 20h5v-2a3 3 0 00-5.4-1.8M17 20H7m10 0v-2c0-.7-.1-1.3-.4-1.8M7 20H2v-2a3 3 0 015.4-1.8M7 20v-2c0-.7.1-1.3.4-1.8m0 0a5 5 0 019.2 0M15 7a3 3 0 11-6 0 3 3 0 016 0z',
-  },
-  {
-    a: '/facturacion',
-    etiqueta: 'Facturación',
-    permiso: 'facturacion.ver',
-    icono: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.6L19 9.4V19a2 2 0 01-2 2z',
-  },
-  {
-    a: '/remitos',
-    etiqueta: 'Remitos',
-    permiso: 'facturacion.no_fiscal_ver',
-    icono: 'M9 17a2 2 0 11-4 0 2 2 0 014 0zm10 0a2 2 0 11-4 0 2 2 0 014 0zM3 5h11v12H9M14 8h3.5L21 11.5V17h-2',
-  },
-  {
-    a: '/no-fiscales',
-    etiqueta: 'Presupuestos',
-    permiso: 'facturacion.no_fiscal_ver',
-    icono: 'M9 12h6m-6 4h6M9 8h2m-2 13h10a2 2 0 002-2V7.4L14.6 3H7a2 2 0 00-2 2v14a2 2 0 002 2z',
-  },
-  {
-    /*
-      Reportes cierra la parte de mirar y abre la de administrar: es lo
-      último que se consulta sobre el día y va justo antes de Usuarios y
-      Configuración, que son de otra clase de trabajo.
-    */
-    a: '/reportes',
-    etiqueta: 'Reportes',
-    permiso: 'reportes.ver',
-    icono: 'M3 3v18h18M7 17v-5m5 5V8m5 9v-3',
-  },
-  {
-    a: '/usuarios',
-    etiqueta: 'Usuarios',
-    permiso: 'usuarios.gestionar',
-    icono: 'M10.3 4.3a2 2 0 013.4 0l.4.7a2 2 0 002 1l.8-.1a2 2 0 011.7 3l-.4.7a2 2 0 000 2.2l.4.7a2 2 0 01-1.7 3l-.8-.1a2 2 0 00-2 1l-.4.7a2 2 0 01-3.4 0l-.4-.7a2 2 0 00-2-1l-.8.1a2 2 0 01-1.7-3l.4-.7a2 2 0 000-2.2l-.4-.7a2 2 0 011.7-3l.8.1a2 2 0 002-1l.4-.7zM14 12a2 2 0 11-4 0 2 2 0 014 0z',
-  },
-  {
-    a: '/configuracion',
-    etiqueta: 'Configuración',
-    permiso: 'configuracion.gestionar',
-    icono: 'M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75',
-  },
-]
+function useContadores(): Record<NonNullable<Pestana['contador']>, number> {
+  const { tienePermiso } = useAuth()
+  const pedidosPendientes = useQuery({
+    queryKey: ['pedidos-pendientes'],
+    queryFn: contarPedidosPendientes,
+    enabled: tienePermiso('tienda.pedidos') && navigator.onLine,
+    refetchInterval: 60_000,
+    // Sin conexión no hay número: mejor nada que uno viejo.
+    retry: false,
+  })
+  return { pedidos: pedidosPendientes.data ?? 0 }
+}
 
 /*
   El menú achicado a sólo íconos.
@@ -220,20 +110,20 @@ function ContenidoMenu({
   alternarMenu?: () => void
   enTelefono?: boolean
 }) {
-  const { perfil, salir, tienePermiso } = useAuth()
-  const visibles = MENU.filter((i) => !i.permiso || tienePermiso(i.permiso))
+  const { perfil, salir } = useAuth()
+  const { pathname } = useLocation()
+  const contexto = useContextoMenu()
+  const contadores = useContadores()
+  const actual = seccionDe(pathname)?.seccion.id
 
-  const pedidosPendientes = useQuery({
-    queryKey: ['pedidos-pendientes'],
-    queryFn: contarPedidosPendientes,
-    enabled: tienePermiso('tienda.pedidos') && navigator.onLine,
-    refetchInterval: 60_000,
-    // Sin conexión no hay número: mejor nada que uno viejo.
-    retry: false,
-  })
-  const contadores: Record<NonNullable<ItemMenu['contador']>, number> = {
-    pedidos: pedidosPendientes.data ?? 0,
-  }
+  // Una sección se ve si queda al menos una pestaña que la persona pueda abrir.
+  const visibles = SECCIONES.map((s) => {
+    const pestanas = pestanasVisibles(s, contexto)
+    const destino = destinoDe(s, contexto, ultimaPestana(s.id))
+    // El número de una pestaña también se ve en su sección.
+    const contador = pestanas.reduce((n, p) => n + (p.contador ? contadores[p.contador] : 0), 0)
+    return { ...s, destino, contador }
+  }).filter((s) => s.destino !== null)
 
   return (
     <>
@@ -252,41 +142,38 @@ function ContenidoMenu({
       </div>
 
       <nav className="flex-1 space-y-0.5 overflow-y-auto p-3">
-        {visibles.map((item) => (
-          <NavLink
-            key={item.a}
-            to={item.a}
-            // Proveedores también: si no, se prende junto con Cuentas
-            // proveedores, que cuelga de su dirección.
-            end={item.a === '/' || item.a === '/proveedores'}
-            /* Achicado, el nombre sólo existe al pasar el mouse por
-               encima: sin esto habría que aprenderse quince íconos. */
-            title={colapsado ? item.etiqueta : undefined}
-            className={({ isActive }) =>
-              `flex items-center gap-3 rounded-lg text-sm font-medium transition-colors ${
+        {visibles.map((s) => {
+          const activa = s.id === actual
+          return (
+            <Link
+              key={s.id}
+              to={s.destino!}
+              aria-current={activa ? 'page' : undefined}
+              /* Achicado, el nombre sólo existe al pasar el mouse por
+                 encima: sin esto habría que aprenderse nueve íconos. */
+              title={colapsado ? s.etiqueta : undefined}
+              className={`flex items-center gap-3 rounded-lg text-sm font-medium transition-colors ${
                 // En el teléfono, cada renglón del alto de un dedo.
                 enTelefono ? 'py-3' : 'py-2.5'
               } ${colapsado ? 'justify-center px-2' : 'px-3'} ${
-                isActive
-                  ? 'bg-marca-700 text-white'
-                  : 'text-marca-200/80 hover:bg-white/10 hover:text-white'
-              }`
-            }
-          >
-            <span className="relative">
-              <Icono d={item.icono} />
-              {colapsado && item.contador && contadores[item.contador] > 0 && (
-                <span className="absolute -top-1 -right-1 size-2 rounded-full bg-acento-400" aria-hidden />
-              )}
-            </span>
-            {!colapsado && <span className="flex-1">{item.etiqueta}</span>}
-            {!colapsado && item.contador && contadores[item.contador] > 0 && (
-              <span className="rounded-full bg-acento-400 px-1.5 text-xs font-semibold text-marca-950 tabular-nums">
-                {contadores[item.contador]}
+                activa ? 'bg-marca-700 text-white' : 'text-marca-200/80 hover:bg-white/10 hover:text-white'
+              }`}
+            >
+              <span className="relative">
+                <Icono d={s.icono} />
+                {colapsado && s.contador > 0 && (
+                  <span className="absolute -top-1 -right-1 size-2 rounded-full bg-acento-400" aria-hidden />
+                )}
               </span>
-            )}
-          </NavLink>
-        ))}
+              {!colapsado && <span className="flex-1">{s.etiqueta}</span>}
+              {!colapsado && s.contador > 0 && (
+                <span className="rounded-full bg-acento-400 px-1.5 text-xs font-semibold text-marca-950 tabular-nums">
+                  {s.contador}
+                </span>
+              )}
+            </Link>
+          )
+        })}
       </nav>
 
       <div className="border-t border-white/10 p-3">
@@ -295,9 +182,10 @@ function ContenidoMenu({
 
           Es un control del que lo usa, no algo que haya que explicar
           en cada pantalla: una vez que se sabe qué hace, el cartel
-          estorba todos los días. Se va a usar sobre todo en tablet,
-          donde el ancho es lo que falta. En el teléfono no va: ahí el
-          menú se cierra solo.
+          estorba todos los días. Se va a usar sobre todo en los
+          monitores chicos, como el de la caja, donde el ancho es lo que
+          falta. En el teléfono y la tablet no va: ahí el menú se cierra
+          solo.
         */}
         {alternarMenu && (
           <div className={`mb-2 flex ${colapsado ? 'justify-center' : 'justify-end'}`}>
@@ -333,6 +221,58 @@ function ContenidoMenu({
   )
 }
 
+/*
+  Las pestañas de la sección en la que se está.
+
+  Van en la franja de arriba y no adentro del área que se desplaza: la
+  Caja, el Mostrador, Productos y Clientes ocupan justo el alto de la
+  pantalla, y una barra más adentro los empujaba. En la computadora
+  comparten el renglón con el indicador de conexión; en el teléfono van
+  en una franja propia, y si no entran bajan de renglón: nunca se
+  desplazan hacia el costado.
+
+  Con una sola pestaña visible no se muestra nada: una pestaña sola no
+  es una elección.
+*/
+function Pestanas({ clase }: { clase: string }) {
+  const { pathname } = useLocation()
+  const contexto = useContextoMenu()
+  const contadores = useContadores()
+  const donde = seccionDe(pathname)
+  if (!donde) return null
+
+  const visibles = pestanasVisibles(donde.seccion, contexto)
+  if (visibles.length < 2) return null
+
+  return (
+    <nav aria-label={donde.seccion.etiqueta} className={clase}>
+      {visibles.map((p) => {
+        const activa = p.a === donde.pestana.a
+        const n = p.contador ? contadores[p.contador] : 0
+        return (
+          <Link
+            key={p.a}
+            to={p.a}
+            aria-current={activa ? 'page' : undefined}
+            className={`-mb-px flex items-center gap-1.5 border-b-2 px-3 py-2.5 text-sm font-medium whitespace-nowrap transition-colors lg:py-3.5 ${
+              activa
+                ? 'border-marca-700 text-marca-700'
+                : 'border-transparent text-piedra-500 hover:border-piedra-300 hover:text-tinta'
+            }`}
+          >
+            {p.etiqueta}
+            {n > 0 && (
+              <span className="rounded-full bg-acento-400 px-1.5 text-xs font-semibold text-marca-950 tabular-nums">
+                {n}
+              </span>
+            )}
+          </Link>
+        )
+      })}
+    </nav>
+  )
+}
+
 export default function Layout() {
   const [colapsado, setColapsado] = useState(menuGuardado)
   const [abiertoEnTelefono, setAbiertoEnTelefono] = useState(false)
@@ -342,6 +282,11 @@ export default function Layout() {
   // taparía justo lo que se acaba de pedir.
   useEffect(() => {
     setAbiertoEnTelefono(false)
+  }, [pathname])
+
+  // Cada sección vuelve, en esta PC, a la última pestaña que se usó.
+  useEffect(() => {
+    recordarPestana(pathname)
   }, [pathname])
 
   function alternarMenu() {
@@ -359,14 +304,18 @@ export default function Layout() {
   return (
     <div className="flex h-full">
       {/*
-        La barra de la izquierda, desde tablet para arriba.
+        La barra de la izquierda, desde 1024 píxeles para arriba.
 
-        Por debajo de 768 píxeles —un teléfono— no entra: con el menú
-        abierto ocupaba dos tercios de la pantalla y la página quedaba
-        apretada en una franja. Ahí el menú es el panel de abajo.
+        Antes aparecía desde 768, y ahí el contenido se ACHICABA: una
+        tablet con la barra le dejaba a la página 480 píxeles, menos que
+        un teléfono acostado. Las tablas, que muestran más columnas a
+        medida que la pantalla crece, se pasaban justo en ese tramo
+        (30/09). Desde 1024 el ancho del contenido sólo crece con la
+        pantalla. Por debajo, el menú es el panel de abajo, que se abre
+        con el botón de arriba.
       */}
       <aside
-        className={`hidden shrink-0 flex-col bg-marca-950 text-marca-100 transition-[width] duration-200 md:flex ${
+        className={`hidden shrink-0 flex-col bg-marca-950 text-marca-100 transition-[width] duration-200 lg:flex ${
           colapsado ? 'w-16' : 'w-60'
         }`}
       >
@@ -375,7 +324,7 @@ export default function Layout() {
 
       {abiertoEnTelefono && (
         <div
-          className="fixed inset-0 z-40 md:hidden"
+          className="fixed inset-0 z-40 lg:hidden"
           role="dialog"
           aria-modal="true"
           aria-label="Menú"
@@ -406,8 +355,8 @@ export default function Layout() {
         {/* Va arriba de todo y ocupa una franja: avisa sin tapar nada. */}
         <AvisoDeActualizacion />
         <AvisoBaseBloqueada />
-        <header className="flex items-center justify-between gap-3 border-b border-borde bg-white px-3 py-2 md:justify-end md:px-6 md:py-3">
-          <div className="flex min-w-0 items-center gap-2 md:hidden">
+        <header className="flex min-h-12 items-center justify-between gap-3 border-b border-borde bg-white px-3 py-2 lg:min-h-14 lg:items-stretch lg:px-6 lg:py-0">
+          <div className="flex min-w-0 items-center gap-2 lg:hidden">
             <button
               onClick={() => setAbiertoEnTelefono(true)}
               aria-label="Abrir el menú"
@@ -418,8 +367,12 @@ export default function Layout() {
             <img src="/marca/isotipo.svg" alt="" className="size-7 shrink-0" />
             <span className="truncate text-sm font-semibold text-tinta">Gross</span>
           </div>
-          <IndicadorConexion />
+          <Pestanas clase="hidden min-w-0 flex-wrap lg:flex" />
+          <div className="flex items-center lg:ml-auto">
+            <IndicadorConexion />
+          </div>
         </header>
+        <Pestanas clase="flex flex-wrap border-b border-borde bg-white px-1 lg:hidden" />
         <main className="flex-1 overflow-auto p-4 md:p-6">
           <Outlet />
         </main>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/auth/AuthProvider'
 import DiagnosticoTerminal from '@/components/DiagnosticoTerminal'
@@ -30,26 +31,121 @@ const claseInput =
   'w-full rounded-lg border border-borde px-2.5 py-1.5 text-sm text-tinta outline-none focus:border-marca-500 focus:ring-2 focus:ring-marca-500/20'
 
 /*
-  Primera sección de una pantalla de configuración general que todavía no
-  existe (ver docs/ESTADO.md). Arranca acotada a la percepción de IIBB
-  Misiones porque es lo único que hoy tiene que poder cambiar un
-  administrador sin depender de una migración: la DGR fija la alícuota y
-  el mínimo por resolución, y pueden cambiar en cualquier momento.
+  ─────────────────────────────────────────────────────────────
+  Configuración, en tres pestañas
+
+  Eran diez bloques uno abajo del otro, y para llegar a los depósitos
+  había que pasar por la impresora y el punto de venta (Francisco, 30/09).
+  Se agrupan por a quién le importa el cambio:
+
+  · Facturación — lo que sale impreso y lo que se le informa a ARCA y a
+    Rentas. Lo toca quien habla con el contador.
+  · El local — las máquinas, cómo se hablan, los depósitos y cómo se
+    arma una venta. Vale para todas las PC.
+  · Esta computadora — lo que se guarda en la máquina que se tiene
+    adelante: su impresora y su diagnóstico.
+
+  La pestaña va en la dirección (?pestana=local), así otra pantalla
+  puede mandar directo a los depósitos.
+  ─────────────────────────────────────────────────────────────
 */
+const PESTANAS = [
+  { id: 'facturacion', etiqueta: 'Facturación' },
+  { id: 'local', etiqueta: 'El local' },
+  { id: 'computadora', etiqueta: 'Esta computadora' },
+] as const
+
+type IdPestana = (typeof PESTANAS)[number]['id']
+
 export default function Configuracion() {
+  const [params, setParams] = useSearchParams()
+  const pedida = params.get('pestana')
+  const pestana: IdPestana = PESTANAS.some((p) => p.id === pedida) ? (pedida as IdPestana) : 'facturacion'
   const { tienePermiso } = useAuth()
+
+  if (!tienePermiso('configuracion.gestionar')) {
+    return (
+      <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800 ring-1 ring-amber-200">
+        No tenés permiso para modificar la configuración del sistema.
+      </p>
+    )
+  }
+
+  return (
+    <div className="max-w-2xl space-y-5">
+      <div>
+        <h1 className="text-xl font-semibold tracking-tight text-tinta">Configuración</h1>
+        <p className="text-sm text-piedra-500">Lo que puede cambiar sin depender de una actualización.</p>
+      </div>
+
+      <div className="flex flex-wrap gap-1 rounded-lg bg-piedra-100 p-1" role="tablist" aria-label="Configuración">
+        {PESTANAS.map((p) => (
+          <button
+            key={p.id}
+            role="tab"
+            aria-selected={pestana === p.id}
+            onClick={() => setParams({ pestana: p.id }, { replace: true })}
+            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+              pestana === p.id ? 'bg-white text-tinta shadow-sm' : 'text-piedra-500 hover:text-tinta'
+            }`}
+          >
+            {p.etiqueta}
+          </button>
+        ))}
+      </div>
+
+      {pestana === 'facturacion' && (
+        <>
+          <DatosDelEmisor />
+          <PuntosDeVenta />
+          <PercepcionIibb />
+          <div className="rounded-xl bg-piedra-100 p-4 text-sm text-piedra-600">
+            <p className="font-medium text-tinta">Sobre la exclusión por cliente</p>
+            <p className="mt-1">
+              Si un cliente tiene certificado de exclusión o no percepción de la DGR, se carga en su
+              ficha (pestaña Clientes → Datos fiscales), no acá: ese dato es por cliente, no general.
+            </p>
+          </div>
+        </>
+      )}
+
+      {pestana === 'local' && (
+        <>
+          <CajasYMostradores />
+          <Depositos />
+          <RedDelLocal />
+          <RitmoDelMostrador />
+        </>
+      )}
+
+      {pestana === 'computadora' && (
+        <>
+          <DiagnosticoTerminal />
+          <ImpresoraDelMostrador />
+        </>
+      )}
+    </div>
+  )
+}
+
+/*
+  La percepción de Ingresos Brutos de Misiones.
+
+  Fue lo primero que tuvo esta pantalla: es lo que un administrador tiene
+  que poder cambiar sin depender de una actualización, porque la DGR fija
+  la alícuota y el mínimo por resolución y pueden cambiar en cualquier
+  momento.
+*/
+function PercepcionIibb() {
   const qc = useQueryClient()
   const [alicuota, setAlicuota] = useState('')
   const [minimo, setMinimo] = useState('')
   const [agrupada, setAgrupada] = useState('por_factura')
   const [aviso, setAviso] = useState<string | null>(null)
 
-  const puedeGestionar = tienePermiso('configuracion.gestionar')
-
   const config = useQuery({
     queryKey: ['configuracion', 'arca.iibb'],
     queryFn: () => obtenerConfiguracion([CLAVE_ALICUOTA, CLAVE_MINIMO, CLAVE_AGRUPADA]),
-    enabled: puedeGestionar,
   })
 
   useEffect(() => {
@@ -75,131 +171,88 @@ export default function Configuracion() {
     },
   })
 
-  if (!puedeGestionar) {
-    return (
-      <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800 ring-1 ring-amber-200">
-        No tenés permiso para modificar la configuración del sistema.
-      </p>
-    )
-  }
-
   const esValido =
     alicuota !== '' && !Number.isNaN(Number(alicuota)) && minimo !== '' && !Number.isNaN(Number(minimo))
 
   return (
-    <div className="max-w-2xl space-y-5">
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight text-tinta">Configuración</h1>
-        <p className="text-sm text-piedra-500">
-          Valores del sistema que pueden cambiar por norma, sin depender de una actualización.
-        </p>
-      </div>
+    <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-borde">
+      <h2 className="font-medium text-tinta">Percepción de Ingresos Brutos — Misiones</h2>
+      <p className="mt-1 text-sm text-piedra-500">
+        Gross es agente de <strong>percepción</strong> (no de retención) de IIBB en Misiones,
+        régimen 14. Estos dos valores los fija la DGR y pueden cambiar por resolución.
+      </p>
 
-      <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-borde">
-        <h2 className="font-medium text-tinta">Percepción de Ingresos Brutos — Misiones</h2>
-        <p className="mt-1 text-sm text-piedra-500">
-          Gross es agente de <strong>percepción</strong> (no de retención) de IIBB en Misiones,
-          régimen 14. Estos dos valores los fija la DGR y pueden cambiar por resolución.
-        </p>
-
-        {config.isLoading ? (
-          <p className="mt-4 text-sm text-piedra-500">Cargando…</p>
-        ) : (
-          <div className="mt-4 grid grid-cols-2 gap-4">
-            <label className="block">
-              <span className="mb-1 block text-xs font-medium text-piedra-600">Alícuota</span>
-              <div className="relative">
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={alicuota}
-                  onChange={(e) => setAlicuota(e.target.value)}
-                  className={`${claseInput} pr-6 text-right tabular-nums`}
-                />
-                <span className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-sm text-piedra-400">
-                  %
-                </span>
-              </div>
-            </label>
-            <label className="block">
-              <span className="mb-1 block text-xs font-medium text-piedra-600">
-                Mínimo no sujeto a percepción
+      {config.isLoading ? (
+        <p className="mt-4 text-sm text-piedra-500">Cargando…</p>
+      ) : (
+        <div className="mt-4 grid grid-cols-2 gap-4">
+          <label className="block">
+            <span className="mb-1 block text-xs font-medium text-piedra-600">Alícuota</span>
+            <div className="relative">
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={alicuota}
+                onChange={(e) => setAlicuota(e.target.value)}
+                className={`${claseInput} pr-6 text-right tabular-nums`}
+              />
+              <span className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-sm text-piedra-400">
+                %
               </span>
-              <div className="relative">
-                <span className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-sm text-piedra-400">
-                  $
-                </span>
-                <input
-                  type="number"
-                  step="1"
-                  min="0"
-                  value={minimo}
-                  onChange={(e) => setMinimo(e.target.value)}
-                  className={`${claseInput} pl-6 text-right tabular-nums`}
-                />
-              </div>
-            </label>
-            <p className="col-span-2 text-xs text-piedra-400">
-              El mínimo es sobre el importe de la percepción ya calculada, no sobre el monto de la
-              venta: así lo indicó el contador.
-            </p>
-            <label className="col-span-2 block">
-              <span className="mb-1 block text-xs font-medium text-piedra-600">
-                En una factura que agrupa varias ventas (Por facturar)
-              </span>
-              <select value={agrupada} onChange={(e) => setAgrupada(e.target.value)} className={claseInput}>
-                <option value="por_factura">Se calcula sobre el total de la factura</option>
-                <option value="por_venta">Se calcula venta por venta, y se suma</option>
-              </select>
-              <span className="mt-1 block text-xs text-piedra-400">
-                Lo define el contador. Juntar varias ventas hace que se pase el mínimo más seguido.
-              </span>
-            </label>
-          </div>
-        )}
-
-        <div className="mt-4 flex items-center gap-3">
-          <button
-            onClick={() => guardar.mutate()}
-            disabled={!esValido || guardar.isPending || config.isLoading}
-            className="rounded-lg bg-marca-700 px-4 py-2 text-sm font-medium text-white hover:bg-marca-600 disabled:opacity-40"
-          >
-            {guardar.isPending ? 'Guardando…' : 'Guardar'}
-          </button>
-          {aviso && (
-            <span className="rounded-full bg-verde-100 px-3 py-1 text-xs font-medium text-verde-800 ring-1 ring-verde-200">
-              {aviso}
+            </div>
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-xs font-medium text-piedra-600">
+              Mínimo no sujeto a percepción
             </span>
-          )}
-          {guardar.isError && (
-            <span className="text-xs text-red-600">No se pudo guardar. Probá de nuevo.</span>
-          )}
+            <div className="relative">
+              <span className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-sm text-piedra-400">
+                $
+              </span>
+              <input
+                type="number"
+                step="1"
+                min="0"
+                value={minimo}
+                onChange={(e) => setMinimo(e.target.value)}
+                className={`${claseInput} pl-6 text-right tabular-nums`}
+              />
+            </div>
+          </label>
+          <p className="col-span-2 text-xs text-piedra-400">
+            El mínimo es sobre el importe de la percepción ya calculada, no sobre el monto de la
+            venta: así lo indicó el contador.
+          </p>
+          <label className="col-span-2 block">
+            <span className="mb-1 block text-xs font-medium text-piedra-600">
+              En una factura que agrupa varias ventas (Por facturar)
+            </span>
+            <select value={agrupada} onChange={(e) => setAgrupada(e.target.value)} className={claseInput}>
+              <option value="por_factura">Se calcula sobre el total de la factura</option>
+              <option value="por_venta">Se calcula venta por venta, y se suma</option>
+            </select>
+            <span className="mt-1 block text-xs text-piedra-400">
+              Lo define el contador. Juntar varias ventas hace que se pase el mínimo más seguido.
+            </span>
+          </label>
         </div>
-      </div>
+      )}
 
-      <RitmoDelMostrador />
-
-      <DiagnosticoTerminal />
-
-      <DatosDelEmisor />
-
-      <ImpresoraDelMostrador />
-
-      <CajasYMostradores />
-
-      <RedDelLocal />
-
-      <PuntosDeVenta />
-
-      <Depositos />
-
-      <div className="rounded-xl bg-piedra-100 p-4 text-sm text-piedra-600">
-        <p className="font-medium text-tinta">Sobre la exclusión por cliente</p>
-        <p className="mt-1">
-          Si un cliente tiene certificado de exclusión o no percepción de la DGR, se carga en su
-          ficha (pestaña Clientes → Datos fiscales), no acá: ese dato es por cliente, no general.
-        </p>
+      <div className="mt-4 flex items-center gap-3">
+        <button
+          onClick={() => guardar.mutate()}
+          disabled={!esValido || guardar.isPending || config.isLoading}
+          className="rounded-lg bg-marca-700 px-4 py-2 text-sm font-medium text-white hover:bg-marca-600 disabled:opacity-40"
+        >
+          {guardar.isPending ? 'Guardando…' : 'Guardar'}
+        </button>
+        {aviso && (
+          <span className="rounded-full bg-verde-100 px-3 py-1 text-xs font-medium text-verde-800 ring-1 ring-verde-200">
+            {aviso}
+          </span>
+        )}
+        {guardar.isError && <span className="text-xs text-red-600">No se pudo guardar. Probá de nuevo.</span>}
       </div>
     </div>
   )

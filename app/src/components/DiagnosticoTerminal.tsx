@@ -13,8 +13,9 @@ import { direccionDelPuntoDeEncuentro } from '@/lib/local/red'
   El diagnóstico de esta terminal.
 
   Pensado para la instalación en las PC de Gross con alguien del otro
-  lado del teléfono. Va primero en Configuración porque es lo primero
-  que hay que mirar cuando algo no anda, no lo último.
+  lado del teléfono. Va primero en Configuración → Esta computadora
+  porque es lo primero que hay que mirar cuando algo no anda, no lo
+  último.
 
   El botón que importa es "Copiar": alguien en el local lo aprieta, lo
   pega en un chat, y del otro lado se ve exactamente lo mismo que ve él.

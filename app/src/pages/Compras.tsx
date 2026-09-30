@@ -12,7 +12,7 @@ import {
   tiposParaCompra,
   totalDeLaCarga,
 } from '@/lib/api/compras'
-import type { AlicuotaCargada, TributoCargado } from '@/lib/api/compras'
+import type { AlicuotaCargada, FilaCompra, TributoCargado } from '@/lib/api/compras'
 import RecepcionDeMercaderia from '@/components/RecepcionDeMercaderia'
 import { listarProveedores } from '@/lib/api/proveedores'
 import { enCastellano } from '@/lib/errores'
@@ -86,6 +86,29 @@ export default function Compras() {
   }
 
   const total = (compras.data ?? []).reduce((t, c) => t + Number(c.total), 0)
+
+  /*
+    Si la mercadería de la factura ya entró. Va en su columna, y en el
+    celular debajo del proveedor: es lo que se busca en esta lista.
+  */
+  const mercaderia = (c: FilaCompra) =>
+    // Una nota de crédito no trae mercadería: no hay nada que recibir.
+    c.tipo?.signo === -1 ? (
+      <span className="text-piedra-300">—</span>
+    ) : c.recibida_en ? (
+      <span className="text-xs text-emerald-700">
+        Recibida {new Date(c.recibida_en).toLocaleDateString('es-AR')}
+      </span>
+    ) : puedeRecibir ? (
+      <button
+        onClick={() => setRecibiendoId(c.id)}
+        className="rounded-lg px-2 py-1 text-xs font-medium text-marca-700 ring-1 ring-borde hover:bg-marca-50"
+      >
+        Recibir
+      </button>
+    ) : (
+      <span className="text-xs text-amber-700">Sin recibir</span>
+    )
   const recibiendo = compras.data?.find((c) => c.id === recibiendoId) ?? null
 
   return (
@@ -144,18 +167,25 @@ export default function Compras() {
         <RecepcionDeMercaderia compra={recibiendo} onCerrar={() => setRecibiendoId(null)} />
       )}
 
-      <div className="overflow-x-auto rounded-xl bg-white shadow-sm ring-1 ring-borde">
+      {/*
+        Sin desplazamiento hacia el costado, en ningún ancho. Proveedor,
+        total y la acción se ven siempre; lo demás aparece a medida que
+        hay lugar, y mientras no lo hay va debajo del proveedor. El
+        desglose —neto, IVA, percepciones— recién con pantalla ancha: el
+        total es lo que se compara con el papel.
+      */}
+      <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-borde">
         <table className="w-full text-sm">
           <thead className="border-b border-piedra-100 text-left text-xs text-piedra-500">
             <tr>
-              <th className="px-4 py-2.5 font-medium">Fecha</th>
-              <th className="px-4 py-2.5 font-medium">Proveedor</th>
-              <th className="px-4 py-2.5 font-medium">Comprobante</th>
-              <th className="px-4 py-2.5 text-right font-medium">Neto</th>
-              <th className="px-4 py-2.5 text-right font-medium">IVA</th>
-              <th className="px-4 py-2.5 text-right font-medium">Percepciones</th>
-              <th className="px-4 py-2.5 text-right font-medium">Total</th>
-              <th className="px-4 py-2.5 font-medium">Mercadería</th>
+              <th className="hidden px-4 py-2.5 font-medium md:table-cell">Fecha</th>
+              <th className="px-3 py-2.5 font-medium sm:px-4">Proveedor</th>
+              <th className="hidden px-4 py-2.5 font-medium lg:table-cell">Comprobante</th>
+              <th className="hidden px-4 py-2.5 text-right font-medium xl:table-cell">Neto</th>
+              <th className="hidden px-4 py-2.5 text-right font-medium xl:table-cell">IVA</th>
+              <th className="hidden px-4 py-2.5 text-right font-medium xl:table-cell">Percepciones</th>
+              <th className="px-3 py-2.5 text-right font-medium sm:px-4">Total</th>
+              <th className="hidden px-4 py-2.5 font-medium sm:table-cell">Mercadería</th>
               <th />
             </tr>
           </thead>
@@ -178,50 +208,42 @@ export default function Compras() {
 
             {compras.data?.map((c) => (
               <tr key={c.id} className="border-b border-piedra-50 last:border-0">
-                <td className="whitespace-nowrap px-4 py-2.5 tabular-nums text-piedra-600">
+                <td className="whitespace-nowrap hidden px-4 py-2.5 tabular-nums text-piedra-600 md:table-cell">
                   {new Date(`${c.fecha}T00:00:00`).toLocaleDateString('es-AR')}
                 </td>
-                <td className="px-4 py-2.5 text-tinta">{c.proveedor?.nombre ?? '—'}</td>
-                <td className="whitespace-nowrap px-4 py-2.5">
+                <td className="px-3 py-2.5 text-tinta sm:px-4">
+                  {c.proveedor?.nombre ?? '—'}
+                  <p className="text-xs text-piedra-500 lg:hidden">
+                    <span className="md:hidden">
+                      {new Date(`${c.fecha}T00:00:00`).toLocaleDateString('es-AR')} ·{' '}
+                    </span>
+                    {c.tipo?.descripcion ?? '—'}{' '}
+                    <span className="font-mono tabular-nums">{numeroDeComprobante(c.punto_venta, c.numero)}</span>
+                  </p>
+                  <div className="mt-1 sm:hidden">{mercaderia(c)}</div>
+                </td>
+                <td className="whitespace-nowrap hidden px-4 py-2.5 lg:table-cell">
                   <span className="text-piedra-600">{c.tipo?.descripcion ?? '—'}</span>{' '}
                   <span className="font-mono text-xs tabular-nums text-piedra-500">
                     {numeroDeComprobante(c.punto_venta, c.numero)}
                   </span>
                 </td>
-                <td className="px-4 py-2.5 text-right tabular-nums text-piedra-600">
+                <td className="hidden px-4 py-2.5 text-right tabular-nums text-piedra-600 xl:table-cell">
                   {moneda.format(Number(c.neto_gravado) + Number(c.neto_no_gravado) + Number(c.exento))}
                 </td>
-                <td className="px-4 py-2.5 text-right tabular-nums text-piedra-600">
+                <td className="hidden px-4 py-2.5 text-right tabular-nums text-piedra-600 xl:table-cell">
                   {moneda.format(Number(c.iva_total))}
                 </td>
-                <td className="px-4 py-2.5 text-right tabular-nums text-piedra-600">
+                <td className="hidden px-4 py-2.5 text-right tabular-nums text-piedra-600 xl:table-cell">
                   {Number(c.tributos_total) ? moneda.format(Number(c.tributos_total)) : '—'}
                 </td>
-                <td className="px-4 py-2.5 text-right font-medium tabular-nums text-tinta">
+                <td className="whitespace-nowrap px-3 py-2.5 text-right font-medium tabular-nums text-tinta sm:px-4">
                   {/* Una nota de crédito resta, y en una lista de gastos
                       eso tiene que verse de un vistazo. */}
                   {c.tipo?.signo === -1 ? '−' : ''}
                   {moneda.format(Number(c.total))}
                 </td>
-                <td className="whitespace-nowrap px-4 py-2.5">
-                  {/* Una nota de crédito no trae mercadería: no hay nada que recibir. */}
-                  {c.tipo?.signo === -1 ? (
-                    <span className="text-piedra-300">—</span>
-                  ) : c.recibida_en ? (
-                    <span className="text-xs text-emerald-700">
-                      Recibida {new Date(c.recibida_en).toLocaleDateString('es-AR')}
-                    </span>
-                  ) : puedeRecibir ? (
-                    <button
-                      onClick={() => setRecibiendoId(c.id)}
-                      className="rounded-lg px-2 py-1 text-xs font-medium text-marca-700 ring-1 ring-borde hover:bg-marca-50"
-                    >
-                      Recibir
-                    </button>
-                  ) : (
-                    <span className="text-xs text-amber-700">Sin recibir</span>
-                  )}
-                </td>
+                <td className="whitespace-nowrap hidden px-4 py-2.5 sm:table-cell">{mercaderia(c)}</td>
                 <td className="px-2 py-2.5 text-right">
                   {tienePermiso('compras.registrar') && (
                     <button
@@ -244,14 +266,17 @@ export default function Compras() {
 
           {!!compras.data?.length && (
             <tfoot className="border-t border-piedra-100 bg-piedra-50/60">
+              {/* Una sola celda: con columnas escondidas, repartir el pie
+                  en columnas lo dejaba desalineado con el total. */}
               <tr>
-                <td colSpan={6} className="px-4 py-2.5 text-xs text-piedra-500">
-                  {compras.data.length} factura{compras.data.length === 1 ? '' : 's'} en pantalla
+                <td colSpan={9} className="px-3 py-2.5 sm:px-4">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="text-xs text-piedra-500">
+                      {compras.data.length} factura{compras.data.length === 1 ? '' : 's'} en pantalla
+                    </span>
+                    <span className="font-medium tabular-nums text-tinta">Total {moneda.format(total)}</span>
+                  </div>
                 </td>
-                <td className="px-4 py-2.5 text-right font-medium tabular-nums text-tinta">
-                  {moneda.format(total)}
-                </td>
-                <td colSpan={2} />
               </tr>
             </tfoot>
           )}

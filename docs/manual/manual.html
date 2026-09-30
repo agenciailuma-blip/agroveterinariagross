@@ -119,6 +119,11 @@
   ul.limpia { margin: 1.5mm 0 0; padding-left: 5mm; }
   ul.limpia li { margin-bottom: 1.2mm; }
 
+  .seccion-menu {
+    margin: 7mm 0 2.5mm; font-size: 9pt; font-weight: 700; color: var(--marca);
+    text-transform: uppercase; letter-spacing: .5pt; page-break-after: avoid;
+  }
+  .gris { color: var(--gris); font-size: 8.6pt; }
   .indice ol { padding-left: 6mm; columns: 2; column-gap: 10mm; }
   .indice li { margin-bottom: 1.6mm; break-inside: avoid; }
 
@@ -166,35 +171,34 @@
     <tr><th>Qué exporto</th><td>Qué sale de esa pantalla, en papel o en archivo.</td></tr>
   </table>
 
+  <div class="nota verde">
+    <b>El menú tiene nueve secciones.</b> Adentro de cada una, las pantallas que se usan juntas son
+    <b>pestañas</b> en la franja de arriba: en Stock están Stock, Inventario y Transferencias; en Compras, las
+    facturas, las cuentas y los proveedores. Tocar una sección abre la última pestaña que se usó <b>en esa
+    computadora</b>: en la caja, «Ventas» abre directo la Caja.
+  </div>
+
   <div class="nota">
-    <b>Cada uno ve lo suyo.</b> Las secciones del menú aparecen según el permiso de cada usuario: un vendedor
-    no ve Facturación ni Usuarios; un cajero no ve Configuración. Los permisos se manejan desde <b>Usuarios</b>,
-    así que el menú de cada persona puede ser más corto que el de este manual.
+    <b>Cada uno ve lo suyo.</b> Las secciones y las pestañas aparecen según el permiso de cada usuario: un
+    vendedor no ve Comprobantes ni Administración, y en Ventas tiene sólo el Mostrador. Los permisos se manejan
+    desde <b>Usuarios</b>, así que el menú de cada persona puede ser más corto que el de este manual.
   </div>
 
   <div class="indice" style="margin-top:7mm">
     <h2 class="titulo-bloque">Las secciones</h2>
     <div class="subrayado"></div>
-    <ol>
-      <li>Inicio</li>
-      <li>Productos</li>
-      <li>Stock</li>
-      <li>Inventario</li>
-      <li>Precios</li>
-      <li>Proveedores</li>
-      <li>Compras</li>
-      <li>Cuentas de proveedores</li>
-      <li>Ventas · el mostrador</li>
-      <li>Caja</li>
-      <li>Pedidos web</li>
-      <li>Clientes</li>
-      <li>Facturación</li>
-      <li>Remitos</li>
-      <li>Presupuestos</li>
-      <li>Reportes</li>
-      <li>Usuarios</li>
-      <li>Configuración</li>
-    </ol>
+    <table class="datos">
+        <tr><th style="width:38mm">Sección del menú</th><th>Pantallas, como pestañas (y su número en este manual)</th></tr>
+        <tr><td><b>Inicio</b></td><td>Inicio <span class="gris">(1)</span></td></tr>
+        <tr><td><b>Ventas</b></td><td>Mostrador <span class="gris">(2)</span> · Caja <span class="gris">(3)</span> · Pedidos web <span class="gris">(4)</span></td></tr>
+        <tr><td><b>Clientes</b></td><td>Clientes <span class="gris">(5)</span></td></tr>
+        <tr><td><b>Productos</b></td><td>Productos <span class="gris">(6)</span> · Precios <span class="gris">(7)</span></td></tr>
+        <tr><td><b>Stock</b></td><td>Stock <span class="gris">(8)</span> · Inventario <span class="gris">(9)</span> · Transferencias <span class="gris">(con más de un depósito; en la 8)</span></td></tr>
+        <tr><td><b>Compras</b></td><td>Compras <span class="gris">(10)</span> · Cuentas de proveedores <span class="gris">(11)</span> · Proveedores <span class="gris">(12)</span></td></tr>
+        <tr><td><b>Comprobantes</b></td><td>Facturación <span class="gris">(13)</span> · Remitos <span class="gris">(14)</span> · Presupuestos <span class="gris">(15)</span></td></tr>
+        <tr><td><b>Reportes</b></td><td>Reportes <span class="gris">(16)</span></td></tr>
+        <tr><td><b>Administración</b></td><td>Usuarios <span class="gris">(17)</span> · Configuración <span class="gris">(18)</span></td></tr>
+    </table>
     <p style="margin-top:4mm">Y al final: <b>qué se imprime y qué se exporta</b>, <b>trabajar sin internet</b>,
     <b>desde el celular</b> y <b>cómo piensa el sistema</b>.</p>
   </div>
@@ -216,8 +220,75 @@
     </div>
   </section>
 
+  <p class="seccion-menu">Sección Ventas · Mostrador · Caja · Pedidos web</p>
+
   <section class="pantalla">
-    <header><span class="numero">2</span><div><h3>Productos</h3><p class="lema">El catálogo. Donde se carga y se corrige todo lo que se vende.</p></div></header>
+    <header><span class="numero">2</span><div><h3>Mostrador</h3><p class="lema">Armar la venta y mandarla a la caja.</p></div></header>
+    <div class="cuerpo">
+      <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Es la pantalla donde más tiempo pasa el día: el vendedor atiende, arma la venta y se la pasa a la caja, sin dejar de atender.</div></div>
+      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">El detalle con precios y subtotal · <b>el total en efectivo y con tarjeta al mismo tiempo</b> · aviso si no hay stock suficiente · el borrador se conserva si la pantalla se refresca por accidente.</div></div>
+      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Identificarme con <b>PIN</b> · buscar o escanear productos · <b>escribir una línea que no está en el catálogo</b> · cambiar cantidades · <b>rebajar el precio de una línea</b>, por monto o por porcentaje · elegir el cliente · anticipar con qué va a pagar · <b>enviar a caja</b> o <b>hacer un presupuesto</b> · descartar la venta.</div></div>
+      <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">El <b>presupuesto impreso</b>, en ticket de 80 mm o en hoja A4.</div></div>
+
+      <p style="margin:3mm 0 1mm"><b>Tres cosas que conviene saber</b></p>
+      <ul class="limpia">
+        <li><b>El PIN se cierra al enviar la venta.</b> Cada vendedor vuelve a identificarse. No es una contraseña: es saber quién hizo qué. Sin esto, el primero que pone su PIN a la mañana queda como autor de todo lo que carga cualquiera.</li>
+        <li><b>Pide un nombre para llamar al cliente.</b> Se puede dejar vacío. Aparece en la cola de la caja, para llamar a la persona en vez de cantar un número.</li>
+        <li><b>Rebajar un precio pide motivo y PIN.</b> El motivo sale de una lista, para poder contarlos después. Y <b>quien pone el PIN queda como responsable de la rebaja</b>, que puede no ser el vendedor: es lo que permite que un encargado se acerque y autorice.</li>
+      </ul>
+
+      <div class="nota"><b>La línea escrita a mano</b> es para lo que se pide especialmente y se vende una vez: no crea nada en el catálogo y no mueve stock. Se le pregunta el IVA porque puede terminar en una factura. Si algo se vende dos veces, va al catálogo.</div>
+    </div>
+  </section>
+
+  <section class="pantalla">
+    <header><span class="numero">3</span><div><h3>Caja</h3><p class="lema">Cobra lo que el mostrador armó, y cierra el turno.</p></div></header>
+    <div class="cuerpo">
+      <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Separar al que atiende del que cobra: el vendedor sigue en el salón y la caja concentra la plata, la factura y la impresora.</div></div>
+      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">La cola de ventas esperando cobro, con el nombre para llamar a cada cliente · el detalle de la venta · el total actualizado según el medio de pago · el saldo de cuenta corriente del cliente y su límite · al cerrar, lo esperado contra lo declarado y <b>la diferencia</b>.</div></div>
+      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor"><b>Abrir la caja</b> con el monto inicial · elegir una venta de la cola · <b>corregirla</b> (quitar, cambiar cantidades, agregar) · elegir medio de pago y cuotas · <b>hacer un descuento</b> por porcentaje o llevando el total a un número, con motivo · elegir <b>con factura, sin factura o factura después</b> · <b>cobrar</b> · cobrar una cuenta corriente · <b>cerrar la caja</b> con el arqueo.</div></div>
+      <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">El <b>comprobante impreso</b> —factura, ticket no fiscal o comprobante interno— en ticket de 80 mm o A4.</div></div>
+
+      <div class="nota"><b>Al cobrar se factura y se imprime solo.</b> El cajero no tiene que ir a otra pantalla ni apretar nada más: al confirmar el cobro se pide la factura y el ticket sale por la impresora del mostrador. El botón que queda al lado es para verlo o darle una copia al cliente. Si el ticket no salió, el sistema lo dice.</div>
+      <div class="nota"><b>Si el pago es en cuotas, el total ya viene con el recargo.</b> La pantalla lo aclara —cuánto es y cuánto sería de contado—, y el importe a cobrar coincide con el del posnet. El porcentaje de cada plan se carga en <b>Precios</b>.</div>
+      <div class="nota"><b>Sin internet, la caja factura igual.</b> Se cobra como siempre y el ticket sale con el código de contingencia (CAEA). Lo único que cambia en la pantalla es que el cartel verde lo aclara.</div>
+      <div class="nota"><b>«Sin factura» tiene permiso propio</b>, que no tienen ni el cajero ni el vendedor. Y a un Responsable Inscripto no se le ofrece: compra para descargar IVA.</div>
+      <div class="nota verde"><b>«Factura después»</b> aparece para los clientes con cuenta corriente, también para un Responsable Inscripto. La venta va <b>entera a la cuenta corriente</b> y sale un <b>comprobante interno</b>. La factura la emite el encargado más tarde desde <b>Facturación → Por facturar</b>: sola, o junto con otras ventas del mismo cliente.</div>
+      <div class="nota"><b>La percepción de IIBB se cobra con la factura.</b> Cuando el cliente es Responsable Inscripto y la compra pasa el mínimo, el panel de cobro muestra <i>Productos</i>, <i>Percepción IIBB Misiones</i> y el total con las dos cosas: ése es el precio final que se le dice al cliente. Si paga en el momento se cobra entero; si va a cuenta corriente, la deuda es la factura entera. La cola de la izquierda muestra el mismo total, con la leyenda <i>con percepción IIBB</i>.</div>
+    </div>
+  </section>
+
+  <section class="pantalla">
+    <header><span class="numero">4</span><div><h3>Pedidos web</h3><p class="lema">Lo que se compró en la tienda online, hasta que se entrega.</p></div></header>
+    <div class="cuerpo">
+      <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Preparar, facturar y entregar lo que entra por la tienda web. Cada pedido entra solo al sistema como una venta, con el comprador y lo que compró, y <b>descuenta el stock</b>. <b>Nada se factura solo</b>: la factura sale cuando se sabe lo que realmente se entrega.</div></div>
+      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">En el menú, un número al lado de <b>Pedidos web</b>: los que esperan que alguien haga algo · por pedido: si el cliente <b>pagó en la web o paga en el local</b>, cómo se entrega y <b>hace cuánto espera factura</b>, en rojo si ya pasó el día del cobro · los reintegros <b>a devolver por la tienda</b>.</div></div>
+      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Marcar <b>preparado</b> · emitir el <b>remito del envío</b> · <b>facturar</b> · marcar <b>entregado</b> · <b>cancelar</b> · anotar que un reintegro ya se devolvió, con su referencia.</div></div>
+      <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">La factura y el remito, impresos o guardados en PDF.</div></div>
+
+      <div class="nota"><b>Lo que se cobró en la web no se entrega sin factura</b>, y la factura no puede salir por más de lo que el cliente pagó. Pasa cuando al comprador le corresponde percepción de IIBB: el sistema frena y dice por qué, para hablarlo con el cliente antes. Un pedido marcado <i>para revisar</i> pide confirmar «lo revisé», y queda el nombre de quien lo hizo.</div>
+      <div class="nota verde"><b>Cancelar y devolver.</b> Cancelar antes de entregar anula la venta y devuelve el stock; si ya estaba facturado, sale la nota de crédito. Lo entregado vuelve por <b>Devolver parte</b>, en Facturación. Si el cliente pagó en la web, la plata la tiene la pasarela de pago de la tienda: cada cancelación o devolución deja un pendiente <i>«a devolver por la tienda»</i>, a la vista hasta que alguien anota que se devolvió.</div>
+      <div class="nota">Si el cliente eligió <b>pagar en el local</b>, la venta le aparece a la caja como cualquier otra.</div>
+    </div>
+  </section>
+
+  <section class="pantalla">
+    <header><span class="numero">5</span><div><h3>Clientes</h3><p class="lema">La ficha del cliente y su cuenta corriente.</p></div></header>
+    <div class="cuerpo">
+      <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Tener los datos con los que se factura y, para el que compra en cuenta, saber cuánto debe, desde cuándo y hasta cuánto puede seguir comprando.</div></div>
+      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Datos fiscales (condición de IVA, CUIT o DNI, domicilio) · <b>saldo actual</b>, límite de crédito y crédito disponible · los movimientos de la cuenta con su origen.</div></div>
+      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Buscar · crear y editar · definir si tiene <b>cuenta corriente</b> y con qué <b>límite</b> · fijarle un <b>descuento</b> propio y una lista de precios · cargar la <b>exclusión de percepción de IIBB</b> con su certificado y vigencia · <b>registrar una cobranza</b> · <b>importar la planilla de clientes</b>, con el saldo que debe cada uno.</div></div>
+      <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">El <b>resumen de cuenta corriente en PDF</b>, para mandarle al cliente.</div></div>
+
+      <div class="nota"><b>Importar la planilla de clientes</b> —botón <i>Importar planilla</i>— trae todos los clientes de una vez, con el <b>saldo que debe cada uno a una fecha</b>. El sistema reconoce las columnas y las muestra con un dato de ejemplo para confirmarlas. Antes de importar muestra <b>la suma de todos los saldos</b>: ése es el número que hay que comparar con el total del sistema anterior. Se puede importar la misma planilla las veces que haga falta: cada cliente se reconoce por su código o su CUIT y el saldo queda <b>igual</b> al de la planilla, no se suma. Un CUIT con el último dígito mal no entra, porque ARCA rechazaría la factura.</div>
+      <div class="nota verde"><b>El resumen de cuenta</b> tiene la forma de un resumen del banco: saldo anterior, cada factura, pago y nota de crédito con el saldo que va quedando, y el saldo al cierre. Se elige el período —este mes, el mes pasado o todo— y se guarda como PDF con el nombre del cliente ya puesto, listo para adjuntar a un mail. Si el resumen llega hasta hoy, dice además cuánto de ese saldo está vencido y desde cuándo.</div>
+    </div>
+  </section>
+
+  <p class="seccion-menu">Sección Productos · Productos · Precios</p>
+
+  <section class="pantalla">
+    <header><span class="numero">6</span><div><h3>Productos</h3><p class="lema">El catálogo. Donde se carga y se corrige todo lo que se vende.</p></div></header>
     <div class="cuerpo">
       <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Es la fuente de todo lo demás: de acá salen el precio que cobra la caja, el IVA que va en la factura y el stock que se descuenta.</div></div>
       <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">El listado con precio, stock y el semáforo (<i>En stock · Stock bajo · Crítico · Sobrevendido</i>) · el <b>avance de la carga</b>: cuántos productos ya se revisaron sobre el total.</div></div>
@@ -243,44 +314,7 @@
   </section>
 
   <section class="pantalla">
-    <header><span class="numero">3</span><div><h3>Stock</h3><p class="lema">Qué hay que pedir.</p></div></header>
-    <div class="cuerpo">
-      <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">No es el catálogo con otra columna: arranca filtrado en lo que necesita una decisión, ordenado por urgencia y no por nombre.</div></div>
-      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Cuatro números arriba —sobrevendidos, críticos, bajos y en stock— y, por producto, cuánto queda, con cuánto avisa, en qué estado está y <b>cuánto costaría reponerlo</b> hasta el umbral.</div></div>
-      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Filtrar por estado · buscar · <b>copiar la lista</b> para pegarla en un WhatsApp al proveedor · saltar a contar inventario.</div></div>
-      <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">La lista de faltantes <b>al portapapeles</b>, en texto, lista para pegar.</div></div>
-
-      <p style="margin:3mm 0 1mm"><b>Con más de un depósito</b></p>
-      <ul class="limpia">
-        <li>Arriba se elige qué mirar: <b>Todos los depósitos</b> es el total de cada producto —lo que hay que pedirle al proveedor— con una columna por depósito al lado; eligiendo uno, la cantidad y el estado son los de ese depósito, contra el mismo aviso de stock bajo.</li>
-        <li>Cada computadora vende del depósito que tiene asignado en <b>Configuración → Cajas y mostradores</b>. Lo que vuelve —una anulación, un remito que regresa— vuelve al depósito del que salió.</li>
-      </ul>
-
-      <p style="margin:3mm 0 1mm"><b>Transferencias: mover mercadería de un depósito a otro</b></p>
-      <ul class="limpia">
-        <li>Se entra con el botón <b>Transferir</b> de esta pantalla. Se elige de qué depósito sale y a cuál va; el sistema propone que salga del de la computadora donde se está cargando.</li>
-        <li>Se <b>pasa el lector</b> o se busca el producto, se escribe la cantidad y Enter: el foco vuelve solo al buscador. Pasar dos veces el mismo producto suma.</li>
-        <li>Al lado de cada renglón se ve cuánto <b>queda en el origen</b> y cuánto va a haber en el destino. Si en el origen no alcanza según el sistema, avisa y deja transferir igual: la mercadería que está en el estante se tiene que poder llevar, y el stock se corrige después contándolo.</li>
-        <li>Al confirmar, la mercadería sale de un depósito y entra en el otro en el mismo momento, con un número de transferencia. <b>El total no cambia.</b></li>
-        <li>Abajo quedan las últimas transferencias, con quién la hizo y qué se llevó. Una transferencia se <b>anula con motivo</b>: la mercadería vuelve al origen y la transferencia queda en la lista, anulada.</li>
-      </ul>
-    </div>
-  </section>
-
-  <section class="pantalla">
-    <header><span class="numero">4</span><div><h3>Inventario</h3><p class="lema">El conteo físico por sectores, con el local abierto.</p></div></header>
-    <div class="cuerpo">
-      <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Poner el número del sistema de acuerdo con lo que hay en la góndola, sin cerrar el local ni frenar la venta.</div></div>
-      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Las tomas abiertas, cerradas y anuladas. Por cada una: cuántos productos se contaron, cuántos tienen diferencia y <b>cuánto representa esa diferencia valorizada al costo</b>.</div></div>
-      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Abrir una toma por sector · <b>contar escaneando</b> (el foco vuelve solo al buscador después de cada Enter) · recontar un producto · anular la toma · <b>cerrarla</b>, que genera los ajustes.</div></div>
-      <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">Nada. El ajuste queda como movimiento de stock, con quién contó y cuándo.</div></div>
-      <div class="nota"><b>Se puede contar con el local abierto.</b> El ajuste usa la diferencia detectada <b>al momento de contar</b>, no al de cerrar: si se cuentan 10 a las 10 y a las 11 se vende 1, al cerrar queda 9 y no 10.</div>
-      <div class="nota"><b>Cada toma es de un depósito.</b> Con más de uno, al abrir la toma se elige cuál se cuenta —se propone el de la computadora—, lo contado se compara contra lo que el sistema tiene <b>en ese depósito</b> y el ajuste queda ahí. Contar un local no toca el stock del otro.</div>
-    </div>
-  </section>
-
-  <section class="pantalla">
-    <header><span class="numero">5</span><div><h3>Precios</h3><p class="lema">Cómo se arma el precio final según con qué paga el cliente.</p></div></header>
+    <header><span class="numero">7</span><div><h3>Precios</h3><p class="lema">Cómo se arma el precio final según con qué paga el cliente.</p></div></header>
     <div class="cuerpo">
       <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Tener las listas y los medios de pago en un solo lugar, y poder crear listas nuevas sin depender de una actualización del programa.</div></div>
       <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Qué lista usa cada medio de pago y qué porcentaje aplica.</div></div>
@@ -293,27 +327,49 @@
     </div>
   </section>
 
-  <section class="pantalla">
-    <header><span class="numero">6</span><div><h3>Proveedores</h3><p class="lema">A quién se le compra, y cómo cambiarle el precio a todo un laboratorio de una vez.</p></div></header>
-    <div class="cuerpo">
-      <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Cuando llega la lista nueva de un laboratorio, aplicar el aumento a todos sus productos en una operación, y poder volver atrás si el número salió mal.</div></div>
-      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Por proveedor: CUIT, contacto y <b>cuántos productos tiene asignados</b>, que es a cuántos les va a pegar un ajuste.</div></div>
-      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Crear, editar y dar de baja · <b>ajustar precios en masa</b> por proveedor y rubro · <b>deshacer</b> un ajuste.</div></div>
-      <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">Nada.</div></div>
+  <p class="seccion-menu">Sección Stock · Stock · Inventario</p>
 
-      <p style="margin:3mm 0 1mm"><b>El ajuste masivo, paso a paso</b></p>
+  <section class="pantalla">
+    <header><span class="numero">8</span><div><h3>Stock</h3><p class="lema">Qué hay que pedir.</p></div></header>
+    <div class="cuerpo">
+      <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">No es el catálogo con otra columna: arranca filtrado en lo que necesita una decisión, ordenado por urgencia y no por nombre.</div></div>
+      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Cuatro números arriba —sobrevendidos, críticos, bajos y en stock— y, por producto, cuánto queda, con cuánto avisa, en qué estado está y <b>cuánto costaría reponerlo</b> hasta el umbral.</div></div>
+      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Filtrar por estado · buscar · <b>copiar la lista</b> para pegarla en un WhatsApp al proveedor. Contar y transferir son las pestañas de al lado: <b>Inventario</b> y <b>Transferencias</b>.</div></div>
+      <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">La lista de faltantes <b>al portapapeles</b>, en texto, lista para pegar.</div></div>
+
+      <p style="margin:3mm 0 1mm"><b>Con más de un depósito</b></p>
       <ul class="limpia">
-        <li>Se elige <b>proveedor</b> y/o <b>rubro</b>. Se pueden dejar los dos en «Todos», y ahí le pega al catálogo entero — pero exige escribir por qué.</li>
-        <li>El sistema dice <b>a cuántos productos les va a pegar antes de aplicar</b>. Si dice 1.800 cuando esperabas 40, algo se eligió mal.</li>
-        <li>Se pone el porcentaje: <b>7</b> sube un 7%, <b>−8</b> baja un 8%. Y si toca el precio de venta, el costo, o los dos.</li>
+        <li>Arriba se elige qué mirar: <b>Todos los depósitos</b> es el total de cada producto —lo que hay que pedirle al proveedor— con una columna por depósito al lado; eligiendo uno, la cantidad y el estado son los de ese depósito, contra el mismo aviso de stock bajo.</li>
+        <li>Cada computadora vende del depósito que tiene asignado en <b>Configuración → Cajas y mostradores</b>. Lo que vuelve —una anulación, un remito que regresa— vuelve al depósito del que salió.</li>
       </ul>
 
-      <div class="nota verde"><b>Se puede deshacer, y eso es lo importante.</b> Un +70% tipeado donde iba +7% se descubre con el primer cliente. El sistema guarda el precio anterior de <b>cada</b> producto y abajo está el historial con el botón para volver atrás. Cada producto vuelve al precio exacto que tenía, y <b>lo que alguien corrigió a mano después se deja como está</b>: esa corrección es más nueva y más deliberada.</div>
+      <p style="margin:3mm 0 1mm"><b>Transferencias: mover mercadería de un depósito a otro</b></p>
+      <ul class="limpia">
+        <li>Es la pestaña <b>Transferencias</b> de la sección Stock, que aparece cuando hay más de un depósito. Se elige de qué depósito sale y a cuál va; el sistema propone que salga del de la computadora donde se está cargando.</li>
+        <li>Se <b>pasa el lector</b> o se busca el producto, se escribe la cantidad y Enter: el foco vuelve solo al buscador. Pasar dos veces el mismo producto suma.</li>
+        <li>Al lado de cada renglón se ve cuánto <b>queda en el origen</b> y cuánto va a haber en el destino. Si en el origen no alcanza según el sistema, avisa y deja transferir igual: la mercadería que está en el estante se tiene que poder llevar, y el stock se corrige después contándolo.</li>
+        <li>Al confirmar, la mercadería sale de un depósito y entra en el otro en el mismo momento, con un número de transferencia. <b>El total no cambia.</b></li>
+        <li>Abajo quedan las últimas transferencias, con quién la hizo y qué se llevó. Una transferencia se <b>anula con motivo</b>: la mercadería vuelve al origen y la transferencia queda en la lista, anulada.</li>
+      </ul>
     </div>
   </section>
 
   <section class="pantalla">
-    <header><span class="numero">7</span><div><h3>Compras</h3><p class="lema">La factura del proveedor, y la mercadería que trae.</p></div></header>
+    <header><span class="numero">9</span><div><h3>Inventario</h3><p class="lema">El conteo físico por sectores, con el local abierto.</p></div></header>
+    <div class="cuerpo">
+      <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Poner el número del sistema de acuerdo con lo que hay en la góndola, sin cerrar el local ni frenar la venta.</div></div>
+      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Las tomas abiertas, cerradas y anuladas. Por cada una: cuántos productos se contaron, cuántos tienen diferencia y <b>cuánto representa esa diferencia valorizada al costo</b>.</div></div>
+      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Abrir una toma por sector · <b>contar escaneando</b> (el foco vuelve solo al buscador después de cada Enter) · recontar un producto · anular la toma · <b>cerrarla</b>, que genera los ajustes.</div></div>
+      <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">Nada. El ajuste queda como movimiento de stock, con quién contó y cuándo.</div></div>
+      <div class="nota"><b>Se puede contar con el local abierto.</b> El ajuste usa la diferencia detectada <b>al momento de contar</b>, no al de cerrar: si se cuentan 10 a las 10 y a las 11 se vende 1, al cerrar queda 9 y no 10.</div>
+      <div class="nota"><b>Cada toma es de un depósito.</b> Con más de uno, al abrir la toma se elige cuál se cuenta —se propone el de la computadora—, lo contado se compara contra lo que el sistema tiene <b>en ese depósito</b> y el ajuste queda ahí. Contar un local no toca el stock del otro.</div>
+    </div>
+  </section>
+
+  <p class="seccion-menu">Sección Compras · Compras · Cuentas de proveedores · Proveedores</p>
+
+  <section class="pantalla">
+    <header><span class="numero">10</span><div><h3>Compras</h3><p class="lema">La factura del proveedor, y la mercadería que trae.</p></div></header>
     <div class="cuerpo">
       <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Dejar registrado lo que dice el papel del proveedor —cuánto se le compró, con qué IVA y qué percepciones le cargaron— y hacer entrar la mercadería al stock con su costo.</div></div>
       <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Las facturas cargadas, con proveedor, tipo, número, fecha, total y si <b>la mercadería ya se recibió</b> · al cargar una, el <b>total se arma solo</b> para compararlo con el papel antes de guardar.</div></div>
@@ -335,7 +391,7 @@
   </section>
 
   <section class="pantalla">
-    <header><span class="numero">8</span><div><h3>Cuentas de proveedores</h3><p class="lema">Cuánto se le debe a cada uno, y los pagos.</p></div></header>
+    <header><span class="numero">11</span><div><h3>Cuentas de proveedores</h3><p class="lema">Cuánto se le debe a cada uno, y los pagos.</p></div></header>
     <div class="cuerpo">
       <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Saber cuánto se le debe a cada proveedor, qué está vencido y qué se le fue pagando. Cada factura de compra suma a su cuenta y cada pago resta.</div></div>
       <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Arriba, <b>cuánto se les debe en total</b> y <b>cuánto está vencido</b>. Debajo, un renglón por proveedor con su saldo, lo vencido, el próximo vencimiento y el último pago · al entrar a uno: <b>lo que falta pagar</b>, factura por factura, y el <b>resumen de cuenta</b> con el saldo después de cada movimiento.</div></div>
@@ -354,67 +410,25 @@
   </section>
 
   <section class="pantalla">
-    <header><span class="numero">9</span><div><h3>Ventas · el mostrador</h3><p class="lema">Armar la venta y mandarla a la caja.</p></div></header>
+    <header><span class="numero">12</span><div><h3>Proveedores</h3><p class="lema">A quién se le compra, y cómo cambiarle el precio a todo un laboratorio de una vez.</p></div></header>
     <div class="cuerpo">
-      <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Es la pantalla donde más tiempo pasa el día: el vendedor atiende, arma la venta y se la pasa a la caja, sin dejar de atender.</div></div>
-      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">El detalle con precios y subtotal · <b>el total en efectivo y con tarjeta al mismo tiempo</b> · aviso si no hay stock suficiente · el borrador se conserva si la pantalla se refresca por accidente.</div></div>
-      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Identificarme con <b>PIN</b> · buscar o escanear productos · <b>escribir una línea que no está en el catálogo</b> · cambiar cantidades · <b>rebajar el precio de una línea</b>, por monto o por porcentaje · elegir el cliente · anticipar con qué va a pagar · <b>enviar a caja</b> o <b>hacer un presupuesto</b> · descartar la venta.</div></div>
-      <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">El <b>presupuesto impreso</b>, en ticket de 80 mm o en hoja A4.</div></div>
+      <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Cuando llega la lista nueva de un laboratorio, aplicar el aumento a todos sus productos en una operación, y poder volver atrás si el número salió mal.</div></div>
+      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Por proveedor: CUIT, contacto y <b>cuántos productos tiene asignados</b>, que es a cuántos les va a pegar un ajuste.</div></div>
+      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Crear, editar y dar de baja · <b>ajustar precios en masa</b> por proveedor y rubro · <b>deshacer</b> un ajuste.</div></div>
+      <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">Nada.</div></div>
 
-      <p style="margin:3mm 0 1mm"><b>Tres cosas que conviene saber</b></p>
+      <p style="margin:3mm 0 1mm"><b>El ajuste masivo, paso a paso</b></p>
       <ul class="limpia">
-        <li><b>El PIN se cierra al enviar la venta.</b> Cada vendedor vuelve a identificarse. No es una contraseña: es saber quién hizo qué. Sin esto, el primero que pone su PIN a la mañana queda como autor de todo lo que carga cualquiera.</li>
-        <li><b>Pide un nombre para llamar al cliente.</b> Se puede dejar vacío. Aparece en la cola de la caja, para llamar a la persona en vez de cantar un número.</li>
-        <li><b>Rebajar un precio pide motivo y PIN.</b> El motivo sale de una lista, para poder contarlos después. Y <b>quien pone el PIN queda como responsable de la rebaja</b>, que puede no ser el vendedor: es lo que permite que un encargado se acerque y autorice.</li>
+        <li>Se elige <b>proveedor</b> y/o <b>rubro</b>. Se pueden dejar los dos en «Todos», y ahí le pega al catálogo entero — pero exige escribir por qué.</li>
+        <li>El sistema dice <b>a cuántos productos les va a pegar antes de aplicar</b>. Si dice 1.800 cuando esperabas 40, algo se eligió mal.</li>
+        <li>Se pone el porcentaje: <b>7</b> sube un 7%, <b>−8</b> baja un 8%. Y si toca el precio de venta, el costo, o los dos.</li>
       </ul>
 
-      <div class="nota"><b>La línea escrita a mano</b> es para lo que se pide especialmente y se vende una vez: no crea nada en el catálogo y no mueve stock. Se le pregunta el IVA porque puede terminar en una factura. Si algo se vende dos veces, va al catálogo.</div>
+      <div class="nota verde"><b>Se puede deshacer, y eso es lo importante.</b> Un +70% tipeado donde iba +7% se descubre con el primer cliente. El sistema guarda el precio anterior de <b>cada</b> producto y abajo está el historial con el botón para volver atrás. Cada producto vuelve al precio exacto que tenía, y <b>lo que alguien corrigió a mano después se deja como está</b>: esa corrección es más nueva y más deliberada.</div>
     </div>
   </section>
 
-  <section class="pantalla">
-    <header><span class="numero">10</span><div><h3>Caja</h3><p class="lema">Cobra lo que el mostrador armó, y cierra el turno.</p></div></header>
-    <div class="cuerpo">
-      <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Separar al que atiende del que cobra: el vendedor sigue en el salón y la caja concentra la plata, la factura y la impresora.</div></div>
-      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">La cola de ventas esperando cobro, con el nombre para llamar a cada cliente · el detalle de la venta · el total actualizado según el medio de pago · el saldo de cuenta corriente del cliente y su límite · al cerrar, lo esperado contra lo declarado y <b>la diferencia</b>.</div></div>
-      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor"><b>Abrir la caja</b> con el monto inicial · elegir una venta de la cola · <b>corregirla</b> (quitar, cambiar cantidades, agregar) · elegir medio de pago y cuotas · <b>hacer un descuento</b> por porcentaje o llevando el total a un número, con motivo · elegir <b>con factura, sin factura o factura después</b> · <b>cobrar</b> · cobrar una cuenta corriente · <b>cerrar la caja</b> con el arqueo.</div></div>
-      <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">El <b>comprobante impreso</b> —factura, ticket no fiscal o comprobante interno— en ticket de 80 mm o A4.</div></div>
-
-      <div class="nota"><b>Al cobrar se factura y se imprime solo.</b> El cajero no tiene que ir a otra pantalla ni apretar nada más: al confirmar el cobro se pide la factura y el ticket sale por la impresora del mostrador. El botón que queda al lado es para verlo o darle una copia al cliente. Si el ticket no salió, el sistema lo dice.</div>
-      <div class="nota"><b>Si el pago es en cuotas, el total ya viene con el recargo.</b> La pantalla lo aclara —cuánto es y cuánto sería de contado—, y el importe a cobrar coincide con el del posnet. El porcentaje de cada plan se carga en <b>Precios</b>.</div>
-      <div class="nota"><b>Sin internet, la caja factura igual.</b> Se cobra como siempre y el ticket sale con el código de contingencia (CAEA). Lo único que cambia en la pantalla es que el cartel verde lo aclara.</div>
-      <div class="nota"><b>«Sin factura» tiene permiso propio</b>, que no tienen ni el cajero ni el vendedor. Y a un Responsable Inscripto no se le ofrece: compra para descargar IVA.</div>
-      <div class="nota verde"><b>«Factura después»</b> aparece para los clientes con cuenta corriente, también para un Responsable Inscripto. La venta va <b>entera a la cuenta corriente</b> y sale un <b>comprobante interno</b>. La factura la emite el encargado más tarde desde <b>Facturación → Por facturar</b>: sola, o junto con otras ventas del mismo cliente.</div>
-      <div class="nota"><b>La percepción de IIBB se cobra con la factura.</b> Cuando el cliente es Responsable Inscripto y la compra pasa el mínimo, el panel de cobro muestra <i>Productos</i>, <i>Percepción IIBB Misiones</i> y el total con las dos cosas: ése es el precio final que se le dice al cliente. Si paga en el momento se cobra entero; si va a cuenta corriente, la deuda es la factura entera. La cola de la izquierda muestra el mismo total, con la leyenda <i>con percepción IIBB</i>.</div>
-    </div>
-  </section>
-
-  <section class="pantalla">
-    <header><span class="numero">11</span><div><h3>Pedidos web</h3><p class="lema">Lo que se compró en la tienda online, hasta que se entrega.</p></div></header>
-    <div class="cuerpo">
-      <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Preparar, facturar y entregar lo que entra por la tienda web. Cada pedido entra solo al sistema como una venta, con el comprador y lo que compró, y <b>descuenta el stock</b>. <b>Nada se factura solo</b>: la factura sale cuando se sabe lo que realmente se entrega.</div></div>
-      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">En el menú, un número al lado de <b>Pedidos web</b>: los que esperan que alguien haga algo · por pedido: si el cliente <b>pagó en la web o paga en el local</b>, cómo se entrega y <b>hace cuánto espera factura</b>, en rojo si ya pasó el día del cobro · los reintegros <b>a devolver por la tienda</b>.</div></div>
-      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Marcar <b>preparado</b> · emitir el <b>remito del envío</b> · <b>facturar</b> · marcar <b>entregado</b> · <b>cancelar</b> · anotar que un reintegro ya se devolvió, con su referencia.</div></div>
-      <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">La factura y el remito, impresos o guardados en PDF.</div></div>
-
-      <div class="nota"><b>Lo que se cobró en la web no se entrega sin factura</b>, y la factura no puede salir por más de lo que el cliente pagó. Pasa cuando al comprador le corresponde percepción de IIBB: el sistema frena y dice por qué, para hablarlo con el cliente antes. Un pedido marcado <i>para revisar</i> pide confirmar «lo revisé», y queda el nombre de quien lo hizo.</div>
-      <div class="nota verde"><b>Cancelar y devolver.</b> Cancelar antes de entregar anula la venta y devuelve el stock; si ya estaba facturado, sale la nota de crédito. Lo entregado vuelve por <b>Devolver parte</b>, en Facturación. Si el cliente pagó en la web, la plata la tiene la pasarela de pago de la tienda: cada cancelación o devolución deja un pendiente <i>«a devolver por la tienda»</i>, a la vista hasta que alguien anota que se devolvió.</div>
-      <div class="nota">Si el cliente eligió <b>pagar en el local</b>, la venta le aparece a la caja como cualquier otra.</div>
-    </div>
-  </section>
-
-  <section class="pantalla">
-    <header><span class="numero">12</span><div><h3>Clientes</h3><p class="lema">La ficha del cliente y su cuenta corriente.</p></div></header>
-    <div class="cuerpo">
-      <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Tener los datos con los que se factura y, para el que compra en cuenta, saber cuánto debe, desde cuándo y hasta cuánto puede seguir comprando.</div></div>
-      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Datos fiscales (condición de IVA, CUIT o DNI, domicilio) · <b>saldo actual</b>, límite de crédito y crédito disponible · los movimientos de la cuenta con su origen.</div></div>
-      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Buscar · crear y editar · definir si tiene <b>cuenta corriente</b> y con qué <b>límite</b> · fijarle un <b>descuento</b> propio y una lista de precios · cargar la <b>exclusión de percepción de IIBB</b> con su certificado y vigencia · <b>registrar una cobranza</b> · <b>importar la planilla de clientes</b>, con el saldo que debe cada uno.</div></div>
-      <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">El <b>resumen de cuenta corriente en PDF</b>, para mandarle al cliente.</div></div>
-
-      <div class="nota"><b>Importar la planilla de clientes</b> —botón <i>Importar planilla</i>— trae todos los clientes de una vez, con el <b>saldo que debe cada uno a una fecha</b>. El sistema reconoce las columnas y las muestra con un dato de ejemplo para confirmarlas. Antes de importar muestra <b>la suma de todos los saldos</b>: ése es el número que hay que comparar con el total del sistema anterior. Se puede importar la misma planilla las veces que haga falta: cada cliente se reconoce por su código o su CUIT y el saldo queda <b>igual</b> al de la planilla, no se suma. Un CUIT con el último dígito mal no entra, porque ARCA rechazaría la factura.</div>
-      <div class="nota verde"><b>El resumen de cuenta</b> tiene la forma de un resumen del banco: saldo anterior, cada factura, pago y nota de crédito con el saldo que va quedando, y el saldo al cierre. Se elige el período —este mes, el mes pasado o todo— y se guarda como PDF con el nombre del cliente ya puesto, listo para adjuntar a un mail. Si el resumen llega hasta hoy, dice además cuánto de ese saldo está vencido y desde cuándo.</div>
-    </div>
-  </section>
+  <p class="seccion-menu">Sección Comprobantes · Facturación · Remitos · Presupuestos</p>
 
   <section class="pantalla">
     <header><span class="numero">13</span><div><h3>Facturación</h3><p class="lema">El semáforo de todo lo que se le informa a ARCA.</p></div></header>
@@ -485,6 +499,8 @@
     </div>
   </section>
 
+  <p class="seccion-menu">Sección Administración · Usuarios · Configuración</p>
+
   <section class="pantalla">
     <header><span class="numero">17</span><div><h3>Usuarios</h3><p class="lema">Quién entra, qué puede hacer y con qué PIN.</p></div></header>
     <div class="cuerpo">
@@ -500,20 +516,23 @@
     <header><span class="numero">18</span><div><h3>Configuración</h3><p class="lema">Lo que puede cambiar sin depender de una actualización.</p></div></header>
     <div class="cuerpo">
       <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Que lo que cambia por resolución, por costumbre del mostrador o por cómo está armado el local se pueda tocar sin llamar a nadie.</div></div>
-      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Ver el cuadro de abajo.</div></div>
+      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Está en tres pestañas, según a quién le importa el cambio: <b>Facturación</b> —lo que sale impreso y lo que se le informa a ARCA y a Rentas—, <b>El local</b> —las máquinas, los depósitos y cómo se arma una venta; vale para todas las computadoras— y <b>Esta computadora</b> —lo que se guarda en la máquina que se tiene adelante—. Ver el cuadro de abajo.</div></div>
       <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">Nada.</div></div>
 
       <table class="datos">
         <tr><th style="width:52mm">Bloque</th><th>Para qué</th></tr>
-        <tr><td><b>Percepción de IIBB — Misiones</b></td><td>Alícuota y mínimo no sujeto a percepción. Los fija la DGR y cambian por resolución. Y cómo se calcula en una factura que agrupa varias ventas: sobre el total o venta por venta, según lo que indique el contador.</td></tr>
-        <tr><td><b>Cajas y mostradores</b></td><td>Las computadoras del local, con su prefijo, su punto de venta y cuándo se conectó cada una por última vez. <b>Agregar</b> propone el nombre y el prefijo que siguen —<i>Mostrador 3, MOS3</i>—; después, en la PC nueva, se abre el sistema y se la elige en <b>Ventas</b>. El prefijo encabeza cada número de venta de esa máquina y <b>no se cambia después</b>. No se puede dar de baja la caja que escucha a las demás ni una caja abierta. Con más de un depósito, cada máquina dice <b>de qué depósito vende</b>; las que no tienen uno elegido venden del principal.</td></tr>
-        <tr><td><b>Ritmo del mostrador</b></td><td>Si al agregar un producto se pregunta la cantidad. Se prueba unos días y se deja como le sirva al mostrador.</td></tr>
-        <tr><td><b>Impresora del mostrador</b></td><td>Se elige de la <b>lista de impresoras de Windows</b>, como al imprimir desde el Word, y se guarda <b>en cada computadora</b>. Tiene un botón para imprimir una prueba.</td></tr>
-        <tr><td><b>La red del local</b></td><td>Qué computadora escucha a las demás cuando no hay internet — conviene que sea la de la caja. Desde cada mostrador se puede probar la conexión.</td></tr>
-        <tr><td><b>Depósitos</b></td><td>Los lugares donde hay mercadería. Cada movimiento de stock queda registrado en el suyo. El <b>principal</b> es del que venden las máquinas sin depósito elegido. Un depósito se da de baja <b>vacío y sin máquinas</b>: primero se transfiere su mercadería.</td></tr>
+        <tr><th colspan="2">Facturación</th></tr>
         <tr><td><b>Datos del emisor</b></td><td>Razón social, CUIT, domicilio, Ingresos Brutos, inicio de actividades y <b>el logo</b> que sale impreso en los comprobantes.</td></tr>
         <tr><td><b>Puntos de venta de ARCA</b></td><td>Cuáles están habilitados para facturar.</td></tr>
+        <tr><td><b>Percepción de IIBB — Misiones</b></td><td>Alícuota y mínimo no sujeto a percepción. Los fija la DGR y cambian por resolución. Y cómo se calcula en una factura que agrupa varias ventas: sobre el total o venta por venta, según lo que indique el contador.</td></tr>
+        <tr><th colspan="2">El local</th></tr>
+        <tr><td><b>Cajas y mostradores</b></td><td>Las computadoras del local, con su prefijo, su punto de venta y cuándo se conectó cada una por última vez. <b>Agregar</b> propone el nombre y el prefijo que siguen —<i>Mostrador 3, MOS3</i>—; después, en la PC nueva, se abre el sistema y se la elige en <b>Ventas</b>. El prefijo encabeza cada número de venta de esa máquina y <b>no se cambia después</b>. No se puede dar de baja la caja que escucha a las demás ni una caja abierta. Con más de un depósito, cada máquina dice <b>de qué depósito vende</b>; las que no tienen uno elegido venden del principal.</td></tr>
+        <tr><td><b>Depósitos</b></td><td>Los lugares donde hay mercadería. Cada movimiento de stock queda registrado en el suyo. El <b>principal</b> es del que venden las máquinas sin depósito elegido. Un depósito se da de baja <b>vacío y sin máquinas</b>: primero se transfiere su mercadería.</td></tr>
+        <tr><td><b>La red del local</b></td><td>Qué computadora escucha a las demás cuando no hay internet — conviene que sea la de la caja. Desde cada mostrador se puede probar la conexión.</td></tr>
+        <tr><td><b>Ritmo del mostrador</b></td><td>Si al agregar un producto se pregunta la cantidad. Se prueba unos días y se deja como le sirva al mostrador.</td></tr>
+        <tr><th colspan="2">Esta computadora</th></tr>
         <tr><td><b>Diagnóstico de la terminal</b></td><td>Qué terminal es esta máquina, si tiene copia local y si hay operaciones sin subir. Es lo primero que se mira cuando una PC «no anda».</td></tr>
+        <tr><td><b>Impresora del mostrador</b></td><td>Se elige de la <b>lista de impresoras de Windows</b>, como al imprimir desde el Word, y se guarda <b>en cada computadora</b>. Tiene un botón para imprimir una prueba.</td></tr>
       </table>
     </div>
   </section>
@@ -563,6 +582,9 @@
     <li><b>Android:</b> abrir la dirección en Chrome → menú de los tres puntos → <b>Instalar aplicación</b>.</li>
     <li><b>iPhone:</b> abrir la dirección en Safari → botón <b>Compartir</b> → <b>Agregar a inicio</b>.</li>
   </ul>
+  <p>En el teléfono y en la tablet el menú se abre con el botón de arriba a la izquierda, y las pestañas de
+  cada sección van en una franja debajo. Ninguna pantalla se desplaza hacia el costado: lo que no entra en
+  una tabla pasa a un renglón debajo del nombre.</p>
 
   <h2 class="titulo-bloque" style="margin-top:8mm">Cómo piensa el sistema</h2>
   <div class="subrayado"></div>

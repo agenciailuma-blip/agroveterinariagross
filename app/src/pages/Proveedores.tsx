@@ -152,38 +152,51 @@ export default function Proveedores() {
           </p>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl bg-white shadow-sm ring-1 ring-borde">
+        /*
+          Sin desplazamiento hacia el costado: en el celular el CUIT y el
+          contacto van debajo del nombre, y vuelven a su columna cuando
+          hay lugar.
+        */
+        <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-borde">
           <table className="w-full text-sm">
             <thead className="border-b border-borde bg-piedra-50 text-left text-xs tracking-wide text-piedra-500 uppercase">
               <tr>
-                <th className="px-4 py-2.5 font-medium">Proveedor</th>
-                <th className="py-2.5 font-medium">CUIT</th>
-                <th className="py-2.5 font-medium">Contacto</th>
-                <th className="py-2.5 text-right font-medium">Productos</th>
-                <th className="px-4 py-2.5" />
+                <th className="px-3 py-2.5 font-medium sm:px-4">Proveedor</th>
+                <th className="hidden py-2.5 pr-3 font-medium md:table-cell">CUIT</th>
+                <th className="hidden py-2.5 pr-3 font-medium lg:table-cell">Contacto</th>
+                <th className="hidden py-2.5 text-right font-medium sm:table-cell">Productos</th>
+                <th className="px-3 py-2.5 sm:px-4" />
               </tr>
             </thead>
             <tbody className="divide-y divide-piedra-100">
               {proveedores.data.map((p) => (
                 <tr key={p.id} className={p.activo ? '' : 'opacity-50'}>
-                  <td className="px-4 py-2.5">
+                  <td className="px-3 py-2.5 align-top sm:px-4">
                     <p className="font-medium text-tinta">{p.nombre}</p>
                     {p.nombre_fantasia && (
                       <p className="text-xs text-piedra-400">{p.nombre_fantasia}</p>
                     )}
+                    <p className="text-xs text-piedra-500 lg:hidden">
+                      <span className="tabular-nums md:hidden">{p.numero_documento}</span>
+                      {p.numero_documento && (p.contacto || p.telefono) && <span className="md:hidden"> · </span>}
+                      {[p.contacto, p.telefono].filter(Boolean).join(' · ')}
+                    </p>
+                    <p className="text-xs text-piedra-500 sm:hidden">
+                      {numero.format(cuenta.data?.get(p.id) ?? 0)} productos
+                    </p>
                   </td>
-                  <td className="py-2.5 tabular-nums text-piedra-600">
+                  <td className="hidden py-2.5 pr-3 align-top tabular-nums text-piedra-600 md:table-cell">
                     {p.numero_documento || '—'}
                   </td>
-                  <td className="py-2.5 text-piedra-600">
+                  <td className="hidden py-2.5 pr-3 align-top text-piedra-600 lg:table-cell">
                     {[p.contacto, p.telefono].filter(Boolean).join(' · ') || '—'}
                   </td>
-                  <td className="py-2.5 text-right tabular-nums text-piedra-600">
+                  <td className="hidden py-2.5 text-right align-top tabular-nums text-piedra-600 sm:table-cell">
                     {numero.format(cuenta.data?.get(p.id) ?? 0)}
                   </td>
-                  <td className="px-4 py-2.5 text-right whitespace-nowrap">
+                  <td className="px-3 py-2.5 text-right align-top sm:px-4">
                     {puedeGestionar && (
-                      <>
+                      <div className="flex flex-col items-end gap-1.5 sm:flex-row sm:justify-end sm:gap-3">
                         <button
                           onClick={() => setEditando(p)}
                           className="text-xs text-marca-700 hover:underline"
@@ -204,11 +217,11 @@ export default function Proveedores() {
                             })
                             if (sigue) baja.mutate(p.id)
                           }}
-                          className="ml-3 text-xs text-piedra-400 hover:text-red-600"
+                          className="whitespace-nowrap text-xs text-piedra-400 hover:text-red-600"
                         >
                           Dar de baja
                         </button>
-                      </>
+                      </div>
                     )}
                   </td>
                 </tr>
@@ -219,8 +232,8 @@ export default function Proveedores() {
       )}
 
       <p className="text-xs text-piedra-400">
-        El proveedor de cada producto se asigna en su ficha, dentro de Productos. Las compras, las
-        órdenes y la cuenta corriente del proveedor llegan en V1-B.
+        El proveedor de cada producto se asigna en su ficha, dentro de Productos. Sus facturas y lo
+        que se le debe están en las otras dos pestañas de Compras.
       </p>
     </div>
   )

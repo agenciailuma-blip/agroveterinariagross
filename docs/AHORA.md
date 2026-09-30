@@ -45,6 +45,30 @@ estado: en curso
 
 ## Lo último que pasó — 30 de septiembre
 
+**El sistema, ordenado: un menú de nueve secciones, Configuración en pestañas y ninguna pantalla que se desplace hacia el costado.** Pedido por Francisco ese mismo día, mirando cómo lo resuelve OBTech: pocas secciones y, adentro, varias opciones.
+
+> **Cómo se lo contás a Lucas:** el menú de la izquierda pasó de dieciocho entradas a nueve: Inicio, Ventas, Clientes, Productos, Stock, Compras, Comprobantes, Reportes y Administración. Adentro de cada una, las pantallas que se usan juntas quedan como pestañas arriba —en Ventas están el Mostrador, la Caja y los Pedidos web—. Tocar una sección vuelve a la última pestaña que se usó en esa PC: en la caja, «Ventas» abre directo la Caja. Configuración ahora tiene tres pestañas: Facturación, El local y Esta computadora.
+
+| Sección | Pestañas |
+|---|---|
+| Ventas | Mostrador · Caja · Pedidos web (con el contador de pedidos, que también se ve en la sección) |
+| Productos | Productos · Precios |
+| Stock | Stock · Inventario · Transferencias (ésta, sólo con más de un depósito) |
+| Compras | Compras · Cuentas proveedores · Proveedores |
+| Comprobantes | Facturación · Remitos · Presupuestos |
+| Administración | Usuarios · Configuración |
+
+- **Cada uno ve lo suyo**, igual que antes: una pestaña aparece si la persona tiene su permiso, y una sección si le queda alguna. Un vendedor ve Ventas sin pestañas, sólo con el Mostrador.
+- **Las direcciones de las pantallas no cambiaron**, así que ningún enlace se rompió. Las secciones viven en un solo lugar, [`lib/menu.ts`](../app/src/lib/menu.ts), con sus pruebas.
+- **Las pestañas van en la franja de arriba, al lado del indicador de conexión**, y no adentro de la pantalla: la Caja, el Mostrador, Productos y Clientes ocupan justo el alto disponible, y una barra más adentro los empujaba. En el celular van en una franja propia.
+- **El menú lateral aparece desde 1024 píxeles, no desde 768.** Ése era el motivo de fondo de varias tablas que se desplazaban: con el menú a los 768, una tablet le dejaba a la página 480 píxeles, menos que un celular acostado, justo cuando las tablas empezaban a mostrar más columnas. Ahora el ancho del contenido sólo crece con la pantalla. En una tablet, el menú se abre con el botón de arriba, como en el celular.
+- **Ninguna pantalla se desplaza hacia el costado**, en ningún ancho: en pantallas chicas lo secundario pasa a un renglón debajo del nombre y los botones se apilan. Se arreglaron Compras, Facturación, Presupuestos, Remitos, Precios, Proveedores, Cuentas proveedores y Usuarios.
+- Stock perdió el botón «Contar inventario», y Transferencias su «← Stock»: son las pestañas de al lado. El texto de Proveedores que decía que las compras y la cuenta corriente «llegan en V1-B» también se corrigió.
+
+Verificado **midiendo todas las pantallas** —las veinte del menú, las tres pestañas de Configuración, el detalle de un proveedor, un cliente y la ficha de un producto— **en cinco anchos: 375, 640, 768, 1024 y 1280 píxeles**, que son los bordes donde cambia qué columnas se muestran. En ninguna queda algo que se desplace hacia el costado. **470 pruebas** en la app, con 13 nuevas del menú; se rompió a propósito que gane la dirección más larga —si no, Cuentas proveedores se confunde con Proveedores— y la prueba lo atrapó. Y en pantalla: el menú abierto, achicado a íconos y en el panel del celular; Ventas → Caja → Stock → Ventas volvió a la Caja; Configuración abrió en cada pestaña y el enlace de Transferencias lleva directo a *El local*.
+
+### También el 30/09
+
 **Mover mercadería entre depósitos, y el stock de cada uno.** Era lo que faltaba para el segundo local: los depósitos se podían nombrar desde el 10/09, pero no usar. Ahora cada producto tiene su saldo en cada depósito, y la mercadería pasa de uno a otro con una **transferencia**. El total no cambia: sale de un lado y entra en el otro.
 
 > **Cómo se lo contás a Lucas:** en Stock, cuando haya dos depósitos, arriba se elige cuál mirar; con *Todos* se ve el total —lo que hay que pedir al proveedor— y una columna por local al lado, que es lo que dice qué hay que llevar de uno al otro. El botón *Transferir* abre la pantalla para mandar mercadería: se elige de dónde a dónde, se pasa el lector por cada bolsa con su cantidad, y se confirma. Queda numerada y se puede anular con motivo. **Cada computadora vende del depósito de su local**, y eso se elige una vez en Configuración → Cajas y mostradores.
@@ -506,11 +530,14 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 6. ~~**La versión móvil**~~ ✅ **Hecha y publicada el 14/09 (0.4.1).** Lo prometido en la primera reunión: *consultar stock, ver reportes o pasar un precio desde el depósito*; vender sigue siendo en la PC con el lector. Cómo se instala en el celular: [paso 10](instalacion-en-el-local.md). **Falta probarla en un teléfono de verdad.**
 7. **Todo con teclado** — **en espera**: Gross tiene que confirmar qué atajos prefiere. Cuando se haga, van definidos en un solo lugar del código y Configuración los **muestra** en una lista; que se puedan editar por PC, sólo si lo piden (cada máquina con teclas distintas complica capacitar y dar soporte).
 8. ~~**Que Gross dé de alta sus cajas y mostradores desde el sistema.**~~ ✅ **Hecho el 28/09.** Pedido por Francisco el 28/09, **para después de la cuenta corriente de proveedores y la percepción en la caja**. Hoy una terminal nueva la da de alta alguien de nuestro lado; con dos locales en camino, Gross tiene que poder hacerlo solo desde Configuración.
-9. 🟡 **Ordenar el sistema: menú, Configuración y celular.** Pedido por Francisco el 30/09, **para después de los depósitos**. Son tres cosas que van juntas porque pasan por las mismas pantallas:
+9. ~~🟡 **Ordenar el sistema: menú, Configuración y celular.**~~ ✅ **Hecho el 30/09**, arriba. Lo que se había pedido:
    - **El menú de la izquierda tiene demasiadas entradas.** La referencia es OBTech —pocas secciones arriba y submenús con varias opciones—, como ejemplo de orden y no para copiarlo. La idea a evaluar: agrupar lo que se usa junto (Stock, Inventario y Transferencias como pestañas de una sección; Proveedores, Compras y Cuentas proveedores en otra; Facturación, Remitos y Presupuestos en otra). Transferencias ya quedó sin entrada propia a propósito, para no sumarle una más.
    - **Configuración se hizo larga hacia abajo.** Revisar cada sección y separar por pestañas donde haga falta, para que se vea de un vistazo qué se hace en cada una.
    - **Ninguna pantalla con scroll horizontal**, en ningún ancho: es regla desde el 30/09. Medido ese día a 375 px, **se desplazan hacia el costado** Compras (636 px en 343), Facturación (641), Presupuestos (793), Remitos (785), Precios (402), Proveedores (481), Cuentas proveedores (423) y Usuarios (497). Todas son anteriores a los depósitos.
 10. 🟢 **Cuando abra el segundo local: que el mostrador sin internet muestre el stock de su depósito.** Hoy la copia local de cada PC tiene el total, y es lo que ve el mostrador al buscar. No cambia lo que se descuenta —eso lo decide la base al subir la venta—, sólo el número que se lee en pantalla. Se deja para ese momento porque toca la sincronización, que hoy anda.
+11. 🟡 **Cheques: recibidos, endosados a proveedores y propios.** Lo que sigue, en el orden que pidió Francisco el 30/09. **Antes de construir hacen falta las cuatro respuestas de Lucas** que están en [`cheques.md`](cheques.md) —si los depositan o los endosan, si emiten propios, si hay diferidos—: cambian el tamaño del módulo. Hoy el cheque sólo existe como dato de un pago a proveedor.
+12. 🟡 **El historial de costos por proveedor** (V2 en el alcance, pedido de Lucas del 14/08). Los datos ya están: cada mercadería recibida guarda qué costó, de qué factura y de qué proveedor vino. Falta el reporte y el desplegable en la ficha del producto.
+13. 🟡 **Los datos bancarios de cada proveedor: CBU, CVU o alias.** Pedido por Francisco el 30/09, visto en otros sistemas: para transferirle sin pedirle cada vez adónde. Va en la ficha del proveedor, y al registrar un pago por transferencia se muestra el dato para copiarlo.
 
 > ✅ **Los desplegables de *Percepciones* ya usan el estilo común**, así que muestran el recuadro de foco como el resto del sistema — un paso menos para el punto 6. La pantalla tenía además el botón y la tarjeta escritos a mano; los tres ahora salen de [`estilos.ts`](../app/src/estilos.ts).
 
@@ -579,6 +606,9 @@ Está andando y verificado. Si algo de acá se rompe, es una regresión:
 - **El pedido sigue a su venta.** Anular la venta por cualquier camino cancela el pedido y anota el reintegro, y cada devolución de un pedido pagado en la web anota el suyo: son disparadores de la base. Sacarlos deja plata del cliente sin devolver, sin ningún aviso.
 - **El remito de un pedido web se emite en el servidor, no en la copia local.** Las ventas de la tienda no bajan a las terminales: por el camino de siempre falla con «la venta no está en esta computadora».
 - **Las devoluciones necesitan sus permisos de la base:** dar de alta la devolución y sus líneas, y anotarle la nota de crédito una sola vez. Sin el último, la nota queda sin CAE y la pantalla dice que la venta no estaba facturada. Se prueban **como usuario**, nunca como dueño de la base.
+- **El menú lateral aparece desde 1024 píxeles, no desde 768.** Volverlo a 768 hace que una tablet le deje a la página menos lugar que un celular acostado, y las tablas vuelven a desplazarse hacia el costado justo en ese tramo.
+- **Las pestañas de cada sección van en la franja de arriba, no adentro del área que se desplaza.** Adentro empujan la Caja, el Mostrador, Productos y Clientes, que ocupan justo el alto de la pantalla.
+- **Una pantalla nueva se agrega en `lib/menu.ts`**, en su sección, y no en el Layout. La prueba controla que ninguna dirección esté en dos secciones.
 - **La impresora se guarda por terminal, no en la configuración del comercio.** Volverla a un solo valor para todo el local deja tres de las cuatro PC imprimiendo a un nombre que en su lista no existe. Y el nombre se elige de la lista de Windows: escribirlo a mano falla en silencio.
 
 ## Cómo arrancar

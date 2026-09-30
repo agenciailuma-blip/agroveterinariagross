@@ -146,16 +146,16 @@ export default function NoFiscales() {
           <p className="text-sm text-piedra-400">No hay comprobantes de este tipo.</p>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl bg-white ring-1 ring-borde">
+        <div className="overflow-hidden rounded-xl bg-white ring-1 ring-borde">
           <table className="w-full text-sm">
             <thead className="border-b border-borde text-left text-xs text-piedra-500">
               <tr>
-                <th className="px-3 py-2 font-medium">Tipo</th>
+                <th className="hidden px-3 py-2 font-medium xl:table-cell">Tipo</th>
                 <th className="px-3 py-2 font-medium">Número</th>
-                <th className="px-3 py-2 font-medium">Fecha</th>
-                <th className="px-3 py-2 font-medium">Cliente</th>
+                <th className="hidden px-3 py-2 font-medium md:table-cell">Fecha</th>
+                <th className="hidden px-3 py-2 font-medium sm:table-cell">Cliente</th>
                 <th className="px-3 py-2 text-right font-medium">Total</th>
-                <th className="px-3 py-2 font-medium">Estado</th>
+                <th className="hidden px-3 py-2 font-medium sm:table-cell">Estado</th>
                 <th className="px-3 py-2" />
               </tr>
             </thead>
@@ -213,38 +213,52 @@ function Fila({
   const puedeIrACaja =
     f.tipo_clave === 'presupuesto' && f.estado === 'emitido' && f.venta_estado === 'borrador'
 
+  const estado =
+    f.estado === 'anulado' ? (
+      <span className="rounded bg-piedra-100 px-1.5 py-0.5 text-piedra-600">anulado</span>
+    ) : f.estado === 'convertido' ? (
+      <span className="rounded bg-verde-100 px-1.5 py-0.5 text-verde-800">facturado</span>
+    ) : vencido ? (
+      <span className="rounded bg-amber-100 px-1.5 py-0.5 text-amber-900">vencido</span>
+    ) : f.valido_hasta ? (
+      <span className="text-piedra-500">
+        vale hasta {new Date(`${f.valido_hasta}T00:00:00`).toLocaleDateString('es-AR')}
+      </span>
+    ) : (
+      <span className="text-piedra-500">emitido</span>
+    )
+
+  /*
+    En el celular quedan el número, el total y lo que se puede hacer; el
+    tipo, la fecha, el cliente y el estado van debajo del número. Sin
+    desplazamiento hacia el costado en ningún ancho.
+  */
   return (
     <tr className="border-b border-piedra-100 last:border-0">
-      <td className="whitespace-nowrap px-3 py-2 text-piedra-600">
+      <td className="hidden whitespace-nowrap px-3 py-2 align-top text-piedra-600 xl:table-cell">
         {ETIQUETA_NO_FISCAL[f.tipo_clave]}
       </td>
-      <td className="whitespace-nowrap px-3 py-2 font-medium tabular-nums text-tinta">
-        {numeroNoFiscal(f.tipo_clave, f.serie, f.numero)}
+      <td className="px-3 py-2 align-top">
+        <p className="whitespace-nowrap font-medium tabular-nums text-tinta">
+          {numeroNoFiscal(f.tipo_clave, f.serie, f.numero)}
+        </p>
+        <p className="text-xs text-piedra-500 xl:hidden">
+          {ETIQUETA_NO_FISCAL[f.tipo_clave]}
+          <span className="md:hidden"> · {new Date(`${f.fecha}T00:00:00`).toLocaleDateString('es-AR')}</span>
+        </p>
+        <p className="text-xs text-piedra-700 sm:hidden">{f.receptor_nombre}</p>
+        <p className="mt-0.5 text-xs sm:hidden">{estado}</p>
       </td>
-      <td className="whitespace-nowrap px-3 py-2 tabular-nums text-piedra-600">
+      <td className="hidden whitespace-nowrap px-3 py-2 align-top tabular-nums text-piedra-600 md:table-cell">
         {new Date(`${f.fecha}T00:00:00`).toLocaleDateString('es-AR')}
       </td>
-      <td className="px-3 py-2 text-piedra-700">{f.receptor_nombre}</td>
-      <td className="px-3 py-2 text-right tabular-nums text-piedra-700">
+      <td className="hidden px-3 py-2 align-top text-piedra-700 sm:table-cell">{f.receptor_nombre}</td>
+      <td className="whitespace-nowrap px-3 py-2 text-right align-top tabular-nums text-piedra-700">
         {f.total > 0 ? moneda.format(f.total) : '—'}
       </td>
-      <td className="whitespace-nowrap px-3 py-2 text-xs">
-        {f.estado === 'anulado' ? (
-          <span className="rounded bg-piedra-100 px-1.5 py-0.5 text-piedra-600">anulado</span>
-        ) : f.estado === 'convertido' ? (
-          <span className="rounded bg-verde-100 px-1.5 py-0.5 text-verde-800">facturado</span>
-        ) : vencido ? (
-          <span className="rounded bg-amber-100 px-1.5 py-0.5 text-amber-900">vencido</span>
-        ) : f.valido_hasta ? (
-          <span className="text-piedra-500">
-            vale hasta {new Date(`${f.valido_hasta}T00:00:00`).toLocaleDateString('es-AR')}
-          </span>
-        ) : (
-          <span className="text-piedra-500">emitido</span>
-        )}
-      </td>
-      <td className="whitespace-nowrap px-3 py-2 text-right">
-        <div className="flex justify-end gap-2">
+      <td className="hidden px-3 py-2 align-top text-xs sm:table-cell">{estado}</td>
+      <td className="whitespace-nowrap px-3 py-2 text-right align-top">
+        <div className="flex flex-col items-end gap-1.5 xl:flex-row xl:justify-end xl:gap-2">
           {puedeIrACaja && (
             <button
               onClick={onACaja}

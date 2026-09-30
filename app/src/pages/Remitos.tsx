@@ -129,32 +129,61 @@ export default function Remitos() {
             <p className="text-sm text-piedra-400">Todavía no se emitió ningún remito.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-xl bg-white ring-1 ring-borde">
+          /*
+            Sin desplazamiento hacia el costado. En el celular quedan el
+            número y el botón; lo demás va debajo del número y vuelve a
+            su columna a medida que hay lugar.
+          */
+          <div className="overflow-hidden rounded-xl bg-white ring-1 ring-borde">
             <table className="w-full text-sm">
               <thead className="border-b border-borde text-left text-xs text-piedra-500">
                 <tr>
                   <th className="px-3 py-2 font-medium">Número</th>
-                  <th className="px-3 py-2 font-medium">Fecha</th>
-                  <th className="px-3 py-2 font-medium">Cliente</th>
-                  <th className="px-3 py-2 font-medium">Destino</th>
-                  <th className="px-3 py-2 font-medium">Transporte</th>
-                  <th className="px-3 py-2 font-medium">Stock</th>
-                  <th className="px-3 py-2 font-medium">Venta</th>
+                  <th className="hidden px-3 py-2 font-medium md:table-cell">Fecha</th>
+                  <th className="hidden px-3 py-2 font-medium sm:table-cell">Cliente</th>
+                  <th className="hidden px-3 py-2 font-medium lg:table-cell">Destino</th>
+                  <th className="hidden px-3 py-2 font-medium xl:table-cell">Transporte</th>
+                  <th className="hidden px-3 py-2 font-medium md:table-cell">Stock</th>
+                  <th className="hidden px-3 py-2 font-medium lg:table-cell">Venta</th>
                   <th className="px-3 py-2" />
                 </tr>
               </thead>
               <tbody>
                 {remitos.data!.map((r) => (
                   <tr key={r.id} className="border-b border-piedra-100 last:border-0">
-                    <td className="whitespace-nowrap px-3 py-2 font-medium tabular-nums text-tinta">
-                      {numeroNoFiscal('remito', r.serie, r.numero)}
+                    <td className="px-3 py-2 align-top">
+                      <p className="whitespace-nowrap font-medium tabular-nums text-tinta">
+                        {numeroNoFiscal('remito', r.serie, r.numero)}
+                      </p>
+                      <p className="text-xs text-piedra-500 md:hidden">
+                        {new Date(`${r.fecha}T00:00:00`).toLocaleDateString('es-AR')}
+                        {!r.descuenta_stock && ' · sin descontar'}
+                      </p>
+                      <p className="text-xs text-piedra-700 sm:hidden">{r.receptor_nombre}</p>
+                      {(r.entrega_localidad || r.transportista) && (
+                        <p className="text-xs text-piedra-500 xl:hidden">
+                          <span className="lg:hidden">{r.entrega_localidad}</span>
+                          {r.entrega_localidad && r.transportista && <span className="lg:hidden"> · </span>}
+                          {r.transportista}
+                        </p>
+                      )}
+                      {r.venta_codigo && (
+                        <p className="text-xs text-piedra-500 lg:hidden">
+                          Venta {r.venta_codigo}
+                          {r.venta_estado && r.venta_estado !== 'cobrada' && (
+                            <span className="ml-1 rounded bg-amber-100 px-1.5 py-0.5 text-amber-900">
+                              {r.venta_estado === 'en_caja' ? 'sin cobrar' : r.venta_estado}
+                            </span>
+                          )}
+                        </p>
+                      )}
                     </td>
-                    <td className="whitespace-nowrap px-3 py-2 tabular-nums text-piedra-600">
+                    <td className="hidden whitespace-nowrap px-3 py-2 align-top tabular-nums text-piedra-600 md:table-cell">
                       {new Date(`${r.fecha}T00:00:00`).toLocaleDateString('es-AR')}
                     </td>
-                    <td className="px-3 py-2 text-piedra-700">{r.receptor_nombre}</td>
-                    <td className="px-3 py-2 text-piedra-500">{r.entrega_localidad || '—'}</td>
-                    <td className="px-3 py-2 text-piedra-500">{r.transportista || '—'}</td>
+                    <td className="hidden px-3 py-2 align-top text-piedra-700 sm:table-cell">{r.receptor_nombre}</td>
+                    <td className="hidden px-3 py-2 align-top text-piedra-500 lg:table-cell">{r.entrega_localidad || '—'}</td>
+                    <td className="hidden px-3 py-2 align-top text-piedra-500 xl:table-cell">{r.transportista || '—'}</td>
                     {/*
                       Un remito que descontó y uno que no se ven idénticos
                       en el papel, y son cosas muy distintas para quien
@@ -164,7 +193,7 @@ export default function Remitos() {
                       lleva precios (Lucas, 07/09) y tenerlo en el listado
                       invitaba a leerlo como si el papel lo dijera.
                     */}
-                    <td className="px-3 py-2">
+                    <td className="hidden px-3 py-2 align-top md:table-cell">
                       {r.descuenta_stock ? (
                         <span className="text-xs text-piedra-500">descontado</span>
                       ) : (
@@ -173,7 +202,7 @@ export default function Remitos() {
                         </span>
                       )}
                     </td>
-                    <td className="whitespace-nowrap px-3 py-2 text-xs text-piedra-500">
+                    <td className="hidden whitespace-nowrap px-3 py-2 align-top text-xs text-piedra-500 lg:table-cell">
                       {r.venta_codigo ?? '—'}
                       {r.venta_estado && r.venta_estado !== 'cobrada' && (
                         <span className="ml-1 rounded bg-amber-100 px-1.5 py-0.5 text-amber-900">
@@ -181,7 +210,7 @@ export default function Remitos() {
                         </span>
                       )}
                     </td>
-                    <td className="px-3 py-2 text-right">
+                    <td className="px-3 py-2 text-right align-top">
                       {r.estado === 'anulado' ? (
                         <span className="text-xs text-piedra-400">anulado</span>
                       ) : (

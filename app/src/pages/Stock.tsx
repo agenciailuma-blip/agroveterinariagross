@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '@/auth/AuthProvider'
 import { listarDepositos, stockPorDeposito } from '@/lib/api/depositos'
@@ -107,25 +106,11 @@ export default function Stock() {
             Qué hay que pedir. Ordenado por urgencia, no por nombre.
           </p>
         </div>
+        {/*
+          Contar y transferir no tienen botón acá: son las pestañas de al
+          lado, en la barra de arriba.
+        */}
         <div className="flex gap-2">
-          {/*
-            Transferencias no tiene entrada propia en el menú: se llega
-            desde acá, que es donde se ve qué falta en cada depósito.
-          */}
-          {variosDepositos && (
-            <Link
-              to="/transferencias"
-              className="rounded-lg border border-borde px-4 py-2 text-sm font-medium text-tinta hover:bg-piedra-50"
-            >
-              {tienePermiso('stock.transferir') ? 'Transferir' : 'Transferencias'}
-            </Link>
-          )}
-          <Link
-            to="/inventario"
-            className="rounded-lg border border-borde px-4 py-2 text-sm font-medium text-tinta hover:bg-piedra-50"
-          >
-            Contar inventario
-          </Link>
           <button
             onClick={copiarLista}
             disabled={!filas.data?.length}
