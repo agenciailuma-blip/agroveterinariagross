@@ -1,108 +1,80 @@
 ---
-actualizado: 2026-09-10
-estado: alcance nuevo — falta la decisión de Lucas
+actualizado: 2026-09-30
+estado: construido — falta verlo en pantalla y publicarlo
 ---
 
 # Cheques
 
-> **Confirmado por Francisco el 10/09: Gross recibe cheques y le paga a proveedores con cheque.**
->
-> Hasta hoy esto era una sospecha anotada el 09/09 al mirar OBTech. Ahora es un hecho, y **no está en ninguna parte del alcance** — ni en V1-A, ni en V1-B, ni en el backlog. No se postergó: nunca se habló.
+> **Construido el 30/09**, con las cuatro respuestas de Lucas. Las tres piezas que se habían planteado el 10/09 —recibir, pagar con cheque y el calendario— entraron juntas: con las respuestas a la vista, B y C eran chicas encima de A.
 
 ---
 
-## Lo que hay hoy: nada
+## Lo que contestó Lucas
 
-Verificado contra la base. Los medios de pago son cinco:
-
-| | Afecta la caja |
-|---|---|
-| Efectivo | Sí |
-| Tarjeta de débito | No |
-| Tarjeta de crédito | No |
-| Transferencia | No |
-| Cuenta corriente | No |
-
-**No hay cheque**, y la palabra no aparece en ninguna línea de código.
-
-**Qué significa en la práctica:** el 27 de octubre, cuando entre el primer cheque, el cajero va a tener que elegir "Efectivo" o "Transferencia" — y en los dos casos el sistema va a dar por cobrada una plata que todavía no está. Los cheques van a volver al cuaderno.
+| Pregunta | Respuesta | Qué cambió |
+|---|---|---|
+| ¿Los cheques que reciben, los depositan o los endosan? | **Las dos cosas.** Casi siempre se los «hace correr» lo más posible | El endoso a proveedores entra completo, y la cartera se ordena por fecha de pago con el plazo para depositar a la vista |
+| ¿Emiten cheques propios? | **Sí, y también pagan con cheques de terceros.** De chequera y cada vez más e-cheq | Cheque propio al pagarle a un proveedor, con la marca de e-cheq |
+| ¿Hay diferidos? | **Hay diferidos y al día** | Cada cheque tiene su fecha de pago; el calendario los ubica en su día |
+| ¿El «calendario de recibos» de agosto es esto? | **Sí** | Pantalla Calendario, en la sección nueva Tesorería |
 
 ---
 
-## Por qué un cheque no es un medio de pago más
+## Cómo funciona
 
-Un cheque **no es plata que entró**: es una promesa con fecha, que además se puede mover.
+> **Cómo se lo contás a Lucas:** un cheque entra por la caja o por la cobranza de la cuenta del cliente, y queda en la **cartera**, en Tesorería → Cheques, ordenado por la fecha en que se puede cobrar. Desde ahí se deposita —de a varios—, se le devuelve al cliente, o se marca rechazado. Para **hacerlo correr**, al pagarle a un proveedor se elige «Cheque de la cartera» y se lo endosa. Los **propios** —de chequera o e-cheq— se cargan en el mismo pago, y quedan esperando el débito. El **Calendario** junta todo: qué se cobra y qué se paga cada día.
 
-- **Tiene fecha de pago propia**, casi siempre posterior. Un cheque a 60 días cobrado hoy no es caja de hoy.
-- **Tiene identidad**: número, banco, quién lo libró. Dos cheques del mismo importe no son intercambiables.
-- **Tiene estados y se mueve entre ellos**: en cartera → depositado, o endosado a un proveedor, o **rechazado**.
-- **Puede rebotar**, y ahí la venta que se había dado por cobrada deja de estarlo.
+### Por dónde entra un cheque
 
-Por eso no alcanza con agregar una fila a la tabla de medios de pago. Lo que hace falta es saber **qué cheques hay, de quién, por cuánto, para cuándo y dónde están**.
+- **En la caja**, eligiendo «Cheque» como medio de pago: se escriben banco, número, fecha de pago, librador y, si se sabe, su CUIT. **Funciona sin internet**, como el resto de la caja: los datos viajan con el pago y el cheque entra a la cartera cuando el cobro llega al servidor. Se pueden cargar **varios cheques** para una misma compra.
+- **En la cobranza de la cuenta corriente** del cliente, eligiendo «Cheque»: uno o varios, cada uno con su importe. Cada cheque es un renglón de la cuenta —«Cobranza con cheque Macro N° 777 al 15/11»—, así un rechazo después apunta a lo que de verdad no se cobró.
+- **Nunca entra al arqueo de la caja.** El medio «Cheque» no afecta la caja y la base no deja configurarlo de otra forma. Al cerrar el turno, la caja muestra **los cheques del turno** para entregarlos con el cierre.
 
----
+### Por dónde sale
 
-## Y esto contesta un pedido de Lucas que quedó abierto en agosto
+- **Depositado**, desde la cartera, de a varios: fecha y, opcional, en qué cuenta.
+- **Endosado a un proveedor**, al registrarle un pago: se elige de la cartera y **se endosa entero**. No se tipea, a propósito: tipear de nuevo un cheque que ya está es cómo termina contado dos veces.
+- **Devuelto al cliente**, con motivo. Si con ese cheque pagaba la cuenta, se le puede volver a cargar.
+- Si se **anula la venta** que se pagó con un cheque que todavía está en la cartera, el cheque pasa solo a devuelto.
 
-En el mensaje del **10/08** quedó sin resolver esto:
+### El rechazo
 
-> *"Lo del «calendario de recibos», cuando lo tengas mirado. Necesito saber si son los vencimientos de las cuentas corrientes, cheques, pagos a proveedores, o todo junto."*
+Un cheque depositado o endosado puede volver rechazado. Se marca con el motivo y, si hubo, los gastos del banco, y **la deuda vuelve a donde corresponde**:
 
-**Nunca lo contestó, y por eso el pedido quedó sin tamaño ni lugar en el plan.** Con lo que sabemos ahora, casi seguro es esto: **qué se cobra y qué se paga en los próximos días** — cheques que vencen, cuentas corrientes por vencer, pagos a proveedores comprometidos.
+- **Si se le había endosado a un proveedor**, se le vuelve a deber: aparece en su cuenta como «Cheque Macro N° 777 rechazado», vencido desde ese día, y **se paga como una factura**.
+- **Si se elige, se le carga al cliente** que lo entregó, con los gastos, en su cuenta corriente y vencido en el día. Si el cliente no tiene cuenta corriente, el reclamo queda anotado en el cheque.
+- Un cheque **propio** rechazado vuelve a la cuenta del proveedor igual.
 
-👉 Conviene volver a preguntarlo con esta información delante, porque ahora la pregunta es mucho más concreta.
+### Los propios
 
----
+Se cargan al pagarle a un proveedor —«Cheque propio o e-cheq»— con banco, número y fecha de pago. Quedan «por debitar» hasta que se marcan como **debitados**, de a varios. El Calendario los muestra el día que se debitan: **es la plata que tiene que haber en el banco ese día.**
 
-## Las tres piezas, y cuál duele primero
+### Corregir y deshacer
 
-### A · Recibir un cheque y saber que lo tenés 🔴
+- **Los datos se corrigen** (banco, número, fecha, librador) y queda en la historia qué cambió. **El importe no**, porque ya movió cuentas: si está mal, el cheque se devuelve o se anula el pago y se carga de nuevo.
+- **Un depósito o un débito marcados por error se deshacen**, con motivo. Lo demás no: movió cuentas.
+- **Anular un pago a proveedor** deshace lo que hizo con los cheques: el de la cartera vuelve a la cartera y el propio queda anulado. Si el cheque ya se debitó o volvió rechazado, el pago no se anula: pasó de verdad.
 
-Registrar el cobro con cheque y llevar la cartera: número, banco, librador, importe, **fecha de pago**, y en qué estado está.
+### El plazo
 
-**Por qué es la urgente:** es lo único que **no tiene reemplazo**. Un pago a proveedor se puede anotar en un papel por unas semanas; una cartera de cheques que vencen en fechas distintas, no — y el que se pasa de fecha es plata que se cobra tarde o no se cobra.
-
-**Tamaño: medio.** Una tabla de valores, el medio de pago nuevo, y una pantalla de cartera con los vencimientos.
-
-> **Un detalle que hay que hacer bien desde el principio:** el cheque **no cuenta como efectivo en la caja**. Ya existe la distinción —`afecta_caja`— así que el arqueo no se rompe. Pero si se cargara como efectivo, la caja cerraría con una diferencia todos los días.
-
-### B · Pagarle al proveedor con cheque 🟠
-
-Dos casos, y los dos existen: **cheque propio** de la chequera, y **cheque de tercero endosado** — uno de los que están en cartera.
-
-**Va pegado a la cuenta corriente de proveedores** ([`plan-compras.md`](plan-compras.md), pieza A): es la misma pantalla de pago. Hacerlas juntas cuesta bastante menos que hacerlas separadas, y hacerlas separadas obliga a tocar dos veces lo mismo.
-
-**Tamaño: chico, si va junto con la cuenta corriente de proveedores.** Mediano, si va después.
-
-### C · El calendario de vencimientos 🟡
-
-La vista que junta todo: qué cheques se cobran esta semana, cuáles se pagan, qué cuentas corrientes vencen.
-
-**Tamaño: chico**, pero **sólo tiene sentido cuando A y B existen** — es una consulta sobre datos que hoy no están.
-
-Es, con mucha probabilidad, el *"calendario de recibos"* que pidió Lucas en agosto.
+Un cheque se puede depositar **desde su fecha de pago y durante 30 días**; después el banco ya no lo paga. La cartera lo dice en cada cheque, y en ámbar la última semana. Uno que ya pasó los 30 días no se puede cargar en una cobranza.
 
 ---
 
-## Lo que propongo
+## Lo que no se ve pero define si está bien
 
-**Antes del 26/10: la pieza A.** Que se pueda cobrar con cheque y que la cartera exista. Es lo único que se pierde sin reemplazo posible.
+- **Un cheque es un registro con historia.** Cada cambio de estado deja un renglón —cuándo, quién, qué—: es lo que contesta «¿dónde está el cheque de Fulano?».
+- **El mismo cheque no entra dos veces.** Banco, número e importe iguales, mientras el primero siga circulando, lo frena la base. El número se compara sin los ceros de adelante y el banco sin mayúsculas ni acentos.
+- **El calendario no cuenta nada dos veces.** Una factura pagada con un cheque diferido deja de estar pendiente y aparece el cheque, en su fecha. Una cobranza con cheque baja la cuenta del cliente y el cheque aparece en la suya.
+- **La caja sin internet** valida el cheque en la máquina —banco, número y fecha— porque después el cliente ya se fue. Una caja con una versión anterior que cobre con cheque igual lo manda a la cartera, marcado **«Completar los datos»**: está en el cajón y tiene que figurar. Sin datos no se puede depositar ni endosar.
+- **Permisos nuevos:** *cheques.ver* y *cheques.gestionar*, para Administrador y Encargado. Recibir un cheque no pide permiso nuevo: en la caja es cobrar y en la cuenta es registrar una cobranza. El cajero recibe cheques pero no ve la cartera.
 
-**Junto con la cuenta corriente de proveedores: la pieza B.** No antes ni después: la misma pantalla.
-
-**Después del corte: la C.** Cuando los datos existan, es una tarde.
-
-> ⚠️ **Y hay que decir el costo, no esconderlo.** Esto es alcance nuevo, no un pendiente conocido, y aparece a seis semanas y media del corte — con V1-A ya cargada con proveedor, aumento masivo de precios, facturas de compra y ahora la cuenta corriente del proveedor.
->
-> **Algo va a tener que moverse.** No es una decisión de ingeniería: es de Lucas, y la única forma de tomarla bien es con las dos listas al lado. Lo que no puede pasar es que el 27 de octubre aparezca como sorpresa.
+Verificado contra la base real: **62 comprobaciones** en [`supabase/pruebas/cheques.sql`](../supabase/pruebas/cheques.sql), como usuario. Se corrió todo en seco antes de aplicar, porque toca el pago a proveedores y la cobranza, y **apareció un error real**: anular un pago le sacaba el proveedor al cheque antes de devolverlo a la cartera, y la base lo frenaba. Se rompió a propósito de tres maneras —que anular el pago se olvide de los cheques, que el calendario cuente un propio ya debitado, y que no se reconozca el mismo número con ceros adelante— y **las tres fueron atrapadas**.
 
 ---
 
-## Las preguntas que abre esta respuesta
+## Lo que queda
 
-Una sola respuesta —"sí, usamos cheques"— abre cuatro cosas que cambian el tamaño:
-
-1. **¿Los cheques que reciben, los depositan o se los endosan a los proveedores?** Si sólo depositan, la pieza B es más chica.
-2. **¿Emiten cheques propios**, o le pagan a los proveedores sólo con cheques de terceros?
-3. **¿Hay cheques diferidos**, o son todos al día?
-4. **El "calendario de recibos" de agosto: ¿es esto?**
+- **Verlo en pantalla** con un cheque de punta a punta: caja, cartera, endoso, rechazo.
+- **La lista de precio del medio «Cheque»** arranca en la de contado, igual que la transferencia. Si Gross le cobra distinto a un cheque diferido, se cambia en Precios → Medios de pago: es configuración, no desarrollo.
+- **La conciliación con el banco** —marcar solo lo que el extracto dice que se acreditó o se debitó— no está: se marca a mano. Tiene sentido cuando haya extractos que leer.

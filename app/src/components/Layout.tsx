@@ -150,7 +150,7 @@ function ContenidoMenu({
               to={s.destino!}
               aria-current={activa ? 'page' : undefined}
               /* Achicado, el nombre sólo existe al pasar el mouse por
-                 encima: sin esto habría que aprenderse nueve íconos. */
+                 encima: sin esto habría que aprenderse diez íconos. */
               title={colapsado ? s.etiqueta : undefined}
               className={`flex items-center gap-3 rounded-lg text-sm font-medium transition-colors ${
                 // En el teléfono, cada renglón del alto de un dedo.

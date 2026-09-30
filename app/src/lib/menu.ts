@@ -7,7 +7,8 @@
   secciones arriba y, adentro, varias opciones—, como ejemplo de orden y
   no para copiarlo.
 
-  Ahora son nueve secciones. Las pantallas que se usan juntas quedan en
+  Ahora son diez secciones —la décima, Tesorería, llegó el 30/09 con los
+  cheques—. Las pantallas que se usan juntas quedan en
   la misma, como pestañas: se mira el stock y se cuenta; se carga la
   factura del proveedor y se le paga. Las direcciones de cada pantalla no
   cambiaron, así que todo lo que ya enlazaba a una sigue andando.
@@ -34,7 +35,7 @@ export interface Seccion {
   pestanas: Pestana[]
 }
 
-/* Trazos de íconos, en línea para no sumar una dependencia por nueve dibujos. */
+/* Trazos de íconos, en línea para no sumar una dependencia por diez dibujos. */
 export const SECCIONES: Seccion[] = [
   {
     id: 'inicio',
@@ -107,6 +108,22 @@ export const SECCIONES: Seccion[] = [
       { a: '/compras', etiqueta: 'Compras', permiso: 'compras.ver' },
       { a: '/proveedores/cuentas', etiqueta: 'Cuentas proveedores', permiso: 'compras.ver' },
       { a: '/proveedores', etiqueta: 'Proveedores', permiso: 'proveedores.ver' },
+      // Cuánto costó cada cosa a cada proveedor, y si otro la tiene a menos.
+      { a: '/compras/costos', etiqueta: 'Costos', permiso: 'compras.ver' },
+    ],
+  },
+  {
+    /*
+      La plata que todavía no es plata: los cheques que se recibieron y
+      los que se libraron, y el calendario de lo que se cobra y se paga.
+      No es Compras ni Clientes: junta los dos lados del mostrador.
+    */
+    id: 'tesoreria',
+    etiqueta: 'Tesorería',
+    icono: 'M3 7h18v10H3zM7 12h.01M17 12h.01M12 14.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5z',
+    pestanas: [
+      { a: '/cheques', etiqueta: 'Cheques', permiso: 'cheques.ver' },
+      { a: '/calendario', etiqueta: 'Calendario', permiso: 'cheques.ver' },
     ],
   },
   {

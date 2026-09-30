@@ -29,6 +29,9 @@ import NoFiscales from '@/pages/NoFiscales'
 import NoFiscalImprimible from '@/pages/NoFiscalImprimible'
 import Reportes from '@/pages/Reportes'
 import ResumenCuentaCorriente from '@/pages/ResumenCuentaCorriente'
+import Cheques from '@/pages/Cheques'
+import Calendario from '@/pages/Calendario'
+import Costos from '@/pages/Costos'
 
 /*
   networkMode: 'always' es lo más importante de esta configuración.
@@ -124,6 +127,7 @@ function Rutas() {
         <Route path="precios" element={<Precios />} />
         <Route path="proveedores" element={<Proveedores />} />
         <Route path="compras" element={<Compras />} />
+        <Route path="compras/costos" element={<Costos />} />
         <Route path="proveedores/cuentas" element={<CuentaProveedores />} />
         <Route path="proveedores/cuentas/importar" element={<ImportarSaldos tipo="proveedores" />} />
         <Route path="ventas" element={<PuntoDeVenta />} />
@@ -137,6 +141,8 @@ function Rutas() {
         <Route path="remitos" element={<Remitos />} />
         <Route path="no-fiscales" element={<NoFiscales />} />
         <Route path="reportes" element={<Reportes />} />
+        <Route path="cheques" element={<Cheques />} />
+        <Route path="calendario" element={<Calendario />} />
       </Route>
       {/*
         Fuera del Layout a propósito: el comprobante se imprime, y no

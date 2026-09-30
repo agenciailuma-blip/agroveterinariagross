@@ -32,6 +32,7 @@ const CLIENTE = 'cli-1'
 const PRODUCTO = 'prod-1'
 const EFECTIVO = 'mp-efectivo'
 const CUENTA_CORRIENTE = 'mp-cc'
+const CHEQUE = 'mp-cheque'
 const LISTA_CONTADO = 'lp-contado'
 const LISTA_TARJETA = 'lp-tarjeta'
 
@@ -104,6 +105,11 @@ async function sembrar(e: Escenario = {}) {
       id: CUENTA_CORRIENTE, nombre: 'Cuenta corriente', tipo: 'cuenta_corriente',
       lista_precio_id: null, admite_cuotas: false, cuotas_maximas: 1, afecta_caja: false,
       orden: 2, activo: true, actualizado_en: AHORA, eliminado_en: null,
+    },
+    {
+      id: CHEQUE, nombre: 'Cheque', tipo: 'cheque', lista_precio_id: LISTA_CONTADO,
+      admite_cuotas: false, cuotas_maximas: 1, afecta_caja: false, orden: 3, activo: true,
+      actualizado_en: AHORA, eliminado_en: null,
     },
   ])
 
@@ -351,6 +357,54 @@ describe('lo que se encola para el servidor', () => {
     expect(datos.id).toMatch(/^[0-9a-f-]{36}$/)
     expect(datos.venta_id).toBe(VENTA)
     expect(datos.importe).toBe(1000)
+  })
+
+  /*
+    El cheque viaja con el pago, y el servidor lo pasa a la cartera al
+    cobrar. Sin conexión es la única forma de que llegue: no hay a quién
+    preguntarle nada en el momento.
+  */
+  it('el cheque viaja con sus datos, y los demás pagos igual que siempre', async () => {
+    await sembrar()
+    const hoy = new Date().toISOString().slice(0, 10)
+    await cobrarLocal({
+      ventaId: VENTA,
+      cajaId: 'caja-1',
+      cajeroId: 'u-1',
+      pagos: [
+        { medio_pago_id: EFECTIVO, importe: 400, cuotas: 1, referencia: null },
+        {
+          medio_pago_id: CHEQUE, importe: 600, cuotas: 1, referencia: null,
+          datos_cheque: {
+            banco: ' Nación ', numero: '123', fecha_pago: hoy, librador: 'Juan',
+            librador_cuit: '20-12345678-6', electronico: true,
+          },
+        },
+      ],
+    })
+    const pagos = await Promise.all(
+      (await db.outbox.where('lote').equals(VENTA).and((o) => o.tabla === 'venta_pago').sortBy('orden')).map((o) =>
+        descifrarObjeto(o.datos),
+      ),
+    )
+    expect(pagos[0]).not.toHaveProperty('datos_cheque')
+    expect(pagos[1].datos_cheque).toEqual({
+      banco: 'Nación', numero: '123', fecha_pago: hoy, librador: 'Juan',
+      librador_cuit: '20123456786', electronico: true, importe: 600,
+    })
+  })
+
+  it('un cheque sin sus datos no se cobra', async () => {
+    await sembrar()
+    await expect(
+      cobrarLocal({
+        ventaId: VENTA,
+        cajaId: 'caja-1',
+        cajeroId: 'u-1',
+        pagos: [{ medio_pago_id: CHEQUE, importe: 1000, cuotas: 1, referencia: null }],
+      }),
+    ).rejects.toThrow('Faltan los datos del cheque.')
+    expect(await db.outbox.count()).toBe(0)
   })
 
   it('un cobro con varios medios encola un pago por cada uno', async () => {

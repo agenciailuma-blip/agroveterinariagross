@@ -7,6 +7,7 @@ import { numero } from '@/lib/tipos'
 import { boton } from '@/estilos'
 import { describirEnTienda } from '@/lib/api/ventaOnline'
 import type { EstadoEnTienda, TonoEnTienda } from '@/lib/api/ventaOnline'
+import HistorialDeCostos from '@/components/HistorialDeCostos'
 
 export interface EstadoFormulario {
   campos: Partial<ProductoDetalle>
@@ -340,6 +341,9 @@ export default function ProductoEditor({
               )}
             </div>
           )}
+
+          {/* De dónde salió el costo: cada compra, con su proveedor. */}
+          {!esNuevo && estado.campos.id && <HistorialDeCostos productoId={estado.campos.id} />}
         </Seccion>
 
         {/*

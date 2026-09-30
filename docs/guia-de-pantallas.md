@@ -52,6 +52,7 @@ El catálogo. Es la pantalla donde se carga y se corrige todo lo que se vende.
 - **Impuestos** — alícuota de IVA y rubro de ARCA (el que le sirve al contador para separar ventas por actividad).
 - **Stock** — cuánto dice el sistema, cuánto se contó, y el **aviso de stock bajo**: los dos niveles, bajo y crítico. Si no se le pone uno propio, hereda el de su categoría o el general.
 - **Proveedor** — a quién se le compra. Es lo que permite ajustarle el precio a todos los productos de ese laboratorio de una sola vez, desde Proveedores.
+- **Historial de costos** — un desplegable debajo del costo: cada vez que se compró, con la fecha, el proveedor, la factura, el costo con IVA y cuánto cambió contra la compra anterior, más una línea chica que muestra cómo vino. Se arma solo con cada mercadería recibida en Compras. Lo ve quien ve las compras.
 - **Clasificación** — rubro, marca, presentación, animal y etapa de vida.
 - **Códigos de barra** — todos los que tenga.
 - **Tienda online** — el interruptor **Vender online** y el **colchón** de ese producto, y una línea que dice qué ve la tienda: *"Se vende online: la tienda ve 3 unidades a $6.900"*, o *"Prendido, pero no sale: le falta el nombre público"*.
@@ -122,7 +123,7 @@ A quién se le compra cada producto. Y, sobre todo, **cómo cambiarle el precio 
 
 | | |
 |---|---|
-| **Contiene** | Los proveedores, con su ficha corta: nombre, CUIT, contacto. |
+| **Contiene** | Los proveedores, con su ficha corta: nombre, CUIT, contacto y **para transferirle: CBU o CVU y alias**. |
 | **Qué hago** | Crear, editar y dar de baja · **ajustar precios en masa** por proveedor y/o por rubro · **deshacer un ajuste**. |
 | **Qué veo** | Por proveedor: CUIT, contacto y **cuántos productos tiene asignados** — que es a cuántos les va a pegar un ajuste. |
 | **Qué exporto** | Nada. |
@@ -137,7 +138,7 @@ A quién se le compra cada producto. Y, sobre todo, **cómo cambiarle el precio 
 >
 > Al deshacer, cada producto vuelve al precio **exacto** que tenía — no se aplica el porcentaje inverso, que por redondeo dejaría centavos corridos para siempre. Y **los productos que alguien corrigió a mano después se dejan como están**: esa corrección es más nueva y más deliberada.
 
-> La ficha del proveedor es corta a propósito. No lleva cuenta corriente ni condiciones de pago: eso es el módulo de compras, que llega en V1-B.
+> **El CBU se controla al escribirlo**, con sus dos dígitos verificadores —la misma cuenta que hacen los bancos—, y la ficha dice de qué banco es. Un número cambiado es una transferencia a otra persona. Al registrarle un pago por transferencia, en Cuentas proveedores, el CBU, el alias y el CUIT aparecen **listos para copiar**.
 
 ---
 
@@ -180,6 +181,7 @@ Cobra lo que el mostrador armó, y cierra el turno.
 - **Al cobrar se factura solo.** Si ARCA falla, **la venta queda cobrada igual** y el comprobante espera en la cola: hacer fallar el cobro por una caída de ARCA dejaría al cliente parado con la mercadería en la mano. El cajero ve un aviso ámbar con enlace a Facturación.
 - **"Sin factura" tiene permiso propio**, que no tienen ni el Cajero ni el Vendedor. Y **a un Responsable Inscripto no se le ofrece**: compra para descargar IVA.
 - **Se cobra sin internet.** Lo que sí necesita conexión es **abrir** y **cerrar** la caja — arquear con la mitad de las ventas sin registrar produce una diferencia que no existe y que después alguien tiene que explicar.
+- **Con cheque**, se escriben banco, número, fecha de pago y quién lo firmó; se pueden cargar varios para una misma compra. **El cheque no entra al arqueo**: va a la cartera de Tesorería, y al cerrar la caja se listan los cheques del turno para entregarlos. Funciona sin internet.
 
 ---
 
@@ -190,7 +192,7 @@ La ficha del cliente y su cuenta corriente.
 | | |
 |---|---|
 | **Contiene** | Todos los clientes, con sus datos fiscales y su saldo. |
-| **Qué hago** | Buscar · crear y editar · definir si tiene **cuenta corriente** y con qué **límite de crédito** · fijarle un **descuento por defecto** y una lista de precios propia · cargar la **exclusión de percepción de IIBB** con su certificado y vigencia · ver y cobrar la cuenta corriente. |
+| **Qué hago** | Buscar · crear y editar · definir si tiene **cuenta corriente** y con qué **límite de crédito** · fijarle un **descuento por defecto** y una lista de precios propia · cargar la **exclusión de percepción de IIBB** con su certificado y vigencia · ver y cobrar la cuenta corriente, también **con uno o varios cheques**, que van a la cartera. |
 | **Qué veo** | Datos fiscales (condición de IVA, CUIT/DNI, domicilio) · **saldo actual** · movimientos de la cuenta corriente con su origen. |
 | **Qué exporto** | Nada. |
 
@@ -288,6 +290,23 @@ Lo que puede cambiar sin depender de una actualización del programa.
 | **Datos del emisor** | Razón social, CUIT, domicilio, IIBB, inicio de actividades y **el logo** que sale en los comprobantes. |
 | **Impresora del mostrador** | Dirección y puerto de la impresora, con un botón para imprimir una prueba. 🔜 Va a cambiar a **elegir de una lista de impresoras de Windows** (ver más abajo). |
 | **Puntos de venta de ARCA** | Cuáles están habilitados y cuál está dado de alta bajo el régimen CAEA. |
+
+---
+
+## Tesorería · Cheques y Calendario
+
+La plata que todavía no es plata: los cheques que se recibieron y los que se libraron, y lo que se cobra y se paga cada día. La ven el Administrador y el Encargado.
+
+| | |
+|---|---|
+| **Contiene** | **Cheques**: la cartera (los recibidos que están en el cajón), los propios que falta que se debiten, y todos con su historia. **Calendario**: lo que entra y lo que sale, día por día. |
+| **Qué hago** | Depositar cheques de a varios · devolverle un cheque al cliente · marcar uno **rechazado**, con el motivo y los gastos del banco, y cargárselo al cliente · marcar propios como **debitados** · corregir los datos · deshacer un depósito o un débito marcado por error. **Endosar** se hace al pagarle al proveedor, en Cuentas proveedores → Registrar un pago → «Cheque de la cartera». |
+| **Qué veo** | Cuánto hay en cartera, cuáles hay que depositar esta semana y cuánto falta que se debite · por cheque: banco, número, e-cheq, al día o diferido, **cuántos días quedan para depositarlo**, quién lo firmó, quién lo entregó y a quién se le dio · en el Calendario, para 7, 15, 30 o 60 días: lo que entra (cheques en cartera, cuentas de clientes) y lo que sale (facturas de proveedores, cheques propios), con lo atrasado arriba. |
+| **Qué exporto** | Nada. |
+
+> **El plazo:** un cheque se puede depositar desde su fecha de pago y durante 30 días; después el banco ya no lo paga. La cartera lo cuenta en cada cheque, y en ámbar la última semana.
+>
+> **El rechazo mueve dos cuentas:** si el cheque se le había dado a un proveedor, se le vuelve a deber —aparece en su cuenta y se paga como una factura—; y se le puede cargar al cliente que lo entregó.
 
 ---
 

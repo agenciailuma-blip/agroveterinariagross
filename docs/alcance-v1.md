@@ -281,7 +281,7 @@ Un producto puede pertenecer a varios ejes a la vez. Esto es lo que después hab
 
 # BACKLOG — VERSIONES SIGUIENTES
 
-## V2 — Historial de costos por proveedor *(pedido de Lucas, 14/08)*
+## ~~V2 — Historial de costos por proveedor~~ ✅ *construido el 30/09* *(pedido de Lucas, 14/08)*
 
 Hoy el producto guarda **un** costo, y cuando se compra al mismo producto a
 varios proveedores se pisa sin dejar rastro. Lucas no puede saber si la última
@@ -299,7 +299,7 @@ compra vino más cara o más barata que la anterior, ni de quién.
 
 ## V2 — Comercial y clientes
 - CRM de tareas diarias por usuario
-- Calendario de recibos completo *(alcance a definir según lo que confirme Lucas)*
+- ~~Calendario de recibos completo~~ ✅ *construido el 30/09 con los cheques: Tesorería → Calendario. Lucas confirmó que era esto.*
 - Historial y perfil de compra del cliente
 - Campañas y comunicaciones
 - **Integración con MercadoLibre** — se enchufa como un canal más al esquema ya construido

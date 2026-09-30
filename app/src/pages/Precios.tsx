@@ -604,7 +604,15 @@ function ModalMedio({
             <span className="mb-1 block text-xs font-medium text-piedra-600">Tipo</span>
             <select
               value={datos.tipo ?? 'efectivo'}
-              onChange={(e) => set({ tipo: e.target.value })}
+              onChange={(e) =>
+                // Un cheque no es plata del cajón ni se paga en cuotas: la
+                // base no lo deja guardar de otra forma.
+                set(
+                  e.target.value === 'cheque'
+                    ? { tipo: 'cheque', afecta_caja: false, admite_cuotas: false, cuotas_maximas: 1 }
+                    : { tipo: e.target.value },
+                )
+              }
               className={claseInput}
             >
               {Object.entries(TIPOS_MEDIO_PAGO).map(([valor, etiqueta]) => (
@@ -633,7 +641,7 @@ function ModalMedio({
           </label>
         </div>
 
-        <label className="flex items-start gap-2 text-sm text-tinta">
+        <label className={`flex items-start gap-2 text-sm text-tinta ${datos.tipo === 'cheque' ? 'hidden' : ''}`}>
           <input
             type="checkbox"
             checked={!!datos.admite_cuotas}
@@ -677,14 +685,16 @@ function ModalMedio({
           <input
             type="checkbox"
             checked={datos.afecta_caja ?? true}
+            disabled={datos.tipo === 'cheque'}
             onChange={(e) => set({ afecta_caja: e.target.checked })}
             className="mt-0.5 size-4 rounded border-borde text-marca-700 focus:ring-marca-500"
           />
           <span>
             Entra al arqueo de caja
             <span className="block text-xs text-piedra-500">
-              Destildalo para lo que no es plata en el cajón: cuenta corriente, transferencias que
-              van directo al banco.
+              {datos.tipo === 'cheque'
+                ? 'Un cheque nunca entra al arqueo: va a la cartera de Tesorería, con su fecha.'
+                : 'Destildalo para lo que no es plata en el cajón: cuenta corriente, transferencias que van directo al banco.'}
             </span>
           </span>
         </label>

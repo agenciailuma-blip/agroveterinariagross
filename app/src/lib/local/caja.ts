@@ -4,6 +4,8 @@ import { abrirCliente, abrirVenta } from '@/lib/local/cifrado'
 import { datosDePercepcion } from '@/lib/local/caea'
 import { alCentavo, desglosarIva, percepcionIibb } from '@/lib/local/factura'
 import type { VentaLineaLocal, VentaLocal } from '@/lib/local/db'
+import { faltaEnCheque, paraLaBase } from '@/lib/api/cheques'
+import type { DatosCheque } from '@/lib/api/cheques'
 
 /*
   ─────────────────────────────────────────────────────────────
@@ -249,6 +251,8 @@ export interface PagoLocal {
   importe: number
   cuotas: number
   referencia: string | null
+  /** Cuando se paga con cheque: banco, número, fecha de pago, librador. */
+  datos_cheque?: DatosCheque | null
 }
 
 /*
@@ -319,8 +323,21 @@ async function validarCobro(
     )
   }
 
-  // Parte financiada en cuenta corriente
   const medios = new Map((await db.medio_pago.toArray()).map((m) => [m.id, m]))
+
+  /*
+    Un cheque sin sus datos no entra. La base lo aceptaría igual —un
+    cheque que ya está en el cajón tiene que figurar—, pero el que puede
+    completarlo es el cajero, ahora, con el papel en la mano: después
+    el cliente ya se fue.
+  */
+  for (const p of pagos) {
+    if (medios.get(p.medio_pago_id)?.tipo !== 'cheque') continue
+    const falta = p.datos_cheque ? faltaEnCheque(p.datos_cheque) : 'Faltan los datos del cheque.'
+    if (falta) throw new Error(`Cheque de ${p.importe}: ${falta}`)
+  }
+
+  // Parte financiada en cuenta corriente
   const ctaCte = pagos
     .filter((p) => medios.get(p.medio_pago_id)?.tipo === 'cuenta_corriente')
     .reduce((s, p) => s + Number(p.importe), 0)
@@ -382,6 +399,8 @@ export async function cobrarLocal(datos: {
         importe: p.importe,
         cuotas: p.cuotas,
         referencia: p.referencia,
+        // Sólo si es un cheque: el resto de los pagos viaja igual que siempre.
+        ...(p.datos_cheque ? { datos_cheque: paraLaBase(p.datos_cheque, p.importe) } : {}),
       },
       descripcion: `${venta.codigo} · pago ${i + 1}`,
     })),

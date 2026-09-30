@@ -22,6 +22,11 @@ describe('a qué sección pertenece cada dirección', () => {
     expect(seccionDe('/proveedores')?.pestana.etiqueta).toBe('Proveedores')
   })
 
+  it('Costos es una pestaña de Compras, y no se confunde con Compras', () => {
+    expect(seccionDe('/compras/costos')?.pestana.etiqueta).toBe('Costos')
+    expect(seccionDe('/compras')?.pestana.etiqueta).toBe('Compras')
+  })
+
   it('las pantallas de adentro siguen en su sección', () => {
     expect(seccionDe('/productos/importar')?.seccion.id).toBe('productos')
     expect(seccionDe('/proveedores/cuentas/importar')?.pestana.etiqueta).toBe('Cuentas proveedores')
@@ -53,6 +58,15 @@ describe('las pestañas que se ven', () => {
     const sinSegundo = { ...todo, variosDepositos: false }
     expect(pestanasVisibles(seccion('stock'), sinSegundo).map((p) => p.etiqueta)).toEqual(['Stock', 'Inventario'])
     expect(pestanasVisibles(seccion('stock'), todo)).toHaveLength(3)
+  })
+
+  it('Tesorería la ve quien maneja la cartera; el cajero recibe cheques pero no la ve', () => {
+    expect(pestanasVisibles(seccion('tesoreria'), con(['cheques.ver'])).map((p) => p.etiqueta)).toEqual([
+      'Cheques',
+      'Calendario',
+    ])
+    expect(pestanasVisibles(seccion('tesoreria'), con(['ventas.cobrar', 'cuentacorriente.cobrar']))).toEqual([])
+    expect(seccionDe('/calendario')?.seccion.id).toBe('tesoreria')
   })
 
   it('sin ningún permiso de la sección, la sección no tiene pestañas', () => {

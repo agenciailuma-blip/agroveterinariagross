@@ -26,8 +26,10 @@ export interface SaldoProveedor {
   ultimo_pago: string | null
 }
 
+export type Origen = 'compra' | 'saldo_inicial' | 'cheque_rechazado'
+
 export interface Pendiente {
-  origen: 'compra' | 'saldo_inicial'
+  origen: Origen
   id: string
   fecha: string
   vencimiento: string | null
@@ -41,7 +43,7 @@ export interface Pendiente {
 
 export interface Movimiento {
   fecha: string
-  tipo: 'compra' | 'saldo_inicial' | 'pago'
+  tipo: Origen | 'pago'
   id: string
   descripcion: string
   debe: number
@@ -54,8 +56,8 @@ export type Medio = 'efectivo' | 'transferencia' | 'cheque_propio' | 'cheque_ter
 export const MEDIOS: { valor: Medio; etiqueta: string }[] = [
   { valor: 'transferencia', etiqueta: 'Transferencia' },
   { valor: 'efectivo', etiqueta: 'Efectivo' },
-  { valor: 'cheque_propio', etiqueta: 'Cheque propio' },
-  { valor: 'cheque_tercero', etiqueta: 'Cheque de tercero' },
+  { valor: 'cheque_tercero', etiqueta: 'Cheque de la cartera' },
+  { valor: 'cheque_propio', etiqueta: 'Cheque propio o e-cheq' },
   { valor: 'otro', etiqueta: 'Otro' },
 ]
 
@@ -68,10 +70,14 @@ export interface MedioDePago {
   numero?: string
   fecha_cobro?: string
   referencia?: string
+  /** El cheque de la cartera que se endosa. */
+  cheque_id?: string
+  /** El propio, si es e-cheq. */
+  electronico?: boolean
 }
 
 export interface Imputacion {
-  origen: 'compra' | 'saldo_inicial'
+  origen: Origen
   id: string
   importe: number
 }
@@ -219,7 +225,7 @@ export function aCuenta(importe: number, imputaciones: Imputacion[]): number {
   pago de contado no deja el saldo en negativo por un renglón.
 */
 export function conSaldoAcumulado(movs: Movimiento[]): (Movimiento & { saldo: number })[] {
-  const orden = { saldo_inicial: 0, compra: 1, pago: 2 } as const
+  const orden = { saldo_inicial: 0, compra: 1, cheque_rechazado: 1, pago: 2 } as const
   let saldo = 0
   return [...movs]
     .sort((a, b) => a.fecha.localeCompare(b.fecha) || orden[a.tipo] - orden[b.tipo])

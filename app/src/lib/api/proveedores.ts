@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { limpiarCbu } from '@/lib/cbu'
 
 /*
   ─────────────────────────────────────────────────────────────
@@ -34,6 +35,10 @@ export interface Proveedor {
   email: string | null
   contacto: string | null
   observaciones: string | null
+  /** CBU o CVU para transferirle: los 22 dígitos, sin separadores. */
+  cbu: string | null
+  /** Alias de la cuenta, como lo da el banco. */
+  alias: string | null
   activo: boolean
 }
 
@@ -54,11 +59,13 @@ export const PROVEEDOR_NUEVO: Omit<Proveedor, 'id'> = {
   email: null,
   contacto: null,
   observaciones: null,
+  cbu: null,
+  alias: null,
   activo: true,
 }
 
 const CAMPOS =
-  'id, codigo, nombre, nombre_fantasia, condicion_iva_id, tipo_documento_id, numero_documento, domicilio, localidad, provincia, telefono, email, contacto, observaciones, activo'
+  'id, codigo, nombre, nombre_fantasia, condicion_iva_id, tipo_documento_id, numero_documento, domicilio, localidad, provincia, telefono, email, contacto, observaciones, cbu, alias, activo'
 
 export async function listarProveedores(texto = ''): Promise<Proveedor[]> {
   let q = supabase
@@ -107,6 +114,10 @@ export async function guardarProveedor(
     // y el segundo proveedor sin CUIT no se podría cargar.
     numero_documento: datos.numero_documento?.trim() || null,
     codigo: datos.codigo?.trim() || null,
+    // El CBU se pega de un mail con espacios o guiones: se guardan sólo
+    // los dígitos, que es lo que controla la base.
+    ...('cbu' in datos ? { cbu: limpiarCbu(datos.cbu ?? '') || null } : {}),
+    ...('alias' in datos ? { alias: datos.alias?.trim() || null } : {}),
   }
 
   if (id) {
@@ -136,6 +147,12 @@ export async function darDeBajaProveedor(id: string): Promise<void> {
 function traducir(mensaje: string): string {
   if (mensaje.includes('proveedor_documento_unico')) {
     return 'Ya hay un proveedor cargado con ese CUIT.'
+  }
+  if (mensaje.includes('proveedor_cbu_valido')) {
+    return 'El CBU o CVU no es válido: los dígitos verificadores no cierran. Fijate que no haya un número cambiado.'
+  }
+  if (mensaje.includes('proveedor_alias_valido')) {
+    return 'El alias no es válido: tiene entre 6 y 20 caracteres, sólo letras, números, puntos y guiones.'
   }
   return mensaje
 }
@@ -225,4 +242,17 @@ export async function listarAumentos(): Promise<AumentoAplicado[]> {
     categoria: uno(a.categoria),
     aplicado_por: uno(a.aplicado_por),
   }))
+}
+
+/** Adónde transferirle a un proveedor. Lo usa el pago, para copiarlo. */
+export async function datosParaTransferir(
+  proveedorId: string,
+): Promise<{ cbu: string | null; alias: string | null; numero_documento: string | null }> {
+  const { data, error } = await supabase
+    .from('proveedor')
+    .select('cbu, alias, numero_documento')
+    .eq('id', proveedorId)
+    .single()
+  if (error) throw new Error(error.message)
+  return data as { cbu: string | null; alias: string | null; numero_documento: string | null }
 }

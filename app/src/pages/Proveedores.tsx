@@ -11,6 +11,7 @@ import {
   productosPorProveedor,
 } from '@/lib/api/proveedores'
 import type { Proveedor } from '@/lib/api/proveedores'
+import { bancoDelCbu, limpiarCbu, problemaConAlias, problemaConCbu } from '@/lib/cbu'
 import { numero } from '@/lib/tipos'
 
 /*
@@ -260,7 +261,11 @@ function FichaProveedor({
   })
 
   const set = (parcial: Partial<Proveedor>) => setForm({ ...form, ...parcial })
-  const listo = (form.nombre ?? '').trim().length >= 2
+  // Un número cambiado en el CBU es una transferencia a otra persona:
+  // no se guarda hasta que los dígitos verificadores cierren.
+  const problemaCbu = problemaConCbu(form.cbu ?? '')
+  const problemaAlias = problemaConAlias(form.alias ?? '')
+  const listo = (form.nombre ?? '').trim().length >= 2 && !problemaCbu && !problemaAlias
 
   return (
     <div
@@ -353,6 +358,42 @@ function FichaProveedor({
               className={clase}
             />
           </Campo>
+          {/*
+            Para transferirle sin pedirle cada vez adónde. Aparece listo
+            para copiar al registrar un pago por transferencia.
+          */}
+          <p className="col-span-2 border-t border-borde pt-3 text-xs font-semibold tracking-wide text-piedra-400 uppercase">
+            Para transferirle
+          </p>
+          <Campo
+            etiqueta="CBU o CVU"
+            ancho="col-span-2"
+            ayuda={
+              problemaCbu ??
+              (form.cbu && limpiarCbu(form.cbu).length === 22
+                ? `${bancoDelCbu(form.cbu) ?? 'Banco'} · los dígitos verificadores cierran`
+                : 'Los 22 números. Se puede pegar con espacios o guiones.')
+            }
+          >
+            <input
+              value={form.cbu ?? ''}
+              onChange={(e) => set({ cbu: e.target.value || null })}
+              inputMode="numeric"
+              placeholder="2850590940090418135201"
+              aria-invalid={!!problemaCbu}
+              className={`${clase} tabular-nums ${problemaCbu ? 'border-red-400' : ''}`}
+            />
+          </Campo>
+          <Campo etiqueta="Alias" ancho="col-span-2" ayuda={problemaAlias ?? undefined}>
+            <input
+              value={form.alias ?? ''}
+              onChange={(e) => set({ alias: e.target.value || null })}
+              placeholder="MESA.SOL.CASA"
+              aria-invalid={!!problemaAlias}
+              className={`${clase} ${problemaAlias ? 'border-red-400' : ''}`}
+            />
+          </Campo>
+
           <Campo etiqueta="Observaciones" ancho="col-span-2">
             <textarea
               rows={2}
@@ -363,6 +404,11 @@ function FichaProveedor({
           </Campo>
         </div>
 
+        {(problemaCbu || problemaAlias) && (
+          <p className="mt-3 text-sm text-red-600">
+            {problemaCbu ? `CBU: ${problemaCbu}` : `Alias: ${problemaAlias}`}
+          </p>
+        )}
         {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
 
         <div className="mt-5 flex justify-end gap-2">

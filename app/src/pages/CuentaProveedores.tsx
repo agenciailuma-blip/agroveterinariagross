@@ -17,6 +17,11 @@ import {
   registrarPago,
 } from '@/lib/api/cuentaProveedores'
 import type { Imputacion, Medio, Pendiente, SaldoProveedor } from '@/lib/api/cuentaProveedores'
+import { carteraParaEndosar, chequeVacio, faltaEnCheque } from '@/lib/api/cheques'
+import type { Cheque, DatosCheque } from '@/lib/api/cheques'
+import CamposCheque from '@/components/CamposCheque'
+import { datosParaTransferir } from '@/lib/api/proveedores'
+import { bancoDelCbu, cbuLegible, esCvu } from '@/lib/cbu'
 import { enCastellano } from '@/lib/errores'
 import { moneda } from '@/lib/tipos'
 import { boton, campo, tarjeta } from '@/estilos'
@@ -180,6 +185,9 @@ function Detalle({ proveedor, onVolver }: { proveedor: SaldoProveedor; onVolver:
     qc.invalidateQueries({ queryKey: ['saldos-proveedores'] })
     qc.invalidateQueries({ queryKey: ['pendientes-proveedor', id] })
     qc.invalidateQueries({ queryKey: ['movimientos-proveedor', id] })
+    // Un pago con cheques mueve la cartera.
+    qc.invalidateQueries({ queryKey: ['cartera-para-endosar'] })
+    qc.invalidateQueries({ queryKey: ['cheques'] })
   }
 
   const anular = useMutation({
@@ -194,9 +202,12 @@ function Detalle({ proveedor, onVolver }: { proveedor: SaldoProveedor; onVolver:
   async function pedirAnulacion(pago: string, etiqueta: string) {
     const motivo = await pedirTexto({
       titulo: `¿Anular el ${etiqueta}?`,
-      detalle: 'Queda registrado como anulado, con el motivo. Las facturas que pagaba vuelven a figurar pendientes.',
+      detalle:
+        'Queda registrado como anulado, con el motivo. Las facturas que pagaba vuelven a figurar pendientes, ' +
+        'los cheques de la cartera vuelven a la cartera y los propios quedan anulados. ' +
+        'Un cheque que volvió rechazado no se anula acá: se marca como rechazado en Tesorería → Cheques.',
       etiqueta: 'Motivo',
-      ejemplo: 'El cheque volvió rechazado',
+      ejemplo: 'Se cargó dos veces',
       minimo: 5,
       aceptar: 'Anular el pago',
       peligro: true,
@@ -391,20 +402,24 @@ function Detalle({ proveedor, onVolver }: { proveedor: SaldoProveedor; onVolver:
 interface MedioEnPantalla {
   medio: Medio
   importe: string
-  banco: string
-  numero: string
-  fecha_cobro: string
   referencia: string
+  /** El de la cartera que se endosa. */
+  cheque_id: string
+  /** El propio: banco, número, fecha de pago, e-cheq. */
+  cheque: DatosCheque
 }
 
 const medioVacio = (): MedioEnPantalla => ({
   medio: 'transferencia',
   importe: '',
-  banco: '',
-  numero: '',
-  fecha_cobro: '',
   referencia: '',
+  cheque_id: '',
+  cheque: { ...chequeVacio(), fecha_pago: '' },
 })
+
+const etiquetaDeCartera = (c: Cheque) =>
+  `${c.electronico ? 'E-cheq' : 'Cheque'} ${c.banco} N° ${c.numero} · ${moneda.format(c.importe)} · ` +
+  `${c.diferido ? 'cobra el ' : 'al día '}${fechaCorta(c.fecha_pago)}${c.librador ? ` · ${c.librador}` : ''}`
 
 /*
   El pago. Se escribe con qué se paga; las facturas vienen marcadas solas,
@@ -448,6 +463,12 @@ function FormularioDePago({
     }))
   const sobra = aCuenta(importe, imputaciones)
 
+  /*
+    La cartera, para endosar. Ordenada por fecha de pago: lo que se hace
+    correr primero es lo que se cobra antes.
+  */
+  const cartera = useQuery({ queryKey: ['cartera-para-endosar'], queryFn: carteraParaEndosar })
+
   const guardar = useMutation({
     mutationFn: () =>
       registrarPago({
@@ -455,14 +476,20 @@ function FormularioDePago({
         fecha,
         medios: medios
           .filter((m) => numeroDe(m.importe) > 0)
-          .map((m) => ({
-            medio: m.medio,
-            importe: numeroDe(m.importe),
-            banco: m.banco,
-            numero: m.numero,
-            fecha_cobro: m.fecha_cobro || undefined,
-            referencia: m.referencia,
-          })),
+          .map((m) =>
+            m.medio === 'cheque_tercero'
+              ? { medio: m.medio, importe: numeroDe(m.importe), cheque_id: m.cheque_id }
+              : m.medio === 'cheque_propio'
+                ? {
+                    medio: m.medio,
+                    importe: numeroDe(m.importe),
+                    banco: m.cheque.banco.trim(),
+                    numero: m.cheque.numero.trim(),
+                    fecha_cobro: m.cheque.fecha_pago || undefined,
+                    electronico: m.cheque.electronico,
+                  }
+                : { medio: m.medio, importe: numeroDe(m.importe), referencia: m.referencia },
+          ),
         imputaciones,
         observaciones,
       }),
@@ -471,7 +498,9 @@ function FormularioDePago({
   })
 
   const chequeIncompleto = medios.some(
-    (m) => esCheque(m.medio) && numeroDe(m.importe) > 0 && (!m.numero.trim() || !m.fecha_cobro),
+    (m) =>
+      (m.medio === 'cheque_tercero' && !m.cheque_id) ||
+      (m.medio === 'cheque_propio' && numeroDe(m.importe) > 0 && faltaEnCheque(m.cheque, 'propio') !== null),
   )
   const excedido = pendientes.some((p) => numeroDe(imputado[p.id] ?? '') > Math.abs(p.pendiente) + 0.001)
   const falta = (importe <= 0 && imputaciones.length === 0) || sobra < 0 || chequeIncompleto || excedido
@@ -491,64 +520,114 @@ function FormularioDePago({
       {/* ── Con qué ── */}
       <h4 className="mt-4 text-sm font-medium text-tinta">Con qué se paga</h4>
       <div className="mt-2 space-y-2">
-        {medios.map((m, i) => (
-          <div key={i} className="flex flex-wrap items-end gap-2">
-            <label className="block w-44">
-              <span className="mb-1 block text-xs text-piedra-600">Medio</span>
-              <select value={m.medio} onChange={(e) => cambiarMedio(i, { medio: e.target.value as Medio })} className={campo}>
-                {MEDIOS.map((x) => (
-                  <option key={x.valor} value={x.valor}>
-                    {x.etiqueta}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="block w-36">
-              <span className="mb-1 block text-xs text-piedra-600">Importe</span>
-              <input value={m.importe} onChange={(e) => cambiarMedio(i, { importe: e.target.value })} inputMode="decimal" className={campo} />
-            </label>
-            {esCheque(m.medio) ? (
-              <>
-                <label className="block w-36">
-                  <span className="mb-1 block text-xs text-piedra-600">Banco</span>
-                  <input value={m.banco} onChange={(e) => cambiarMedio(i, { banco: e.target.value })} className={campo} />
+        {medios.map((m, i) => {
+          // Un cheque de la cartera no puede ir en dos renglones.
+          const usados = new Set(medios.filter((_, j) => j !== i).map((x) => x.cheque_id).filter(Boolean))
+          const disponibles = (cartera.data ?? []).filter((c) => !usados.has(c.id))
+          return (
+            <div
+              key={i}
+              className={esCheque(m.medio) ? 'space-y-2 rounded-lg bg-piedra-50 p-3 ring-1 ring-borde' : ''}
+            >
+              <div className="flex flex-wrap items-end gap-2">
+                <label className="block w-full min-w-0 sm:w-52">
+                  <span className="mb-1 block text-xs text-piedra-600">Medio</span>
+                  <select
+                    value={m.medio}
+                    onChange={(e) => cambiarMedio(i, { medio: e.target.value as Medio, cheque_id: '' })}
+                    className={campo}
+                  >
+                    {MEDIOS.map((x) => (
+                      <option key={x.valor} value={x.valor}>
+                        {x.etiqueta}
+                      </option>
+                    ))}
+                  </select>
                 </label>
-                <label className="block w-32">
-                  <span className="mb-1 block text-xs text-piedra-600">Número</span>
-                  <input value={m.numero} onChange={(e) => cambiarMedio(i, { numero: e.target.value })} className={campo} />
-                </label>
-                <label className="block w-40">
-                  <span className="mb-1 block text-xs text-piedra-600">Fecha de cobro</span>
-                  <input type="date" value={m.fecha_cobro} onChange={(e) => cambiarMedio(i, { fecha_cobro: e.target.value })} className={campo} />
-                </label>
-              </>
-            ) : (
-              <label className="block min-w-40 flex-1">
-                <span className="mb-1 block text-xs text-piedra-600">
-                  Referencia <span className="text-piedra-400">(opcional)</span>
-                </span>
-                <input
-                  value={m.referencia}
-                  onChange={(e) => cambiarMedio(i, { referencia: e.target.value })}
-                  placeholder={m.medio === 'transferencia' ? 'N° de operación' : ''}
-                  className={campo}
+
+                {m.medio === 'cheque_tercero' ? (
+                  /*
+                    Se elige de la cartera, no se tipea: tipear de nuevo un
+                    cheque que ya está es cómo termina contado dos veces. Y
+                    se endosa entero: el importe es el del cheque.
+                  */
+                  <label className="block min-w-0 flex-1 basis-60">
+                    <span className="mb-1 block text-xs text-piedra-600">Cheque</span>
+                    <select
+                      value={m.cheque_id}
+                      onChange={(e) => {
+                        const c = disponibles.find((x) => x.id === e.target.value)
+                        cambiarMedio(i, { cheque_id: e.target.value, importe: c ? String(c.importe) : '' })
+                      }}
+                      className={campo}
+                    >
+                      <option value="">
+                        {cartera.isPending
+                          ? 'Cargando la cartera…'
+                          : disponibles.length
+                            ? 'Elegí uno de la cartera…'
+                            : 'No hay cheques en la cartera'}
+                      </option>
+                      {disponibles.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {etiquetaDeCartera(c)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ) : (
+                  <label className="block w-36">
+                    <span className="mb-1 block text-xs text-piedra-600">Importe</span>
+                    <input value={m.importe} onChange={(e) => cambiarMedio(i, { importe: e.target.value })} inputMode="decimal" className={campo} />
+                  </label>
+                )}
+
+                {!esCheque(m.medio) && (
+                  <label className="block min-w-40 flex-1">
+                    <span className="mb-1 block text-xs text-piedra-600">
+                      Referencia <span className="text-piedra-400">(opcional)</span>
+                    </span>
+                    <input
+                      value={m.referencia}
+                      onChange={(e) => cambiarMedio(i, { referencia: e.target.value })}
+                      placeholder={m.medio === 'transferencia' ? 'N° de operación' : ''}
+                      className={campo}
+                    />
+                  </label>
+                )}
+                {medios.length > 1 && (
+                  <button
+                    onClick={() => setMedios((ms) => ms.filter((_, j) => j !== i))}
+                    className="rounded-lg px-2.5 py-2 text-sm text-piedra-400 hover:bg-red-50 hover:text-red-700"
+                  >
+                    Quitar
+                  </button>
+                )}
+              </div>
+
+              {m.medio === 'cheque_tercero' && m.cheque_id && (
+                <p className="text-xs text-piedra-500">
+                  Se endosa entero: {moneda.format(numeroDe(m.importe))}. Sale de la cartera y queda a nombre de
+                  este proveedor.
+                </p>
+              )}
+              {m.medio === 'cheque_propio' && (
+                <CamposCheque
+                  valor={m.cheque}
+                  onChange={(d) => cambiarMedio(i, { cheque: d })}
+                  origen="propio"
+                  conLibrador={false}
                 />
-              </label>
-            )}
-            {medios.length > 1 && (
-              <button
-                onClick={() => setMedios((ms) => ms.filter((_, j) => j !== i))}
-                className="rounded-lg px-2.5 py-2 text-sm text-piedra-400 hover:bg-red-50 hover:text-red-700"
-              >
-                Quitar
-              </button>
-            )}
-          </div>
-        ))}
+              )}
+            </div>
+          )
+        })}
       </div>
       <button onClick={() => setMedios((ms) => [...ms, medioVacio()])} className="mt-2 text-sm text-marca-700 hover:underline">
         + Otro medio
       </button>
+
+      {medios.some((m) => m.medio === 'transferencia') && <DatosParaTransferir proveedorId={proveedorId} />}
 
       {/* ── A qué ── */}
       <div className="mt-5 flex flex-wrap items-baseline justify-between gap-2">
@@ -616,7 +695,9 @@ function FormularioDePago({
             </p>
           )}
           {excedido && <p className="text-xs text-red-700">A un comprobante se le imputa más de lo que tiene pendiente.</p>}
-          {chequeIncompleto && <p className="text-xs text-red-700">Al cheque le falta el número o la fecha de cobro.</p>}
+          {chequeIncompleto && (
+            <p className="text-xs text-red-700">Falta elegir el cheque de la cartera, o completar el banco, el número o la fecha del propio.</p>
+          )}
         </div>
         <div className="flex gap-3">
           <button onClick={onCancelar} className={boton.suave}>
@@ -640,6 +721,66 @@ function FormularioDePago({
           {error}
         </p>
       )}
+    </div>
+  )
+}
+
+/*
+  Adónde transferirle, listo para copiar y pegar en el home banking. Es
+  para no pedirle al proveedor el CBU cada vez, y para no tipearlo: un
+  número cambiado es plata que va a otra persona.
+*/
+function DatosParaTransferir({ proveedorId }: { proveedorId: string }) {
+  const datos = useQuery({ queryKey: ['datos-para-transferir', proveedorId], queryFn: () => datosParaTransferir(proveedorId) })
+  const [copiado, setCopiado] = useState<string | null>(null)
+
+  async function copiar(que: string, texto: string) {
+    try {
+      await navigator.clipboard.writeText(texto)
+      setCopiado(que)
+      setTimeout(() => setCopiado((c) => (c === que ? null : c)), 2000)
+    } catch {
+      setCopiado(null)
+    }
+  }
+
+  if (datos.isPending) return null
+  const d = datos.data
+  if (!d?.cbu && !d?.alias) {
+    return (
+      <p className="mt-3 rounded-lg bg-piedra-50 px-3 py-2 text-xs text-piedra-600 ring-1 ring-borde">
+        Este proveedor no tiene cargados el CBU ni el alias. Se cargan en su ficha, en la pestaña Proveedores, y
+        desde ahí aparecen acá listos para copiar.
+      </p>
+    )
+  }
+
+  // Lo que se copia es el número pelado; lo que se lee, en grupos.
+  const renglones = [
+    d.cbu && { etiqueta: esCvu(d.cbu) ? 'CVU' : 'CBU', valor: d.cbu, legible: cbuLegible(d.cbu), detalle: bancoDelCbu(d.cbu) },
+    d.alias && { etiqueta: 'Alias', valor: d.alias, legible: d.alias, detalle: null },
+    d.numero_documento && { etiqueta: 'CUIT', valor: d.numero_documento, legible: d.numero_documento, detalle: null },
+  ].filter((r): r is { etiqueta: string; valor: string; legible: string; detalle: string | null } => !!r)
+
+  return (
+    <div className="mt-3 rounded-lg bg-marca-50/60 px-3 py-2 ring-1 ring-marca-200">
+      <p className="text-xs font-medium text-marca-900">Para transferirle</p>
+      <ul className="mt-1 space-y-1">
+        {renglones.map(({ etiqueta, valor, legible, detalle }) => (
+          <li key={etiqueta} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+            <span className="w-12 shrink-0 text-xs text-piedra-500">{etiqueta}</span>
+            <span className="min-w-0 font-mono break-all text-tinta">{legible}</span>
+            {detalle && <span className="text-xs text-piedra-500">{detalle}</span>}
+            <button
+              type="button"
+              onClick={() => copiar(etiqueta, valor)}
+              className="ml-auto rounded-md px-2 py-0.5 text-xs font-medium text-marca-700 ring-1 ring-marca-200 hover:bg-white"
+            >
+              {copiado === etiqueta ? 'Copiado' : 'Copiar'}
+            </button>
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }

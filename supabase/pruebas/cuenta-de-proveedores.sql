@@ -137,12 +137,14 @@ begin
     perform pg_temp.comprobar(sqlerrm like 'Se está imputando%', sqlerrm);
   end;
 
+  -- Desde el 30/09 el cheque de tercero se elige de la cartera: no se
+  -- tipea. El detalle está en cheques.sql.
   begin
     perform public.registrar_pago_proveedor(v_prov, current_date,
       jsonb_build_array(jsonb_build_object('medio', 'cheque_tercero', 'importe', 100)));
-    perform pg_temp.comprobar(false, 'entró un cheque sin número ni fecha de cobro');
+    perform pg_temp.comprobar(false, 'entró un cheque de tercero que no salió de la cartera');
   exception when raise_exception then
-    perform pg_temp.comprobar(sqlerrm like 'Un cheque necesita%', sqlerrm);
+    perform pg_temp.comprobar(sqlerrm like 'El cheque de tercero se elige de la cartera%', sqlerrm);
   end;
 
   begin

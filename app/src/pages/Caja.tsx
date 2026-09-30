@@ -35,6 +35,8 @@ import {
   puedeImprimirSolo,
 } from '@/lib/comprobante/imprimirDirecto'
 import { emitirConCaeaLocal, sePuedeEmitirConCaea } from '@/lib/local/caea'
+import { chequeVacio, chequesDeLaCaja, faltaEnCheque } from '@/lib/api/cheques'
+import CamposCheque from '@/components/CamposCheque'
 import { moneda, numero } from '@/lib/tipos'
 
 /** Con qué documento sale la venta. Ver marcar_documentacion_venta() en la base. */
@@ -155,7 +157,15 @@ export default function Caja() {
       return { total: await conPercepcion(total) }
     },
     onSuccess: ({ total }, { m, n }) => {
-      setPagos([{ medio_pago_id: m.id, importe: total, cuotas: n, referencia: null }])
+      setPagos([
+        {
+          medio_pago_id: m.id,
+          importe: total,
+          cuotas: n,
+          referencia: null,
+          ...(m.tipo === 'cheque' ? { datos_cheque: chequeVacio(venta.data?.cliente?.nombre) } : {}),
+        },
+      ])
       qc.invalidateQueries({ queryKey: ['venta', seleccionada] })
       /*
         La cola también, o queda mostrando el total anterior.
@@ -952,6 +962,12 @@ function PanelCobro({
     : null
   const medio = medios.find((m) => m.id === medioPrincipal)
   const esCuentaCorriente = medio?.tipo === 'cuenta_corriente'
+  const tipoDe = (id: string) => medios.find((x) => x.id === id)?.tipo
+  // Un cheque sin banco, número o fecha no se cobra: después el cliente
+  // ya no está para preguntarle.
+  const chequeIncompleto = pagos.some(
+    (p) => tipoDe(p.medio_pago_id) === 'cheque' && (!p.datos_cheque || faltaEnCheque(p.datos_cheque)),
+  )
   // El que de verdad quedó aplicado a los precios, no el de la tabla:
   // si el recalculo todavía no volvió, el cartel diría una cosa y el
   // total mostraría otra.
@@ -1231,36 +1247,85 @@ function PanelCobro({
 
             {pagos.map((p, i) => {
               const mp = medios.find((x) => x.id === p.medio_pago_id)
+              const esCheque = mp?.tipo === 'cheque'
               return (
-                <div key={i} className="flex items-center gap-2">
-                  <span className="flex-1 text-sm text-piedra-600">{mp?.nombre}</span>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={p.importe}
-                    onChange={(e) =>
-                      setPagos(
-                        pagos.map((x, j) =>
-                          j === i ? { ...x, importe: Number(e.target.value) || 0 } : x,
-                        ),
-                      )
-                    }
-                    className="w-36 rounded-lg border border-borde px-2.5 py-1.5 text-right tabular-nums outline-none focus:border-marca-500"
-                  />
-                  {pagos.length > 1 && (
-                    <button
-                      onClick={() => setPagos(pagos.filter((_, j) => j !== i))}
-                      className="rounded p-1 text-piedra-300 hover:bg-red-50 hover:text-red-600"
-                      aria-label="Quitar"
-                    >
-                      <svg className="size-4" fill="none" viewBox="0 0 24 24" strokeWidth={2.2} stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
+                <div
+                  key={i}
+                  className={esCheque ? 'space-y-2 rounded-lg bg-piedra-50 p-3 ring-1 ring-borde' : ''}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="flex-1 text-sm text-piedra-600">
+                      {mp?.nombre}
+                      {esCheque && pagos.filter((x) => x.medio_pago_id === p.medio_pago_id).length > 1 &&
+                        ` ${pagos.slice(0, i + 1).filter((x) => x.medio_pago_id === p.medio_pago_id).length}`}
+                    </span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={p.importe}
+                      onChange={(e) =>
+                        setPagos(
+                          pagos.map((x, j) =>
+                            j === i ? { ...x, importe: Number(e.target.value) || 0 } : x,
+                          ),
+                        )
+                      }
+                      aria-label={`Importe en ${mp?.nombre ?? 'este medio'}`}
+                      className="w-36 rounded-lg border border-borde bg-white px-2.5 py-1.5 text-right tabular-nums outline-none focus:border-marca-500"
+                    />
+                    {pagos.length > 1 && (
+                      <button
+                        onClick={() => setPagos(pagos.filter((_, j) => j !== i))}
+                        className="rounded p-1 text-piedra-300 hover:bg-red-50 hover:text-red-600"
+                        aria-label="Quitar"
+                      >
+                        <svg className="size-4" fill="none" viewBox="0 0 24 24" strokeWidth={2.2} stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                  {/*
+                    Lo que dice el papel, acá y ahora. Es la única vez que
+                    el cheque está en la mano de alguien del sistema antes
+                    de ir al cajón: después el cliente ya se fue.
+                  */}
+                  {esCheque && (
+                    <CamposCheque
+                      valor={p.datos_cheque ?? chequeVacio(venta.cliente?.nombre)}
+                      onChange={(d) => setPagos(pagos.map((x, j) => (j === i ? { ...x, datos_cheque: d } : x)))}
+                    />
                   )}
                 </div>
               )
             })}
+
+            {/*
+              Varios cheques para una sola compra es lo común: el cliente
+              trae dos o tres de distintas fechas. Cada uno es su propio
+              pago, con sus datos.
+            */}
+            {pagos.some((p) => medios.find((x) => x.id === p.medio_pago_id)?.tipo === 'cheque') &&
+              diferencia < -0.009 && (
+                <button
+                  onClick={() => {
+                    const cheque = medios.find((x) => x.tipo === 'cheque')!
+                    setPagos([
+                      ...pagos,
+                      {
+                        medio_pago_id: cheque.id,
+                        importe: Math.round(-diferencia * 100) / 100,
+                        cuotas: 1,
+                        referencia: null,
+                        datos_cheque: chequeVacio(venta.cliente?.nombre),
+                      },
+                    ])
+                  }}
+                  className="text-sm font-medium text-marca-700 hover:underline"
+                >
+                  + Otro cheque
+                </button>
+              )}
 
             {Math.abs(diferencia) > 0.009 && (
               <div className="flex items-center justify-between rounded-lg bg-amber-50 px-3 py-2 text-sm ring-1 ring-amber-200">
@@ -1289,6 +1354,7 @@ function PanelCobro({
                             importe: Math.round(-diferencia * 100) / 100,
                             cuotas: 1,
                             referencia: null,
+                            ...(m.tipo === 'cheque' ? { datos_cheque: chequeVacio(venta.cliente?.nombre) } : {}),
                           },
                         ])
                       }
@@ -1395,8 +1461,9 @@ function PanelCobro({
             onClick={onCobrar}
             disabled={
               !medio || Math.abs(diferencia) > 0.009 || cobrando || aplicando || calculandoPercepcion ||
-              (documentacion === 'a_facturar' && !esCuentaCorriente)
+              (documentacion === 'a_facturar' && !esCuentaCorriente) || chequeIncompleto
             }
+            title={chequeIncompleto ? 'Faltan datos del cheque: banco, número y fecha de pago.' : undefined}
             className={`flex-1 rounded-lg px-4 py-3 font-medium text-white disabled:opacity-40 ${
               documentacion !== 'fiscal'
                 ? 'bg-tinta hover:bg-tinta/90'
@@ -1441,6 +1508,7 @@ function ModalCierre({
   const [error, setError] = useState<string | null>(null)
 
   const resumen = useQuery({ queryKey: ['resumen-caja', cajaId], queryFn: () => resumenCaja(cajaId) })
+  const cheques = useQuery({ queryKey: ['cheques-caja', cajaId], queryFn: () => chequesDeLaCaja(cajaId) })
 
   const cerrar = useMutation({
     mutationFn: () => cerrarCaja(cajaId, terminalId, Number(declarado) || 0),
@@ -1496,6 +1564,30 @@ function ModalCierre({
                 <dd className="tabular-nums">{resumen.data?.ventas ?? '—'}</dd>
               </div>
             </dl>
+
+            {/*
+              Los cheques no se cuentan con el efectivo —no son plata del
+              cajón—, pero se entregan con el cierre. La lista es para
+              mirar que el papel que se entrega es el mismo que entró.
+            */}
+            {(cheques.data?.length ?? 0) > 0 && (
+              <div className="mt-4 rounded-lg bg-piedra-50 px-3 py-2 ring-1 ring-borde">
+                <p className="text-xs font-medium text-piedra-600">
+                  Cheques del turno: entregalos con el cierre. No se cuentan con el efectivo.
+                </p>
+                <ul className="mt-1 space-y-0.5 text-xs text-piedra-600">
+                  {cheques.data!.map((c, i) => (
+                    <li key={i} className="flex justify-between gap-2">
+                      <span className="min-w-0 truncate">
+                        {c.nombre}
+                        {c.cliente ? ` · ${c.cliente}` : ''}
+                      </span>
+                      <span className="shrink-0 tabular-nums">{moneda.format(c.importe)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             <label className="mt-4 block">
               <span className="mb-1 block text-xs font-medium text-piedra-600">

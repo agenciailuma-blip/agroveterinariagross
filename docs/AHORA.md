@@ -12,6 +12,8 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
+**Construido el 30/09 a la tarde, sin publicar todavía: los cheques con su calendario, el historial de costos por proveedor y el CBU del proveedor.** Lo de la base ya está aplicado y anda para todas las PC; falta verlo en pantalla y publicar la versión. Ver *Lo último que pasó*. **508 pruebas verdes en la app**, 95 migraciones aplicadas.
+
 **Publicado: 0.12.0** (30/09), con **el menú en nueve secciones**, Configuración en pestañas y ninguna pantalla que se desplace hacia el costado; antes, ese mismo día, la 0.11.0 con **mover mercadería entre depósitos** y el stock de cada uno; antes, la 0.10.0 (28/09), con la importación de clientes con su saldo y de los saldos de proveedores; antes, la 0.9.0 ese mismo día, con *Factura después* y *Cajas y mostradores*; antes, la 0.8.0 ese mismo día, con la recepción de mercadería, las cuentas de proveedores y la percepción en la caja. Antes, la 0.7.0 (25/09), con **la pantalla Pedidos web**: preparar, facturar, entregar y cancelar lo que entra de la tienda. Antes, la 0.6.0 (24/09), con **«Vender online»** —qué productos salen a la tienda web se decide desde Productos— y con **el arreglo de la sincronización que impedía que el CAEA llegara a las máquinas**. Antes, la 0.5.0 con **la factura que sale sin internet** —la caja emite con CAEA y el ticket sale solo—. Antes, la 0.4.4 con la red del local que ahora **dice qué le pasa**, el cortacircuito que hace que la Caja abra rápido sin internet, y la cola de la caja que se actualiza al cambiar el medio de pago. Antes, ese mismo día, la 0.4.2 con el recargo por cuotas arreglado, los acentos del ticket y la impresión automática al cobrar. **La 0.4.1 quedó instalada en el local el 17/09, en todas menos la de Windows 7** — las versiones nuevas entran solas con *Actualizar ahora*. **470 pruebas verdes en la app y 11 en el programa**, 92 migraciones aplicadas.
 
 **Y la API de la tienda online.** Leer el catálogo desde el 18/09; **mandar pedidos desde el 24/09**; **preguntar en qué está cada pedido desde el 25/09**. Zubu ya tiene su clave y su documentación. Del lado del local, **la pantalla Pedidos web**, publicada en la 0.7.0 el 25/09. Ver abajo.
@@ -20,6 +22,7 @@ estado: en curso
 
 | Qué | Cómo se verifica |
 |---|---|
+| **Cheques, Calendario, Costos y el CBU del proveedor** (30/09) | 🟡 Probados contra la base, **sin ver en pantalla**: no había sesión en el navegador de esta conversación. Un cheque de punta a punta —cobrarlo en la caja, verlo en la cartera, endosarlo a un proveedor, marcarlo rechazado— y copiar el CBU en un pago por transferencia |
 | ~~La impresión por impresora de Windows~~ | ✅ **Imprimió el 17/09.** Falta ver en papel lo corregido después: los acentos y el ticket que sale solo al cobrar |
 | **La venta que llega a la caja sin internet** | 🔴 **Se probó el 17/09 y NO funcionó.** Ver *Lo que sigue* |
 | El actualizador de punta a punta | Apretando *Actualizar ahora* en una PC, sin desinstalar antes. **La 0.7.0 es la oportunidad** |
@@ -43,7 +46,54 @@ estado: en curso
 
 ---
 
-## Lo último que pasó — 30 de septiembre
+## Lo último que pasó — 30 de septiembre, a la tarde
+
+Los tres pedidos que seguían, en el orden de Francisco: **cheques, historial de costos y datos bancarios del proveedor.** Las cuatro respuestas de Lucas sobre cheques llegaron ese día.
+
+### 1. Los cheques, y el calendario de recibos
+
+**Una sección nueva, Tesorería, con dos pestañas: Cheques y Calendario.** Lo que antes iba al cuaderno. El detalle completo está en [`cheques.md`](cheques.md).
+
+> **Cómo se lo contás a Lucas:** cuando un cliente paga con cheque —en la caja o en su cuenta corriente— se anotan banco, número, fecha de pago y quién lo firmó, y el cheque queda en la **cartera**, ordenado por la fecha en que se puede cobrar, con cuántos días quedan para depositarlo. Desde ahí se depositan de a varios. Para **hacerlo correr**, al pagarle a un proveedor se elige «Cheque de la cartera». Los **propios**, de chequera o e-cheq, se cargan en el mismo pago. Si uno vuelve **rechazado**, se marca y la deuda vuelve sola: al proveedor se le vuelve a deber, y al cliente se le puede cargar con los gastos del banco. El **Calendario** muestra, día por día, qué entra —cheques, cuentas de clientes— y qué sale —facturas de proveedores, cheques propios—.
+
+- **Lucas contestó las cuatro:** depositan y endosan, emiten propios (cada vez más e-cheq), hay diferidos y al día, y el «calendario de recibos» de agosto es esto. Por eso entraron las tres piezas juntas.
+- **El cheque nunca va al arqueo.** Al cerrar la caja se listan los cheques del turno para entregarlos.
+- **En la caja funciona sin internet**, como todo: el cheque entra a la cartera cuando el cobro sube.
+- **El de tercero se endosa entero y se elige de la cartera**, no se tipea.
+- **Permisos nuevos:** *cheques.ver* y *cheques.gestionar*, para Administrador y Encargado. El cajero recibe cheques pero no ve la cartera.
+- **El medio «Cheque» usa la lista de contado**, como la transferencia. Si a un diferido se le cobra distinto, se cambia en Precios.
+
+Verificado contra la base real: **62 comprobaciones** en [`supabase/pruebas/cheques.sql`](../supabase/pruebas/cheques.sql), como usuario, corridas en seco antes de aplicar. **La corrida encontró un error real**, ya corregido: anular un pago a proveedor le sacaba el proveedor al cheque antes de devolverlo a la cartera. Las 31 de la cuenta de proveedores y las 14 de la percepción en la caja siguen verdes. Se rompió a propósito de tres maneras y **las tres fueron atrapadas**.
+
+### 2. El historial de costos por proveedor
+
+**En la ficha del producto, un desplegable «Historial de costos», y en Compras una pestaña nueva, Costos.** Pedido de Lucas del 14/08: saber si la última compra vino más cara o más barata que la anterior, y de quién.
+
+> **Cómo se lo contás a Lucas:** en la ficha de cada producto, debajo del costo, se abre la lista de cada vez que se compró: fecha, proveedor, factura, costo y cuánto cambió contra la anterior, con una línea chica que muestra cómo vino subiendo. Y en Compras → Costos se elige un proveedor y se ve todo lo que se le compró: el último costo, el anterior, cuánto aumentó y **si otro proveedor lo vendió más barato**.
+
+- **Los costos se comparan con IVA**, como quedan en el producto: una factura A y una B del mismo producto no pueden dar un 21% de diferencia que no existe.
+- **Se arma solo con cada mercadería recibida.** No se cargó nada nuevo: los datos estaban desde el 28/09. Hoy no hay ninguna recepción real, así que las pantallas dicen eso.
+- **Una factura dada de baja no cuenta.**
+- Lo ve quien ve las compras (*compras.ver*).
+
+Verificado contra la base real: **12 comprobaciones** en [`supabase/pruebas/historial-de-costos.sql`](../supabase/pruebas/historial-de-costos.sql); se rompió a propósito que cuente la factura dada de baja, y la prueba lo atrapó.
+
+### 3. El CBU, CVU o alias del proveedor
+
+**En la ficha del proveedor, «Para transferirle»: CBU o CVU y alias.** Al registrar un pago por transferencia aparecen listos para copiar, con el banco y el CUIT.
+
+- **La base controla los dos dígitos verificadores del CBU**, igual que los bancos: un número cambiado es una transferencia a otra persona. La pantalla lo avisa mientras se escribe y dice de qué banco es.
+- Se puede pegar con espacios o guiones: se guardan los 22 dígitos.
+
+Verificado contra la base real: **8 comprobaciones** en [`supabase/pruebas/datos-bancarios-del-proveedor.sql`](../supabase/pruebas/datos-bancarios-del-proveedor.sql); se rompió a propósito el segundo dígito verificador y la prueba lo atrapó.
+
+**En la app: 508 pruebas**, 38 nuevas —el plazo de depósito, lo que le falta a un cheque, el calendario por día, el cheque que viaja desde la caja sin internet, las variaciones de costo, el CBU—.
+
+⚠️ **Falta verlo en pantalla y publicar la versión.** Lo de la base ya está aplicado y **no rompe las PC con la versión anterior**: una caja vieja que cobre con «Cheque» lo manda igual a la cartera, marcado para completar los datos.
+
+⚠️ **Visto de paso, para revisar:** el medio *Tarjeta de crédito* figura en la base como que **entra al arqueo de caja** (se sembró que no). Si nadie lo cambió a propósito, la caja espera en el cajón la plata de las tarjetas y el cierre da diferencia. Se corrige en Precios → Medios de pago, destildando «Entra al arqueo de caja».
+
+## Lo que pasó a la mañana del 30 de septiembre
 
 **El sistema, ordenado: un menú de nueve secciones, Configuración en pestañas y ninguna pantalla que se desplace hacia el costado.** Pedido por Francisco ese mismo día, mirando cómo lo resuelve OBTech: pocas secciones y, adentro, varias opciones.
 
@@ -537,9 +587,9 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
    - **Configuración se hizo larga hacia abajo.** Revisar cada sección y separar por pestañas donde haga falta, para que se vea de un vistazo qué se hace en cada una.
    - **Ninguna pantalla con scroll horizontal**, en ningún ancho: es regla desde el 30/09. Medido ese día a 375 px, **se desplazan hacia el costado** Compras (636 px en 343), Facturación (641), Presupuestos (793), Remitos (785), Precios (402), Proveedores (481), Cuentas proveedores (423) y Usuarios (497). Todas son anteriores a los depósitos.
 10. 🟢 **Cuando abra el segundo local: que el mostrador sin internet muestre el stock de su depósito.** Hoy la copia local de cada PC tiene el total, y es lo que ve el mostrador al buscar. No cambia lo que se descuenta —eso lo decide la base al subir la venta—, sólo el número que se lee en pantalla. Se deja para ese momento porque toca la sincronización, que hoy anda.
-11. 🟡 **Cheques: recibidos, endosados a proveedores y propios.** Lo que sigue, en el orden que pidió Francisco el 30/09. **Antes de construir hacen falta las cuatro respuestas de Lucas** que están en [`cheques.md`](cheques.md) —si los depositan o los endosan, si emiten propios, si hay diferidos—: cambian el tamaño del módulo. Hoy el cheque sólo existe como dato de un pago a proveedor.
-12. 🟡 **El historial de costos por proveedor** (V2 en el alcance, pedido de Lucas del 14/08). Los datos ya están: cada mercadería recibida guarda qué costó, de qué factura y de qué proveedor vino. Falta el reporte y el desplegable en la ficha del producto.
-13. 🟡 **Los datos bancarios de cada proveedor: CBU, CVU o alias.** Pedido por Francisco el 30/09, visto en otros sistemas: para transferirle sin pedirle cada vez adónde. Va en la ficha del proveedor, y al registrar un pago por transferencia se muestra el dato para copiarlo.
+11. ~~🟡 **Cheques: recibidos, endosados a proveedores y propios.**~~ ✅ **Construido el 30/09**, con las cuatro respuestas de Lucas y el calendario de recibos. Falta verlo en pantalla y publicarlo. [`cheques.md`](cheques.md).
+12. ~~🟡 **El historial de costos por proveedor**~~ ✅ **Construido el 30/09**: el desplegable en la ficha del producto y Compras → Costos. Falta verlo en pantalla y publicarlo.
+13. ~~🟡 **Los datos bancarios de cada proveedor: CBU, CVU o alias.**~~ ✅ **Construido el 30/09**: en la ficha del proveedor, y listos para copiar en el pago por transferencia. Falta verlo en pantalla y publicarlo.
 
 > ✅ **Los desplegables de *Percepciones* ya usan el estilo común**, así que muestran el recuadro de foco como el resto del sistema — un paso menos para el punto 6. La pantalla tenía además el botón y la tarjeta escritos a mano; los tres ahora salen de [`estilos.ts`](../app/src/estilos.ts).
 
@@ -552,7 +602,7 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 | **Certificado de producción** de ARCA | Lucas | 🔴 Ahora bloquea también la última prueba del CAEA. **El pedido está armado**; el trámite, paso a paso: [`certificado-produccion.md`](certificado-produccion.md) |
 | ~~**Dónde se cobra la percepción de IIBB**~~ | — | ✅ **Resuelto y construido el 28/09**: va con la factura, a donde vaya la plata. Falta publicarlo |
 | Qué es un **"comprobante de percepción"** | Lucas | 🟡 Sin definir desde el 03/09 |
-| ~~¿Reciben cheques?~~ | — | ✅ **Contestado el 10/09: sí, y también le pagan a proveedores con cheque.** Es alcance nuevo y no está en ningún lado: [`cheques.md`](cheques.md) |
+| ~~¿Reciben cheques? ¿Los depositan o endosan? ¿Emiten propios? ¿Hay diferidos?~~ | — | ✅ **Contestadas el 30/09 y construido ese día**: [`cheques.md`](cheques.md) |
 | **¿Cómo se llama el segundo local?** | Lucas | 🟢 Se carga en Configuración → Depósitos cuando abra. Los cinco de OBTech quedaron descartados como referencia |
 | ~~Las **fotos de cómo cargan facturas de compra**~~ | Lucas | ✅ Llegaron el 10/09, con tres audios. Análisis en [`compras-e-iva.md`](compras-e-iva.md) |
 | ~~**¿La cuenta corriente de proveedores entra al alcance?**~~ | — | ✅ **Sí, decidido y construido el 28/09.** Falta publicarla |
@@ -563,14 +613,12 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 
 ### Las preguntas para la próxima reunión, juntas
 
-Seis, y todas cambian el tamaño de algo. Están desarrolladas en sus documentos; acá van para no tener que buscarlas:
+Dos, y las dos cambian el tamaño de algo. Están desarrolladas en sus documentos; acá van para no tener que buscarlas:
 
 1. ¿Le llevan **la cuenta a cada proveedor** en OBTech, o eso lo miran en otro lado? → [`plan-compras.md`](plan-compras.md)
 2. En la grilla del IVA de compras, la columna **Centro de Costo**: ¿elegís algo o la dejás como viene? → [`compras-e-iva.md`](compras-e-iva.md)
-3. Los cheques que reciben, **¿los depositan o se los endosan a proveedores?** → [`cheques.md`](cheques.md)
-4. **¿Emiten cheques propios**, o pagan sólo con cheques de terceros?
-5. **¿Hay cheques diferidos**, o son todos al día?
-6. El **"calendario de recibos"** que pediste el 10/08, ¿es lo de los cheques?
+
+Las cuatro de los cheques se contestaron el 30/09. Queda una de configuración, para cuando se mire la pantalla: **¿a un cheque diferido se le cobra otro precio?** Hoy usa la lista de contado.
 
 Y dos para el contador: **qué columnas quiere** en los dos archivos, y si le sirven en Excel.
 
@@ -611,6 +659,13 @@ Está andando y verificado. Si algo de acá se rompe, es una regresión:
 - **El menú lateral aparece desde 1024 píxeles, no desde 768.** Volverlo a 768 hace que una tablet le deje a la página menos lugar que un celular acostado, y las tablas vuelven a desplazarse hacia el costado justo en ese tramo.
 - **Las pestañas de cada sección van en la franja de arriba, no adentro del área que se desplaza.** Adentro empujan la Caja, el Mostrador, Productos y Clientes, que ocupan justo el alto de la pantalla.
 - **Una pantalla nueva se agrega en `lib/menu.ts`**, en su sección, y no en el Layout. La prueba controla que ninguna dirección esté en dos secciones.
+- **El cheque nunca va al arqueo.** El medio «Cheque» no afecta la caja y una restricción de la base (`medio_pago_cheque_no_va_al_cajon`) no deja configurarlo de otra forma. Si sumara, la caja cerraría con diferencia cada día que entra uno.
+- **El cheque de la caja entra a la cartera al cobrarse la venta, no al cargar el pago** (disparador `venta_cobrada_trae_sus_cheques`). Los pagos se cargan un paso antes del cobro: si entrara ahí, un cobro que falla dejaría un cheque en la cartera. **Y entra aunque le falten datos**: está en el cajón y tiene que figurar.
+- **El cheque de tercero se elige de la cartera y se endosa entero.** Dejar tipearlo de nuevo al pagar es cómo un mismo cheque termina contado dos veces.
+- **Todo cambio de estado de un cheque pasa por `app.cheque_pasa_a`**, que deja el renglón en la historia. Un estado que cambia sin historia es un cheque del que nadie sabe cómo llegó adonde está.
+- **Anular un pago a proveedor devuelve el cheque a la cartera antes de sacarle el proveedor.** Al revés, la base lo frena: un cheque endosado sin proveedor no puede existir. Pasó en la primera corrida en seco.
+- **El historial de costos compara el costo con IVA** (`costo_con_iva`), nunca el del papel. El de una A viene sin IVA: compararlo contra una B daría un 21% de aumento que no existe.
+- **El CBU lo controla la base con sus dos dígitos verificadores** (`app.cbu_valido`). Un número cambiado es una transferencia a otra persona.
 - **La impresora se guarda por terminal, no en la configuración del comercio.** Volverla a un solo valor para todo el local deja tres de las cuatro PC imprimiendo a un nombre que en su lista no existe. Y el nombre se elige de la lista de Windows: escribirlo a mano falla en silencio.
 
 ## Cómo arrancar

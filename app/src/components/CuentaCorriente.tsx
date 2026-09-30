@@ -9,6 +9,10 @@ import {
 import type { Cliente } from '@/lib/api/clientes'
 import { cajaAbierta } from '@/lib/api/caja'
 import { cargarPrecios } from '@/lib/api/precios'
+import { chequeVacio, cobrarConCheques, faltaEnCheque } from '@/lib/api/cheques'
+import type { DatosCheque } from '@/lib/api/cheques'
+import { enCastellano } from '@/lib/errores'
+import CamposCheque from '@/components/CamposCheque'
 import { useTerminal } from '@/lib/terminal'
 import { moneda } from '@/lib/tipos'
 
@@ -207,58 +211,93 @@ function ModalCobranza({
   const [medioPagoId, setMedioPagoId] = useState<string>('')
   const [concepto, setConcepto] = useState('')
   const [error, setError] = useState<string | null>(null)
+  /*
+    Con cheque, lo que se paga es la suma de los cheques: cada uno con
+    su importe, porque cada uno se deposita, se endosa o rebota por su
+    cuenta.
+  */
+  const [cheques, setCheques] = useState<{ datos: DatosCheque; importe: string }[]>([])
 
   const precios = useQuery({ queryKey: ['precios'], queryFn: cargarPrecios })
   const medios = (precios.data?.medios ?? []).filter((m) => m.tipo !== 'cuenta_corriente')
   const medio = medios.find((m) => m.id === medioPagoId)
+  const conCheque = medio?.tipo === 'cheque'
+
+  const importeCheques = Math.round(cheques.reduce((s, c) => s + (Number(c.importe.replace(',', '.')) || 0), 0) * 100) / 100
+  const aCobrar = conCheque ? importeCheques : Number(importe || 0)
+  const chequeIncompleto =
+    conCheque &&
+    (cheques.length === 0 ||
+      cheques.some((c) => faltaEnCheque(c.datos) || !(Number(c.importe.replace(',', '.')) > 0)))
+
+  function elegir(id: string) {
+    setMedioPagoId(id)
+    const m = medios.find((x) => x.id === id)
+    // El primer cheque arranca con lo que debe, igual que el importe.
+    if (m?.tipo === 'cheque' && cheques.length === 0) {
+      setCheques([{ datos: chequeVacio(cliente.nombre), importe: importe || String(saldo) }])
+    }
+  }
 
   const cobrar = useMutation({
     mutationFn: () =>
-      registrarCobranza({
-        clienteId: cliente.id,
-        importe: Number(importe),
-        medioPagoId,
-        cajaId,
-        concepto: concepto.trim() || null,
-        usuarioId,
-      }),
+      conCheque
+        ? cobrarConCheques({
+            clienteId: cliente.id,
+            cheques: cheques.map((c) => ({ datos: c.datos, importe: Number(c.importe.replace(',', '.')) })),
+            concepto: concepto.trim() || null,
+            usuarioId,
+          })
+        : registrarCobranza({
+            clienteId: cliente.id,
+            importe: Number(importe),
+            medioPagoId,
+            cajaId,
+            concepto: concepto.trim() || null,
+            usuarioId,
+          }),
     onSuccess: onListo,
-    onError: (e) => setError(e instanceof Error ? e.message : 'No se pudo registrar.'),
+    onError: (e) => setError(enCastellano(e, 'No se pudo registrar.')),
   })
 
   const faltaCaja = medio?.afecta_caja && !cajaId
-  const restante = Math.round((saldo - Number(importe || 0)) * 100) / 100
+  const restante = Math.round((saldo - aCobrar) * 100) / 100
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-tinta/50 p-4">
-      <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+    // Con varios cheques la ventana crece hacia abajo: se desplaza entera,
+    // en vez de quedar cortada arriba y abajo.
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-tinta/50 p-4">
+      <div className={`mx-auto my-8 w-full rounded-xl bg-white p-6 shadow-xl ${conCheque ? 'max-w-2xl' : 'max-w-md'}`}>
         <h2 className="font-semibold text-tinta">Cobranza</h2>
         <p className="mt-0.5 text-sm text-piedra-500">
           {cliente.nombre} · debe {moneda.format(saldo)}
         </p>
 
         <div className="mt-4 space-y-3">
-          <label className="block">
-            <span className="mb-1 block text-xs font-medium text-piedra-600">Importe</span>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              autoFocus
-              value={importe}
-              onChange={(e) => setImporte(e.target.value)}
-              className="w-full rounded-lg border border-borde px-3 py-2.5 text-right text-lg tabular-nums outline-none focus:border-marca-500"
-            />
-            {Number(importe) > 0 && (
-              <span className="mt-1 block text-xs text-piedra-400">
-                {restante > 0
-                  ? `Queda debiendo ${moneda.format(restante)}`
-                  : restante < 0
-                    ? `Paga de más ${moneda.format(-restante)} — le queda a favor`
-                    : 'Cancela la cuenta'}
-              </span>
-            )}
-          </label>
+          {!conCheque && (
+            <label className="block">
+              <span className="mb-1 block text-xs font-medium text-piedra-600">Importe</span>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                autoFocus
+                value={importe}
+                onChange={(e) => setImporte(e.target.value)}
+                className="w-full rounded-lg border border-borde px-3 py-2.5 text-right text-lg tabular-nums outline-none focus:border-marca-500"
+              />
+            </label>
+          )}
+          {aCobrar > 0 && (
+            <span className="block text-xs text-piedra-400">
+              {conCheque && `Los cheques suman ${moneda.format(aCobrar)}. `}
+              {restante > 0
+                ? `Queda debiendo ${moneda.format(restante)}`
+                : restante < 0
+                  ? `Paga de más ${moneda.format(-restante)} — le queda a favor`
+                  : 'Cancela la cuenta'}
+            </span>
+          )}
 
           <div>
             <span className="mb-1 block text-xs font-medium text-piedra-600">¿Con qué paga?</span>
@@ -266,7 +305,7 @@ function ModalCobranza({
               {medios.map((m) => (
                 <button
                   key={m.id}
-                  onClick={() => setMedioPagoId(m.id)}
+                  onClick={() => elegir(m.id)}
                   className={`rounded-lg px-3 py-1.5 text-sm font-medium ring-1 transition-colors ${
                     medioPagoId === m.id
                       ? 'bg-marca-700 text-white ring-marca-700'
@@ -278,6 +317,48 @@ function ModalCobranza({
               ))}
             </div>
           </div>
+
+          {conCheque && (
+            <div className="space-y-2">
+              {cheques.map((c, i) => (
+                <div key={i} className="rounded-lg bg-piedra-50 p-3 ring-1 ring-borde">
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-xs font-medium text-piedra-600">Cheque {i + 1}</span>
+                    {cheques.length > 1 && (
+                      <button
+                        onClick={() => setCheques(cheques.filter((_, j) => j !== i))}
+                        className="rounded px-2 py-0.5 text-xs text-piedra-400 hover:bg-red-50 hover:text-red-700"
+                      >
+                        Quitar
+                      </button>
+                    )}
+                  </div>
+                  <CamposCheque
+                    valor={c.datos}
+                    onChange={(d) => setCheques(cheques.map((x, j) => (j === i ? { ...x, datos: d } : x)))}
+                    importe={c.importe}
+                    onImporte={(t) => setCheques(cheques.map((x, j) => (j === i ? { ...x, importe: t } : x)))}
+                    autoFocus={i === cheques.length - 1}
+                  />
+                </div>
+              ))}
+              <button
+                onClick={() =>
+                  setCheques([
+                    ...cheques,
+                    { datos: chequeVacio(cliente.nombre), importe: restante > 0 ? String(restante) : '' },
+                  ])
+                }
+                className="text-sm font-medium text-marca-700 hover:underline"
+              >
+                + Otro cheque
+              </button>
+              <p className="text-xs text-piedra-500">
+                Los cheques quedan en la cartera y no entran a la caja: se depositan o se endosan desde
+                Tesorería.
+              </p>
+            </div>
+          )}
 
           <label className="block">
             <span className="mb-1 block text-xs font-medium text-piedra-600">
@@ -314,7 +395,7 @@ function ModalCobranza({
         <div className="mt-5 flex gap-2">
           <button
             onClick={() => cobrar.mutate()}
-            disabled={!medioPagoId || Number(importe) <= 0 || faltaCaja || cobrar.isPending}
+            disabled={!medioPagoId || aCobrar <= 0 || faltaCaja || chequeIncompleto || cobrar.isPending}
             className="flex-1 rounded-lg bg-verde-600 px-4 py-2.5 font-medium text-white hover:bg-verde-500 disabled:opacity-40"
           >
             {cobrar.isPending ? 'Registrando…' : 'Registrar cobranza'}

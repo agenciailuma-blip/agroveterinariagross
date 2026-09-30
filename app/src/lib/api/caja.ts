@@ -13,6 +13,7 @@ import {
   saldoCuentaCorrienteLocal,
 } from '@/lib/local/caja'
 import type { LineaDeseada } from '@/lib/local/caja'
+import type { DatosCheque } from '@/lib/api/cheques'
 
 export interface Caja {
   id: string
@@ -83,6 +84,8 @@ export interface PagoNuevo {
   importe: number
   cuotas: number
   referencia: string | null
+  /** Sólo en un pago con cheque: lo que dice el papel. */
+  datos_cheque?: DatosCheque | null
 }
 
 /*
