@@ -2,7 +2,10 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { confirmar } from '@/components/Dialogo'
 import { listarPuntosVenta } from '@/lib/api/configuracion'
+import { listarDepositos } from '@/lib/api/depositos'
+import type { Deposito } from '@/lib/api/depositos'
 import {
+  asignarDepositoTerminal,
   crearTerminal,
   darDeBajaTerminal,
   editarTerminal,
@@ -25,6 +28,10 @@ import { boton, botonChico, campo, tarjeta } from '@/estilos'
   Crear la terminal es la mitad. La otra mitad pasa en la PC nueva: se
   abre el sistema y se la elige en Ventas. Por eso el aviso después de
   crear dice exactamente eso.
+
+  Con más de un depósito aparece la columna Depósito: de dónde sale lo
+  que se vende en esa máquina. Las del segundo local venden del segundo
+  local. Con uno solo no se muestra, porque no hay nada que elegir.
   ─────────────────────────────────────────────────────────────
 */
 
@@ -47,6 +54,15 @@ export default function CajasYMostradores() {
   const qc = useQueryClient()
   const terminales = useQuery({ queryKey: ['terminales-del-local'], queryFn: listarTerminales })
   const puntos = useQuery({ queryKey: ['puntos-venta'], queryFn: listarPuntosVenta })
+  const depositos = useQuery({ queryKey: ['depositos'], queryFn: listarDepositos })
+  const activos = (depositos.data ?? []).filter((d) => d.activo)
+  const principal = activos.find((d) => d.es_principal)
+  // Se muestra también si alguna máquina quedó apuntando a otro: que no
+  // desaparezca un dato que está en uso.
+  const conDeposito =
+    activos.length > 1 || (terminales.data ?? []).some((t) => t.deposito_id && t.deposito_id !== principal?.id)
+  const nombreDeposito = (id: string | null) =>
+    id ? ((depositos.data ?? []).find((d) => d.id === id)?.nombre ?? '—') : (principal?.nombre ?? 'Principal')
   const [creando, setCreando] = useState(false)
   const [editando, setEditando] = useState<string | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
@@ -107,6 +123,7 @@ export default function CajasYMostradores() {
         <FormularioAlta
           existentes={terminales.data ?? []}
           puntos={puntosParaCaja}
+          depositos={conDeposito ? activos : []}
           onListo={(nombre) => {
             setCreando(false)
             setAviso(
@@ -135,6 +152,7 @@ export default function CajasYMostradores() {
               <th className="py-2 pr-3 font-medium">Tipo</th>
               <th className="py-2 pr-3 font-medium">Prefijo</th>
               <th className="py-2 pr-3 font-medium">Punto de venta</th>
+              {conDeposito && <th className="py-2 pr-3 font-medium">Depósito</th>}
               <th className="py-2 pr-3 font-medium">Última conexión</th>
               <th />
             </tr>
@@ -146,6 +164,7 @@ export default function CajasYMostradores() {
                   key={t.id}
                   t={t}
                   puntos={puntosParaCaja}
+                  depositos={conDeposito ? activos : []}
                   onListo={() => {
                     setEditando(null)
                     refrescar()
@@ -167,6 +186,7 @@ export default function CajasYMostradores() {
                   <td className="py-2 pr-3 tabular-nums text-piedra-600">
                     {t.punto_venta ? String(t.punto_venta.numero).padStart(4, '0') : '—'}
                   </td>
+                  {conDeposito && <td className="py-2 pr-3 text-piedra-600">{nombreDeposito(t.deposito_id)}</td>}
                   <td className="py-2 pr-3 text-xs text-piedra-500">
                     {hace(t.ultima_sincronizacion)}
                     {t.version_app && <span className="ml-1 text-piedra-400">· {t.version_app}</span>}
@@ -196,11 +216,14 @@ export default function CajasYMostradores() {
 function FormularioAlta({
   existentes,
   puntos,
+  depositos,
   onListo,
   onCancelar,
 }: {
   existentes: TerminalDelLocal[]
   puntos: { id: string; numero: number; nombre: string }[]
+  /* Vacío cuando hay uno solo: no hay nada que elegir. */
+  depositos: Deposito[]
   onListo: (nombre: string) => void
   onCancelar: () => void
 }) {
@@ -209,6 +232,7 @@ function FormularioAlta({
   const [prefijo, setPrefijo] = useState(() => prefijoSugerido('mostrador', prefijos))
   const [nombre, setNombre] = useState(() => nombreSugerido('mostrador', prefijoSugerido('mostrador', prefijos)))
   const [puntoVenta, setPuntoVenta] = useState(puntos[0]?.id ?? '')
+  const [deposito, setDeposito] = useState('')
   const [error, setError] = useState<string | null>(null)
 
   function cambiarTipo(t: TipoTerminal) {
@@ -219,13 +243,21 @@ function FormularioAlta({
   }
 
   const crear = useMutation({
-    mutationFn: () =>
-      crearTerminal({
+    /*
+      Dos pasos: crear y después elegirle el depósito. Si el segundo
+      fallara, la máquina queda vendiendo del principal —lo mismo que
+      antes de que existieran los depósitos— y se ve en la lista para
+      corregirlo.
+    */
+    mutationFn: async () => {
+      const id = await crearTerminal({
         nombre,
         tipo,
         prefijo,
         punto_venta_id: tipo === 'caja' ? puntoVenta || null : null,
-      }),
+      })
+      if (deposito) await asignarDepositoTerminal(id, deposito)
+    },
     onSuccess: () => onListo(nombre.trim()),
     onError: (e) => setError(enCastellano(e, 'No se pudo crear.')),
   })
@@ -266,6 +298,12 @@ function FormularioAlta({
             </select>
           </label>
         )}
+        {depositos.length > 0 && (
+          <label className="block">
+            <span className="mb-1 block text-xs font-medium text-piedra-600">Vende del depósito</span>
+            <SelectDeposito depositos={depositos} valor={deposito} onCambio={setDeposito} />
+          </label>
+        )}
       </div>
       <p className="mt-2 text-xs text-piedra-500">
         El prefijo va adelante de cada número de venta de esta máquina ({prefijo || 'MOS3'}-000001) y{' '}
@@ -300,20 +338,26 @@ function FormularioAlta({
 function FilaEditable({
   t,
   puntos,
+  depositos,
   onListo,
   onCancelar,
 }: {
   t: TerminalDelLocal
   puntos: { id: string; numero: number; nombre: string }[]
+  depositos: Deposito[]
   onListo: () => void
   onCancelar: () => void
 }) {
   const [nombre, setNombre] = useState(t.nombre)
   const [puntoVenta, setPuntoVenta] = useState(t.punto_venta_id ?? puntos[0]?.id ?? '')
+  const [deposito, setDeposito] = useState(t.deposito_id ?? '')
   const [error, setError] = useState<string | null>(null)
 
   const guardar = useMutation({
-    mutationFn: () => editarTerminal(t.id, nombre, t.tipo === 'caja' ? puntoVenta : null),
+    mutationFn: async () => {
+      await editarTerminal(t.id, nombre, t.tipo === 'caja' ? puntoVenta : null)
+      if (deposito !== (t.deposito_id ?? '')) await asignarDepositoTerminal(t.id, deposito || null)
+    },
     onSuccess: onListo,
     onError: (e) => setError(enCastellano(e, 'No se pudo guardar.')),
   })
@@ -341,6 +385,11 @@ function FilaEditable({
           '—'
         )}
       </td>
+      {depositos.length > 0 && (
+        <td className="py-2 pr-3">
+          <SelectDeposito depositos={depositos} valor={deposito} onCambio={setDeposito} />
+        </td>
+      )}
       <td />
       <td className="whitespace-nowrap py-2 text-right">
         <button onClick={onCancelar} className={botonChico.suave}>
@@ -355,5 +404,34 @@ function FilaEditable({
         </button>
       </td>
     </tr>
+  )
+}
+
+/*
+  El depósito de una máquina. La opción vacía es «el principal», y no
+  el principal por nombre: si mañana cambia cuál es el principal, las
+  máquinas que no eligieron uno propio lo siguen.
+*/
+function SelectDeposito({
+  depositos,
+  valor,
+  onCambio,
+}: {
+  depositos: Deposito[]
+  valor: string
+  onCambio: (id: string) => void
+}) {
+  const principal = depositos.find((d) => d.es_principal)
+  return (
+    <select value={valor} onChange={(e) => onCambio(e.target.value)} className={campo}>
+      <option value="">El principal{principal ? ` (${principal.nombre})` : ''}</option>
+      {depositos
+        .filter((d) => !d.es_principal)
+        .map((d) => (
+          <option key={d.id} value={d.id}>
+            {d.nombre}
+          </option>
+        ))}
+    </select>
   )
 }

@@ -1,5 +1,5 @@
 ---
-actualizado: 2026-09-28
+actualizado: 2026-09-30
 estado: en curso
 ---
 
@@ -43,7 +43,28 @@ estado: en curso
 
 ---
 
-## Lo último que pasó — 28 de septiembre
+## Lo último que pasó — 30 de septiembre
+
+**Mover mercadería entre depósitos, y el stock de cada uno.** Era lo que faltaba para el segundo local: los depósitos se podían nombrar desde el 10/09, pero no usar. Ahora cada producto tiene su saldo en cada depósito, y la mercadería pasa de uno a otro con una **transferencia**. El total no cambia: sale de un lado y entra en el otro.
+
+> **Cómo se lo contás a Lucas:** en Stock, cuando haya dos depósitos, arriba se elige cuál mirar; con *Todos* se ve el total —lo que hay que pedir al proveedor— y una columna por local al lado, que es lo que dice qué hay que llevar de uno al otro. El botón *Transferir* abre la pantalla para mandar mercadería: se elige de dónde a dónde, se pasa el lector por cada bolsa con su cantidad, y se confirma. Queda numerada y se puede anular con motivo. **Cada computadora vende del depósito de su local**, y eso se elige una vez en Configuración → Cajas y mostradores.
+
+- **La transferencia es de un solo paso**, como en OBTech: sale y entra en el mismo momento. Un envío con «en camino» y confirmación de llegada controla mejor lo que se pierde en el viaje, pero pide que alguien confirme cada envío en el destino. Si Lucas lo quiere, se agrega arriba de esto sin tocar nada.
+- **Si en el origen no alcanza, avisa y deja transferir igual.** El stock de los primeros días puede estar mal, y la bolsa que está en el estante se tiene que poder llevar.
+- **Lo que vuelve, vuelve adonde salió.** Anular una venta del segundo local reingresa en el segundo local; dar de baja una factura de compra saca de donde entró. Lo decide la base, en el mismo disparador que ya completaba el depósito: **ninguno de los dieciséis lugares que escriben en el libro de stock cambió.**
+- **La toma de inventario es de un depósito.** Contar el segundo local contra el total de los dos daría diferencias que no existen, y cerrar la toma las «corregiría» borrando la mercadería del otro local.
+- **La recepción de mercadería pregunta en qué depósito entra**, porque un proveedor puede descargar directo en el otro local.
+- **La ficha del producto, con dos depósitos, muestra cuánto hay en cada uno y ya no deja escribir «Contado»**: un número sin lugar no dice qué corregir. Se corrige con una toma.
+- **Un depósito se da de baja vacío y sin máquinas.** Lo impide la base, con el mensaje que dice qué hacer primero.
+- **Con un solo depósito, nada de esto se ve**: ni el selector de Stock, ni la columna de Cajas y mostradores, ni la pregunta en Inventario y Recepción. Hoy la pantalla de Transferencias dice que hace falta un segundo depósito.
+- **Permiso nuevo:** *stock.transferir*, para Administrador y Encargado. Ver las transferencias pide *stock.ver*.
+- **Transferencias no tiene entrada en el menú**, a propósito: se llega desde Stock. Ver el punto 9 de *Lo que sigue*.
+
+**Lo que NO cambió:** la tienda web sigue viendo el total menos el colchón. El depósito «Online» sigue siendo una idea anotada ([alcance, §13](alcance-v1.md)): qué ve la web ya se decide con «Vender online». Y **el mostrador sin internet sigue mostrando el total** en su copia local, no el de su depósito — ver *Lo que sigue*.
+
+Verificado contra la base real: **48 comprobaciones** en [`supabase/pruebas/transferencias-entre-depositos.sql`](../supabase/pruebas/transferencias-entre-depositos.sql), como usuario. Antes de aplicar la migración se corrió todo junto en seco, porque toca el disparador por el que pasa cada venta. **Se rompió a propósito dos veces** —que lo que vuelve no vuelva adonde salió, y que la toma compare contra el total— **y las dos fueron atrapadas.** **457 pruebas** en la app, con 12 nuevas; una rota a propósito y atrapada.
+
+## Lo que pasó el 28 de septiembre
 
 **Importar clientes con su saldo, y los saldos de los proveedores.** Era lo que más bloqueaba el corte de nuestro lado: el punto 12 del alcance pide los clientes y sus saldos «cargados y verificados», y sólo había importación de productos. Clientes → *Importar planilla*, y Cuentas proveedores → *Importar saldos*.
 
@@ -246,7 +267,7 @@ Lo que quedó decidido, y por qué:
 
 **Lo que quedó pensado ese día para los pedidos** fue que la venta online pagada se facturara sola. **El 24/09 se decidió lo contrario** —la factura la emite una persona, después de armar el paquete— y está explicado arriba. Lo que no cambió: **el proceso de compra tiene que pedir DNI o CUIT, condición frente al IVA y email**, que es lo que hace falta para facturar, y el DNI o el CUIT es lo que va a vincular a los clientes de la web con los del local. El mail de la factura sale por **Resend**, gratis hasta que esté probado.
 
-💡 **Idea anotada:** cuando abra el segundo local, un depósito «Online» del que salgan las ventas de la tienda. Está en el [alcance, §13](alcance-v1.md).
+💡 **Idea anotada:** cuando abra el segundo local, un depósito «Online» del que salgan las ventas de la tienda. Está en el [alcance, §13](alcance-v1.md). **Sigue como idea** después del 30/09: el módulo de depósitos ya existe, pero qué se ve en la web ya lo decide «Vender online», y la tienda sigue viendo el total.
 
 ## Lo que pasó el 18 de septiembre, a la mañana
 
@@ -428,7 +449,7 @@ Se carga lo que dice el papel —proveedor, tipo, número, fecha, desglose por a
 
 **Los depósitos se administran desde Configuración**, y cada movimiento de stock ya guarda en cuál ocurrió.
 
-> **El dato que faltaba:** hoy hay **uno** y en breve son **dos**, porque abre el segundo local. **Los cinco de OBTech no son referencia.** Lo que sigue en V1-B es el módulo —mover mercadería entre depósitos y ver el stock separado—: poder nombrarlos no es lo mismo que poder mover entre ellos.
+> **El dato que faltaba:** hoy hay **uno** y en breve son **dos**, porque abre el segundo local. **Los cinco de OBTech no son referencia.** Lo que sigue en V1-B es el módulo —mover mercadería entre depósitos y ver el stock separado—: poder nombrarlos no es lo mismo que poder mover entre ellos. ✅ **Hecho el 30/09**, arriba.
 >
 > **El principal no se puede desactivar**, y lo impide la base: sin principal, la próxima venta fallaría con un error que no menciona depósitos por ningún lado.
 
@@ -479,6 +500,8 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 6. ~~**La versión móvil**~~ ✅ **Hecha y publicada el 14/09 (0.4.1).** Lo prometido en la primera reunión: *consultar stock, ver reportes o pasar un precio desde el depósito*; vender sigue siendo en la PC con el lector. Cómo se instala en el celular: [paso 10](instalacion-en-el-local.md). **Falta probarla en un teléfono de verdad.**
 7. **Todo con teclado** — **en espera**: Gross tiene que confirmar qué atajos prefiere. Cuando se haga, van definidos en un solo lugar del código y Configuración los **muestra** en una lista; que se puedan editar por PC, sólo si lo piden (cada máquina con teclas distintas complica capacitar y dar soporte).
 8. ~~**Que Gross dé de alta sus cajas y mostradores desde el sistema.**~~ ✅ **Hecho el 28/09.** Pedido por Francisco el 28/09, **para después de la cuenta corriente de proveedores y la percepción en la caja**. Hoy una terminal nueva la da de alta alguien de nuestro lado; con dos locales en camino, Gross tiene que poder hacerlo solo desde Configuración.
+9. 🟡 **Reorganizar el menú de la izquierda.** Pedido por Francisco el 30/09: tiene demasiadas entradas. La referencia es OBTech —pocas secciones arriba y submenús con varias opciones—, como ejemplo de orden y no para copiarlo. La idea a evaluar: agrupar lo que se usa junto (Stock, Inventario y Transferencias como pestañas de una sección; Proveedores, Compras y Cuentas proveedores en otra; Facturación, Remitos y Presupuestos en otra). **Va después de los depósitos.** Transferencias ya quedó sin entrada propia a propósito, para no sumarle una más.
+10. 🟢 **Cuando abra el segundo local: que el mostrador sin internet muestre el stock de su depósito.** Hoy la copia local de cada PC tiene el total, y es lo que ve el mostrador al buscar. No cambia lo que se descuenta —eso lo decide la base al subir la venta—, sólo el número que se lee en pantalla. Se deja para ese momento porque toca la sincronización, que hoy anda.
 
 > ✅ **Los desplegables de *Percepciones* ya usan el estilo común**, así que muestran el recuadro de foco como el resto del sistema — un paso menos para el punto 6. La pantalla tenía además el botón y la tarjeta escritos a mano; los tres ahora salen de [`estilos.ts`](../app/src/estilos.ts).
 
@@ -524,7 +547,9 @@ Está andando y verificado. Si algo de acá se rompe, es una regresión:
 - **El límite de 12 s** en `supabase.ts`.
 - **`aumentar_precios` y `revertir_aumento` son SECURITY DEFINER a propósito.** No agregarles política de insert: el registro que existe para deshacer un error no puede ser editable por fuera del mecanismo que lo deshace.
 - **La factura de compra no tiene líneas de producto, y es a propósito.** Agregárselas no es "completar la pantalla": es abrir la recepción de mercadería, que necesita emparejar códigos del proveedor con los nuestros y decidir qué pasa con los costos. Eso es V1-B.
-- **El disparador que completa el depósito del movimiento.** Sacarlo obliga a que los dieciséis lugares que escriben en el libro de stock manden el depósito, y el que se olvide no falla al compilar: falla al vender.
+- **El disparador que completa el depósito del movimiento.** Sacarlo obliga a que los dieciséis lugares que escriben en el libro de stock manden el depósito, y el que se olvide no falla al compilar: falla al vender. Desde el 30/09 decide además **el de la máquina** y que **lo que vuelve vuelva adonde salió**; el orden de sus reglas importa y está explicado en la migración `20260930120000`.
+- **El saldo de cada depósito lo mantiene el mismo disparador que el total** (`app.aplicar_movimiento_stock`). Partirlo en dos permitiría que uno quede apagado y que la suma de los depósitos deje de dar el total, sin que nada falle.
+- **La toma de inventario compara contra el depósito de la toma, no contra el total.** Volver al total hace que cerrar la toma de un local borre la mercadería del otro. Se probó rompiéndolo.
 - **En la red del local, las dos terminales suben lo mismo, y es a propósito.** La operación no sale de la cola del mostrador cuando se le entrega a la caja. Si una de las dos máquinas no vuelve a encenderse, la venta sube igual desde la otra; la copia que llega segunda choca contra la clave primaria y se descarta sola.
 - **Una venta que la caja ya cobró no se vuelve a guardar cuando el mostrador la reenvía.** Sin esa regla vuelve a la pantalla del cajero con la plata ya cobrada. Está en `loQueSeGuarda()`, con su prueba.
 - **Una venta con devoluciones parciales no se anula entera.** La anulación reingresa el stock mirando lo que salió por la venta y no descuenta lo que ya volvió: sacar esa restricción hace que una venta con una bolsa devuelta reingrese las tres.

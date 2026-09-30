@@ -235,6 +235,8 @@ Un producto puede pertenecer a varios ejes a la vez. Esto es lo que después hab
 > - **El vínculo con los clientes del local es el DNI o el CUIT** que trae cada pedido. Los datos van de la tienda al sistema, nunca al revés.
 >
 > 💡 **Idea anotada para cuando abra el segundo local:** un depósito **«Online»** del que salgan las ventas de la tienda. Resolvería la pregunta de qué stock ve la tienda con dos locales, y en parte reemplaza al colchón: la mercadería de la web no la toca el mostrador. Necesita el módulo de mover mercadería entre depósitos, que es V1-B.
+>
+> ✅ **El módulo de depósitos está hecho (30/09)**: stock por depósito, transferencias, cada máquina vende del suyo. **El depósito «Online» sigue siendo sólo una idea, por decisión del 30/09**: qué se ve en la web ya lo decide «Vender online», y la tienda sigue publicando el total menos el colchón.
 
 ---
 

@@ -11,9 +11,11 @@ import {
   variacionDeCosto,
 } from '@/lib/api/compras'
 import type { FilaCompra, ProductoParaRecibir, Recibido } from '@/lib/api/compras'
+import { depositoPropuesto, listarDepositos } from '@/lib/api/depositos'
 import { enCastellano } from '@/lib/errores'
+import { useTerminal } from '@/lib/terminal'
 import { moneda } from '@/lib/tipos'
-import { boton, botonChico, campo, tarjeta } from '@/estilos'
+import { boton, botonChico, campo, campoDeFiltro, tarjeta } from '@/estilos'
 
 /*
   Recibir la mercadería de una factura de compra.
@@ -31,6 +33,9 @@ import { boton, botonChico, campo, tarjeta } from '@/estilos'
 
   Un producto que no está en el catálogo se da de alta ahí mismo, con lo
   mínimo, y se completa después en Productos.
+
+  Con más de un depósito se elige dónde entra: un proveedor puede
+  descargar directo en el segundo local. Se propone el de esta PC.
 */
 
 interface Renglon {
@@ -56,6 +61,11 @@ export default function RecepcionDeMercaderia({
   const [renglones, setRenglones] = useState<Renglon[]>([])
   const [recibido, setRecibido] = useState<Recibido[] | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const { terminal } = useTerminal()
+  const depositos = useQuery({ queryKey: ['depositos'], queryFn: listarDepositos })
+  const activos = (depositos.data ?? []).filter((d) => d.activo)
+  const [deposito, setDeposito] = useState<string | null>(null)
+  const dondeEntra = deposito ?? depositoPropuesto(activos, terminal?.deposito_id)
 
   const clase = compra.tipo?.clase ?? null
   const discrimina = clase === 'A' || clase === 'M'
@@ -82,6 +92,7 @@ export default function RecepcionDeMercaderia({
           cantidad: numeroDe(r.cantidad),
           costo_unitario: numeroDe(r.costo),
         })),
+        dondeEntra,
       ),
     onSuccess: (r) => {
       setRecibido(r)
@@ -219,6 +230,22 @@ export default function RecepcionDeMercaderia({
       )}
 
       <div className="mt-5 flex flex-wrap items-center justify-end gap-3 border-t border-piedra-100 pt-4">
+        {activos.length > 1 && (
+          <label className="mr-auto flex items-center gap-2 text-sm text-piedra-600">
+            Entra en
+            <select
+              value={dondeEntra ?? ''}
+              onChange={(e) => setDeposito(e.target.value)}
+              className={campoDeFiltro}
+            >
+              {activos.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.nombre}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <button onClick={onCerrar} className={boton.suave}>
           Cancelar
         </button>

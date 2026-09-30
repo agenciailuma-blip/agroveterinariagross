@@ -46,14 +46,30 @@ const URGENCIA: Record<EstadoStock, number> = {
 
 export type FiltroStock = 'atencion' | 'sobrevendido' | 'critico' | 'bajo' | 'todos'
 
-export async function listarStock(filtro: FiltroStock, texto: string): Promise<FilaStock[]> {
-  let q = supabase
-    .from('vista_stock')
+/*
+  Con un depósito elegido, lo mismo pero de ese depósito: la cantidad y
+  el estado son los de ahí, contra los mismos umbrales. Sin depósito, el
+  total, como siempre. Las dos vistas tienen las mismas columnas a
+  propósito, así la pantalla no distingue de dónde vino cada fila.
+*/
+const origen = (depositoId: string | null) =>
+  depositoId
+    ? supabase.from('vista_stock_por_deposito')
+    : supabase.from('vista_stock')
+
+export async function listarStock(
+  filtro: FiltroStock,
+  texto: string,
+  depositoId: string | null = null,
+): Promise<FilaStock[]> {
+  let q = origen(depositoId)
     .select(
       'producto_id, codigo, nombre_interno, unidad_medida, cantidad, umbral_bajo, umbral_critico, estado, precio_venta, costo',
     )
     .eq('activo', true)
     .limit(500)
+
+  if (depositoId) q = q.eq('deposito_id', depositoId)
 
   /*
     'atencion' es el filtro de arranque y agrupa los tres estados que
@@ -84,13 +100,14 @@ export async function listarStock(filtro: FiltroStock, texto: string): Promise<F
 }
 
 /** Cuántos hay en cada estado. Es el encabezado de la pantalla. */
-export async function resumenStock(): Promise<Record<EstadoStock, number>> {
+export async function resumenStock(depositoId: string | null = null): Promise<Record<EstadoStock, number>> {
   const cuenta = async (estado: EstadoStock) => {
-    const { count } = await supabase
-      .from('vista_stock')
+    let q = origen(depositoId)
       .select('producto_id', { count: 'exact', head: true })
       .eq('activo', true)
       .eq('estado', estado)
+    if (depositoId) q = q.eq('deposito_id', depositoId)
+    const { count } = await q
     return count ?? 0
   }
   const [sobrevendido, critico, bajo, ok] = await Promise.all([

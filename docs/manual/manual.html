@@ -229,7 +229,7 @@
         <li><b>Identificación</b> — código, unidad, nombre interno (el que ve el vendedor), nombre público (el que ve el cliente) y descripción.</li>
         <li><b>Precio y rentabilidad</b> — precio de venta con IVA, <b>costo con IVA</b>, margen objetivo y el margen real que está dando, <b>sobre el costo y sobre la venta</b>, porque «margen» significa las dos cosas según quién lo diga. El costo se actualiza solo al recibir mercadería (ver <b>Compras</b>).</li>
         <li><b>Impuestos</b> — alícuota de IVA y rubro de ARCA.</li>
-        <li><b>Stock</b> — cuánto hay y el <b>aviso de stock bajo</b> en dos niveles. Si no se le pone uno propio, hereda el de su categoría o el general.</li>
+        <li><b>Stock</b> — cuánto hay y el <b>aviso de stock bajo</b> en dos niveles. Si no se le pone uno propio, hereda el de su categoría o el general. Con más de un depósito muestra cuánto hay en cada uno, y el stock se corrige contándolo en <b>Inventario</b>, que pregunta el depósito.</li>
         <li><b>Proveedor</b> — a quién se le compra. Es lo que permite después subirle el precio a todo un laboratorio de una sola vez.</li>
         <li><b>Clasificación</b> — rubro, marca, presentación, animal y etapa de vida.</li>
         <li><b>Códigos de barra</b> — todos los que tenga, no uno solo.</li>
@@ -249,6 +249,21 @@
       <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Cuatro números arriba —sobrevendidos, críticos, bajos y en stock— y, por producto, cuánto queda, con cuánto avisa, en qué estado está y <b>cuánto costaría reponerlo</b> hasta el umbral.</div></div>
       <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Filtrar por estado · buscar · <b>copiar la lista</b> para pegarla en un WhatsApp al proveedor · saltar a contar inventario.</div></div>
       <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">La lista de faltantes <b>al portapapeles</b>, en texto, lista para pegar.</div></div>
+
+      <p style="margin:3mm 0 1mm"><b>Con más de un depósito</b></p>
+      <ul class="limpia">
+        <li>Arriba se elige qué mirar: <b>Todos los depósitos</b> es el total de cada producto —lo que hay que pedirle al proveedor— con una columna por depósito al lado; eligiendo uno, la cantidad y el estado son los de ese depósito, contra el mismo aviso de stock bajo.</li>
+        <li>Cada computadora vende del depósito que tiene asignado en <b>Configuración → Cajas y mostradores</b>. Lo que vuelve —una anulación, un remito que regresa— vuelve al depósito del que salió.</li>
+      </ul>
+
+      <p style="margin:3mm 0 1mm"><b>Transferencias: mover mercadería de un depósito a otro</b></p>
+      <ul class="limpia">
+        <li>Se entra con el botón <b>Transferir</b> de esta pantalla. Se elige de qué depósito sale y a cuál va; el sistema propone que salga del de la computadora donde se está cargando.</li>
+        <li>Se <b>pasa el lector</b> o se busca el producto, se escribe la cantidad y Enter: el foco vuelve solo al buscador. Pasar dos veces el mismo producto suma.</li>
+        <li>Al lado de cada renglón se ve cuánto <b>queda en el origen</b> y cuánto va a haber en el destino. Si en el origen no alcanza según el sistema, avisa y deja transferir igual: la mercadería que está en el estante se tiene que poder llevar, y el stock se corrige después contándolo.</li>
+        <li>Al confirmar, la mercadería sale de un depósito y entra en el otro en el mismo momento, con un número de transferencia. <b>El total no cambia.</b></li>
+        <li>Abajo quedan las últimas transferencias, con quién la hizo y qué se llevó. Una transferencia se <b>anula con motivo</b>: la mercadería vuelve al origen y la transferencia queda en la lista, anulada.</li>
+      </ul>
     </div>
   </section>
 
@@ -260,6 +275,7 @@
       <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Abrir una toma por sector · <b>contar escaneando</b> (el foco vuelve solo al buscador después de cada Enter) · recontar un producto · anular la toma · <b>cerrarla</b>, que genera los ajustes.</div></div>
       <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">Nada. El ajuste queda como movimiento de stock, con quién contó y cuándo.</div></div>
       <div class="nota"><b>Se puede contar con el local abierto.</b> El ajuste usa la diferencia detectada <b>al momento de contar</b>, no al de cerrar: si se cuentan 10 a las 10 y a las 11 se vende 1, al cerrar queda 9 y no 10.</div>
+      <div class="nota"><b>Cada toma es de un depósito.</b> Con más de uno, al abrir la toma se elige cuál se cuenta —se propone el de la computadora—, lo contado se compara contra lo que el sistema tiene <b>en ese depósito</b> y el ajuste queda ahí. Contar un local no toca el stock del otro.</div>
     </div>
   </section>
 
@@ -310,7 +326,7 @@
         <li>Se <b>pasa el lector</b> o se escribe el código o el nombre, y el producto se agrega. Se pone la <b>cantidad</b> y el <b>costo unitario como está impreso</b>: en una factura A, sin IVA; en una B o una C, con IVA. El sistema muestra al lado cuánto va a quedar el costo, ya con IVA, y cuánto subió.</li>
         <li>Abajo se ve la <b>suma de los renglones contra el neto de la factura</b>. Si no coinciden, puede ser un flete o una bonificación, o una cantidad mal tipeada.</li>
         <li>Si llega un producto que <b>no está en el catálogo</b>, se da de alta ahí mismo con código, nombre e IVA. Queda sin precio de venta y sin revisar, y aparece primero en Productos para completarlo.</li>
-        <li>Al confirmar, <b>entra al stock</b> y el costo del producto pasa a ser el de esta factura.</li>
+        <li>Al confirmar, <b>entra al stock</b> y el costo del producto pasa a ser el de esta factura. Con más de un depósito, al lado del botón se elige <b>en cuál entra</b>: un proveedor puede descargar directo en otro local.</li>
       </ul>
 
       <div class="nota verde"><b>El precio de venta no cambia solo.</b> Al terminar, el sistema muestra, producto por producto, el costo de antes y el de ahora, el precio actual y el <b>precio que corresponde según el margen</b> cargado en la ficha. Vienen marcados los que cambiarían, y se aplican con un botón. Un producto sin margen cargado dice «sin margen»: no hay precio que proponer.</div>
@@ -490,11 +506,11 @@
       <table class="datos">
         <tr><th style="width:52mm">Bloque</th><th>Para qué</th></tr>
         <tr><td><b>Percepción de IIBB — Misiones</b></td><td>Alícuota y mínimo no sujeto a percepción. Los fija la DGR y cambian por resolución. Y cómo se calcula en una factura que agrupa varias ventas: sobre el total o venta por venta, según lo que indique el contador.</td></tr>
-        <tr><td><b>Cajas y mostradores</b></td><td>Las computadoras del local, con su prefijo, su punto de venta y cuándo se conectó cada una por última vez. <b>Agregar</b> propone el nombre y el prefijo que siguen —<i>Mostrador 3, MOS3</i>—; después, en la PC nueva, se abre el sistema y se la elige en <b>Ventas</b>. El prefijo encabeza cada número de venta de esa máquina y <b>no se cambia después</b>. No se puede dar de baja la caja que escucha a las demás ni una caja abierta.</td></tr>
+        <tr><td><b>Cajas y mostradores</b></td><td>Las computadoras del local, con su prefijo, su punto de venta y cuándo se conectó cada una por última vez. <b>Agregar</b> propone el nombre y el prefijo que siguen —<i>Mostrador 3, MOS3</i>—; después, en la PC nueva, se abre el sistema y se la elige en <b>Ventas</b>. El prefijo encabeza cada número de venta de esa máquina y <b>no se cambia después</b>. No se puede dar de baja la caja que escucha a las demás ni una caja abierta. Con más de un depósito, cada máquina dice <b>de qué depósito vende</b>; las que no tienen uno elegido venden del principal.</td></tr>
         <tr><td><b>Ritmo del mostrador</b></td><td>Si al agregar un producto se pregunta la cantidad. Se prueba unos días y se deja como le sirva al mostrador.</td></tr>
         <tr><td><b>Impresora del mostrador</b></td><td>Se elige de la <b>lista de impresoras de Windows</b>, como al imprimir desde el Word, y se guarda <b>en cada computadora</b>. Tiene un botón para imprimir una prueba.</td></tr>
         <tr><td><b>La red del local</b></td><td>Qué computadora escucha a las demás cuando no hay internet — conviene que sea la de la caja. Desde cada mostrador se puede probar la conexión.</td></tr>
-        <tr><td><b>Depósitos</b></td><td>Los lugares donde hay mercadería. Cada movimiento de stock queda registrado en el suyo.</td></tr>
+        <tr><td><b>Depósitos</b></td><td>Los lugares donde hay mercadería. Cada movimiento de stock queda registrado en el suyo. El <b>principal</b> es del que venden las máquinas sin depósito elegido. Un depósito se da de baja <b>vacío y sin máquinas</b>: primero se transfiere su mercadería.</td></tr>
         <tr><td><b>Datos del emisor</b></td><td>Razón social, CUIT, domicilio, Ingresos Brutos, inicio de actividades y <b>el logo</b> que sale impreso en los comprobantes.</td></tr>
         <tr><td><b>Puntos de venta de ARCA</b></td><td>Cuáles están habilitados para facturar.</td></tr>
         <tr><td><b>Diagnóstico de la terminal</b></td><td>Qué terminal es esta máquina, si tiene copia local y si hay operaciones sin subir. Es lo primero que se mira cuando una PC «no anda».</td></tr>

@@ -13,6 +13,13 @@ export interface TomaInventario {
   contados: number
   con_diferencia: number
   diferencia_valorizada: number
+  /*
+    Lo que se cuenta es un estante, y un estante está en un lugar. La
+    diferencia se calcula contra lo que el sistema tiene en ESE depósito,
+    y el ajuste al cerrar queda ahí.
+  */
+  deposito_id: string
+  deposito: string | null
 }
 
 export interface LineaConteo {
@@ -41,10 +48,16 @@ export async function listarTomas(): Promise<TomaInventario[]> {
   return (data ?? []) as TomaInventario[]
 }
 
-export async function abrirToma(nombre: string, sector: string | null, usuarioId: string) {
+export async function abrirToma(
+  nombre: string,
+  sector: string | null,
+  usuarioId: string,
+  depositoId: string | null,
+) {
   const { data, error } = await supabase
     .from('inventario')
-    .insert({ nombre, sector, abierto_por: usuarioId })
+    // Sin depósito, la base pone el principal.
+    .insert({ nombre, sector, abierto_por: usuarioId, ...(depositoId ? { deposito_id: depositoId } : {}) })
     .select('id')
     .single<{ id: string }>()
   if (error) throw new Error(`No se pudo abrir la toma: ${error.message}`)
@@ -118,8 +131,11 @@ export interface ProductoParaContar {
   Primero por código de barra exacto, porque el caso normal es el
   escaneo y un escaneo no puede devolver una lista: quien está contando
   tiene las manos ocupadas y el lector ya mandó el Enter.
+
+  La cantidad que trae es la del depósito de la toma, que es contra la
+  que se va a comparar lo contado.
 */
-export async function buscarParaContar(texto: string): Promise<ProductoParaContar[]> {
+export async function buscarParaContar(texto: string, depositoId: string): Promise<ProductoParaContar[]> {
   const limpio = texto.trim()
   if (!limpio) return []
 
@@ -131,8 +147,9 @@ export async function buscarParaContar(texto: string): Promise<ProductoParaConta
     .limit(1)
 
   let q = supabase
-    .from('vista_stock')
+    .from('vista_stock_por_deposito')
     .select('producto_id, codigo, nombre_interno, unidad_medida, cantidad')
+    .eq('deposito_id', depositoId)
     .eq('activo', true)
     .limit(15)
 

@@ -21,6 +21,13 @@ export interface Terminal {
     impresora, y porque tiene que estar disponible sin conexión.
   */
   es_punto_de_encuentro: boolean
+  /*
+    De qué depósito sale lo que se vende acá. Nulo es el principal. Las
+    pantallas lo usan para proponer el depósito de esta máquina —al
+    contar, al recibir, al transferir— en vez de hacer elegirlo cada vez.
+    Puede faltar en una terminal guardada por una versión anterior.
+  */
+  deposito_id?: string | null
 }
 
 const CLAVE = 'gross.terminal'
@@ -94,7 +101,7 @@ export function useTerminal() {
     async function cargar() {
       const { data, error } = await supabase
         .from('terminal')
-        .select('id, nombre, tipo, prefijo, punto_venta_id, impresora_windows, es_punto_de_encuentro')
+        .select('id, nombre, tipo, prefijo, punto_venta_id, impresora_windows, es_punto_de_encuentro, deposito_id')
         .eq('activo', true)
         .is('eliminado_en', null)
         .order('nombre')

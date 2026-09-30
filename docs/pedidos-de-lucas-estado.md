@@ -56,7 +56,7 @@ Esto es lo que todavía se le debe a Lucas dentro de V1-A.
 
 ### ✅ 3 · El concepto de depósito quedó reservado (10/09)
 
-Los depósitos y transferencias siguen yendo a **V1-B**. Lo que se hizo el 10/09 es la mitad chica y urgente: **cada movimiento del libro de stock ya dice en qué depósito ocurrió**, y se completa solo con el principal mientras no haya pantalla.
+Los depósitos y transferencias siguen yendo a **V1-B**. ✅ **Hechos el 30/09**: stock por depósito, transferencias y cada máquina vendiendo del suyo. Lo que se hizo el 10/09 es la mitad chica y urgente: **cada movimiento del libro de stock ya dice en qué depósito ocurrió**, y se completa solo con el principal mientras no haya pantalla.
 
 No se ve en ningún lado y no cambió nada de lo que anda. Era ahora o migrar el histórico entero en diciembre — con al menos cinco depósitos, no uno.
 

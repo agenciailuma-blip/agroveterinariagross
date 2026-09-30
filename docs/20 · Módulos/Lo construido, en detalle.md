@@ -569,6 +569,41 @@ Pantalla **Compras**, entre Proveedores y Ventas. Se carga la cabecera de la fac
 - **El libro sigue siendo inmutable.** El relleno obligó a apagar ese disparador por el rato exacto que duró, y se comprobó después que volvió a estar encendido: una edición de un movimiento vuelve a ser rechazada con su mensaje de siempre.
 - Sin depósito principal, un movimiento **falla ruidoso** en vez de entrar sin depósito. Se probó dejando el principal en falso a propósito: un libro a medias es peor que una operación que no se completa, porque el agujero aparece meses después.
 
+### ✅ 3d. El módulo de depósitos: stock de cada uno y transferencias (30/09)
+
+**Lo que se hizo sobre lo reservado el 10/09** ([migración](../../supabase/migrations/20260930120000_mover_mercaderia_entre_depositos.sql)): el saldo de cada producto en cada depósito, la transferencia, el depósito de cada máquina, la toma por depósito y la recepción en el depósito elegido. **El depósito «Online» quedó afuera por decisión del 30/09**: qué ve la web ya lo decide «Vender online».
+
+**El saldo por depósito es otra foto del mismo libro.** `stock_deposito` tiene un renglón por producto y depósito, y lo mantiene **el mismo disparador que mantiene `stock_saldo`**: uno solo y no dos, para que no pueda quedar apagado uno y la suma de los depósitos deje de dar el total. Se reconstruye con `app.recalcular_saldo_stock()`, igual que el total. `vista_stock` no se tocó: todo lo que lee el total —la tienda, Inicio, la caja— sigue igual.
+
+**La transferencia es una cabecera, sus líneas y dos movimientos por producto** —negativo en el origen, positivo en el destino—, con un tipo nuevo, `transferencia`, que no entra en el control de signo por tener las dos puntas. Todo en `registrar_transferencia`, en una transacción: en varios viajes, un corte en el medio dejaría la mercadería fuera del origen sin llegar al destino, y el total bajaría sin que nadie haya vendido. **El id lo genera la pantalla**, así un reintento no transfiere dos veces. **No controla que en el origen alcance**, a propósito: el stock de los primeros días puede estar mal y la bolsa que está en el estante se tiene que poder llevar; la pantalla avisa antes. **Se anula con motivo**, con las dos puntas al revés; no se borra.
+
+**El disparador que completa el depósito ahora sabe más, y sigue siendo el único que decide.** Ninguno de los dieciséis lugares que escriben en el libro cambió. El orden de sus reglas:
+
+1. **Lo que vuelve, vuelve adonde salió**: si el mismo documento ya movió ese producto —la venta que se anula, el remito que vuelve, la compra que se da de baja—, va al mismo depósito.
+2. **La máquina que lo registró**: `terminal.deposito_id`, y si es nulo, el principal.
+3. **Una devolución**: en la máquina donde se recibió; si no se sabe, donde salió la venta.
+4. **La anulación de una venta que salió sólo por remito**: el depósito de la venta.
+5. **El principal**.
+
+> **Por qué la regla 1 va antes que la 2:** la anulación de una venta del segundo local se registra desde cualquier PC —muchas veces la oficina—, y sin la regla 1 la bolsa reingresaría en el depósito de la oficina. Se probó sacándola: la prueba lo atrapó.
+
+**Cada máquina pertenece a un depósito**, y nulo es «el principal». Se elige con `asignar_deposito_terminal`, **una función aparte y no un parámetro más de `editar_terminal`**: cambiarle la firma a ésa obliga a las PC con la versión anterior a mandar un dato que no conocen.
+
+**La toma de inventario es de un depósito.** `inventario.deposito_id` es obligatorio y, si no se manda, lo completa un disparador con el principal. `registrar_conteo` compara contra `stock_deposito` y `cerrar_inventario` ajusta en ese depósito. A una toma con conteos no se le puede cambiar el depósito. **Se probó volviendo a comparar contra el total: la prueba lo atrapó** —dijo 10 donde tenía que decir 5—.
+
+**La recepción pide el depósito** con un parámetro nuevo de `recibir_mercaderia`, que tiene valor por omisión: las PC con la versión anterior la siguen llamando igual y la mercadería entra en el principal. La función se reemplazó entera porque cambió su firma.
+
+**Un depósito se da de baja vacío y sin máquinas.** Un disparador con permisos de dueño —tiene que ver todo el stock aunque quien da de baja no tenga permiso para mirarlo— frena la baja de uno con saldo distinto de cero o con máquinas que venden de ahí, y el mensaje dice qué hacer primero.
+
+**En pantalla, con un solo depósito no aparece nada nuevo**: ni el selector de Stock, ni la columna de Cajas y mostradores, ni la pregunta en Inventario y Recepción. La pantalla Transferencias existe igual y dice que hace falta un segundo depósito. **No tiene entrada en el menú**: se llega desde Stock, porque el menú ya tiene demasiadas y se va a reorganizar.
+
+**Lo que no se hizo, y por qué:**
+- **El mostrador sin internet sigue viendo el total**, no el de su depósito. Lo que se descuenta lo decide la base al subir la venta, así que no hay error de stock: es sólo el número que se lee en pantalla. Se deja para cuando abra el segundo local, porque toca la sincronización.
+- **El umbral de stock bajo es el mismo en todos los depósitos.** Uno por depósito no lo pidió nadie.
+- **La transferencia no tiene «en camino».** Si Lucas quiere controlar lo que se pierde en el viaje, se agrega un segundo paso —confirmar la llegada— sobre esto.
+
+**Verificado contra la base real:** 48 comprobaciones en [`supabase/pruebas/transferencias-entre-depositos.sql`](../../supabase/pruebas/transferencias-entre-depositos.sql), como usuario. La migración se corrió primero en seco junto con la prueba —todo en una transacción que se deshace—, porque toca el disparador por el que pasa cada venta.
+
 ### 🟡 3. Pantallas que faltan
 Reportes. *(El panel de comprobantes con semáforo, la configuración general, el inventario por sectores y las métricas de Inicio ya están hechos.)*
 

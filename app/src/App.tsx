@@ -10,6 +10,7 @@ import Productos from '@/pages/Productos'
 import ImportarProductos from '@/pages/ImportarProductos'
 import Inventario from '@/pages/Inventario'
 import Stock from '@/pages/Stock'
+import Transferencias from '@/pages/Transferencias'
 import Precios from '@/pages/Precios'
 import Proveedores from '@/pages/Proveedores'
 import Compras from '@/pages/Compras'
@@ -119,6 +120,7 @@ function Rutas() {
         <Route path="productos/importar" element={<ImportarProductos />} />
         <Route path="stock" element={<Stock />} />
         <Route path="inventario" element={<Inventario />} />
+        <Route path="transferencias" element={<Transferencias />} />
         <Route path="precios" element={<Precios />} />
         <Route path="proveedores" element={<Proveedores />} />
         <Route path="compras" element={<Compras />} />

@@ -18,6 +18,8 @@ export interface TerminalDelLocal {
   prefijo: string | null
   punto_venta_id: string | null
   es_punto_de_encuentro: boolean
+  /* De qué depósito vende. Nulo es el principal. */
+  deposito_id: string | null
   ultima_sincronizacion: string | null
   version_app: string | null
   punto_venta: { numero: number } | null
@@ -27,7 +29,7 @@ export async function listarTerminales(): Promise<TerminalDelLocal[]> {
   const { data, error } = await supabase
     .from('terminal')
     .select(
-      'id, nombre, tipo, prefijo, punto_venta_id, es_punto_de_encuentro, ultima_sincronizacion, version_app, punto_venta:punto_venta_id(numero)',
+      'id, nombre, tipo, prefijo, punto_venta_id, es_punto_de_encuentro, deposito_id, ultima_sincronizacion, version_app, punto_venta:punto_venta_id(numero)',
     )
     .is('eliminado_en', null)
     .order('tipo')
@@ -59,6 +61,19 @@ export async function editarTerminal(id: string, nombre: string, puntoVentaId: s
     p_id: id,
     p_nombre: nombre,
     p_punto_venta_id: puntoVentaId,
+  })
+  if (error) throw new Error(error.message)
+}
+
+/*
+  De qué depósito vende una máquina. Va aparte de editarTerminal para no
+  cambiarle la firma a esa función, que las PC con la versión anterior
+  siguen llamando. Nulo es el principal.
+*/
+export async function asignarDepositoTerminal(id: string, depositoId: string | null): Promise<void> {
+  const { error } = await supabase.rpc('asignar_deposito_terminal', {
+    p_terminal_id: id,
+    p_deposito_id: depositoId,
   })
   if (error) throw new Error(error.message)
 }

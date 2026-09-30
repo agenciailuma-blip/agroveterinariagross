@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/auth/AuthProvider'
 import { confirmar } from '@/components/Dialogo'
+import { depositoPropuesto, listarDepositos } from '@/lib/api/depositos'
 import {
   abrirToma,
   anularToma,
@@ -13,6 +14,7 @@ import {
   registrarConteo,
 } from '@/lib/api/inventario'
 import type { LineaConteo, ProductoParaContar, TomaInventario } from '@/lib/api/inventario'
+import { useTerminal } from '@/lib/terminal'
 import { moneda, numero } from '@/lib/tipos'
 
 /*
@@ -25,6 +27,11 @@ import { moneda, numero } from '@/lib/tipos'
   Lo que define esta pantalla es el ritmo: escanear, tipear cantidad,
   Enter, y que el foco vuelva solo al buscador. Sobre 3.000 productos,
   cada clic de más son horas.
+
+  Cada toma es de un depósito. Con uno solo no se pregunta; con más, se
+  propone el de esta PC. Contar el segundo local contra el total de los
+  dos daría diferencias que no existen, y cerrar la toma las «corregiría»
+  borrando la mercadería del otro local.
 */
 export default function Inventario() {
   const { tienePermiso } = useAuth()
@@ -47,17 +54,23 @@ export default function Inventario() {
 
 function Listado({ onAbrir }: { onAbrir: (id: string) => void }) {
   const { perfil, tienePermiso } = useAuth()
+  const { terminal } = useTerminal()
   const qc = useQueryClient()
   const [creando, setCreando] = useState(false)
   const [nombre, setNombre] = useState('')
   const [sector, setSector] = useState('')
+  const [deposito, setDeposito] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const puedeInventariar = tienePermiso('stock.inventariar')
   const tomas = useQuery({ queryKey: ['tomas-inventario'], queryFn: listarTomas })
+  const depositos = useQuery({ queryKey: ['depositos'], queryFn: listarDepositos })
+  const activos = (depositos.data ?? []).filter((d) => d.activo)
+  const variosDepositos = activos.length > 1
+  const elegido = deposito ?? depositoPropuesto(activos, terminal?.deposito_id)
 
   const abrir = useMutation({
-    mutationFn: () => abrirToma(nombre.trim(), sector.trim() || null, perfil!.id),
+    mutationFn: () => abrirToma(nombre.trim(), sector.trim() || null, perfil!.id, elegido),
     onSuccess: (id) => {
       qc.invalidateQueries({ queryKey: ['tomas-inventario'] })
       setCreando(false)
@@ -96,7 +109,23 @@ function Listado({ onAbrir }: { onAbrir: (id: string) => void }) {
       {creando && (
         <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-borde">
           <h2 className="font-medium text-tinta">Nueva toma</h2>
-          <div className="mt-3 grid grid-cols-2 gap-3">
+          <div className={`mt-3 grid gap-3 ${variosDepositos ? 'sm:grid-cols-3' : 'grid-cols-2'}`}>
+            {variosDepositos && (
+              <label className="block">
+                <span className="mb-1 block text-xs font-medium text-piedra-600">Depósito</span>
+                <select
+                  value={elegido ?? ''}
+                  onChange={(e) => setDeposito(e.target.value)}
+                  className={claseInput}
+                >
+                  {activos.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.nombre}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             <label className="block">
               <span className="mb-1 block text-xs font-medium text-piedra-600">Nombre</span>
               <input
@@ -165,7 +194,7 @@ function Listado({ onAbrir }: { onAbrir: (id: string) => void }) {
               </tr>
             )}
             {tomas.data?.map((t) => (
-              <FilaToma key={t.id} t={t} onAbrir={onAbrir} />
+              <FilaToma key={t.id} t={t} onAbrir={onAbrir} conDeposito={variosDepositos} />
             ))}
           </tbody>
         </table>
@@ -174,7 +203,15 @@ function Listado({ onAbrir }: { onAbrir: (id: string) => void }) {
   )
 }
 
-function FilaToma({ t, onAbrir }: { t: TomaInventario; onAbrir: (id: string) => void }) {
+function FilaToma({
+  t,
+  onAbrir,
+  conDeposito,
+}: {
+  t: TomaInventario
+  onAbrir: (id: string) => void
+  conDeposito: boolean
+}) {
   const etiqueta = {
     abierto: { texto: 'Abierta', clase: 'bg-amber-100 text-amber-800 ring-amber-200' },
     cerrado: { texto: 'Cerrada', clase: 'bg-verde-100 text-verde-800 ring-verde-200' },
@@ -186,6 +223,7 @@ function FilaToma({ t, onAbrir }: { t: TomaInventario; onAbrir: (id: string) => 
       <td className="px-5 py-2.5">
         <p className="font-medium text-tinta">{t.nombre}</p>
         <p className="text-xs text-piedra-400">
+          {conDeposito && t.deposito ? `${t.deposito} · ` : ''}
           {t.sector ? `${t.sector} · ` : ''}
           {new Date(t.abierto_en).toLocaleDateString('es-AR')}
           {t.abierto_por_nombre ? ` · ${t.abierto_por_nombre}` : ''}
@@ -241,9 +279,9 @@ function Contando({ id, onSalir }: { id: string; onSalir: () => void }) {
   const lineas = useQuery({ queryKey: ['lineas-inventario', id], queryFn: () => lineasDeToma(id) })
 
   const resultados = useQuery({
-    queryKey: ['buscar-contar', texto],
-    queryFn: () => buscarParaContar(texto),
-    enabled: texto.trim().length > 0 && !elegido,
+    queryKey: ['buscar-contar', texto, toma?.deposito_id],
+    queryFn: () => buscarParaContar(texto, toma!.deposito_id),
+    enabled: texto.trim().length > 0 && !elegido && !!toma?.deposito_id,
   })
 
   // Un solo resultado con búsqueda larga es casi seguro un escaneo: se
@@ -316,6 +354,7 @@ function Contando({ id, onSalir }: { id: string; onSalir: () => void }) {
           </button>
           <h1 className="mt-1 text-xl font-semibold tracking-tight text-tinta">{toma?.nombre}</h1>
           <p className="text-sm text-piedra-500">
+            {toma?.deposito ? `${toma.deposito} · ` : ''}
             {toma?.sector ?? 'Sin sector'} ·{' '}
             {abiertaLaToma ? 'abierta' : toma?.estado === 'cerrado' ? 'cerrada' : 'anulada'} ·{' '}
             {numero.format(lineas.data?.length ?? 0)} productos contados

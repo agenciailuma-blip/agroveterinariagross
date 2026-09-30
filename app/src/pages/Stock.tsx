@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '@/auth/AuthProvider'
+import { listarDepositos, stockPorDeposito } from '@/lib/api/depositos'
 import { comoTexto, listarStock, resumenStock } from '@/lib/api/stock'
 import type { FiltroStock } from '@/lib/api/stock'
 import { ESTADO_STOCK, moneda, numero } from '@/lib/tipos'
@@ -17,6 +18,12 @@ import { ESTADO_STOCK, moneda, numero } from '@/lib/tipos'
   y ordenada por urgencia, en vez de listar los 2.261 productos. Mirar
   el catálogo entero para encontrar los ocho que faltan es el trabajo
   que esta pantalla existe para sacar.
+
+  Con más de un depósito, arriba se elige cuál mirar. «Todos» es el
+  total —lo que hay que pedir al proveedor— con una columna por
+  depósito al lado, que es lo que dice qué hay que llevar de un local al
+  otro. Con un depósito solo, el selector no aparece y la pantalla es la
+  de siempre.
 */
 
 const FILTROS: { valor: FiltroStock; etiqueta: string }[] = [
@@ -33,6 +40,8 @@ export default function Stock() {
   const [texto, setTexto] = useState('')
   const [debounced, setDebounced] = useState('')
   const [copiado, setCopiado] = useState(false)
+  // null es «todos»: el total de cada producto.
+  const [deposito, setDeposito] = useState<string | null>(null)
 
   useEffect(() => {
     const t = setTimeout(() => setDebounced(texto.trim()), 250)
@@ -41,17 +50,30 @@ export default function Stock() {
 
   const puedeVer = tienePermiso('stock.ver')
 
+  const depositos = useQuery({ queryKey: ['depositos'], queryFn: listarDepositos, enabled: puedeVer })
+  const activos = (depositos.data ?? []).filter((d) => d.activo)
+  const variosDepositos = activos.length > 1
+
   const filas = useQuery({
-    queryKey: ['stock', filtro, debounced],
-    queryFn: () => listarStock(filtro, debounced),
+    queryKey: ['stock', filtro, debounced, deposito],
+    queryFn: () => listarStock(filtro, debounced, deposito),
     enabled: puedeVer,
   })
 
   const resumen = useQuery({
-    queryKey: ['stock-resumen'],
-    queryFn: resumenStock,
+    queryKey: ['stock-resumen', deposito],
+    queryFn: () => resumenStock(deposito),
     enabled: puedeVer,
   })
+
+  // Con «todos», cuánto hay en cada depósito de lo que está en pantalla.
+  const ids = useMemo(() => (filas.data ?? []).map((f) => f.producto_id), [filas.data])
+  const porDeposito = useQuery({
+    queryKey: ['stock-por-deposito', ids],
+    queryFn: () => stockPorDeposito(ids),
+    enabled: puedeVer && variosDepositos && deposito === null && ids.length > 0,
+  })
+  const columnasPorDeposito = variosDepositos && deposito === null ? activos : []
 
   if (!puedeVer) {
     return (
@@ -86,6 +108,18 @@ export default function Stock() {
           </p>
         </div>
         <div className="flex gap-2">
+          {/*
+            Transferencias no tiene entrada propia en el menú: se llega
+            desde acá, que es donde se ve qué falta en cada depósito.
+          */}
+          {variosDepositos && (
+            <Link
+              to="/transferencias"
+              className="rounded-lg border border-borde px-4 py-2 text-sm font-medium text-tinta hover:bg-piedra-50"
+            >
+              {tienePermiso('stock.transferir') ? 'Transferir' : 'Transferencias'}
+            </Link>
+          )}
           <Link
             to="/inventario"
             className="rounded-lg border border-borde px-4 py-2 text-sm font-medium text-tinta hover:bg-piedra-50"
@@ -101,6 +135,23 @@ export default function Stock() {
           </button>
         </div>
       </div>
+
+      {variosDepositos && (
+        <div className="flex flex-wrap gap-1 rounded-lg bg-piedra-100 p-1" role="group" aria-label="Depósito">
+          {[{ id: null as string | null, nombre: 'Todos los depósitos' }, ...activos].map((d) => (
+            <button
+              key={d.id ?? 'todos'}
+              onClick={() => setDeposito(d.id)}
+              aria-pressed={deposito === d.id}
+              className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                deposito === d.id ? 'bg-white text-tinta shadow-sm' : 'text-piedra-500 hover:text-tinta'
+              }`}
+            >
+              {d.nombre}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/*
         Los cuatro números de arriba. Se leen de un vistazo desde el
@@ -179,7 +230,14 @@ export default function Stock() {
             <thead className="border-b border-borde bg-piedra-50 text-left text-xs tracking-wide text-piedra-500 uppercase">
               <tr>
                 <th className="px-4 py-2.5 font-medium">Producto</th>
-                <th className="py-2.5 text-right font-medium">Quedan</th>
+                <th className="py-2.5 text-right font-medium">
+                  {columnasPorDeposito.length ? 'Total' : 'Quedan'}
+                </th>
+                {columnasPorDeposito.map((d) => (
+                  <th key={d.id} className="hidden py-2.5 pl-3 text-right font-medium md:table-cell">
+                    {d.nombre}
+                  </th>
+                ))}
                 <th className="hidden py-2.5 text-right font-medium sm:table-cell">Avisa en</th>
                 <th className="px-3 py-2.5 font-medium">Estado</th>
                 <th className="hidden px-4 py-2.5 text-right font-medium sm:table-cell">Reponer costaría</th>
@@ -207,6 +265,19 @@ export default function Stock() {
                       {numero.format(f.cantidad)}
                       <span className="ml-1 text-xs text-piedra-400">{f.unidad_medida}</span>
                     </td>
+                    {columnasPorDeposito.map((d) => {
+                      const n = porDeposito.data?.get(f.producto_id)?.get(d.id) ?? 0
+                      return (
+                        <td
+                          key={d.id}
+                          className={`hidden py-2.5 pl-3 text-right tabular-nums md:table-cell ${
+                            n < 0 ? 'text-red-700' : 'text-piedra-600'
+                          }`}
+                        >
+                          {porDeposito.isPending ? '…' : numero.format(n)}
+                        </td>
+                      )
+                    })}
                     <td className="hidden py-2.5 text-right tabular-nums text-piedra-500 sm:table-cell">
                       {numero.format(f.umbral_bajo)}
                     </td>
@@ -240,6 +311,8 @@ export default function Stock() {
       <p className="text-xs text-piedra-400">
         El umbral de cada producto se configura en Productos, adentro de su ficha. Si no tiene uno
         propio, hereda el de su categoría o el general de Configuración.
+        {variosDepositos &&
+          ' Mirando un depósito solo, el estado se calcula con lo que hay en ese depósito contra el mismo umbral.'}
       </p>
     </div>
   )

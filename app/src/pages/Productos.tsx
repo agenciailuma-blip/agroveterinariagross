@@ -14,6 +14,7 @@ import {
   restaurarProductos,
 } from '@/lib/api/catalogo'
 import type { FilaListado, Referencias } from '@/lib/api/catalogo'
+import { listarDepositos, stockPorDeposito } from '@/lib/api/depositos'
 import ProductoEditor from '@/components/ProductoEditor'
 import type { EstadoFormulario } from '@/components/ProductoEditor'
 import { ESTADO_STOCK, moneda, numero } from '@/lib/tipos'
@@ -251,6 +252,26 @@ export default function Productos() {
     () => listado.data?.filas.find((f) => f.producto_id === seleccionado) ?? null,
     [listado.data, seleccionado],
   )
+
+  /*
+    Con más de un depósito, la ficha muestra cuánto hay en cada uno y no
+    deja corregir el stock: «contado: 5» no dice dónde. Se corrige con una
+    toma de inventario, que pregunta el depósito.
+  */
+  const depositos = useQuery({ queryKey: ['depositos'], queryFn: listarDepositos })
+  const depositosActivos = (depositos.data ?? []).filter((d) => d.activo)
+  const stockDelSeleccionado = useQuery({
+    queryKey: ['stock-por-deposito', seleccionado ? [seleccionado] : []],
+    queryFn: () => stockPorDeposito([seleccionado!]),
+    enabled: !!seleccionado && depositosActivos.length > 1,
+  })
+  const porDeposito =
+    depositosActivos.length > 1
+      ? depositosActivos.map((d) => ({
+          nombre: d.nombre,
+          cantidad: (seleccionado && stockDelSeleccionado.data?.get(seleccionado)?.get(d.id)) || 0,
+        }))
+      : null
 
   const siguienteSinRevisar = useCallback(
     (desde: string | null) => {
@@ -836,6 +857,7 @@ export default function Productos() {
                 estado={form}
                 onCambio={setForm}
                 stockActual={filaActual?.cantidad ?? 0}
+                porDeposito={porDeposito}
                 puedeUmbrales={tienePermiso('stock.configurar_umbrales')}
                 esNuevo={creando}
                 guardando={guardar.isPending}

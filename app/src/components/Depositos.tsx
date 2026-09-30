@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   activarDeposito,
@@ -17,11 +18,8 @@ import { boton, botonChico, campo, tarjeta } from '@/estilos'
   pantalla es la de una sección de catálogo: dar de alta, renombrar,
   elegir el principal y dar de baja.
 
-  Lo que NO hace, y conviene decirlo acá para que no se busque: mover
-  mercadería entre depósitos, ni mostrar el stock separado por depósito.
-  Eso es el módulo de V1-B. Lo que sí pasa desde ya es que cada
-  movimiento de stock queda registrado con su depósito, así que el día
-  que exista el módulo el historial ya está repartido.
+  Mover mercadería entre ellos es Transferencias, y el stock de cada uno
+  se ve en Stock. Acá sólo se dice que existen.
 */
 export default function Depositos() {
   const qc = useQueryClient()
@@ -75,8 +73,8 @@ export default function Depositos() {
     <div className={`${tarjeta} p-5`}>
       <h2 className="font-medium text-tinta">Depósitos</h2>
       <p className="mt-1 text-sm text-piedra-500">
-        Dónde está la mercadería. El <strong>principal</strong> es el que se asume cuando un
-        movimiento de stock no dice de dónde salió, que hoy es siempre.
+        Dónde está la mercadería. El <strong>principal</strong> es del que venden las máquinas que
+        no tienen otro elegido, y donde entra lo que no dice adónde va.
       </p>
 
       <table className="mt-4 w-full text-sm">
@@ -201,10 +199,12 @@ export default function Depositos() {
       </div>
 
       <p className="mt-3 text-xs text-piedra-400">
-        Mover mercadería de un depósito a otro, y ver el stock separado por depósito, es lo que
-        sigue: está previsto para después del 26/10. Lo que ya pasa desde ahora es que{' '}
-        <strong>cada movimiento de stock queda registrado con su depósito</strong>, así que ese día
-        el historial va a estar bien repartido y no habrá que inventarlo.
+        Con más de un depósito, el stock se ve separado en Stock y la mercadería se mueve con{' '}
+        <Link to="/transferencias" className="text-marca-700 hover:underline">
+          Transferencias
+        </Link>
+        . De qué depósito vende cada máquina se elige en Cajas y mostradores. Un depósito se da de
+        baja vacío: primero se pasa su mercadería a otro.
       </p>
 
       {error && (

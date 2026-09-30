@@ -68,7 +68,7 @@ Ordenado por lo que más se nota.
 
 | Qué | Dónde está en nuestro plan |
 |---|---|
-| **Depósitos y transferencias entre depósitos** | 🔴 **Lo usan HOY.** Ver abajo — es el hallazgo que cambia una decisión |
+| **Depósitos y transferencias entre depósitos** | ✅ **Hecho el 30/09**: stock por depósito y transferencias. Ver abajo por qué se reservó antes |
 | **IVA compras y ventas** | ✅ La exportación de ventas está (09/09). Compras las baja el contador de ARCA |
 | **Órdenes de compra y de pago** | V1-B — Compras a proveedores |
 | **Cheques** | 🔴 **Confirmado el 10/09: los usan en las dos direcciones.** Alcance nuevo: [`cheques.md`](cheques.md) |

@@ -234,10 +234,16 @@ export interface Recibido {
   precio_sugerido: number | null
 }
 
-export async function recibirMercaderia(compraId: string, lineas: LineaARecibir[]): Promise<Recibido[]> {
+export async function recibirMercaderia(
+  compraId: string,
+  lineas: LineaARecibir[],
+  // En qué depósito entra. Sin él, la base usa el principal.
+  depositoId: string | null = null,
+): Promise<Recibido[]> {
   const { data, error } = await supabase.rpc('recibir_mercaderia', {
     p_compra_id: compraId,
     p_lineas: lineas,
+    p_deposito_id: depositoId,
   })
   if (error) throw new Error(error.message)
   return ((data ?? []) as Recibido[]).map((r) => ({

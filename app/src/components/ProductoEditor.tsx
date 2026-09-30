@@ -36,6 +36,12 @@ interface Props {
   estado: EstadoFormulario
   onCambio: (e: EstadoFormulario) => void
   stockActual: number
+  /*
+    Cuánto hay en cada depósito, cuando hay más de uno. Con esto la ficha
+    muestra el reparto y no ofrece «Contado»: corregir el total no dice
+    en qué depósito está la diferencia.
+  */
+  porDeposito?: { nombre: string; cantidad: number }[] | null
   esNuevo: boolean
   guardando: boolean
   error: string | null
@@ -104,6 +110,7 @@ export default function ProductoEditor({
   estado,
   onCambio,
   stockActual,
+  porDeposito,
   esNuevo,
   guardando,
   error,
@@ -442,31 +449,51 @@ export default function ProductoEditor({
               {numero.format(stockActual)}
             </div>
           </Campo>
-          <Campo etiqueta="Contado">
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              value={estado.stockContado}
-              onChange={(e) => onCambio({ ...estado, stockContado: e.target.value })}
-              className={`${claseInput} text-right tabular-nums`}
-              placeholder="—"
-            />
-          </Campo>
-          <div className="col-span-2 flex items-end">
-            {diferencia !== null && diferencia !== 0 && (
-              <p
-                className={`w-full rounded-lg px-3 py-1.5 text-xs ${
-                  diferencia > 0
-                    ? 'bg-marca-50 text-marca-700 ring-1 ring-marca-200'
-                    : 'bg-amber-50 text-amber-800 ring-1 ring-amber-200'
-                }`}
-              >
-                Se registra un movimiento de {diferencia > 0 ? '+' : ''}
-                {numero.format(diferencia)}
+          {porDeposito && porDeposito.length > 1 ? (
+            <div className="col-span-3 text-xs text-piedra-500">
+              <ul className="space-y-0.5">
+                {porDeposito.map((d) => (
+                  <li key={d.nombre} className="flex justify-between gap-3">
+                    <span>{d.nombre}</span>
+                    <span className={`tabular-nums ${d.cantidad < 0 ? 'text-red-700' : 'text-tinta'}`}>
+                      {numero.format(d.cantidad)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-1 text-piedra-400">
+                Para corregirlo, contalo en Inventario: la toma pregunta de qué depósito es.
               </p>
-            )}
-          </div>
+            </div>
+          ) : (
+            <>
+              <Campo etiqueta="Contado">
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={estado.stockContado}
+                  onChange={(e) => onCambio({ ...estado, stockContado: e.target.value })}
+                  className={`${claseInput} text-right tabular-nums`}
+                  placeholder="—"
+                />
+              </Campo>
+              <div className="col-span-2 flex items-end">
+                {diferencia !== null && diferencia !== 0 && (
+                  <p
+                    className={`w-full rounded-lg px-3 py-1.5 text-xs ${
+                      diferencia > 0
+                        ? 'bg-marca-50 text-marca-700 ring-1 ring-marca-200'
+                        : 'bg-amber-50 text-amber-800 ring-1 ring-amber-200'
+                    }`}
+                  >
+                    Se registra un movimiento de {diferencia > 0 ? '+' : ''}
+                    {numero.format(diferencia)}
+                  </p>
+                )}
+              </div>
+            </>
+          )}
 
           {/*
             Aviso de stock bajo. Sugerencia 7 de Lucas.
