@@ -172,7 +172,7 @@
   </table>
 
   <div class="nota verde">
-    <b>El menú tiene nueve secciones.</b> Adentro de cada una, las pantallas que se usan juntas son
+    <b>El menú tiene diez secciones.</b> Adentro de cada una, las pantallas que se usan juntas son
     <b>pestañas</b> en la franja de arriba: en Stock están Stock, Inventario y Transferencias; en Compras, las
     facturas, las cuentas y los proveedores. Tocar una sección abre la última pestaña que se usó <b>en esa
     computadora</b>: en la caja, «Ventas» abre directo la Caja.
@@ -194,10 +194,11 @@
         <tr><td><b>Clientes</b></td><td>Clientes <span class="gris">(5)</span></td></tr>
         <tr><td><b>Productos</b></td><td>Productos <span class="gris">(6)</span> · Precios <span class="gris">(7)</span></td></tr>
         <tr><td><b>Stock</b></td><td>Stock <span class="gris">(8)</span> · Inventario <span class="gris">(9)</span> · Transferencias <span class="gris">(con más de un depósito; en la 8)</span></td></tr>
-        <tr><td><b>Compras</b></td><td>Compras <span class="gris">(10)</span> · Cuentas de proveedores <span class="gris">(11)</span> · Proveedores <span class="gris">(12)</span></td></tr>
-        <tr><td><b>Comprobantes</b></td><td>Facturación <span class="gris">(13)</span> · Remitos <span class="gris">(14)</span> · Presupuestos <span class="gris">(15)</span></td></tr>
-        <tr><td><b>Reportes</b></td><td>Reportes <span class="gris">(16)</span></td></tr>
-        <tr><td><b>Administración</b></td><td>Usuarios <span class="gris">(17)</span> · Configuración <span class="gris">(18)</span></td></tr>
+        <tr><td><b>Compras</b></td><td>Compras <span class="gris">(10)</span> · Cuentas de proveedores <span class="gris">(11)</span> · Proveedores <span class="gris">(12)</span> · Costos <span class="gris">(13)</span></td></tr>
+        <tr><td><b>Tesorería</b></td><td>Cheques <span class="gris">(14)</span> · Calendario <span class="gris">(15)</span></td></tr>
+        <tr><td><b>Comprobantes</b></td><td>Facturación <span class="gris">(16)</span> · Remitos <span class="gris">(17)</span> · Presupuestos <span class="gris">(18)</span></td></tr>
+        <tr><td><b>Reportes</b></td><td>Reportes <span class="gris">(19)</span></td></tr>
+        <tr><td><b>Administración</b></td><td>Usuarios <span class="gris">(20)</span> · Configuración <span class="gris">(21)</span></td></tr>
     </table>
     <p style="margin-top:4mm">Y al final: <b>qué se imprime y qué se exporta</b>, <b>trabajar sin internet</b>,
     <b>desde el celular</b> y <b>cómo piensa el sistema</b>.</p>
@@ -252,6 +253,7 @@
       <div class="nota"><b>Al cobrar se factura y se imprime solo.</b> El cajero no tiene que ir a otra pantalla ni apretar nada más: al confirmar el cobro se pide la factura y el ticket sale por la impresora del mostrador. El botón que queda al lado es para verlo o darle una copia al cliente. Si el ticket no salió, el sistema lo dice.</div>
       <div class="nota"><b>Si el pago es en cuotas, el total ya viene con el recargo.</b> La pantalla lo aclara —cuánto es y cuánto sería de contado—, y el importe a cobrar coincide con el del posnet. El porcentaje de cada plan se carga en <b>Precios</b>.</div>
       <div class="nota"><b>Sin internet, la caja factura igual.</b> Se cobra como siempre y el ticket sale con el código de contingencia (CAEA). Lo único que cambia en la pantalla es que el cartel verde lo aclara.</div>
+      <div class="nota verde"><b>Con cheque</b>, se elige «Cheque» y se escriben banco, número, fecha de pago y quién lo firmó; si es e-cheq, se marca. Se pueden cargar <b>varios cheques</b> para una misma compra, y completar con otro medio. <b>El cheque no entra al arqueo</b>: va a la cartera de <b>Tesorería</b>. Al cerrar la caja se listan los cheques del turno, para entregarlos junto con el cierre. Funciona también sin internet.</div>
       <div class="nota"><b>«Sin factura» tiene permiso propio</b>, que no tienen ni el cajero ni el vendedor. Y a un Responsable Inscripto no se le ofrece: compra para descargar IVA.</div>
       <div class="nota verde"><b>«Factura después»</b> aparece para los clientes con cuenta corriente, también para un Responsable Inscripto. La venta va <b>entera a la cuenta corriente</b> y sale un <b>comprobante interno</b>. La factura la emite el encargado más tarde desde <b>Facturación → Por facturar</b>: sola, o junto con otras ventas del mismo cliente.</div>
       <div class="nota"><b>La percepción de IIBB se cobra con la factura.</b> Cuando el cliente es Responsable Inscripto y la compra pasa el mínimo, el panel de cobro muestra <i>Productos</i>, <i>Percepción IIBB Misiones</i> y el total con las dos cosas: ése es el precio final que se le dice al cliente. Si paga en el momento se cobra entero; si va a cuenta corriente, la deuda es la factura entera. La cola de la izquierda muestra el mismo total, con la leyenda <i>con percepción IIBB</i>.</div>
@@ -281,6 +283,7 @@
       <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">El <b>resumen de cuenta corriente en PDF</b>, para mandarle al cliente.</div></div>
 
       <div class="nota"><b>Importar la planilla de clientes</b> —botón <i>Importar planilla</i>— trae todos los clientes de una vez, con el <b>saldo que debe cada uno a una fecha</b>. El sistema reconoce las columnas y las muestra con un dato de ejemplo para confirmarlas. Antes de importar muestra <b>la suma de todos los saldos</b>: ése es el número que hay que comparar con el total del sistema anterior. Se puede importar la misma planilla las veces que haga falta: cada cliente se reconoce por su código o su CUIT y el saldo queda <b>igual</b> al de la planilla, no se suma. Un CUIT con el último dígito mal no entra, porque ARCA rechazaría la factura.</div>
+      <div class="nota"><b>Cobrar la cuenta con cheques.</b> En la cobranza se elige «Cheque» y se carga cada cheque con su importe, banco, número y fecha de pago; pueden ser varios. Cada uno queda como un renglón de la cuenta —<i>«Cobranza con cheque Credicoop N° 555001 al 30/11»</i>— y pasa a la cartera de <b>Tesorería</b>.</div>
       <div class="nota verde"><b>El resumen de cuenta</b> tiene la forma de un resumen del banco: saldo anterior, cada factura, pago y nota de crédito con el saldo que va quedando, y el saldo al cierre. Se elige el período —este mes, el mes pasado o todo— y se guarda como PDF con el nombre del cliente ya puesto, listo para adjuntar a un mail. Si el resumen llega hasta hoy, dice además cuánto de ese saldo está vencido y desde cuándo.</div>
     </div>
   </section>
@@ -298,7 +301,7 @@
       <p style="margin:3mm 0 1mm"><b>Lo que tiene la ficha del producto</b></p>
       <ul class="limpia">
         <li><b>Identificación</b> — código, unidad, nombre interno (el que ve el vendedor), nombre público (el que ve el cliente) y descripción.</li>
-        <li><b>Precio y rentabilidad</b> — precio de venta con IVA, <b>costo con IVA</b>, margen objetivo y el margen real que está dando, <b>sobre el costo y sobre la venta</b>, porque «margen» significa las dos cosas según quién lo diga. El costo se actualiza solo al recibir mercadería (ver <b>Compras</b>).</li>
+        <li><b>Precio y rentabilidad</b> — precio de venta con IVA, <b>costo con IVA</b>, margen objetivo y el margen real que está dando, <b>sobre el costo y sobre la venta</b>, porque «margen» significa las dos cosas según quién lo diga. El costo se actualiza solo al recibir mercadería (ver <b>Compras</b>). Debajo, el desplegable <b>Historial de costos</b>: cada vez que se compró, con la fecha, el proveedor, la factura, el costo y cuánto cambió contra la compra anterior, más una línea chica que muestra cómo vino.</li>
         <li><b>Impuestos</b> — alícuota de IVA y rubro de ARCA.</li>
         <li><b>Stock</b> — cuánto hay y el <b>aviso de stock bajo</b> en dos niveles. Si no se le pone uno propio, hereda el de su categoría o el general. Con más de un depósito muestra cuánto hay en cada uno, y el stock se corrige contándolo en <b>Inventario</b>, que pregunta el depósito.</li>
         <li><b>Proveedor</b> — a quién se le compra. Es lo que permite después subirle el precio a todo un laboratorio de una sola vez.</li>
@@ -366,7 +369,7 @@
     </div>
   </section>
 
-  <p class="seccion-menu">Sección Compras · Compras · Cuentas de proveedores · Proveedores</p>
+  <p class="seccion-menu">Sección Compras · Compras · Cuentas de proveedores · Proveedores · Costos</p>
 
   <section class="pantalla">
     <header><span class="numero">10</span><div><h3>Compras</h3><p class="lema">La factura del proveedor, y la mercadería que trae.</p></div></header>
@@ -400,12 +403,14 @@
 
       <p style="margin:3mm 0 1mm"><b>Registrar un pago</b></p>
       <ul class="limpia">
-        <li>Se pone <b>con qué se paga</b>: transferencia, efectivo, cheque propio o de tercero —con banco, número y fecha de cobro— u otro. Un pago puede ir en partes: una transferencia y un cheque.</li>
+        <li>Se pone <b>con qué se paga</b>: transferencia, efectivo, <b>un cheque de la cartera</b> —se elige de la lista y se endosa entero—, <b>un cheque propio o e-cheq</b> —con banco, número y fecha de pago— u otro. Un pago puede ir en partes: una transferencia y dos cheques.</li>
+        <li>Con transferencia aparecen <b>el CBU, el alias y el CUIT del proveedor</b>, listos para copiar y pegar en el banco.</li>
         <li>Las facturas vienen <b>marcadas de la más vieja a la más nueva</b>, descontando primero las notas de crédito. Se pueden cambiar a mano.</li>
         <li>Lo que sobra queda <b>a cuenta</b>: baja el saldo sin cancelar ninguna factura en particular.</li>
       </ul>
       <div class="nota"><b>El saldo inicial</b> es lo que se le debía a cada proveedor el día que se empezó a usar el sistema. Se carga una vez por proveedor, con esa fecha. Las facturas de antes de esa fecha <b>no se cargan</b>: ya están adentro de ese número. Se le pueden imputar pagos como a una factura. Con <i>Importar saldos</i> se cargan todos de una vez desde una planilla —proveedor, CUIT y saldo—, viendo antes la suma; los proveedores que no existan se crean.</div>
-      <div class="nota verde"><b>Toda factura va a la cuenta.</b> Una factura que se paga en el momento es una factura y un pago del mismo día: el saldo queda en cero y el resumen cuenta la historia entera. Anular un pago no lo borra: queda anulado con el motivo, y las facturas que pagaba vuelven a figurar pendientes.</div>
+      <div class="nota verde"><b>Toda factura va a la cuenta.</b> Una factura que se paga en el momento es una factura y un pago del mismo día: el saldo queda en cero y el resumen cuenta la historia entera. Anular un pago no lo borra: queda anulado con el motivo, y las facturas que pagaba vuelven a figurar pendientes; el cheque de la cartera vuelve a la cartera y el propio queda anulado.</div>
+      <div class="nota"><b>Un cheque que se le dio y volvió rechazado</b> aparece en su cuenta como <i>«Cheque Macro N° 777 rechazado»</i>, vencido desde ese día, y se paga como una factura. Se marca en <b>Tesorería → Cheques</b>.</div>
     </div>
   </section>
 
@@ -413,7 +418,7 @@
     <header><span class="numero">12</span><div><h3>Proveedores</h3><p class="lema">A quién se le compra, y cómo cambiarle el precio a todo un laboratorio de una vez.</p></div></header>
     <div class="cuerpo">
       <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Cuando llega la lista nueva de un laboratorio, aplicar el aumento a todos sus productos en una operación, y poder volver atrás si el número salió mal.</div></div>
-      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Por proveedor: CUIT, contacto y <b>cuántos productos tiene asignados</b>, que es a cuántos les va a pegar un ajuste.</div></div>
+      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Por proveedor: CUIT, contacto y <b>cuántos productos tiene asignados</b>, que es a cuántos les va a pegar un ajuste. En su ficha, <b>para transferirle: CBU o CVU y alias</b>. El CBU se controla al escribirlo con sus dígitos verificadores, como hacen los bancos, y la ficha dice de qué banco es.</div></div>
       <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Crear, editar y dar de baja · <b>ajustar precios en masa</b> por proveedor y rubro · <b>deshacer</b> un ajuste.</div></div>
       <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">Nada.</div></div>
 
@@ -428,10 +433,55 @@
     </div>
   </section>
 
+
+  <section class="pantalla">
+    <header><span class="numero">13</span><div><h3>Costos</h3><p class="lema">Cuánto costó cada cosa a cada proveedor, y si otro la tiene a menos.</p></div></header>
+    <div class="cuerpo">
+      <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Saber si la última compra vino más cara o más barata que la anterior, y de quién. Cuando el mismo producto se compra a varios proveedores, el costo ya no se pisa sin dejar rastro.</div></div>
+      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Un renglón por producto y proveedor: el <b>último costo</b> y su fecha, el <b>anterior</b> al mismo proveedor, <b>cuánto cambió</b> —en ámbar si subió, en verde si bajó— y, si otro proveedor lo vendió más barato en su última compra, <b>quién y a cuánto</b>.</div></div>
+      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Elegir un proveedor o verlos todos · buscar un producto · ordenar por lo que más subió, por lo último que se compró o por producto.</div></div>
+      <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">Nada.</div></div>
+      <div class="nota"><b>Los costos son con IVA</b>, como quedan en el producto: una factura A y una B del mismo producto no pueden dar una diferencia del 21% que no existe. Se arman solos con cada mercadería recibida en Compras, y una factura dada de baja no cuenta.</div>
+    </div>
+  </section>
+
+  <p class="seccion-menu">Sección Tesorería · Cheques · Calendario</p>
+
+  <section class="pantalla">
+    <header><span class="numero">14</span><div><h3>Cheques</h3><p class="lema">Los que se recibieron, los que se libraron, y dónde está cada uno.</p></div></header>
+    <div class="cuerpo">
+      <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Un cheque no es plata que entró: es una promesa con fecha, que además se mueve. Esta pantalla dice qué cheques hay, de quién, por cuánto, para cuándo y dónde está cada uno.</div></div>
+      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Arriba: cuánto hay <b>en cartera</b>, cuáles <b>hay que depositar esta semana</b> y cuánto falta que se debite de los <b>propios</b>. Tres vistas: <b>En cartera</b> —ordenados por fecha de pago—, <b>Propios a debitar</b> y <b>Todos</b>, con buscador. Por cheque: banco, número, si es e-cheq, al día o diferido, <b>cuántos días quedan para depositarlo</b>, quién lo firmó, quién lo entregó y a quién se le dio. Al abrirlo, su <b>historia</b>: cuándo entró, quién lo recibió, a quién se endosó.</div></div>
+      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor"><b>Depositar</b> de a varios, con fecha y cuenta · <b>devolver</b> un cheque al cliente · marcarlo <b>rechazado</b>, con el motivo y los gastos del banco · marcar propios como <b>debitados</b> · <b>corregir datos</b> mal tipeados · <b>deshacer</b> un depósito o un débito marcado por error.</div></div>
+      <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">Nada.</div></div>
+
+      <p style="margin:3mm 0 1mm"><b>Por dónde entra y por dónde sale un cheque</b></p>
+      <ul class="limpia">
+        <li><b>Entra</b> cuando un cliente paga con cheque en la <b>caja</b> o en la <b>cobranza de su cuenta corriente</b>.</li>
+        <li><b>Sale</b> depositado, desde acá; <b>endosado a un proveedor</b>, al registrarle un pago en Cuentas de proveedores; o devuelto al cliente.</li>
+        <li>Los <b>propios</b> —de chequera o e-cheq— se cargan al pagarle a un proveedor, y quedan esperando el débito.</li>
+      </ul>
+      <div class="nota verde"><b>El plazo:</b> un cheque se puede depositar desde su fecha de pago y durante 30 días; después el banco ya no lo paga. La cartera lo cuenta en cada cheque, y lo pinta en ámbar la última semana.</div>
+      <div class="nota"><b>El rechazo mueve dos cuentas.</b> Si el cheque se le había dado a un proveedor, vuelve a su cuenta: se le debe de nuevo y se paga como una factura. Y se le puede <b>cargar al cliente</b> que lo entregó, con los gastos del banco, en su cuenta corriente. El diálogo dice las dos cosas antes de confirmar.</div>
+      <div class="nota"><b>El importe no se corrige</b>, porque ya movió cuentas: si está mal, el cheque se devuelve o se anula el pago y se carga de nuevo. Lo demás —banco, número, fecha, librador— sí, y queda en la historia qué cambió.</div>
+    </div>
+  </section>
+
+  <section class="pantalla">
+    <header><span class="numero">15</span><div><h3>Calendario</h3><p class="lema">Qué se cobra y qué se paga, día por día.</p></div></header>
+    <div class="cuerpo">
+      <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Contestar una pregunta: ¿alcanza lo que entra estos días para lo que sale? Es lo que dicen los papeles, no una promesa: un cliente puede no pagar el día que vence.</div></div>
+      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Para los próximos 7, 15, 30 o 60 días: lo que <b>entra</b> —cheques en cartera por su fecha de pago, cuentas de clientes por su vencimiento— y lo que <b>sale</b> —facturas de proveedores por su vencimiento, cheques propios el día que se debitan—, con el total de cada día y la diferencia. Arriba, lo <b>atrasado o para cobrar ya</b>; abajo, las facturas cargadas sin vencimiento.</div></div>
+      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Elegir cuántos días mirar · tocar un renglón para ir al cheque o a la cuenta del proveedor.</div></div>
+      <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">Nada.</div></div>
+      <div class="nota verde"><b>Nada cuenta dos veces.</b> Una factura pagada con un cheque diferido deja de figurar como a pagar y aparece el cheque, en su fecha. Una cobranza con cheque baja la cuenta del cliente y el cheque aparece en la suya.</div>
+    </div>
+  </section>
+
   <p class="seccion-menu">Sección Comprobantes · Facturación · Remitos · Presupuestos</p>
 
   <section class="pantalla">
-    <header><span class="numero">13</span><div><h3>Facturación</h3><p class="lema">El semáforo de todo lo que se le informa a ARCA.</p></div></header>
+    <header><span class="numero">16</span><div><h3>Facturación</h3><p class="lema">El semáforo de todo lo que se le informa a ARCA.</p></div></header>
     <div class="cuerpo">
       <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Ver de un vistazo si todo lo que se cobró tiene su comprobante, y resolver lo que quedó en el camino.</div></div>
       <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">El semáforo por comprobante —autorizado e impreso, autorizado sin imprimir, esperando autorización, rechazado— · <b>el motivo exacto del rechazo</b> · el aviso de los días que quedan para pedir el código de autorización · y el <b>panel rojo</b> de ventas cobradas sin comprobante, que es el caso grave: la plata entró y falta el respaldo · el cuadro <b>Por facturar</b>, con lo que los clientes se llevaron a cuenta para facturar después.</div></div>
@@ -465,7 +515,7 @@
   </section>
 
   <section class="pantalla">
-    <header><span class="numero">14</span><div><h3>Remitos</h3><p class="lema">La mercadería que sale del local, con su comprobante de entrega.</p></div></header>
+    <header><span class="numero">17</span><div><h3>Remitos</h3><p class="lema">La mercadería que sale del local, con su comprobante de entrega.</p></div></header>
     <div class="cuerpo">
       <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Que lo que sale en la camioneta tenga un papel que alguien firma, y que el stock salga una sola vez.</div></div>
       <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor"><b>Entregado y sin cobrar</b>, arriba y en ámbar: mercadería que salió y plata que no entró, con cuántos días lleva · el listado con destino, transporte, si descontó stock y a qué venta corresponde.</div></div>
@@ -478,7 +528,7 @@
   </section>
 
   <section class="pantalla">
-    <header><span class="numero">15</span><div><h3>Presupuestos</h3><p class="lema">El archivo de los comprobantes que numera Gross.</p></div></header>
+    <header><span class="numero">18</span><div><h3>Presupuestos</h3><p class="lema">El archivo de los comprobantes que numera Gross.</p></div></header>
     <div class="cuerpo">
       <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Tener juntos los papeles propios —presupuestos, remitos e internos— separados de los que numera y controla ARCA.</div></div>
       <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Número, fecha, cliente, total y estado, con los presupuestos <b>vencidos</b> marcados.</div></div>
@@ -489,7 +539,7 @@
   </section>
 
   <section class="pantalla">
-    <header><span class="numero">16</span><div><h3>Reportes</h3><p class="lema">Cómo viene el mes y quién tiene plata de Gross en la calle.</p></div></header>
+    <header><span class="numero">19</span><div><h3>Reportes</h3><p class="lema">Cómo viene el mes y quién tiene plata de Gross en la calle.</p></div></header>
     <div class="cuerpo">
       <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Mirar el negocio con tiempo, no de paso: la venta comparada contra el período anterior, y la deuda de los clientes junta, que en la ficha se ve de a un cliente por vez.</div></div>
       <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Ventas de hoy, de los últimos 7 días y del mes, cada una <b>comparada contra el período anterior</b> · cuánta plata hay en la calle, cuánta está vencida y cuánta por vencer · cuántos clientes pasaron su límite · y por cliente: cuánto debe, cuánto está vencido, cuántos días de atraso y su teléfono.</div></div>
@@ -502,7 +552,7 @@
   <p class="seccion-menu">Sección Administración · Usuarios · Configuración</p>
 
   <section class="pantalla">
-    <header><span class="numero">17</span><div><h3>Usuarios</h3><p class="lema">Quién entra, qué puede hacer y con qué PIN.</p></div></header>
+    <header><span class="numero">20</span><div><h3>Usuarios</h3><p class="lema">Quién entra, qué puede hacer y con qué PIN.</p></div></header>
     <div class="cuerpo">
       <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Que cada uno vea y pueda hacer lo de su puesto, y que toda operación quede con nombre y apellido.</div></div>
       <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Los usuarios, su rol, y los permisos de cada rol agrupados por tema.</div></div>
@@ -513,7 +563,7 @@
   </section>
 
   <section class="pantalla">
-    <header><span class="numero">18</span><div><h3>Configuración</h3><p class="lema">Lo que puede cambiar sin depender de una actualización.</p></div></header>
+    <header><span class="numero">21</span><div><h3>Configuración</h3><p class="lema">Lo que puede cambiar sin depender de una actualización.</p></div></header>
     <div class="cuerpo">
       <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Que lo que cambia por resolución, por costumbre del mostrador o por cómo está armado el local se pueda tocar sin llamar a nadie.</div></div>
       <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Está en tres pestañas, según a quién le importa el cambio: <b>Facturación</b> —lo que sale impreso y lo que se le informa a ARCA y a Rentas—, <b>El local</b> —las máquinas, los depósitos y cómo se arma una venta; vale para todas las computadoras— y <b>Esta computadora</b> —lo que se guarda en la máquina que se tiene adelante—. Ver el cuadro de abajo.</div></div>

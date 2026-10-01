@@ -1,6 +1,6 @@
 ---
-actualizado: 2026-09-30
-estado: construido — falta verlo en pantalla y publicarlo
+actualizado: 2026-10-01
+estado: publicado en la 0.13.0 — falta ver en pantalla depositar, debitar y devolver
 ---
 
 # Cheques
@@ -75,6 +75,6 @@ Verificado contra la base real: **62 comprobaciones** en [`supabase/pruebas/cheq
 
 ## Lo que queda
 
-- **Verlo en pantalla** con un cheque de punta a punta: caja, cartera, endoso, rechazo.
+- ~~**Verlo en pantalla** con un cheque de punta a punta: caja, cartera, endoso, rechazo.~~ ✅ **Visto el 01/10**, junto con la cobranza con cheque, el e-cheq propio, el cierre de caja y el Calendario. **Falta ver en pantalla** depositar, marcar debitado, devolver y deshacer —probados contra la base—, y Cheques y Calendario a 375 px.
 - **La lista de precio del medio «Cheque»** arranca en la de contado, igual que la transferencia. Si Gross le cobra distinto a un cheque diferido, se cambia en Precios → Medios de pago: es configuración, no desarrollo.
 - **La conciliación con el banco** —marcar solo lo que el extracto dice que se acreditó o se debitó— no está: se marca a mano. Tiene sentido cuando haya extractos que leer.
