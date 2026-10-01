@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { db } from '@/lib/local/db'
 import { abrirComprobante, sellarCliente, sellarVenta } from '@/lib/local/cifrado'
 import {
@@ -26,6 +26,19 @@ import {
 
 const AHORA = '2026-09-18T12:00:00.000Z'
 const HOY = hoyEnLaTerminal(new Date(AHORA))
+
+/*
+  El reloj, quieto en AHORA. El CAEA de las pruebas es el de la segunda
+  quincena de septiembre, y «vigente» se decide contra la fecha de la
+  máquina: con el reloj de verdad, estas pruebas empezaron a fallar
+  solas el 1/10, sin que nada del código cambiara. Sólo se fija la
+  fecha; los temporizadores siguen siendo los reales.
+*/
+beforeAll(() => {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date(AHORA))
+})
+afterAll(() => vi.useRealTimers())
 
 const VENTA = 'venta-caea-1'
 const CLIENTE = 'cli-1'

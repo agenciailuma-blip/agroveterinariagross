@@ -12,8 +12,10 @@ import { campo } from '@/estilos'
   piden lo mismo y un cheque cargado en la caja se puede endosar sin
   completar nada.
 
-  En una grilla que se acomoda al ancho: en el celular van de a dos por
-  renglón, sin desplazarse hacia el costado.
+  En una grilla que se acomoda al ancho DEL LUGAR donde está, no al de la
+  pantalla: el panel de cobro de la caja es angosto aunque el monitor
+  sea ancho, y con cuatro columnas ahí el librador se cortaba. De a dos
+  por renglón donde no entra más, sin desplazarse hacia el costado.
 */
 export default function CamposCheque({
   valor,
@@ -44,8 +46,8 @@ export default function CamposCheque({
   const mostrarFalta = falta && (empezado || !/^Falta/.test(falta))
 
   return (
-    <div className="space-y-2">
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+    <div className="@container space-y-2">
+      <div className="grid grid-cols-2 gap-2 @xl:grid-cols-4">
         <label className="block min-w-0">
           <span className="mb-1 block text-xs text-piedra-600">Banco</span>
           <input

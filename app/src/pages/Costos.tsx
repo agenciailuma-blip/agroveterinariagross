@@ -52,6 +52,10 @@ export default function Costos() {
   const subieron = filas.filter((f) => (f.variacion ?? 0) > 0.005).length
   const bajaron = filas.filter((f) => (f.variacion ?? 0) < -0.005).length
   const conOtro = filas.filter((f) => f.otro_costo !== null).length
+  // Con «Todos», un producto aparece una vez por proveedor: contar
+  // renglones diría «2 productos» de uno solo comprado a dos.
+  const productos = new Set(filas.map((f) => f.producto_id)).size
+  const nProveedores = new Set(filas.map((f) => f.proveedor_id)).size
 
   return (
     <div className="space-y-5">
@@ -95,10 +99,17 @@ export default function Costos() {
 
       {filas.length > 0 && (
         <p className="text-sm text-piedra-600">
-          {filas.length === 1 ? '1 producto' : `${filas.length} productos`}
-          {subieron > 0 && <span className="text-amber-700"> · {subieron} subieron</span>}
-          {bajaron > 0 && <span className="text-verde-700"> · {bajaron} bajaron</span>}
-          {conOtro > 0 && <span> · {conOtro} los vendió más barato otro proveedor</span>}
+          {productos === 1 ? '1 producto' : `${productos} productos`}
+          {!proveedorId && nProveedores > 1 && ` de ${nProveedores} proveedores`}
+          {subieron > 0 && (
+            <span className="text-amber-700"> · {subieron === 1 ? '1 compra subió' : `${subieron} compras subieron`}</span>
+          )}
+          {bajaron > 0 && (
+            <span className="text-verde-700"> · {bajaron === 1 ? '1 compra bajó' : `${bajaron} compras bajaron`}</span>
+          )}
+          {conOtro > 0 && (
+            <span> · {conOtro === 1 ? 'en 1, otro proveedor lo vendió más barato' : `en ${conOtro}, otro proveedor lo vendió más barato`}</span>
+          )}
         </p>
       )}
 

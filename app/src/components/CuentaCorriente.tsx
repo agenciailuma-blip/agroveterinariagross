@@ -121,57 +121,47 @@ export default function CuentaCorriente({
         <div className="border-b border-borde px-5 py-2.5">
           <p className="text-xs font-medium tracking-wide text-piedra-400 uppercase">Movimientos</p>
         </div>
-        <div className="max-h-[26rem] overflow-y-auto">
-          <table className="w-full text-sm">
-            <tbody className="divide-y divide-piedra-100">
-              {movimientos.isPending && (
-                <tr>
-                  <td className="px-5 py-8 text-center text-piedra-400">Cargando…</td>
-                </tr>
-              )}
-              {!movimientos.isPending && !movimientos.data?.length && (
-                <tr>
-                  <td className="px-5 py-8 text-center text-piedra-400">
-                    Todavía no hay movimientos.
-                  </td>
-                </tr>
-              )}
-              {movimientos.data?.map((m) => {
-                const vencido =
-                  m.importe > 0 && m.vencimiento && new Date(m.vencimiento) < new Date()
-                return (
-                  <tr key={m.id}>
-                    <td className="w-28 px-5 py-2.5 text-xs text-piedra-500">
-                      {fecha.format(new Date(m.ocurrido_en))}
-                    </td>
-                    <td className="py-2.5">
-                      <p className="text-tinta">{m.concepto ?? ETIQUETA_MOVIMIENTO[m.tipo]}</p>
-                      <p className="text-xs text-piedra-400">
-                        {ETIQUETA_MOVIMIENTO[m.tipo] ?? m.tipo}
-                        {m.usuario && ` · ${m.usuario.nombre}`}
-                      </p>
-                    </td>
-                    <td className="w-32 py-2.5 text-xs">
-                      {m.vencimiento && (
-                        <span className={vencido ? 'font-medium text-red-700' : 'text-piedra-400'}>
-                          vence {fecha.format(new Date(m.vencimiento))}
-                        </span>
-                      )}
-                    </td>
-                    <td
-                      className={`w-36 px-5 py-2.5 text-right font-medium tabular-nums ${
-                        m.importe > 0 ? 'text-tinta' : 'text-verde-700'
-                      }`}
-                    >
-                      {m.importe > 0 ? '' : '−'}
-                      {moneda.format(Math.abs(m.importe))}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
+        {/*
+          Un renglón por movimiento, sin columnas de ancho fijo: la ficha
+          del cliente es angosta, y con fecha, concepto, vencimiento e
+          importe en columnas la tabla se desplazaba hacia el costado. El
+          concepto se lleva el ancho; la fecha y el vencimiento van debajo.
+        */}
+        <ul className="max-h-[26rem] divide-y divide-piedra-100 overflow-y-auto text-sm">
+          {movimientos.isPending && <li className="px-5 py-8 text-center text-piedra-400">Cargando…</li>}
+          {!movimientos.isPending && !movimientos.data?.length && (
+            <li className="px-5 py-8 text-center text-piedra-400">Todavía no hay movimientos.</li>
+          )}
+          {movimientos.data?.map((m) => {
+            const vencido = m.importe > 0 && m.vencimiento && new Date(m.vencimiento) < new Date()
+            return (
+              <li key={m.id} className="flex items-start gap-3 px-5 py-2.5">
+                <div className="min-w-0 flex-1">
+                  <p className="break-words text-tinta">{m.concepto ?? ETIQUETA_MOVIMIENTO[m.tipo]}</p>
+                  <p className="text-xs text-piedra-400">
+                    <span className="tabular-nums">{fecha.format(new Date(m.ocurrido_en))}</span>
+                    {' · '}
+                    {ETIQUETA_MOVIMIENTO[m.tipo] ?? m.tipo}
+                    {m.usuario && ` · ${m.usuario.nombre}`}
+                    {m.vencimiento && (
+                      <span className={vencido ? 'font-medium text-red-700' : ''}>
+                        {' · '}vence {fecha.format(new Date(m.vencimiento))}
+                      </span>
+                    )}
+                  </p>
+                </div>
+                <p
+                  className={`shrink-0 whitespace-nowrap text-right font-medium tabular-nums ${
+                    m.importe > 0 ? 'text-tinta' : 'text-verde-700'
+                  }`}
+                >
+                  {m.importe > 0 ? '' : '−'}
+                  {moneda.format(Math.abs(m.importe))}
+                </p>
+              </li>
+            )
+          })}
+        </ul>
       </div>
 
       {cobrando && (
