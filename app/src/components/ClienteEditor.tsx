@@ -1,4 +1,7 @@
-import type { Cliente, CondicionIva, TipoDocumento } from '@/lib/api/clientes'
+import { useEffect, useRef, useState } from 'react'
+import { cuitValido } from '@/lib/api/cheques'
+import { cambiosDesdeArca, consultarCuitEnArca } from '@/lib/api/clientes'
+import type { Cliente, CondicionIva, ConsultaArca, TipoDocumento } from '@/lib/api/clientes'
 
 const claseInput =
   'w-full rounded-lg border border-borde px-2.5 py-1.5 text-sm text-tinta outline-none focus:border-marca-500 focus:ring-2 focus:ring-marca-500/20'
@@ -136,6 +139,10 @@ export default function ClienteEditor({
             className={`${claseInput} font-mono`}
           />
         </Campo>
+
+        {puedeEditar && (
+          <TraerDeArca datos={datos} condiciones={condiciones} onCambios={(c) => set(c)} />
+        )}
 
         {esResponsableInscripto && datos.tipo_documento_id !== 80 && (
           <p className="col-span-2 sm:col-span-4 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 ring-1 ring-amber-200">
@@ -376,6 +383,100 @@ export default function ClienteEditor({
           Cliente activo
         </label>
       </Seccion>
+    </div>
+  )
+}
+
+
+/*
+  Traer de ARCA lo que ARCA sabe del cliente.
+
+  Con el CUIT alcanza: nombre o razón social, domicilio fiscal y
+  condición frente al IVA, que es lo que decide si se le hace A o B.
+  Nadie tiene que preguntarle al cliente si es responsable inscripto.
+
+  En un cliente nuevo la consulta sale sola apenas el CUIT está
+  completo y bien escrito, si todavía no tiene nombre: es el «decime el
+  CUIT y listo» del mostrador. En uno que ya existe es un botón, porque
+  pisa lo cargado y eso lo decide una persona.
+*/
+function TraerDeArca({
+  datos,
+  condiciones,
+  onCambios,
+}: {
+  datos: Partial<Cliente>
+  condiciones: CondicionIva[]
+  onCambios: (c: Partial<Cliente>) => void
+}) {
+  const [consultando, setConsultando] = useState(false)
+  const [resultado, setResultado] = useState<ConsultaArca | null>(null)
+  const yaConsultado = useRef<string | null>(null)
+
+  const cuit = (datos.numero_documento ?? '').replace(/\D/g, '')
+  const valido = cuitValido(cuit)
+  const nuevo = !datos.id
+
+  async function traer() {
+    setConsultando(true)
+    yaConsultado.current = cuit
+    const r = await consultarCuitEnArca(cuit)
+    setConsultando(false)
+    setResultado(r)
+    if (r.ok) onCambios(cambiosDesdeArca(r.datos))
+  }
+
+  useEffect(() => {
+    if (nuevo && valido && !datos.nombre?.trim() && yaConsultado.current !== cuit) void traer()
+    // Sólo cuando cambia el CUIT: traer() cambia el nombre, y con él en
+    // las dependencias volvería a preguntar.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cuit])
+
+  // Si se cambia el número, lo que se trajo era de otro CUIT.
+  useEffect(() => {
+    if (resultado?.ok && resultado.datos.cuit !== cuit) setResultado(null)
+  }, [cuit, resultado])
+
+  if (!valido && !resultado) return null
+
+  const condicion = resultado?.ok
+    ? condiciones.find((c) => c.id === resultado.datos.condicion_iva_id)
+    : undefined
+
+  return (
+    <div className="col-span-2 space-y-2 sm:col-span-4">
+      {valido && (
+        <button
+          type="button"
+          onClick={() => void traer()}
+          disabled={consultando}
+          className="rounded-lg bg-white px-3 py-1.5 text-sm font-medium text-marca-700 ring-1 ring-marca-200 hover:bg-marca-50 disabled:opacity-60"
+        >
+          {consultando ? 'Consultando a ARCA…' : resultado?.ok ? 'Volver a traer de ARCA' : 'Traer datos de ARCA'}
+        </button>
+      )}
+
+      {resultado?.ok && (
+        <p className="rounded-lg bg-verde-50 px-3 py-2 text-xs text-verde-800 ring-1 ring-verde-200">
+          Datos de ARCA: <strong>{resultado.datos.nombre}</strong>
+          {condicion
+            ? <> · {condicion.descripcion}, se le emite <strong>Factura {condicion.tipo_comprobante}</strong></>
+            : null}
+          .
+        </p>
+      )}
+      {resultado?.ok &&
+        resultado.datos.avisos.map((a) => (
+          <p key={a} className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 ring-1 ring-amber-200">
+            {a}
+          </p>
+        ))}
+      {resultado && !resultado.ok && (
+        <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 ring-1 ring-amber-200">
+          {resultado.error}
+        </p>
+      )}
     </div>
   )
 }

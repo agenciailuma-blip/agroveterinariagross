@@ -165,7 +165,7 @@ function Dia({ d, titulo }: { d: DiaCalendario; titulo: string }) {
         </p>
       </div>
       {/* En pantallas anchas, lo que entra y lo que sale uno al lado del otro. */}
-      <div className="grid md:grid-cols-2 md:divide-x md:divide-piedra-100">
+      <div className="grid grid-cols-1 md:grid-cols-2 md:divide-x md:divide-piedra-100">
         <Columna titulo="Entra" renglones={d.entra} />
         <Columna titulo="Sale" renglones={d.sale} />
       </div>

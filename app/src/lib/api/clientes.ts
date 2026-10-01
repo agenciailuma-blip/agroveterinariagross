@@ -141,6 +141,167 @@ export async function referenciasFiscales() {
   }
 }
 
+/** Lo que ARCA sabe de un CUIT: lo que devuelve la función arca-constancia. */
+export interface DatosDeArca {
+  cuit: string
+  tipo_persona: 'fisica' | 'juridica'
+  nombre: string
+  /** null cuando ARCA no la informa: la elige una persona. */
+  condicion_iva_id: number | null
+  calle: string | null
+  numero: string | null
+  localidad: string | null
+  provincia: string | null
+  codigo_postal: string | null
+  avisos: string[]
+}
+
+export type ConsultaArca =
+  | { ok: true; datos: DatosDeArca }
+  | {
+      ok: false
+      motivo: 'cuit_invalido' | 'no_existe' | 'sin_autorizacion' | 'arca_no_responde' | 'sin_conexion' | 'error'
+      error: string
+    }
+
+/*
+  Preguntarle a ARCA por un CUIT.
+
+  Es lo que hace que nadie tenga que preguntarle al cliente si es
+  responsable inscripto: con el CUIT, ARCA devuelve el nombre, el
+  domicilio fiscal y la condición frente al IVA. No guarda nada; la
+  pantalla decide qué hacer con los datos.
+
+  Nunca tira: cada falla vuelve con su motivo, porque en todas la
+  salida es la misma —cargar a mano— y la pantalla sólo tiene que
+  decir por qué.
+*/
+export async function consultarCuitEnArca(cuit: string): Promise<ConsultaArca> {
+  if (!navigator.onLine) {
+    return { ok: false, motivo: 'sin_conexion', error: 'Sin internet no se puede consultar a ARCA: cargá los datos a mano.' }
+  }
+  const { data, error } = await supabase.functions.invoke('arca-constancia', { body: { cuit } })
+  if (!error) return data as ConsultaArca
+
+  const contexto = (error as { context?: Response }).context
+  if (contexto && typeof contexto.json === 'function') {
+    try {
+      const cuerpo = await contexto.json()
+      if (cuerpo?.motivo) return cuerpo as ConsultaArca
+    } catch {
+      // El cuerpo no era JSON: es una falla de la red, no de ARCA.
+    }
+  }
+  return { ok: false, motivo: 'sin_conexion', error: 'No se pudo consultar a ARCA. Probá de nuevo o cargá los datos a mano.' }
+}
+
+/*
+  Los datos de ARCA, como cambios para la ficha del cliente.
+
+  Pisa el nombre y la condición, que son lo que ARCA sabe mejor que
+  nadie y lo que decide la factura. El domicilio sólo si ARCA trae uno:
+  un cliente con la dirección cargada a mano no la pierde por una
+  constancia sin domicilio. La condición tampoco, si ARCA no la informa.
+*/
+export function cambiosDesdeArca(datos: DatosDeArca): Partial<Cliente> {
+  const cambios: Partial<Cliente> = {
+    tipo_persona: datos.tipo_persona,
+    nombre: datos.nombre,
+    tipo_documento_id: 80,
+    numero_documento: datos.cuit,
+  }
+  if (datos.condicion_iva_id !== null) cambios.condicion_iva_id = datos.condicion_iva_id
+  if (datos.calle) {
+    cambios.calle = datos.calle
+    cambios.numero = datos.numero
+    cambios.localidad = datos.localidad
+    cambios.provincia = datos.provincia
+    cambios.codigo_postal = datos.codigo_postal
+  }
+  return cambios
+}
+
+export interface ClienteConCuit {
+  id: string
+  nombre: string
+  numero_documento: string
+  condicion_iva_id: number
+}
+
+/** Los clientes activos con CUIT: los que se pueden verificar contra ARCA. */
+export async function clientesConCuit(): Promise<ClienteConCuit[]> {
+  const { data, error } = await supabase
+    .from('cliente')
+    .select('id, nombre, numero_documento, condicion_iva_id')
+    .eq('tipo_documento_id', 80)
+    .not('numero_documento', 'is', null)
+    .eq('activo', true)
+    .is('eliminado_en', null)
+    .order('nombre')
+  if (error) throw new Error(error.message)
+  return (data ?? []) as ClienteConCuit[]
+}
+
+const CAMPOS_PARA_VENDER =
+  'id, codigo, nombre, numero_documento, condicion_iva_id, descuento_porcentaje, cuenta_corriente, limite_credito'
+
+export interface ClienteParaVender {
+  id: string
+  codigo: string | null
+  nombre: string
+  numero_documento: string | null
+  condicion_iva_id: number
+  descuento_porcentaje: number
+  cuenta_corriente: boolean
+  limite_credito: number | null
+}
+
+/** El cliente con ese CUIT en el servidor, si hay uno. */
+export async function clientePorCuit(cuit: string): Promise<ClienteParaVender | null> {
+  const { data, error } = await supabase
+    .from('cliente')
+    .select(CAMPOS_PARA_VENDER)
+    .eq('numero_documento', cuit.replace(/\D/g, ''))
+    .is('eliminado_en', null)
+    .limit(1)
+    .maybeSingle<ClienteParaVender>()
+  if (error) throw new Error(error.message)
+  return data
+}
+
+/*
+  El cliente que dice «factura A» y da su CUIT, desde el mostrador.
+
+  Si ya existe en el servidor, se usa ése —la copia local del mostrador
+  puede no tenerlo todavía, o tenerlo con guiones—. Si no, se da de alta
+  con lo que dice ARCA. Sin la condición frente al IVA no se da de alta:
+  adivinarla es emitir la letra equivocada, y eso lo resuelve una
+  persona en la ficha.
+*/
+export async function clienteDesdeArca(
+  cuit: string,
+): Promise<{ ok: true; cliente: ClienteParaVender; existia: boolean } | { ok: false; error: string }> {
+  const digitos = cuit.replace(/\D/g, '')
+
+  const existente = await clientePorCuit(digitos)
+  if (existente) return { ok: true, cliente: existente, existia: true }
+
+  const r = await consultarCuitEnArca(digitos)
+  if (!r.ok) return { ok: false, error: r.error }
+  if (r.datos.condicion_iva_id === null) {
+    return { ok: false, error: `${r.datos.avisos[0] ?? 'ARCA no informa la condición frente al IVA.'} Cargalo desde Clientes.` }
+  }
+
+  try {
+    const id = await guardarCliente(null, { ...cambiosDesdeArca(r.datos), activo: true })
+    const { data, error } = await supabase.from('cliente').select(CAMPOS_PARA_VENDER).eq('id', id).single<ClienteParaVender>()
+    if (error) throw new Error(error.message)
+    return { ok: true, cliente: data, existia: false }
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e) }
+  }
+}
+
 export async function guardarCliente(id: string | null, campos: Partial<Cliente>) {
   // Se limpian las cadenas vacías: un documento en blanco tiene que ser
   // nulo, o el índice de unicidad lo trata como un valor más y bloquea

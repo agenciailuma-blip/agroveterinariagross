@@ -216,8 +216,14 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   // La terminal de la caja se pone a escuchar y queda escuchando: no
   // depende de que haya o no internet, porque el día que se corte no
   // hay quien la prenda.
+  //
+  // Depende de si escucha y no del objeto de la terminal: cada pantalla
+  // que la consulta con internet la refresca, y reiniciar la escucha por
+  // eso la dejaba muerta —el puerto seguía tomado al reabrir—. Pasó en el
+  // local el 01/10: la caja dejó de escuchar al volver internet.
+  const esPuntoDeEncuentro = !!terminal?.es_punto_de_encuentro
   useEffect(() => {
-    if (!enEscritorio || !terminal?.es_punto_de_encuentro) return
+    if (!enEscritorio || !esPuntoDeEncuentro) return
 
     let vigente = true
     ponerseAEscuchar()
@@ -236,11 +242,11 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       void cerrarPuntoDeEncuentro()
       setEscuchando(false)
     }
-  }, [terminal])
+  }, [esPuntoDeEncuentro])
 
   // Y atiende lo que le mandan las demás.
   useEffect(() => {
-    if (!enEscritorio || !terminal?.es_punto_de_encuentro) return
+    if (!enEscritorio || !esPuntoDeEncuentro) return
 
     let soltar: (() => void) | null = null
     let vigente = true
@@ -256,7 +262,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       vigente = false
       soltar?.()
     }
-  }, [terminal])
+  }, [esPuntoDeEncuentro])
 
   /*
     Los mostradores le entregan a la caja lo que todavía no pudieron

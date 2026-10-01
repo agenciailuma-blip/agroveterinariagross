@@ -641,12 +641,12 @@ function DialogoDebitar({
   return (
     <Ventana titulo={cheques.length === 1 ? 'El cheque se debitó' : `Se debitaron ${cheques.length} cheques`} onCerrar={onCerrar}>
       <p className="mt-1 text-sm text-piedra-500">
-        {moneda.format(total)}. Dejan de figurar como plata que tiene que haber en el banco.
+        {moneda.format(total)}. {cheques.length === 1 ? 'Deja' : 'Dejan'} de figurar como plata que tiene que haber en el banco.
       </p>
       <div className="mt-4">
         <CampoFecha valor={fecha} onCambio={setFecha} hoy={hoy} etiqueta="Fecha del débito" />
       </div>
-      <Botones onCerrar={onCerrar} onAceptar={() => ir.mutate()} aceptar="Marcar debitados" trabajando={ir.isPending} error={error} />
+      <Botones onCerrar={onCerrar} onAceptar={() => ir.mutate()} aceptar={cheques.length === 1 ? 'Marcar debitado' : 'Marcar debitados'} trabajando={ir.isPending} error={error} />
     </Ventana>
   )
 }

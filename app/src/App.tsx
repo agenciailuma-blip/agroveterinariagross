@@ -20,6 +20,7 @@ import PuntoDeVenta from '@/pages/PuntoDeVenta'
 import Caja from '@/pages/Caja'
 import PedidosWeb from '@/pages/PedidosWeb'
 import Clientes from '@/pages/Clientes'
+import VerificarClientesArca from '@/pages/VerificarClientesArca'
 import Usuarios from '@/pages/Usuarios'
 import Configuracion from '@/pages/Configuracion'
 import Facturacion from '@/pages/Facturacion'
@@ -135,6 +136,7 @@ function Rutas() {
         <Route path="pedidos" element={<PedidosWeb />} />
         <Route path="clientes" element={<Clientes />} />
         <Route path="clientes/importar" element={<ImportarSaldos tipo="clientes" />} />
+        <Route path="clientes/verificar" element={<VerificarClientesArca />} />
         <Route path="usuarios" element={<Usuarios />} />
         <Route path="configuracion" element={<Configuracion />} />
         <Route path="facturacion" element={<Facturacion />} />

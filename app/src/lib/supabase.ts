@@ -32,6 +32,23 @@ if (!url || !key) {
 const LIMITE_MS = 12_000
 
 /*
+  La consulta de un CUIT a ARCA es la excepción.
+
+  La primera del día espera el permiso de ARCA, que en el ambiente de
+  pruebas tarda diez segundos (medido el 01/10); el resto, medio. Con
+  doce, esa primera se cortaba justo antes de llegar la respuesta, y el
+  corte se tomaba como caída del servidor: la app pasaba a trabajar
+  sin conexión. La función tiene sus propios límites con ARCA y siempre
+  contesta antes de los treinta.
+*/
+const LIMITE_ARCA_MS = 30_000
+
+function limitePara(entrada: RequestInfo | URL): number {
+  const url = typeof entrada === 'string' ? entrada : entrada instanceof URL ? entrada.href : entrada.url
+  return url.includes('/functions/v1/arca-constancia') ? LIMITE_ARCA_MS : LIMITE_MS
+}
+
+/*
   Y cuando ya se sabe que el servidor no está, ni siquiera esperar eso.
 
   Doce segundos por consulta está bien para la primera. Para la quinta
@@ -64,7 +81,7 @@ function fetchConLimite(entrada: RequestInfo | URL, init?: RequestInit): Promise
   const timer = setTimeout(() => {
     porTiempo = true
     control.abort()
-  }, LIMITE_MS)
+  }, limitePara(entrada))
 
   // Supabase puede traer su propia señal de cancelación; hay que
   // respetarla además de la nuestra.

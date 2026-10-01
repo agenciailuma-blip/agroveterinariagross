@@ -108,7 +108,7 @@ export async function ponerseAEscuchar(): Promise<{ puerto: number; nombre: stri
   Está separado del acceso a la base porque es la regla que puede
   equivocarse en silencio y salir cara, igual que `conciliarCola`.
 
-  Tres decisiones:
+  Cuatro decisiones:
 
   · La venta se le muestra al cajero **sólo si viene esperando cobro**.
     Un presupuesto o un remito que un mostrador manda para que suba
@@ -125,6 +125,11 @@ export async function ponerseAEscuchar(): Promise<{ puerto: number; nombre: stri
     la del mostrador no vuelve a encenderse, la venta sube igual desde
     acá. Lo peor que puede pasar es que la segunda choque contra la
     clave primaria, que es exactamente para lo que existen esos id.
+
+  · La cabecera viaja como va al servidor, **sin total**: allá lo
+    calcula la base. Acá no hay quien lo calcule, y la cola de la caja
+    mostraba «$ NaN» hasta que el cajero elegía cómo pagaba (en el
+    local, el 01/10). Se suma igual que el mostrador en su propia copia.
 */
 export function loQueSeGuarda(
   llegan: OperacionAbierta[],
@@ -137,17 +142,27 @@ export function loQueSeGuarda(
   const esVenta = (o: OperacionAbierta) => o.tipo === 'insert' && o.tabla === 'venta'
   const esLinea = (o: OperacionAbierta) => o.tipo === 'insert' && o.tabla === 'venta_linea'
 
-  const ventas = llegan
+  const enCaja = llegan
     .filter(esVenta)
     .map((o) => o.datos as unknown as VentaLocal)
     .filter((v) => v.estado === 'en_caja' && !yaCobradasAca.has(v.id))
 
-  const visibles = new Set(ventas.map((v) => v.id))
+  const visibles = new Set(enCaja.map((v) => v.id))
 
   const lineas = llegan
     .filter(esLinea)
     .map((o) => o.datos as unknown as VentaLineaLocal)
     .filter((l) => visibles.has(l.venta_id))
+
+  const ventas = enCaja.map((v) => ({
+    ...v,
+    total: v.total ?? Math.round(
+      lineas
+        .filter((l) => l.venta_id === v.id)
+        .reduce((s, l) => s + Number(l.cantidad) * Number(l.precio_unitario), 0) * 100,
+    ) / 100,
+    descuento_total: v.descuento_total ?? 0,
+  }))
 
   return { ventas, lineas, paraLaCola: llegan }
 }

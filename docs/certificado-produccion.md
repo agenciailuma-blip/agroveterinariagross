@@ -36,6 +36,8 @@ El CUIT está a nombre de **GROSS ERNESTO HUGO**. Lo puede hacer el titular, o q
 4. En la lista, al lado de `SistemaGross`, **Ver** → **descargar el certificado** (`.crt`).
 5. ⚠️ **El paso que todo el mundo se olvida — autorizarlo a facturar.** Administrador de Relaciones de Clave Fiscal → **Nueva relación** → Buscar → ARCA → WebServices → **Facturación Electrónica** → en *Representante*, Buscar → elegir el computador fiscal **`SistemaGross`** → **Confirmar**.
    Sin esto el certificado existe pero no puede facturar, y el error que devuelve ARCA no dice que el problema es éste.
+
+   **Y en el mismo lugar, una relación más:** Nueva relación → ARCA → WebServices → **Consulta de Constancia de Inscripción** → el mismo computador fiscal **`SistemaGross`** → Confirmar. Es lo que permite que el sistema, con sólo el CUIT del cliente, traiga su nombre, domicilio y condición frente al IVA, sin preguntarle nada.
 6. Mandar el `.crt`. **Tampoco tiene nada secreto.**
 
 **Lo que NO hay que hacer:** generar otro pedido desde el portal, ni pedir o mandar ninguna "clave privada". La clave privada es `secrets/gross_produccion.key`, se generó acá y **no sale de acá** salvo para cargarse en el servidor.

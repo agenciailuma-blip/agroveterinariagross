@@ -1,5 +1,5 @@
 ---
-actualizado: 2026-09-30
+actualizado: 2026-10-01
 estado: en curso
 ---
 
@@ -12,7 +12,9 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Publicado: 0.13.0** (01/10), con **los cheques y el calendario de recibos** —sección nueva, Tesorería—, **el historial de costos por proveedor** y **el CBU del proveedor**, con el manual en PDF actualizado. Ver *Lo último que pasó*. **508 pruebas verdes en la app**, 95 migraciones aplicadas.
+**Publicado: 0.13.3** (01/10, a la noche), con **los datos del cliente traídos de ARCA con el CUIT** —ficha, mostrador, verificación masiva y pedidos web; ver *Lo que sigue*, punto 14— y los arreglos de Cheques y Calendario vistos en pantalla. Antes, ese mismo día, la **0.13.2**, con **la venta que llega a la caja sin internet funcionando en el local** —probada con las dos PC y el módem desenchufado— y los tres arreglos que salieron de esa prueba. Ver *Lo último que pasó*. **526 pruebas verdes en la app**, 96 migraciones aplicadas.
+
+Antes, la **0.13.0** (01/10), con **los cheques y el calendario de recibos** —sección nueva, Tesorería—, **el historial de costos por proveedor** y **el CBU del proveedor**, con el manual en PDF actualizado.
 
 Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en pestañas y ninguna pantalla que se desplace hacia el costado; antes, ese mismo día, la 0.11.0 con **mover mercadería entre depósitos** y el stock de cada uno; antes, la 0.10.0 (28/09), con la importación de clientes con su saldo y de los saldos de proveedores; antes, la 0.9.0 ese mismo día, con *Factura después* y *Cajas y mostradores*; antes, la 0.8.0 ese mismo día, con la recepción de mercadería, las cuentas de proveedores y la percepción en la caja. Antes, la 0.7.0 (25/09), con **la pantalla Pedidos web**: preparar, facturar, entregar y cancelar lo que entra de la tienda. Antes, la 0.6.0 (24/09), con **«Vender online»** —qué productos salen a la tienda web se decide desde Productos— y con **el arreglo de la sincronización que impedía que el CAEA llegara a las máquinas**. Antes, la 0.5.0 con **la factura que sale sin internet** —la caja emite con CAEA y el ticket sale solo—. Antes, la 0.4.4 con la red del local que ahora **dice qué le pasa**, el cortacircuito que hace que la Caja abra rápido sin internet, y la cola de la caja que se actualiza al cambiar el medio de pago. Antes, ese mismo día, la 0.4.2 con el recargo por cuotas arreglado, los acentos del ticket y la impresión automática al cobrar. **La 0.4.1 quedó instalada en el local el 17/09, en todas menos la de Windows 7** — las versiones nuevas entran solas con *Actualizar ahora*. **470 pruebas verdes en la app y 11 en el programa**, 92 migraciones aplicadas.
 
@@ -22,12 +24,14 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 
 | Qué | Cómo se verifica |
 |---|---|
-| **Cheques: depositar, debitar, devolver y deshacer** (01/10) | 🟡 Probados contra la base, **no en pantalla todavía**: se cortó la prueba el 01/10 para mandar el manual. Lo demás sí se vio —ver *Lo último que pasó*—. Quedan los datos de prueba para seguir: el e-cheq Nación y el Credicoop en cartera, y el e-cheq propio Galicia por debitar. También falta mirar Cheques y Calendario a 375 px |
-| ~~La impresión por impresora de Windows~~ | ✅ **Imprimió el 17/09.** Falta ver en papel lo corregido después: los acentos y el ticket que sale solo al cobrar |
-| **La venta que llega a la caja sin internet** | 🔴 **Se probó el 17/09 y NO funcionó.** Ver *Lo que sigue* |
-| El actualizador de punta a punta | Apretando *Actualizar ahora* en una PC, sin desinstalar antes. **La 0.7.0 es la oportunidad** |
-| **Facturar sin internet, con CAEA** | 🔴 En el local, con la conexión cortada de verdad: cobrar en la caja y que salga el ticket con el CAEA. **Recién ahora es posible probarlo**: hasta el 24/09 el CAEA no llegaba a las máquinas (abajo). Cada PC tiene que sincronizar **una vez con internet** después de actualizar a la 0.6.0, y recién ahí tiene el código guardado |
-| **Que la sincronización llegue completa en las PC del local** | 🟡 Arreglado y verificado en el navegador el 24/09. En el local se comprueba en la pantalla de inicio: el indicador de arriba tiene que decir *Copia local lista* y **Configuración → La red del local** no tiene que mostrar errores |
+| **La factura 0009-00000001, emitida con CAEA en el local el 01/10** | 🟡 Quedó en la cola de la caja: el servidor la rechazaba por un permiso que faltaba, **ya agregado**. Sube sola la próxima vez que se abra el sistema en la caja con internet. Se comprueba en Comprobantes → Facturación: deja de decir *Falta subir* |
+| **La caja que sigue escuchando después de volver internet** (0.13.2) | 🟡 Arreglado y probado en esta PC, **no en el local**. Se comprueba actualizando la caja y el mostrador a la 0.13.3, abriendo varias pantallas con internet y mirando que *La red del local* siga diciendo **Escuchando ahora: Sí** |
+| ~~Cheques: depositar, debitar, devolver y deshacer~~ | ✅ **Vistos en pantalla el 01/10**, los cuatro, y Cheques y Calendario a 375 px. Calendario se desplazaba 13 px a lo ancho en el celular: corregido y publicado en la 0.13.3 |
+| ~~La impresión por impresora de Windows~~ | ✅ **Imprimió el 17/09**, y el 01/10 el ticket salió solo al cobrar, con *Régimen* y *Alícuota* bien escritos y sin el `$á` |
+| ~~La venta que llega a la caja sin internet~~ | ✅ **Funcionó en el local el 01/10**, con la 0.13.1. Llega lenta, de a partes: para mejorar más adelante |
+| ~~El actualizador de punta a punta~~ | ✅ **El 01/10**, caja y mostrador pasaron a la 0.13.1 con *Actualizar ahora*, sin desinstalar nada |
+| ~~Facturar sin internet, con CAEA~~ | ✅ **El 01/10**: la caja cobró sin internet y salió el ticket con el CAEA y su vencimiento. Falta que suba (primer renglón) |
+| ~~Que la sincronización llegue completa en las PC del local~~ | ✅ **El 01/10**: caja y mostrador con *Copia local lista* y sin errores en el diagnóstico |
 | ~~Las pantallas de **La red del local** y **Percepciones**~~ | ✅ **Vistas el 11/09.** Percepciones entera, con datos de agosto y el caso de la nota de crédito. De La red del local sólo se puede ver en el navegador el aviso de que hace falta el programa instalado: es así a propósito |
 
 🟡 **`cargo test` falla en esta máquina, y ya se sabe por qué: hay tres antivirus instalados.** Norton Security y Avast conviven con Windows Defender —que quedó desactivado, porque los otros dos le sacaron el control—. Cada `.exe` que el compilador crea lo intercepta el antivirus antes de que termine de escribirse, y el enlazador falla con `LNK1104`, «no se puede abrir el archivo». El archivo, efectivamente, no está: lo hicieron desaparecer.
@@ -38,11 +42,28 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 
 ## Lo primero de todo
 
-🔴 **Que la venta llegue a la caja sin internet.** Se probó en el local el 17/09 y no llegó. Es la promesa grande del sistema —el punto 2-bis— y lo único de V1-A que se probó y falló. Lo primero es que el mostrador **avise** cuando no encuentra a la caja: hoy no lo intenta y no dice nada, así que no se puede ni saber por qué falló.
+🟡 **Actualizar la caja y el mostrador a la 0.13.3** la próxima vez que se vaya al local, y abrir el sistema en la caja con internet para que suba la factura 0009-00000001. Hasta actualizar, **si se corta internet, cerrar y abrir el sistema en la caja** antes de vender: la 0.13.1 puede haber dejado de escuchar sin avisar.
 
-🔴 **Que cada PC sincronice una vez con internet, y que el CAEA quede guardado.** Hasta el 24/09 la bajada se cortaba y **el código para facturar sin internet no estaba en ninguna máquina** (ver *Lo último que pasó*). La base ya está arreglada, así que alcanza con abrir el sistema en cada PC estando en línea. **Cómo se comprueba**: el indicador de arriba dice *Copia local lista* y *La red del local* no muestra errores. Sin eso, la prueba del corte de internet vuelve a fallar y por el mismo motivo de fondo: el papel no sale.
+🟡 **Lo que la venta tarda en llegar a la caja sin internet.** Llegó de a partes y tardó. No bloquea: queda para optimizar.
 
-🟡 **El actualizador sigue sin probarse de punta a punta.** La 0.2.2 entró bien, pero desinstalando la versión vieja primero, así que **el arreglo del archivo tomado no se ejercitó**. **La 0.7.0 es la oportunidad**: en una sola PC, *Actualizar ahora*, sin desinstalar nada. Molesta después del 26/10, cuando una corrección tenga que llegar a las 4 PC sin viajar a Oberá.
+---
+
+## Lo último que pasó — 1 de octubre, en el local y a la tarde
+
+**La venta llegó a la caja sin internet.** Era la promesa grande —el punto 2-bis— y lo único de V1-A que se había probado y fallado. Con el módem desenchufado, el mostrador mandó la venta, la caja la cobró, emitió con el CAEA y el ticket salió solo, con los acentos bien.
+
+> **Cómo se lo contás a Lucas:** si se corta internet, el vendedor manda la venta a la caja igual que siempre, por el cable del local, y la caja la cobra y le da el ticket al cliente. Cuando vuelve internet, todo sube solo.
+
+**Por qué no andaba el 17/09:** el mostrador buscaba a la caja por su nombre, y Windows contesta primero con la dirección nueva (IPv6, `fe80::…`), donde la caja no escuchaba. `ping DESKTOP-O4R9STD` lo mostró en el local. Arreglado en la 0.13.1: el mostrador prueba todas las direcciones, primero las IPv4, y la caja escucha también en IPv6. *Probar la conexión* ahora dice el motivo real cuando falla —antes se perdía y decía sólo «No se pudo hablar con el punto de encuentro»—.
+
+**Lo que salió de la prueba, ya arreglado:**
+- 🔴 **La factura emitida con CAEA no subía.** El servidor contestaba *«new row violates row-level security policy for table secuencia_comprobante»*: la función que la recibe corre como el usuario, y había permiso para leer y actualizar la serie pero no para crearla. La 0009-00000001 era la primera de su serie. Migración `permiso_crear_secuencia`, aplicada; **7 comprobaciones** en [`supabase/pruebas/factura-caea-sin-conexion.sql`](../supabase/pruebas/factura-caea-sin-conexion.sql), como usuario, que antes de la migración daban el mismo error del local. Las pruebas viejas corrían como dueño de la base y no lo veían.
+- 🔴 **La caja dejaba de escuchar al volver internet.** Cada pantalla que consulta la terminal la refresca, y eso reiniciaba la escucha; al reabrir, el puerto seguía tomado unos milisegundos y Windows lo negaba. Ahora la escucha depende sólo de si la terminal es la que escucha, y al reabrir espera a que se libere el puerto. Probado en esta PC: sin la espera, «dirección en uso»; con ella, reabre. En la 0.13.2.
+- 🟡 **«$ NaN» en la cola de la caja** mientras llegaba la venta: la cabecera viaja sin total, porque con internet lo calcula el servidor. Ahora la caja lo suma de los renglones. En la 0.13.2.
+
+**Y a la tarde, los cheques en pantalla:** depositar, deshacer el depósito, devolver al cliente y marcar un propio como debitado, con los datos de prueba. Los cuatro anduvieron. A 375 px, Cheques y sus ventanas entran; **Calendario se desplazaba 13 px a lo ancho** —la grilla de Entra / Sale no tenía columna para el celular—, corregido. También el texto de debitar un solo cheque, que decía *«Marcar debitados»*. Los dos arreglos salieron en la 0.13.3.
+
+⚠️ **Los datos de prueba de cheques quedaron cambiados:** el e-cheq Nación N° 12345 quedó *devuelto* y el Galicia N° 90001, *debitado*. Siguen pendientes de borrar el cliente PRUEBA CHEQUES, los proveedores PRUEBA CHEQUES SRL y PRUEBA COSTOS DOS, y el producto PRUEBA-CHQ.
 
 ---
 
@@ -596,6 +617,13 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 11. ~~🟡 **Cheques: recibidos, endosados a proveedores y propios.**~~ ✅ **Construido el 30/09**, con las cuatro respuestas de Lucas y el calendario de recibos. Falta verlo en pantalla y publicarlo. [`cheques.md`](cheques.md).
 12. ~~🟡 **El historial de costos por proveedor**~~ ✅ **Construido el 30/09**: el desplegable en la ficha del producto y Compras → Costos. Falta verlo en pantalla y publicarlo.
 13. ~~🟡 **Los datos bancarios de cada proveedor: CBU, CVU o alias.**~~ ✅ **Construido el 30/09**: en la ficha del proveedor, y listos para copiar en el pago por transferencia. Falta verlo en pantalla y publicarlo.
+
+14. 🟡 **Traer los datos del cliente de ARCA con el CUIT, y no preguntar nunca la condición frente al IVA.** ✅ **Construido el 01/10 y publicado en la 0.13.3.** Observación de ese día: los sistemas actuales piden sólo el CUIT y completan solos razón social, domicilio y condición; el cliente dice «factura A» y nada más. Se hace con el servicio de ARCA **Consulta de Constancia de Inscripción** (`ws_sr_constancia_inscripcion`), con el mismo certificado que factura. Con DNI no hay consulta: es consumidor final.
+    - **Dónde está:** la **ficha del cliente** —con un CUIT bien escrito aparece *Traer datos de ARCA*, y en un cliente nuevo la consulta sale sola—; el **buscador de clientes del mostrador** —un CUIT que no está ofrece *Traer de ARCA y agregarlo*, lo da de alta y lo deja elegido, y la tarjeta dice *Responsable Inscripto · Factura A*—; **Clientes → Verificar con ARCA**, para después de importar de OBTech: pregunta por cada cliente con CUIT, lista los que tienen otra condición y los corrige de una vez, y aparte los CUIT mal escritos o inexistentes; y **el detalle de un pedido web** sin facturar, que consulta solo y avisa si ARCA dice otra condición, con el botón para actualizar el cliente. El nombre que se pone en el local no se pisa en la verificación masiva: sólo la condición.
+    - **Verificado:** la función `arca-constancia` está desplegada; desde la app, un CUIT mal escrito se frena antes de preguntar, sin sesión contesta 401, y con sesión llega a ARCA firmada con el certificado: hoy ARCA contesta *«Computador no autorizado a acceder al servicio»*, y la pantalla lo dice así. **17 pruebas** de cómo se lee la respuesta de ARCA —inscripto, monotributo, monotributo social, exento, empleado sin IVA, empresa, CUIT inactivo, constancia observada, inexistente—, rotas a propósito de tres maneras y las tres atrapadas. En pantalla, con la respuesta de ARCA simulada: el alta desde el mostrador, la verificación masiva con su corrección y el aviso del pedido web con su actualización. Los datos de prueba quedaron dados de baja.
+    - 🔴 **Falta lo de Lucas para verla con ARCA de verdad:** autorizar el servicio para el certificado de pruebas en **WSASS** (Crear autorización a servicio → `SistemaGross` → `ws_sr_constancia_inscripcion`), y para el de producción con el trámite del certificado —está en [`certificado-produccion.md`](certificado-produccion.md)—. Con la de pruebas se prueba un CUIT real y se confirma que la respuesta se lee bien.
+    - ⏱️ **La primera consulta del día tarda** lo que ARCA en dar el permiso: diez segundos en pruebas, medido. Las siguientes, medio segundo. Por eso esa llamada tiene un límite de 30 s y no los 12 del resto.
+    - La página de la API de la tienda se actualizó a la **versión 4**: con el CUIT alcanza, la condición no hace falta.
 
 > ✅ **Los desplegables de *Percepciones* ya usan el estilo común**, así que muestran el recuadro de foco como el resto del sistema — un paso menos para el punto 6. La pantalla tenía además el botón y la tarjeta escritos a mano; los tres ahora salen de [`estilos.ts`](../app/src/estilos.ts).
 

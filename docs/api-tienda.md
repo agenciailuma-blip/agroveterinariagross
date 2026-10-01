@@ -155,8 +155,7 @@ curl -s -X POST "https://ywggnhoifhtoncnxrodh.supabase.co/functions/v1/api-tiend
       "nombre": "María Gómez",
       "email": "maria@ejemplo.com",
       "documento": "30111222",
-      "tipo_documento": "DNI",
-      "condicion_iva": "consumidor_final"
+      "tipo_documento": "DNI"
     },
     "entrega": { "tipo": "envio", "domicilio": "Av. Libertad 1234", "localidad": "Oberá", "contacto": "3755-000000" },
     "productos": [
@@ -177,9 +176,9 @@ curl -s -X POST "https://ywggnhoifhtoncnxrodh.supabase.co/functions/v1/api-tiend
 | `pagado` | opcional | `true` si el comprador ya pagó en la web. Por omisión, `false` |
 | `referencia_pago` | opcional | El identificador del pago en la pasarela. Queda anotado en la venta |
 | `comprador.email` | opcional | A esa dirección se envía la factura |
-| `comprador.documento` | opcional | DNI o CUIT, sin puntos ni guiones. Permite reconocer al comprador si ya es cliente del local |
+| `comprador.documento` | opcional | DNI o CUIT, sin puntos ni guiones. Permite reconocer al comprador si ya es cliente del local. Con un CUIT, el sistema trae de ARCA su nombre y su condición frente al IVA |
 | `comprador.tipo_documento` | opcional | `DNI`, `CUIT` o `CUIL`. Sin él se deduce por la cantidad de dígitos |
-| `comprador.condicion_iva` | opcional | `consumidor_final` (por omisión), `responsable_inscripto`, `monotributo` o `exento` |
+| `comprador.condicion_iva` | opcional | `consumidor_final` (por omisión), `responsable_inscripto`, `monotributo` o `exento`. No hace falta preguntarla: con el CUIT, el local la confirma con ARCA antes de facturar |
 | `entrega.tipo` | opcional | `retira` (por omisión) o `envio` |
 | `entrega.domicilio`, `entrega.localidad`, `entrega.contacto` | opcional | Para el envío |
 | `total` | opcional | El total que la tienda le cobró al comprador. Si no coincide con la suma de las líneas, el pedido queda marcado para revisar |
@@ -248,7 +247,9 @@ Para la tienda esto significa dos cosas:
 
 ### Responsable inscripto
 
-Un responsable inscripto necesita factura A, y para eso hace falta el CUIT. Si el pedido dice `responsable_inscripto` pero no trae un CUIT, el comprador se registra como consumidor final y el pedido queda marcado, para que el local lo hable antes de facturar. El pedido entra igual.
+Un responsable inscripto necesita factura A, y para eso hace falta el CUIT. **Con el CUIT alcanza:** antes de facturar, el sistema le pregunta a ARCA la condición frente al IVA del comprador, y con ella sale la clase de factura que corresponde. El comprador sólo dice que quiere factura A y da su CUIT.
+
+Si el pedido dice `responsable_inscripto` pero no trae un CUIT, el comprador se registra como consumidor final y el pedido queda marcado, para que el local lo hable antes de facturar. El pedido entra igual.
 
 ---
 
@@ -399,7 +400,6 @@ La factura la emite el sistema de gestión ante ARCA y se envía por mail al com
 |---|---|
 | Nombre y apellido, o razón social | Es el receptor del comprobante |
 | Email | A esa dirección se envía la factura |
-| DNI o CUIT | Identifica al receptor ante ARCA, y permite reconocer al comprador si ya es cliente del local |
-| Condición frente al IVA | Consumidor final, responsable inscripto, monotributo o exento. Define la clase de comprobante: un responsable inscripto requiere factura A, con su CUIT |
+| DNI o CUIT | Identifica al receptor ante ARCA, y permite reconocer al comprador si ya es cliente del local. **Quien quiere factura A da su CUIT**: con él, el sistema trae de ARCA la condición frente al IVA y la clase de factura que corresponde, así que no hace falta preguntarla |
 | Forma de pago | Pagado en la web o a pagar en el local: determina si la venta queda cobrada o esperando en la caja |
 | Entrega | Retiro en el local o envío, con el domicilio en ese caso |
