@@ -25,6 +25,8 @@ import { confirmar, pedirNumero, pedirTexto } from '@/components/Dialogo'
 import { MOTIVOS_DE_PRECIO } from '@/lib/motivos'
 import LineaLibre from '@/components/LineaLibre'
 import type { DatosLineaLibre } from '@/components/LineaLibre'
+import { useAtajo, useBotonConAtajo } from '@/lib/atajos'
+import { TeclaAtajo } from '@/components/Atajos'
 
 const BORRADOR = 'gross.venta-en-curso'
 
@@ -53,6 +55,14 @@ export default function PuntoDeVenta() {
   const [exito, setExito] = useState<string | null>(null)
   const [pasoEnvio, setPasoEnvio] = useState<string | null>(null)
   const busqueda = useRef<HTMLInputElement>(null)
+
+  // F2 vuelve al buscador, F3 abre el del cliente y F9 manda a caja.
+  useAtajo('F2', () => {
+    busqueda.current?.focus()
+    busqueda.current?.select()
+  })
+  useAtajo('F3', () => setBuscandoCliente(true))
+  const botonEnviar = useBotonConAtajo('F9')
 
   /*
     La rebaja que está esperando el PIN que la autorice.
@@ -966,10 +976,18 @@ Se muestra en la cola del cajero. Si no hace falta, dejalo vacío.`,
             if (nombre === null) return
             enviar.mutate(nombre || null)
           }}
+          ref={botonEnviar}
           disabled={!lineas.length || !cliente || enviar.isPending || presupuestar.isPending}
           className="rounded-xl bg-marca-700 px-4 py-4 text-base font-medium text-white hover:bg-marca-600 disabled:opacity-40"
         >
-          {enviar.isPending ? `Enviando… ${pasoEnvio ?? ''}` : 'Enviar a caja'}
+          {enviar.isPending ? (
+            `Enviando… ${pasoEnvio ?? ''}`
+          ) : (
+            <>
+              Enviar a caja
+              <TeclaAtajo tecla="F9" clara />
+            </>
+          )}
         </button>
 
         {/*

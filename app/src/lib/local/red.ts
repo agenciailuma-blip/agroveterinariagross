@@ -218,12 +218,18 @@ export async function guardarLoQueLlego(mensaje: MensajeDelLocal): Promise<numbe
   Lo que todavía no llegó al servidor y todavía no se le pasó a la caja.
   Se sigue guardando en la cola después de entregarlo: la caja lo va a
   subir, pero si esa máquina se apaga, esta también tiene que poder.
+
+  Y por venta entera: si una operación del lote está subiendo, ese lote
+  espera al próximo envío. Los renglones sin su cabecera no le sirven a
+  la caja —no sabe de qué venta son— y, marcados como entregados, ya no
+  se vuelven a mandar.
 */
-export function loQueFaltaEntregar<T extends Pick<OperacionPendiente, 'entregado_en' | 'estado'>>(
+export function loQueFaltaEntregar<T extends Pick<OperacionPendiente, 'entregado_en' | 'estado' | 'lote'>>(
   cola: T[],
 ): T[] {
+  const subiendo = new Set(cola.filter((o) => o.estado === 'enviando').map((o) => o.lote))
   return cola.filter(
-    (o) => !o.entregado_en && (o.estado === 'pendiente' || o.estado === 'error'),
+    (o) => !o.entregado_en && (o.estado === 'pendiente' || o.estado === 'error') && !subiendo.has(o.lote),
   )
 }
 
@@ -363,8 +369,16 @@ export async function entregarALaCaja(terminal: Terminal | null): Promise<Entreg
     return { estado: 'no_contesta', esperando: falta.length, motivo: r.detalle }
   }
 
+  /*
+    Sólo la marca de entregado, sobre lo que todavía esté en la cola.
+    Mientras se hablaba con la caja, la subida pudo haber subido y
+    borrado alguna: reescribirla entera la traería de vuelta.
+  */
   const ahora = new Date().toISOString()
-  await db.outbox.bulkPut(falta.map((o) => ({ ...o, entregado_en: ahora })))
+  await db.outbox
+    .where('id')
+    .anyOf(falta.map((o) => o.id))
+    .modify({ entregado_en: ahora })
 
   return { estado: 'entregado', cuantas: falta.length }
 }

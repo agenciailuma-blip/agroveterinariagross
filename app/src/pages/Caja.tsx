@@ -38,6 +38,8 @@ import { emitirConCaeaLocal, sePuedeEmitirConCaea } from '@/lib/local/caea'
 import { chequeVacio, chequesDeLaCaja, faltaEnCheque } from '@/lib/api/cheques'
 import CamposCheque from '@/components/CamposCheque'
 import { moneda, numero } from '@/lib/tipos'
+import { useAtajo, useBotonConAtajo } from '@/lib/atajos'
+import { TeclaAtajo } from '@/components/Atajos'
 
 /** Con qué documento sale la venta. Ver marcar_documentacion_venta() en la base. */
 type Documentacion = 'fiscal' | 'no_fiscal' | 'a_facturar'
@@ -94,6 +96,14 @@ export default function Caja() {
     queryKey: ['cola-caja'],
     queryFn: listarVentasEnCola,
     refetchInterval: 8000, // el mostrador manda ventas mientras la caja trabaja
+  })
+
+  // F3 pasa a la próxima venta de la cola; después de la última, vuelve a la primera.
+  useAtajo('F3', () => {
+    const lista = cola.data ?? []
+    if (!lista.length) return
+    const i = lista.findIndex((v) => v.id === seleccionada)
+    setSeleccionada(lista[(i + 1) % lista.length].id)
   })
 
   const precios = useQuery({ queryKey: ['precios'], queryFn: cargarPrecios, staleTime: 300_000 })
@@ -945,6 +955,7 @@ function PanelCobro({
   onCobrar: () => void
   onCancelar: () => void
 }) {
+  const botonCobrar = useBotonConAtajo('F9')
   const [agregando, setAgregando] = useState(false)
   const [descontando, setDescontando] = useState(false)
 
@@ -1458,6 +1469,7 @@ function PanelCobro({
 
         <div className="mt-4 flex gap-2">
           <button
+            ref={botonCobrar}
             onClick={onCobrar}
             disabled={
               !medio || Math.abs(diferencia) > 0.009 || cobrando || aplicando || calculandoPercepcion ||
@@ -1477,6 +1489,7 @@ function PanelCobro({
                 : documentacion === 'a_facturar'
                   ? 'A cuenta, factura después'
                   : 'Cobrar'}
+            {!cobrando && <TeclaAtajo tecla="F9" clara />}
           </button>
           <button
             onClick={onCancelar}

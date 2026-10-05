@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { cuitValido } from '@/lib/api/cheques'
 import { cambiosDesdeArca, consultarCuitEnArca } from '@/lib/api/clientes'
 import type { Cliente, CondicionIva, ConsultaArca, TipoDocumento } from '@/lib/api/clientes'
+import { avanzarConEnter } from '@/lib/teclado'
 
 const claseInput =
   'w-full rounded-lg border border-borde px-2.5 py-1.5 text-sm text-tinta outline-none focus:border-marca-500 focus:ring-2 focus:ring-marca-500/20'
@@ -67,7 +68,7 @@ export default function ClienteEditor({
   const esResponsableInscripto = datos.condicion_iva_id === 1
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" onKeyDown={avanzarConEnter}>
       <Seccion titulo="Identificación">
         <Campo etiqueta="Código" ancho="col-span-1">
           <input

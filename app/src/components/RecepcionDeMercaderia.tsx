@@ -16,6 +16,7 @@ import { enCastellano } from '@/lib/errores'
 import { useTerminal } from '@/lib/terminal'
 import { moneda } from '@/lib/tipos'
 import { boton, botonChico, campo, campoDeFiltro, tarjeta } from '@/estilos'
+import { avanzarConEnter } from '@/lib/teclado'
 
 /*
   Recibir la mercadería de una factura de compra.
@@ -122,7 +123,7 @@ export default function RecepcionDeMercaderia({
   }
 
   return (
-    <div className={`${tarjeta} p-5`}>
+    <div className={`${tarjeta} p-5`} onKeyDown={avanzarConEnter}>
       <h2 className="font-medium text-tinta">Recibir la mercadería</h2>
       <p className="mt-0.5 text-sm text-piedra-500">{titulo}</p>
       <p className="mt-2 text-sm text-piedra-500">

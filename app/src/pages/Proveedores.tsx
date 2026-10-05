@@ -13,6 +13,9 @@ import {
 import type { Proveedor } from '@/lib/api/proveedores'
 import { bancoDelCbu, limpiarCbu, problemaConAlias, problemaConCbu } from '@/lib/cbu'
 import { numero } from '@/lib/tipos'
+import { avanzarConEnter } from '@/lib/teclado'
+import { useBotonConAtajo } from '@/lib/atajos'
+import { TeclaAtajo } from '@/components/Atajos'
 
 /*
   Proveedores — puntos 5 y 4 de Lucas.
@@ -251,6 +254,7 @@ function FichaProveedor({
   onCerrar: () => void
   onGuardado: () => void
 }) {
+  const botonGuardar = useBotonConAtajo('F9')
   const [form, setForm] = useState<Partial<Proveedor>>(proveedor ?? PROVEEDOR_NUEVO)
   const [error, setError] = useState<string | null>(null)
 
@@ -276,7 +280,7 @@ function FichaProveedor({
         if (e.key === 'Escape') onCerrar()
       }}
     >
-      <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-xl bg-white p-5 shadow-lg ring-1 ring-borde">
+      <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-xl bg-white p-5 shadow-lg ring-1 ring-borde" onKeyDown={avanzarConEnter}>
         <h2 className="font-semibold text-tinta">
           {proveedor ? proveedor.nombre : 'Nuevo proveedor'}
         </h2>
@@ -419,11 +423,13 @@ function FichaProveedor({
             Cancelar
           </button>
           <button
+            ref={botonGuardar}
             onClick={() => guardar.mutate()}
             disabled={!listo || guardar.isPending}
             className="rounded-lg bg-marca-700 px-3.5 py-2 text-sm font-medium text-white hover:bg-marca-800 disabled:opacity-40"
           >
             {guardar.isPending ? 'Guardando…' : 'Guardar'}
+            {!guardar.isPending && <TeclaAtajo tecla="F9" clara />}
           </button>
         </div>
       </div>

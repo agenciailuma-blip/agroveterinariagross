@@ -16,6 +16,7 @@ import {
 import type { TerminalDelLocal, TipoTerminal } from '@/lib/api/terminales'
 import { enCastellano } from '@/lib/errores'
 import { boton, botonChico, campo, tarjeta } from '@/estilos'
+import { avanzarConEnter } from '@/lib/teclado'
 
 /*
   ─────────────────────────────────────────────────────────────
@@ -288,7 +289,7 @@ function FormularioAlta({
   })
 
   return (
-    <div className="mt-4 rounded-lg bg-piedra-50 p-4 ring-1 ring-borde">
+    <div className="mt-4 rounded-lg bg-piedra-50 p-4 ring-1 ring-borde" onKeyDown={avanzarConEnter}>
       <div className="grid gap-3 sm:grid-cols-4">
         <label className="block">
           <span className="mb-1 block text-xs font-medium text-piedra-600">Tipo</span>
@@ -388,7 +389,7 @@ function FormularioEdicion({
   })
 
   return (
-    <div className="rounded-lg bg-white p-3 ring-1 ring-borde">
+    <div className="rounded-lg bg-white p-3 ring-1 ring-borde" onKeyDown={avanzarConEnter}>
       <div className="grid gap-3 sm:grid-cols-3">
         <label className="block">
           <span className="mb-1 block text-xs font-medium text-piedra-600">Nombre</span>

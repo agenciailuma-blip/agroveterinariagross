@@ -134,10 +134,26 @@ describe('qué le falta entregar al mostrador', () => {
       operacion({ id: 'a' }),
       operacion({ id: 'b', estado: 'error' }),
       operacion({ id: 'c', entregado_en: '2026-09-10T12:05:00.000Z' }),
-      operacion({ id: 'd', estado: 'enviando' }),
+      operacion({ id: 'd', lote: 'v-2', estado: 'enviando' }),
     ])
 
     expect(falta.map((o) => o.id)).toEqual(['a', 'b'])
+  })
+
+  /*
+    La venta viaja entera o no viaja. En el local, el 01/10, la cabecera
+    estaba subiendo —sin internet, el intento tarda hasta doce
+    segundos— y salieron los renglones solos: la caja no tenía a qué
+    venta ponérselos y la venta fue llegando de a partes.
+  */
+  it('no manda los renglones de una venta cuya cabecera está subiendo', () => {
+    const falta = loQueFaltaEntregar([
+      operacion({ id: 'cabecera', lote: 'v1', orden: 0, estado: 'enviando' }),
+      operacion({ id: 'renglon', lote: 'v1', orden: 1 }),
+      operacion({ id: 'otra', lote: 'v2', orden: 0 }),
+    ])
+
+    expect(falta.map((o) => o.id)).toEqual(['otra'])
   })
 
   /*

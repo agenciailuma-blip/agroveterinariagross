@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { useAtajo } from '@/lib/atajos'
 
 /*
   ─────────────────────────────────────────────────────────────
@@ -144,6 +145,11 @@ function Ventana({ pendiente }: { pendiente: Pendiente }) {
       ;(pendiente.resolver as (v: string | null) => void)(confirmado ? valor.trim() : null)
     }
   }
+
+  // F9 acepta, como el botón: también para la pregunta que se abre al enviar a caja.
+  useAtajo('F9', () => {
+    if (puedeAceptar) cerrar(true)
+  })
 
   return (
     <div

@@ -25,6 +25,7 @@ import { bancoDelCbu, cbuLegible, esCvu } from '@/lib/cbu'
 import { enCastellano } from '@/lib/errores'
 import { moneda } from '@/lib/tipos'
 import { boton, campo, tarjeta } from '@/estilos'
+import { avanzarConEnter } from '@/lib/teclado'
 
 /*
   ─────────────────────────────────────────────────────────────
@@ -509,7 +510,7 @@ function FormularioDePago({
     setMedios((ms) => ms.map((m, j) => (i === j ? { ...m, ...c } : m)))
 
   return (
-    <div className={`${tarjeta} p-5`}>
+    <div className={`${tarjeta} p-5`} onKeyDown={avanzarConEnter}>
       <h3 className="font-medium text-tinta">Registrar un pago</h3>
 
       <label className="mt-3 block w-44">
@@ -817,7 +818,7 @@ function FormularioSaldoInicial({
   })
 
   return (
-    <div className={`${tarjeta} p-5`}>
+    <div className={`${tarjeta} p-5`} onKeyDown={avanzarConEnter}>
       <h3 className="font-medium text-tinta">Saldo inicial</h3>
       <p className="mt-1 text-sm text-piedra-500">
         Lo que se le debía a este proveedor el día que se dejó OBTech. Las facturas de antes de esa fecha no

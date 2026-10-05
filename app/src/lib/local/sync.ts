@@ -427,6 +427,15 @@ export async function bajarCambios() {
   ─────────────────────────────────────────────────────────────
 */
 
+/*
+  Aviso de que entró algo a la cola.
+
+  Lo escucha la entrega a la caja: una venta que el vendedor acaba de
+  mandar no puede esperar al envío de cada minuto con el cliente
+  parado frente a la caja.
+*/
+export const avisosDeLaCola = new EventTarget()
+
 export async function encolar(
   lote: string,
   operaciones: Omit<OperacionAbierta, 'id' | 'lote' | 'orden' | 'creado_en' | 'intentos' | 'ultimo_error' | 'estado'>[],
@@ -465,6 +474,7 @@ export async function encolar(
       estado: 'pendiente' as const,
     })),
   )
+  avisosDeLaCola.dispatchEvent(new Event('encolada'))
 }
 
 async function enviarOperacion(op: OperacionPendiente) {

@@ -3,7 +3,8 @@ import type { ReactNode } from 'react'
 import { liveQuery } from 'dexie'
 import { db } from '@/lib/local/db'
 import { hayDatosLocales } from '@/lib/local/consultas'
-import { pendientes, recuperarHuerfanas, sincronizar } from '@/lib/local/sync'
+import { avisosDeLaCola, pendientes, recuperarHuerfanas, sincronizar } from '@/lib/local/sync'
+import { useQueryClient } from '@tanstack/react-query'
 import { entregarALaCaja, guardarLoQueLlego, ponerseAEscuchar } from '@/lib/local/red'
 import type { EntregaALaCaja, MensajeDelLocal } from '@/lib/local/red'
 import { alLlegarDeLaRed, cerrarPuntoDeEncuentro, enEscritorio } from '@/lib/escritorio'
@@ -50,6 +51,7 @@ const INTERVALO_MS = 60_000
 export function SyncProvider({ children }: { children: ReactNode }) {
   const { estado: conexion } = useConexion()
   const { terminal } = useTerminal()
+  const qc = useQueryClient()
 
   const [listo, setListo] = useState(false)
   const [sincronizando, setSincronizando] = useState(false)
@@ -252,7 +254,11 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     let vigente = true
 
     alLlegarDeLaRed((mensaje) => {
-      void guardarLoQueLlego(mensaje as MensajeDelLocal)
+      // La venta que llega se muestra ya, sin esperar el repaso de la
+      // cola de la caja, que es cada ocho segundos.
+      void guardarLoQueLlego(mensaje as MensajeDelLocal).then((n) => {
+        if (n) void qc.invalidateQueries({ queryKey: ['cola-caja'] })
+      })
     }).then((f) => {
       if (vigente) soltar = f
       else f()
@@ -286,7 +292,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       el 17/09 se descartaba con un catch vacío, y el día que la venta
       no llegó a la caja no había ni un dato para mirar.
     */
-    const entregar = () => {
+    const entregar = () =>
       entregarALaCaja(terminal)
         .then((r) => {
           setEntrega(r)
@@ -300,11 +306,55 @@ export function SyncProvider({ children }: { children: ReactNode }) {
           })
           setEntregaEn(new Date())
         })
+
+    /*
+      Una entrega por vez. Si se pide otra mientras sale una, se hace al
+      terminar: dos a la vez mandarían lo mismo dos veces.
+    */
+    let enCurso = false
+    let otraVez = false
+    const entregarUnaPorVez = () => {
+      if (enCurso) {
+        otraVez = true
+        return
+      }
+      enCurso = true
+      entregar().finally(() => {
+        enCurso = false
+        if (otraVez) {
+          otraVez = false
+          entregarUnaPorVez()
+        }
+      })
     }
 
-    entregar()
-    const timer = setInterval(entregar, INTERVALO_MS)
-    return () => clearInterval(timer)
+    /*
+      Y apenas el vendedor manda la venta, sin esperar al minuto.
+
+      Dos intentos: al segundo y medio, que es lo normal, y a los
+      catorce. El segundo es para cuando internet está cortado pero la
+      red del local anda: el mostrador primero intenta subir la venta al
+      servidor, y ese intento puede tardar doce segundos en rendirse.
+      Mientras tanto la venta no sale, para que no viaje a medias.
+    */
+    let pronto: ReturnType<typeof setTimeout> | undefined
+    let despues: ReturnType<typeof setTimeout> | undefined
+    const alEncolar = () => {
+      clearTimeout(pronto)
+      clearTimeout(despues)
+      pronto = setTimeout(entregarUnaPorVez, 1500)
+      despues = setTimeout(entregarUnaPorVez, 14_000)
+    }
+    avisosDeLaCola.addEventListener('encolada', alEncolar)
+
+    entregarUnaPorVez()
+    const timer = setInterval(entregarUnaPorVez, INTERVALO_MS)
+    return () => {
+      clearInterval(timer)
+      clearTimeout(pronto)
+      clearTimeout(despues)
+      avisosDeLaCola.removeEventListener('encolada', alEncolar)
+    }
   }, [terminal])
 
   // Al volver la conexión se sincroniza enseguida: lo que se vendió sin

@@ -7,6 +7,7 @@ import AvisoDeActualizacion from '@/components/AvisoDeActualizacion'
 import AvisoBaseBloqueada from '@/components/AvisoBaseBloqueada'
 import { useAuth } from '@/auth/AuthProvider'
 import { IndicadorConexion } from '@/components/IndicadorConexion'
+import { TeclaAtajo, useAtajosGlobales } from '@/components/Atajos'
 import {
   SECCIONES,
   destinoDe,
@@ -104,10 +105,12 @@ function Icono({ d, clase = 'size-5 shrink-0' }: { d: string; clase?: string }) 
 function ContenidoMenu({
   colapsado,
   alternarMenu,
+  abrirAtajos,
   enTelefono = false,
 }: {
   colapsado: boolean
   alternarMenu?: () => void
+  abrirAtajos?: () => void
   enTelefono?: boolean
 }) {
   const { perfil, salir } = useAuth()
@@ -207,6 +210,17 @@ function ContenidoMenu({
           </>
         )}
 
+        {/* En el teléfono no hay teclas de función: no se ofrece. */}
+        {!colapsado && abrirAtajos && (
+          <button
+            onClick={abrirAtajos}
+            className="mt-2 flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-left text-sm text-marca-200/80 transition-colors hover:bg-white/10 hover:text-white"
+          >
+            Atajos de teclado
+            <TeclaAtajo tecla="F1" clara />
+          </button>
+        )}
+
         <button
           onClick={salir}
           title={colapsado ? `Cerrar sesión de ${perfil?.nombre ?? ''}`.trim() : undefined}
@@ -277,6 +291,7 @@ export default function Layout() {
   const [colapsado, setColapsado] = useState(menuGuardado)
   const [abiertoEnTelefono, setAbiertoEnTelefono] = useState(false)
   const { pathname } = useLocation()
+  const atajos = useAtajosGlobales()
 
   // Elegir una pantalla cierra el menú del teléfono: si quedara abierto,
   // taparía justo lo que se acaba de pedir.
@@ -319,7 +334,7 @@ export default function Layout() {
           colapsado ? 'w-16' : 'w-60'
         }`}
       >
-        <ContenidoMenu colapsado={colapsado} alternarMenu={alternarMenu} />
+        <ContenidoMenu colapsado={colapsado} alternarMenu={alternarMenu} abrirAtajos={atajos.abrirAyuda} />
       </aside>
 
       {abiertoEnTelefono && (
@@ -377,6 +392,7 @@ export default function Layout() {
           <Outlet />
         </main>
       </div>
+      {atajos.ayuda}
     </div>
   )
 }

@@ -2,6 +2,7 @@ import { useId } from 'react'
 import { BANCOS, diasEntre, faltaEnCheque, hoyEnObera, sumarDias } from '@/lib/api/cheques'
 import type { DatosCheque } from '@/lib/api/cheques'
 import { campo } from '@/estilos'
+import { avanzarConEnter } from '@/lib/teclado'
 
 /*
   Los datos de un cheque, en el mismo orden en que se leen en el papel:
@@ -46,7 +47,7 @@ export default function CamposCheque({
   const mostrarFalta = falta && (empezado || !/^Falta/.test(falta))
 
   return (
-    <div className="@container space-y-2">
+    <div className="@container space-y-2" onKeyDown={avanzarConEnter}>
       <div className="grid grid-cols-2 gap-2 @xl:grid-cols-4">
         <label className="block min-w-0">
           <span className="mb-1 block text-xs text-piedra-600">Banco</span>

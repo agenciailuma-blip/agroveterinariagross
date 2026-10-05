@@ -9,6 +9,7 @@ import RedDelLocal from '@/components/RedDelLocal'
 import CajasYMostradores from '@/components/CajasYMostradores'
 import ImpresoraDelMostrador from '@/components/ImpresoraDelMostrador'
 import RitmoDelMostrador from '@/components/RitmoDelMostrador'
+import { ListaDeAtajos } from '@/components/Atajos'
 import {
   crearPuntoVenta,
   guardarValorConfiguracion,
@@ -122,6 +123,15 @@ export default function Configuracion() {
         <>
           <DiagnosticoTerminal />
           <ImpresoraDelMostrador />
+          {/* La misma lista que abre F1, para encontrarla sin saber que existe F1. */}
+          <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-borde">
+            <h2 className="font-medium text-tinta">Atajos de teclado</h2>
+            <p className="mt-1 mb-4 text-sm text-piedra-500">
+              Para trabajar sin el mouse. Son los mismos en todas las computadoras, y F1 los muestra desde
+              cualquier pantalla.
+            </p>
+            <ListaDeAtajos />
+          </div>
         </>
       )}
     </div>

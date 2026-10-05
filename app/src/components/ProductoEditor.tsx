@@ -8,6 +8,9 @@ import { boton } from '@/estilos'
 import { describirEnTienda } from '@/lib/api/ventaOnline'
 import type { EstadoEnTienda, TonoEnTienda } from '@/lib/api/ventaOnline'
 import HistorialDeCostos from '@/components/HistorialDeCostos'
+import { avanzarConEnter } from '@/lib/teclado'
+import { useBotonConAtajo } from '@/lib/atajos'
+import { TeclaAtajo } from '@/components/Atajos'
 
 export interface EstadoFormulario {
   campos: Partial<ProductoDetalle>
@@ -123,6 +126,7 @@ export default function ProductoEditor({
   enTienda,
   tiendaPendiente,
 }: Props) {
+  const botonGuardar = useBotonConAtajo('F9')
   const [codigoBarra, setCodigoBarra] = useState('')
   const refNombre = useRef<HTMLInputElement>(null)
 
@@ -183,7 +187,7 @@ export default function ProductoEditor({
     onCambio({ ...estado, tienda: { ...estado.tienda, ...parcial } })
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col" onKeyDown={avanzarConEnter}>
       <div className="flex items-center justify-between border-b border-borde px-5 py-3">
         <h2 className="font-semibold text-tinta">
           {esNuevo ? 'Nuevo producto' : estado.campos.nombre_interno || 'Producto'}
@@ -747,11 +751,13 @@ export default function ProductoEditor({
 
       <div className="flex items-center gap-2 border-t border-borde bg-piedra-50 px-5 py-3">
         <button
+          ref={botonGuardar}
           onClick={() => onGuardar(true, true)}
           disabled={guardando || umbralInvalido}
           className={`flex-1 ${boton.principal}`}
         >
           {guardando ? 'Guardando…' : 'Revisado y siguiente'}
+          {!guardando && <TeclaAtajo tecla="F9" clara />}
         </button>
         <button
           onClick={() => onGuardar(false, false)}

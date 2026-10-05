@@ -10,6 +10,7 @@ import {
 } from '@/lib/api/depositos'
 import { enCastellano } from '@/lib/errores'
 import { boton, botonChico, campo, tarjeta } from '@/estilos'
+import { avanzarConEnter } from '@/lib/teclado'
 
 /*
   Dónde está la mercadería.
@@ -70,7 +71,7 @@ export default function Depositos() {
   const filas = depositos.data ?? []
 
   return (
-    <div className={`${tarjeta} p-5`}>
+    <div className={`${tarjeta} p-5`} onKeyDown={avanzarConEnter}>
       <h2 className="font-medium text-tinta">Depósitos</h2>
       <p className="mt-1 text-sm text-piedra-500">
         Dónde está la mercadería. El <strong>principal</strong> es del que venden las máquinas que
