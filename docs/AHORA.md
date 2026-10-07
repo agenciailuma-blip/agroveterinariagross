@@ -1,5 +1,5 @@
 ---
-actualizado: 2026-10-01
+actualizado: 2026-10-07
 estado: en curso
 ---
 
@@ -41,6 +41,13 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 > 🔧 **Se arregla en un minuto y no lo puede hacer el sistema:** agregar `app/src-tauri/target` a las exclusiones de Norton y de Avast. **Y conviene desinstalar dos de los tres**: tres antivirus a la vez se pisan entre ellos, no protegen más y hacen lenta la máquina.
 
 ## Lo primero de todo
+
+📋 **El guion de la prueba del corte** está en una página propia: https://claude.ai/artifact/2LjCRbUhEr8RPvmQRG8keD — los doce puntos de terminado del alcance, cinco controles previos y cinco pruebas de lo que se sumó, cada uno con sus pasos, cuándo sale bien, y botones para marcar *Anduvo* / *Falló* con una nota. **Los resultados quedan guardados** y se leen desde acá (colección `resultados`, un documento por punto: `a1`…`a5`, `p01`…`p12`, `e1`…`e5`). Es privada: para que Lucas marque, se la comparte como *Colaborador*.
+
+🔴 **Tres huecos del alcance de la fase 1-A.** Los dos primeros, encontrados al armar el guion (05/10); el tercero, por los audios de Lucas del 07/10:
+- **Umbrales de stock por categoría y general — no hay pantalla para cargarlos.** El sistema los usa (hay uno para Antiparasitarios: bajo 5, crítico 2), pero sólo se pueden poner producto por producto, en su ficha. El punto 11 de terminado y el punto 4 del alcance («configurables en tres niveles: general, por categoría y por producto») lo piden.
+- **El historial de movimientos de stock de un producto — no hay pantalla.** Cada movimiento se guarda con quién y cuándo, pero no se ve en ningún lado. El punto 2 de terminado («el movimiento queda con usuario y hora») y el punto 4 del alcance («con historial de cómo llegó a ese número») lo piden.
+- **La venta fraccionada — la caja y la unidad suelta — no está hecha.** El §3 del alcance la promete («se da de baja la unidad completa y se vende por porción») y la base tiene los campos desde agosto, pero nada los usa. Lucas lo pidió el 07/10 con su ejemplo: tiene una caja de diez, vende una pastilla, y tiene que ver nueve sueltas y ninguna caja. El guion no lo vio porque los doce puntos de terminado no lo nombran. Propuesta en [`pedidos-lucas-2026-10-07.md`](pedidos-lucas-2026-10-07.md): la caja y la suelta atadas, y la caja que se abre sola. Ver *Lo que sigue*, punto 15.
 
 🟡 **Actualizar la caja y el mostrador a la 0.13.4** la próxima vez que se vaya al local, y abrir el sistema en la caja con internet para que suba la factura 0009-00000001. Hasta actualizar, **si se corta internet, cerrar y abrir el sistema en la caja** antes de vender: la 0.13.1 puede haber dejado de escuchar sin avisar.
 
@@ -625,6 +632,9 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
     - ⏱️ **La primera consulta del día tarda** lo que ARCA en dar el permiso: diez segundos en pruebas, medido. Las siguientes, medio segundo. Por eso esa llamada tiene un límite de 30 s y no los 12 del resto.
     - La página de la API de la tienda se actualizó a la **versión 4**: con el CUIT alcanza, la condición no hace falta.
 
+15. 🔴 **La caja y la unidad suelta** — V1-A, comprometido para el corte, sin construir. Pedido de Lucas del 07/10. **Dos productos atados** —la caja, que se compra y se cuenta, y la suelta, con su precio— y **la caja se abre sola** cuando se vende una suelta y no quedan sueltas: queda en el libro como *Apertura de caja*. Stock, la ficha y el mostrador las muestran juntas: *0 cajas cerradas + 9 sueltas*. Uno solo con el stock en unidades obligaría a tocar la venta, la factura, la copia sin internet y la API; dos atados no tocan nada de eso, y es como ya trabajan en OBTech. **Mediano**; el disparador nuevo va en el libro de stock y se corre en seco antes de aplicar. Detalle, decisiones y tres preguntas para Lucas en [`pedidos-lucas-2026-10-07.md`](pedidos-lucas-2026-10-07.md).
+16. 🟢 **La orden de compra interna y el pedido a proveedor** — V1-B, §11. Pedido de Lucas del 07/10. **Orden interna:** un sector (depósito, ventas, compras) le pide a compras, con producto, cantidad y el proveedor de la ficha al lado; se imprime agrupada por proveedor y admite renglones libres para lo que no está en el catálogo. **Pedido a proveedor:** se elige un proveedor, aparecen todos sus productos con stock, mínimo y lo que pidieron las órdenes, y se arma la orden que se le manda. **Lucas aclaró que «umbrales de stock por proveedor» quería decir esto**, no un umbral distinto por proveedor: el mínimo sigue siendo por producto. Pantallas nuevas, sin riesgo para lo que anda: no bloquean el corte, pero se pueden hacer antes si sobra tiempo. De paso, **la planilla de importación de productos tiene que traer el mínimo**: Lucas lo va a cargar al dar de alta el catálogo.
+
 > ✅ **Los desplegables de *Percepciones* ya usan el estilo común**, así que muestran el recuadro de foco como el resto del sistema — un paso menos para el punto 6. La pantalla tenía además el botón y la tarjeta escritos a mano; los tres ahora salen de [`estilos.ts`](../app/src/estilos.ts).
 
 ## Lo que está bloqueado, y por quién
@@ -651,6 +661,13 @@ Dos, y las dos cambian el tamaño de algo. Están desarrolladas en sus documento
 
 1. ¿Le llevan **la cuenta a cada proveedor** en OBTech, o eso lo miran en otro lado? → [`plan-compras.md`](plan-compras.md)
 2. En la grilla del IVA de compras, la columna **Centro de Costo**: ¿elegís algo o la dejás como viene? → [`compras-e-iva.md`](compras-e-iva.md)
+
+Y cuatro de los audios del 07/10, desarrolladas en [`pedidos-lucas-2026-10-07.md`](pedidos-lucas-2026-10-07.md):
+
+3. En OBTech, ¿la caja y la unidad suelta son **dos artículos distintos**? Si es así, se atan en la importación.
+4. ¿Hay productos de **dos niveles** —caja de blísters, y se vende el blíster y también el comprimido—?
+5. El **precio de la suelta**, ¿lo pone él, o es siempre «caja dividido lo que trae, más un porcentaje»?
+6. El **mínimo que acepta un proveedor**, ¿es en plata, en bultos o en kilos?
 
 Las cuatro de los cheques se contestaron el 30/09. Queda una de configuración, para cuando se mire la pantalla: **¿a un cheque diferido se le cobra otro precio?** Hoy usa la lista de contado.
 
