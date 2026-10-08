@@ -316,6 +316,8 @@ export default function Productos() {
       qc.invalidateQueries({ queryKey: ['avance-carga'] })
       qc.invalidateQueries({ queryKey: ['producto', seleccionado] })
       qc.invalidateQueries({ queryKey: ['tienda-listado'] })
+      qc.invalidateQueries({ queryKey: ['cadena-envases'] })
+      qc.invalidateQueries({ queryKey: ['envase'] })
 
       if (variables.avanzar) {
         const siguiente = siguienteSinRevisar(seleccionado)
@@ -345,6 +347,43 @@ export default function Productos() {
     setSeleccionado(null)
     setForm(FORM_VACIO)
     setErrorGuardado(null)
+  }
+
+  /*
+    La suelta de este producto: un producto nuevo, atado a éste, con lo
+    que comparten ya puesto —categoría, marca, proveedor, IVA—. Falta
+    decir cuántas trae y ponerle precio: el comprimido suelto casi nunca
+    vale la caja dividido diez. El código y el nombre son una sugerencia.
+  */
+  function crearSuelta() {
+    if (!seleccionado) return
+    const c = form.campos
+    setCreando(true)
+    setSeleccionado(null)
+    setErrorGuardado(null)
+    setForm({
+      ...FORM_VACIO,
+      campos: {
+        ...FORM_VACIO.campos,
+        codigo: c.codigo ? `${c.codigo}-S` : '',
+        nombre_interno: c.nombre_interno ? `${c.nombre_interno} SUELTO` : '',
+        categoria_id: c.categoria_id ?? null,
+        marca_id: c.marca_id ?? null,
+        presentacion_id: c.presentacion_id ?? null,
+        proveedor_id: c.proveedor_id ?? null,
+        rubro_arca_id: c.rubro_arca_id ?? null,
+        alicuota_iva_id: c.alicuota_iva_id ?? FORM_VACIO.campos.alicuota_iva_id,
+        condicion_iva: c.condicion_iva ?? FORM_VACIO.campos.condicion_iva,
+        es_producto_veterinario: c.es_producto_veterinario ?? false,
+        requiere_receta: c.requiere_receta ?? false,
+        es_fitosanitario: c.es_fitosanitario ?? false,
+        principio_activo: c.principio_activo ?? null,
+        envase_id: seleccionado,
+        cantidad_por_envase: null,
+      },
+      animales: form.animales,
+      etapas: form.etapas,
+    })
   }
 
   const porcentaje = avance.data?.total
@@ -829,6 +868,12 @@ export default function Productos() {
                         </td>
                         <td className="px-4 py-2.5 text-right tabular-nums text-piedra-700">
                           {numero.format(p.cantidad)}
+                          {/* Una suelta: lo que se ve son las sueltas; abriendo cajas hay más. */}
+                          {p.envase_id && (
+                            <span className="block text-[11px] leading-tight text-piedra-400">
+                              sueltas, {numero.format(p.disponible)} en total
+                            </span>
+                          )}
                         </td>
                         <td className="hidden px-4 py-2.5 sm:table-cell">
                           <span
@@ -885,6 +930,7 @@ export default function Productos() {
                 }
                 enTienda={creando ? null : (detalle.data?.tienda ?? null)}
                 tiendaPendiente={tiendaPendiente}
+                onCrearSuelta={puedeCrear && seleccionado && !creando ? crearSuelta : undefined}
                 onReferenciaCreada={(grupo, nueva) =>
                   qc.setQueryData(['referencias'], (prev: Referencias | undefined) =>
                     prev ? { ...prev, [grupo]: [...prev[grupo], nueva] } : prev,

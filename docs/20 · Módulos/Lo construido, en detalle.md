@@ -619,6 +619,32 @@ Pantalla **Compras**, entre Proveedores y Ventas. Se carga la cabecera de la fac
 
 **Verificado contra la base real:** 48 comprobaciones en [`supabase/pruebas/transferencias-entre-depositos.sql`](../../supabase/pruebas/transferencias-entre-depositos.sql), como usuario. La migración se corrió primero en seco junto con la prueba —todo en una transacción que se deshace—, porque toca el disparador por el que pasa cada venta.
 
+### ✅ 3e. La caja y la suelta — venta fraccionada (08/10)
+
+**El §3 del alcance de V1-A** («se da de baja la unidad completa y se vende por porción»), pedido por Lucas el 07/10 con su ejemplo: tiene una caja de diez pastillas, vende una, y tiene que ver nueve sueltas y ninguna caja. El 08/10 agregó que hay unos cinco productos de **tres niveles**: caja, tableta y pastilla. [Migración](../../supabase/migrations/20261008120000_la_caja_y_la_suelta.sql).
+
+**Productos atados, no un producto con el stock en la unidad más chica.** Cada nivel es un producto entero —su precio, su código de barras, su renglón en la factura—, y la suelta guarda de qué envase sale (`envase_id`) y cuántas trae (`cantidad_por_envase`). Con eso la venta, la factura, la copia sin internet, las devoluciones, los remitos y la API de la tienda no cambiaron una línea. Un solo producto con stock en pastillas obligaba a tocar todo eso a tres semanas del corte. Y es como trabajan en OBTech, donde abrir una caja es una transferencia al depósito *Fraccionamiento*.
+
+**La caja se abre sola, en la base.** Un disparador nuevo en el libro (`movimiento_stock_sin_sueltas_abre_envase`) corre después de que la venta ya se sumó al saldo —los AFTER van en orden alfabético, y `aplicar` va antes que `sin_sueltas`—. Si la suelta quedó en negativo en ese depósito, abre los envases que hagan falta y no más de los que hay: `apertura` negativo en el envase y `fraccionamiento` positivo —tipo nuevo— en la suelta, con la fecha, la persona, la terminal y el depósito de la venta. **Reacciona a venta, remito y apertura**: lo último es lo que hace andar los tres niveles solos —abrir una tableta que no hay deja la tableta en negativo, y eso abre una caja—. **No reacciona a ajuste, inventario ni transferencia**: dicen que el conteo dio menos o deshacen otra cosa, no que alguien abrió una caja.
+
+**La referencia de la apertura es el movimiento de la venta, nunca la venta.** Las devoluciones y la anulación leen «lo que salió por la venta» por `referencia_tipo = 'venta'`: si la apertura llevara esa referencia, anular la venta devolvería una caja cerrada y sacaría diez pastillas. Por eso va como `fraccionamiento`, con el id del movimiento que la provocó; en tres niveles, todas las aperturas apuntan al movimiento de la venta original.
+
+**Lo que vuelve, vuelve suelto.** Una anulación o una devolución reingresa la suelta; la caja ya está abierta y no se cierra.
+
+**Cuánto hay, contando lo que se puede abrir:** `app.disponible_abriendo(producto, depósito)`, las sueltas más lo que traen los envases enteros de arriba, recursiva. Media tableta no se abre y un envase vendido de más no resta. Con depósito, sólo lo de ese depósito: la caja del otro local no se abre acá. La copia local del mostrador hace la misma cuenta ([`lib/envases.ts`](../../app/src/lib/envases.ts), `disponibleLocal` en `consultas.ts`).
+
+**`vista_stock` suma tres columnas al final** —`envase_id`, `cantidad_por_envase`, `disponible`— y **el estado de una suelta se calcula con lo disponible**: con la caja llena, tres pastillas sueltas aparecerían en Crítico todos los días. El de la caja no cambia: avisa con sus cajas cerradas, que es lo que se le pide al proveedor. `vista_stock_por_deposito`, lo mismo por depósito. `vista_stock_canal` —la de la tienda— no se tocó.
+
+**El costo baja por la cadena.** Al atar, la suelta toma el costo del envase dividido lo que trae; cuando la recepción le cambia el costo a la caja, un disparador se lo cambia a la tableta, y el mismo disparador a la pastilla. El precio no: lo pone Lucas, y la ficha sugiere la división.
+
+**Lo que la base no deja:** que la cadena dé vueltas (la caja adentro de su pastilla), más de cuatro niveles, un envase que se abra en dos sueltas distintas (índice único), una suelta sin decir cuántas trae, o «trae 0». Un envase dado de baja no se abre.
+
+**En pantalla:** la ficha tiene la sección **Caja y suelto** —«Sale de adentro de», cuántas trae, «Se abre en», y **Crear la suelta**, que abre un producto nuevo con la categoría, la marca, el proveedor y el IVA de la caja—; arriba, la cadena: *«En stock: 1 CAJA · 9 SUELTO»* y el total contado en sueltas. Stock y la lista de Productos dicen *«9 sueltas · 19 abriendo lo cerrado»*. El mostrador muestra lo disponible y, debajo, las sueltas, con y sin internet.
+
+**Lo que no se hizo:** la planilla de importación no trae todavía las columnas de envase —con cinco productos de tres niveles, se atan a mano en la ficha—. Y la tienda publica las sueltas que hay, sin contar las que se pueden abrir: vende cajas.
+
+**Verificado contra la base real:** 26 comprobaciones en [`supabase/pruebas/caja-y-suelta.sql`](../../supabase/pruebas/caja-y-suelta.sql), con ventas cobradas y anuladas como un Administrador: el ejemplo de Lucas en tres niveles, abrir sólo lo que hace falta, lo que no alcanza, el ajuste que no abre, los frenos, el costo, la bolsa de 15 kg y el otro depósito. Se corrió en seco junto con la migración. **La corrida encontró un error real**: «trae 0» daba *division by zero* en vez del mensaje de la base; corregido antes de aplicar. **Se rompió a propósito** sacando `apertura` del disparador, y la prueba lo atrapó: quedaba la caja entera y la tableta en −1.
+
 ### 🟡 3. Pantallas que faltan
 Reportes. *(El panel de comprobantes con semáforo, la configuración general, el inventario por sectores y las métricas de Inicio ya están hechos.)*
 

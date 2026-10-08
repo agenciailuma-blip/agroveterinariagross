@@ -161,7 +161,9 @@ export default function PuntoDeVenta() {
     if (pedirCantidad) {
       const pedido = await pedirNumero({
         titulo: p.nombre_interno,
-        detalle: `${moneda.format(p.precio_venta)} por ${p.unidad_medida} · quedan ${numero.format(p.cantidad)}`,
+        detalle: `${moneda.format(p.precio_venta)} por ${p.unidad_medida} · quedan ${numero.format(p.cantidad)}${
+          p.sueltas !== undefined ? ` (${numero.format(p.sueltas)} sueltas)` : ''
+        }`,
         etiqueta: '¿Cuántos?',
         valorInicial: '1',
         aceptar: 'Agregar',
@@ -625,6 +627,12 @@ export default function PuntoDeVenta() {
                     >
                       {numero.format(p.cantidad)} {p.unidad_medida}
                     </p>
+                    {/* Una suelta: cuántas hay sueltas; el resto sale de abrir una caja. */}
+                    {p.sueltas !== undefined && (
+                      <p className="text-[11px] tabular-nums text-piedra-400">
+                        {numero.format(p.sueltas)} sueltas
+                      </p>
+                    )}
                   </div>
                 </button>
               ))}

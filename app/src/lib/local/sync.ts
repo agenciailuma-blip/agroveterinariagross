@@ -45,7 +45,7 @@ const MAESTROS: Definicion[] = [
     tabla: 'producto',
     origen: 'producto',
     columnas:
-      'id, codigo, nombre_interno, nombre_publico, precio_venta, costo, margen_sobre_costo, unidad_medida, alicuota_iva_id, condicion_iva, categoria_id, marca_id, activo, revisado_en, actualizado_en, eliminado_en',
+      'id, codigo, nombre_interno, nombre_publico, precio_venta, costo, margen_sobre_costo, unidad_medida, alicuota_iva_id, condicion_iva, categoria_id, marca_id, activo, revisado_en, actualizado_en, eliminado_en, envase_id, cantidad_por_envase',
     mapear: (f) => ({
       ...f,
       busqueda: normalizar(`${f.codigo ?? ''} ${f.nombre_interno ?? ''} ${f.nombre_publico ?? ''}`),

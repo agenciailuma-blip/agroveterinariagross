@@ -82,7 +82,7 @@ Sin esto, las 4 PC sólo se sincronizan **contra el servidor**. La consecuencia 
 - Importación inicial desde el Excel exportado de OBTech
 - Código interno, nombre interno, alícuota de IVA, unidad de medida
 - **Código de barras** por producto, con soporte para más de uno por artículo
-- Venta fraccionada *(se da de baja la unidad completa y se vende por porción)* → 🔴 **sin construir al 07/10.** Lucas la pidió ese día con su ejemplo de la caja de diez pastillas. Propuesta: [`pedidos-lucas-2026-10-07.md`](pedidos-lucas-2026-10-07.md)
+- Venta fraccionada *(se da de baja la unidad completa y se vende por porción)* → ✅ **construida el 08/10 y publicada en la 0.14.0**, con tres niveles (caja, tableta y pastilla). Lucas la pidió el 07/10 con su ejemplo de la caja de diez pastillas. Ver [`pedidos-lucas-2026-10-07.md`](pedidos-lucas-2026-10-07.md)
 - Campos de lote, vencimiento, principio activo y certificado SENASA **creados pero no obligatorios** *(preparación para SIGTRAZAVET, sin impacto en la operación diaria)*
 
 ### Categorización

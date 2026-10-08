@@ -26,7 +26,13 @@ export interface ProductoVenta {
   unidad_medida: string
   alicuota_iva_id: number
   condicion_iva: 'gravado' | 'exento' | 'no_gravado'
+  /*
+    Lo que hay para vender. En una suelta, las sueltas más lo que se
+    puede abrir: con la caja cerrada, una pastilla no está «sin stock».
+  */
   cantidad: number
+  /** Sólo en una suelta: cuántas hay sueltas de verdad, sin abrir nada. */
+  sueltas?: number
   estado: EstadoStock
 }
 
@@ -164,7 +170,7 @@ async function buscarProductosServidor(texto: string): Promise<ProductoVenta[]> 
   let q = supabase
     .from('vista_stock')
     .select(
-      'producto_id, codigo, nombre_interno, precio_venta, unidad_medida, alicuota_iva_id, cantidad, estado',
+      'producto_id, codigo, nombre_interno, precio_venta, unidad_medida, alicuota_iva_id, cantidad, estado, envase_id, disponible',
     )
     .eq('activo', true)
     .limit(20)
@@ -181,7 +187,10 @@ async function buscarProductosServidor(texto: string): Promise<ProductoVenta[]> 
   if (error) throw new Error(error.message)
 
   // La vista no expone condicion_iva; se completa desde producto.
-  const filas = (data ?? []) as Omit<ProductoVenta, 'condicion_iva'>[]
+  type FilaVista = Omit<ProductoVenta, 'condicion_iva' | 'sueltas'> & { envase_id: string | null; disponible: number }
+  const filas = ((data ?? []) as FilaVista[]).map(({ envase_id, disponible, ...f }) =>
+    envase_id ? { ...f, cantidad: Number(disponible), sueltas: Number(f.cantidad) } : f,
+  )
   if (!filas.length) return []
 
   const { data: condiciones } = await supabase

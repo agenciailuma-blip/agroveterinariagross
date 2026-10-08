@@ -2,6 +2,8 @@ import { supabase } from '@/lib/supabase'
 import type { EstadoStock } from '@/lib/tipos'
 import { definirColchonTienda, definirVentaOnline, estadoEnTienda } from '@/lib/api/ventaOnline'
 import type { EstadoEnTienda } from '@/lib/api/ventaOnline'
+import { explicarErrorDeEnvase } from '@/lib/envases'
+import type { NivelDeCadena } from '@/lib/envases'
 
 export interface FilaListado {
   producto_id: string
@@ -14,6 +16,10 @@ export interface FilaListado {
   estado: EstadoStock
   activo: boolean
   revisado_en: string | null
+  /** De qué envase sale, si es una suelta. */
+  envase_id: string | null
+  /** Sueltas más lo que se puede abrir. En un producto que no es suelta, lo mismo que `cantidad`. */
+  disponible: number
 }
 
 export interface ProductoDetalle {
@@ -43,6 +49,13 @@ export interface ProductoDetalle {
   principio_activo: string | null
   activo: boolean
   revisado_en: string | null
+  /*
+    La caja y la suelta: de qué producto sale éste y cuántos trae cada
+    uno. La pastilla sale de la tableta (10) y la tableta de la caja
+    (10). Cuando se vende una suelta y no quedan, la base abre uno solo.
+  */
+  envase_id: string | null
+  cantidad_por_envase: number | null
 }
 
 export interface Referencia {
@@ -154,7 +167,7 @@ export async function listarProductos(
   let q = supabase
     .from('vista_stock')
     .select(
-      'producto_id, codigo, nombre_interno, nombre_publico, precio_venta, unidad_medida, cantidad, estado, activo, revisado_en',
+      'producto_id, codigo, nombre_interno, nombre_publico, precio_venta, unidad_medida, cantidad, estado, activo, revisado_en, envase_id, disponible',
       { count: 'exact' },
     )
     .order('revisado_en', { ascending: true, nullsFirst: true })
@@ -374,14 +387,14 @@ export async function guardarProducto(datos: DatosGuardado): Promise<string> {
 
   if (productoId) {
     const { error } = await supabase.from('producto').update(campos).eq('id', productoId)
-    if (error) throw new Error(`No se pudo guardar el producto: ${error.message}`)
+    if (error) throw new Error(explicarErrorDeEnvase(error.message) ?? `No se pudo guardar el producto: ${error.message}`)
   } else {
     const { data, error } = await supabase
       .from('producto')
       .insert(campos)
       .select('id')
       .single<{ id: string }>()
-    if (error) throw new Error(`No se pudo crear el producto: ${error.message}`)
+    if (error) throw new Error(explicarErrorDeEnvase(error.message) ?? `No se pudo crear el producto: ${error.message}`)
     productoId = data.id
   }
 
@@ -493,4 +506,63 @@ export async function guardarProducto(datos: DatosGuardado): Promise<string> {
   }
 
   return productoId
+}
+
+/*
+  ─────────────────────────────────────────────────────────────
+  La caja y la suelta
+  ─────────────────────────────────────────────────────────────
+*/
+
+/** La cadena entera de un producto, de la caja a la pastilla. Una sola fila: no está atado a nada. */
+export async function cadenaDeEnvases(productoId: string): Promise<NivelDeCadena[]> {
+  const { data, error } = await supabase.rpc('cadena_de_envases', { p_producto_id: productoId })
+  if (error) throw new Error(error.message)
+  return ((data ?? []) as NivelDeCadena[]).map((n) => ({
+    ...n,
+    precio_venta: Number(n.precio_venta),
+    cantidad: Number(n.cantidad),
+    cantidad_por_envase: n.cantidad_por_envase === null ? null : Number(n.cantidad_por_envase),
+  }))
+}
+
+export interface EnvasePosible {
+  id: string
+  codigo: string
+  nombre_interno: string
+  precio_venta: number
+  costo: number | null
+}
+
+/*
+  Los productos que pueden ser el envase de éste: cualquiera menos él
+  mismo. Que no quede dando vueltas —la caja adentro de su pastilla— y
+  que cada envase se abra en una sola cosa lo controla la base, y el
+  mensaje vuelve al guardar.
+*/
+export async function buscarEnvases(texto: string, excluir: string | null): Promise<EnvasePosible[]> {
+  const limpio = texto.trim()
+  if (!limpio) return []
+  const patron = `%${limpio.replace(/[%_]/g, '')}%`
+  let q = supabase
+    .from('producto')
+    .select('id, codigo, nombre_interno, precio_venta, costo')
+    .is('eliminado_en', null)
+    .or(`codigo.ilike.${patron},nombre_interno.ilike.${patron}`)
+    .order('nombre_interno')
+    .limit(8)
+  if (excluir) q = q.neq('id', excluir)
+  const { data, error } = await q
+  if (error) throw new Error(error.message)
+  return (data ?? []) as EnvasePosible[]
+}
+
+export async function obtenerEnvase(id: string): Promise<EnvasePosible | null> {
+  const { data, error } = await supabase
+    .from('producto')
+    .select('id, codigo, nombre_interno, precio_venta, costo')
+    .eq('id', id)
+    .maybeSingle<EnvasePosible>()
+  if (error) throw new Error(error.message)
+  return data
 }

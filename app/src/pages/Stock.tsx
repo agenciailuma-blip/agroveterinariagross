@@ -238,7 +238,12 @@ export default function Stock() {
                   La sugerencia fina de reposición según venta histórica
                   es la 8, y quedó para V3.
                 */
-                const faltan = Math.max(0, f.umbral_bajo - f.cantidad)
+                /*
+                  Una suelta se compara con lo disponible —sus sueltas más lo
+                  que se puede abrir—, igual que su estado: si no, con la caja
+                  llena, diría que faltan pastillas.
+                */
+                const faltan = Math.max(0, f.umbral_bajo - (f.envase_id ? Number(f.disponible) : f.cantidad))
                 const costo = f.costo ? faltan * Number(f.costo) : null
                 return (
                   <tr key={f.producto_id}>
@@ -248,7 +253,14 @@ export default function Stock() {
                     </td>
                     <td className="py-2.5 text-right tabular-nums text-tinta">
                       {numero.format(f.cantidad)}
-                      <span className="ml-1 text-xs text-piedra-400">{f.unidad_medida}</span>
+                      <span className="ml-1 text-xs text-piedra-400">
+                        {f.envase_id ? 'sueltas' : f.unidad_medida}
+                      </span>
+                      {f.envase_id && (
+                        <span className="block text-[11px] leading-tight text-piedra-400">
+                          {numero.format(Number(f.disponible))} abriendo lo cerrado
+                        </span>
+                      )}
                     </td>
                     {columnasPorDeposito.map((d) => {
                       const n = porDeposito.data?.get(f.producto_id)?.get(d.id) ?? 0

@@ -304,6 +304,7 @@
         <li><b>Precio y rentabilidad</b> — precio de venta con IVA, <b>costo con IVA</b>, margen objetivo y el margen real que está dando, <b>sobre el costo y sobre la venta</b>, porque «margen» significa las dos cosas según quién lo diga. El costo se actualiza solo al recibir mercadería (ver <b>Compras</b>). Debajo, el desplegable <b>Historial de costos</b>: cada vez que se compró, con la fecha, el proveedor, la factura, el costo y cuánto cambió contra la compra anterior, más una línea chica que muestra cómo vino.</li>
         <li><b>Impuestos</b> — alícuota de IVA y rubro de ARCA.</li>
         <li><b>Stock</b> — cuánto hay y el <b>aviso de stock bajo</b> en dos niveles. Si no se le pone uno propio, hereda el de su categoría o el general. Con más de un depósito muestra cuánto hay en cada uno, y el stock se corrige contándolo en <b>Inventario</b>, que pregunta el depósito.</li>
+        <li><b>Caja y suelto</b> — para lo que se compra en caja y se vende por unidad: la pastilla, la tableta, el kilo de alimento. La suelta dice <b>de qué caja sale</b> y <b>cuántas trae</b>; desde la caja, el botón <b>Crear la suelta</b> la arma con la categoría, la marca, el proveedor y el IVA ya puestos. Arriba se ve lo que hay de cada uno —<i>«En stock: 1 caja · 9 sueltas»</i>— y cuánto es contado en sueltas. El costo de la suelta lo toma de la caja; el precio lo pone uno.</li>
         <li><b>Proveedor</b> — a quién se le compra. Es lo que permite después subirle el precio a todo un laboratorio de una sola vez.</li>
         <li><b>Clasificación</b> — rubro, marca, presentación, animal y etapa de vida.</li>
         <li><b>Códigos de barra</b> — todos los que tenga, no uno solo.</li>
@@ -312,6 +313,7 @@
       </ul>
 
       <div class="nota verde"><b>Vender online, de a muchos.</b> En el listado se filtra por categoría y marca, se marcan los productos y se prenden o apagan juntos, o se prende una categoría entera: el sistema dice antes cuántos son y, después, cuántos no salen por faltarles el nombre público o el precio. Los que se venden online llevan la marca <b>Web</b> en la lista; en ámbar si están prendidos pero no salen.</div>
+      <div class="nota verde"><b>La caja se abre sola.</b> El stock se carga como llega: en cajas. Cuando se vende una suelta y no quedan sueltas, el sistema abre una caja en el mismo momento: la caja baja una y las sueltas suben lo que trae. Con una caja de diez, vender una pastilla deja <b>cero cajas y nueve sueltas</b>; nunca muestra una caja que ya no está. Sirve para tres niveles —caja, tableta y pastilla—: si no quedan tabletas, abre una caja para sacar la tableta. Lo que vuelve por una devolución vuelve suelto, porque la caja ya está abierta. Cada apertura queda registrada con la venta que la provocó, quién y cuándo.</div>
       <div class="nota"><b>Importar la planilla no duplica.</b> Acepta Excel y CSV. El sistema propone a qué campo corresponde cada columna y la persona confirma viendo un dato de ejemplo, porque los encabezados mienten: una columna que dice «Precio» puede tener el costo. Al reimportar reconoce por código y actualiza: una celda vacía no borra lo que había, un valor distinto sí lo pisa.</div>
     </div>
   </section>
@@ -336,7 +338,7 @@
     <header><span class="numero">8</span><div><h3>Stock</h3><p class="lema">Qué hay que pedir.</p></div></header>
     <div class="cuerpo">
       <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">No es el catálogo con otra columna: arranca filtrado en lo que necesita una decisión, ordenado por urgencia y no por nombre.</div></div>
-      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Cuatro números arriba —sobrevendidos, críticos, bajos y en stock— y, por producto, cuánto queda, con cuánto avisa, en qué estado está y <b>cuánto costaría reponerlo</b> hasta el umbral.</div></div>
+      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Cuatro números arriba —sobrevendidos, críticos, bajos y en stock— y, por producto, cuánto queda, con cuánto avisa, en qué estado está y <b>cuánto costaría reponerlo</b> hasta el umbral. En lo que se vende suelto dice cuántas hay <b>sueltas</b> y cuántas hay <b>abriendo lo cerrado</b>; su estado se calcula con las dos cosas, así nueve pastillas sueltas con la caja llena no aparecen como faltante. Lo que se pide es la caja, y la caja avisa con sus cajas cerradas.</div></div>
       <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Filtrar por estado · buscar · <b>copiar la lista</b> para pegarla en un WhatsApp al proveedor. Contar y transferir son las pestañas de al lado: <b>Inventario</b> y <b>Transferencias</b>.</div></div>
       <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">La lista de faltantes <b>al portapapeles</b>, en texto, lista para pegar.</div></div>
 

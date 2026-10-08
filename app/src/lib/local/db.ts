@@ -38,6 +38,13 @@ export interface ProductoLocal {
   revisado_en: string | null
   actualizado_en: string
   eliminado_en: string | null
+  /*
+    La caja y la suelta. Pueden faltar: un producto que se bajó antes
+    de que existieran no se vuelve a bajar hasta que cambie, y para la
+    copia local «no está» quiere decir «no sale de ningún envase».
+  */
+  envase_id?: string | null
+  cantidad_por_envase?: number | null
   /** Se calcula al guardar, para poder buscar sin acentos ni mayúsculas. */
   busqueda: string
 }

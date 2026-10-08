@@ -1,11 +1,20 @@
 ---
 fecha: 2026-10-07
-estado: propuesta, sin construir
+actualizado: 2026-10-08
+estado: la caja y la suelta, construida y publicada (0.14.0); las órdenes de compra, con el modelo de Lucas, sin construir
 ---
 
 # Los audios de Lucas del 07/10 — caja y unidad, orden de compra interna, stock por proveedor
 
-> Tres pedidos en cinco audios. **Uno ya estaba prometido para el corte y no está hecho** —la caja y la unidad—; los otros dos son de V1-B y aclaran qué quería decir el alcance.
+> Tres pedidos en cinco audios. **Uno ya estaba prometido para el corte y no estaba hecho** —la caja y la unidad—; los otros dos son de V1-B y aclaran qué quería decir el alcance.
+
+## Lo que contestó Lucas el 08/10
+
+- **La autorización de ARCA para traer los datos por CUIT: creada.** Verificada ese día contra ARCA de pruebas: con su CUIT devolvió el nombre y el aviso de que le falta el domicilio fiscal electrónico, y con el de una empresa, la constancia completa. Falta lo mismo para el certificado de producción.
+- **La caja y la unidad: «me parece perfecto».** Hay **unos cinco productos de tres niveles** —se venden por caja, por tableta y por pastilla—, y la caja casi no se vende entera porque dura mucho. Pidió la misma lógica para los tres niveles, y así se construyó: la pastilla sale de la tableta y la tableta de la caja.
+- **El precio de la suelta** no lo contestó en concreto; quedó como lo planteamos: lo pone él, y la ficha sugiere la división.
+- **¿Son dos artículos en OBTech?** Tampoco lo contestó. Con pocos casos, se atan a mano en la ficha.
+- **Mandó el modelo de la orden interna**, dibujado a mano, con tres audios. Está abajo, en el punto 2.
 
 ---
 
@@ -16,6 +25,10 @@ estado: propuesta, sin construir
 🔴 **Esto ya estaba en V1-A y no está hecho.** El alcance, §3 Catálogo: *«Venta fraccionada (se da de baja la unidad completa y se vende por porción)»*. La base tiene los campos desde agosto (`permite_fraccionamiento`, `contenido`) y el tipo de movimiento `apertura`, pero nada los usa. El guion de la prueba del corte no lo vio porque los doce puntos de terminado no lo nombran.
 
 Lo único que hay hoy: un producto por kilo se vende con decimales. Nada ata la bolsa cerrada a los kilos sueltos.
+
+### ✅ Construida el 08/10 y publicada en la 0.14.0, como se propuso y con tres niveles
+
+El detalle técnico y cómo se verificó está en [[Lo construido, en detalle]], §3e.
 
 ### La propuesta: la caja y la suelta, atadas, y la caja se abre sola
 
@@ -57,13 +70,29 @@ Sirve igual para el alimento suelto: la bolsa de 15 kg y el kilo suelto.
 
 **Lo que pide.** Un papel, no de palabra: un sector le pide al sector de compras lo que hay que comprar. El caso: el de depósito ve que la semana que viene se quedan sin un alimento y le presenta la orden a Lucas. También sirve para mandar a un empleado a comprar algo a un comercio —Casa Burgo— o a sacarlo a cuenta corriente. **Es interna**: un pedido entre sectores, no va al proveedor.
 
-Lo que tiene que decir —en sus palabras, «no mucho»—: arriba *Orden de compra interna*, el sector que la pide (depósito, ventas, compras, o el que se escriba), la fecha, y abajo los productos con su cantidad y, al lado, el proveedor que viene por defecto. Dijo que iba a mandar un modelo de internet.
+Lo que tiene que decir —en sus palabras, «no mucho»—: arriba *Orden de compra interna*, el sector que la pide (depósito, ventas, compras, o el que se escriba), la fecha, y abajo los productos con su cantidad y, al lado, el proveedor que viene por defecto.
+
+### El modelo que mandó el 08/10
+
+Un dibujo a mano —«más o menos como una factura»— y tres audios. El dibujo: [`referencias/orden-de-compra-interna-lucas-2026-10-08.webp`](referencias/orden-de-compra-interna-lucas-2026-10-08.webp).
+
+| Lugar | Qué va |
+|---|---|
+| Arriba, al centro | **Orden de compra interna**, escrito entero (en el dibujo puso «O.C.I.» para no escribir todo) |
+| Arriba, al costado | **El número**, automático, y **la fecha** |
+| Dos cuadros | **Emite** y **Recibe**, cada uno un desplegable con los mismos sectores: Depósito, Ventas, Venta mostrador, Administración, Consultorio… «no va a salir de esos cuatro o cinco». Por ejemplo, emite Depósito y recibe Compras |
+| La tabla | **Código, descripción, proveedor y cantidad**, y se cargan varios renglones, como en una factura |
+| Abajo | **Observación**: «urgente», o «se necesita para el 5 de marzo» |
+| Abajo | **El contacto del cliente**, si es para un cliente: cuando llega, ya se sabe para quién es y se le avisa |
+| Al pie | **Firma del responsable** que la emite, una vez impresa |
 
 ### La propuesta: Compras → Órdenes internas
 
-- **Numeradas.** Sector, fecha, quién la hizo —lo pone el sistema— y una observación.
-- **Renglones:** producto por buscador o lector, cantidad, y el proveedor de la ficha ya puesto, que se puede cambiar. Y **renglones libres** para lo que no está en el catálogo (lo de Casa Burgo).
-- **Se imprime en una hoja, agrupada por proveedor**: «tanto de éste, tanto del otro», que es como la quiere leer.
+Ajustada al modelo del 08/10:
+
+- **Numeradas solas.** Fecha, **emite** y **recibe** —los dos de una lista de sectores que se arma una vez—, quién la cargó —lo pone el sistema—, una observación y, si es para un cliente, el cliente con su teléfono.
+- **Renglones:** producto por buscador o lector —aparecen el código y la descripción—, cantidad, y el proveedor de la ficha ya puesto, que se puede cambiar. Y **renglones libres** para lo que no está en el catálogo (lo de Casa Burgo).
+- **Se imprime en una hoja como la del dibujo**, con el renglón de la firma al pie. Los renglones, ordenados por proveedor: «tanto de éste, tanto del otro», que es como la quiere leer.
 - **Estados:** *pendiente*, *pedida* —cuando entra en un pedido al proveedor, punto 3— y *anulada*.
 - **Un permiso nuevo para hacerla** (*compras.solicitar*), que puede tener cualquier puesto **sin ver costos ni cuentas de proveedores**.
 

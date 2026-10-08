@@ -8,6 +8,7 @@ import { boton } from '@/estilos'
 import { describirEnTienda } from '@/lib/api/ventaOnline'
 import type { EstadoEnTienda, TonoEnTienda } from '@/lib/api/ventaOnline'
 import HistorialDeCostos from '@/components/HistorialDeCostos'
+import CajaYSuelto from '@/components/CajaYSuelto'
 import { avanzarConEnter } from '@/lib/teclado'
 import { useBotonConAtajo } from '@/lib/atajos'
 import { TeclaAtajo } from '@/components/Atajos'
@@ -65,6 +66,8 @@ interface Props {
   enTienda: EstadoEnTienda | null
   /** Si en el formulario hay cambios sin guardar que cambian lo que ve la tienda. */
   tiendaPendiente: boolean
+  /** Abre un producto nuevo atado a éste, con sus datos ya puestos. Sin permiso de alta no se pasa. */
+  onCrearSuelta?: () => void
 }
 
 function Campo({
@@ -125,6 +128,7 @@ export default function ProductoEditor({
   onReferenciaCreada,
   enTienda,
   tiendaPendiente,
+  onCrearSuelta,
 }: Props) {
   const botonGuardar = useBotonConAtajo('F9')
   const [codigoBarra, setCodigoBarra] = useState('')
@@ -585,6 +589,16 @@ export default function ProductoEditor({
               </p>
             )}
           </div>
+        </Seccion>
+
+        <Seccion titulo="Caja y suelto">
+          <CajaYSuelto
+            productoId={esNuevo ? null : (estado.campos.id ?? null)}
+            envaseId={estado.campos.envase_id ?? null}
+            cantidadPorEnvase={estado.campos.cantidad_por_envase ?? null}
+            onCambio={(envase_id, cantidad_por_envase) => set({ envase_id, cantidad_por_envase })}
+            onCrearSuelta={onCrearSuelta}
+          />
         </Seccion>
 
         <Seccion titulo="Proveedor">

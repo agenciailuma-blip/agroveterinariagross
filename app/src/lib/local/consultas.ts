@@ -4,6 +4,7 @@ import { abrirCliente } from '@/lib/local/cifrado'
 import type { EstadoStock } from '@/lib/tipos'
 import type { ClienteVenta, ProductoVenta } from '@/lib/api/ventas'
 import type { ListaPrecio, MedioPago } from '@/lib/api/precios'
+import { disponibleAbriendo } from '@/lib/envases'
 
 /*
   Consultas contra la base local.
@@ -77,7 +78,9 @@ export async function buscarProductosLocal(texto: string): Promise<ProductoVenta
 
   return Promise.all(
     productos.map(async (p, i) => {
-      const cantidad = Number(saldos[i]?.cantidad ?? 0)
+      const sueltas = Number(saldos[i]?.cantidad ?? 0)
+      // Una suelta se vende aunque no queden sueltas, si hay una caja para abrir.
+      const cantidad = p!.envase_id ? await disponibleLocal(p!.id) : sueltas
       return {
         producto_id: p!.id,
         codigo: p!.codigo,
@@ -87,10 +90,30 @@ export async function buscarProductosLocal(texto: string): Promise<ProductoVenta
         alicuota_iva_id: p!.alicuota_iva_id,
         condicion_iva: p!.condicion_iva as ProductoVenta['condicion_iva'],
         cantidad,
+        ...(p!.envase_id ? { sueltas } : {}),
         estado: await estadoDeStock(cantidad, p!.id, p!.categoria_id),
       }
     }),
   )
+}
+
+/*
+  Lo mismo que `app.disponible_abriendo` en el servidor, contra la copia
+  local: las sueltas más lo que traen los envases enteros de arriba. El
+  total, no el del depósito: la copia local tiene el total (ver AHORA,
+  «Lo que sigue», punto 10).
+
+  Un envase dado de baja no se abre, igual que en la base. Y la vuelta
+  tiene tope: la base no deja armar una cadena que dé vueltas, pero una
+  copia local a medio sincronizar no puede colgar el mostrador.
+*/
+async function disponibleLocal(productoId: string, vueltas = 0): Promise<number> {
+  const sueltas = Number((await db.saldo.get(productoId))?.cantidad ?? 0)
+  const p = await db.producto.get(productoId)
+  if (!p?.envase_id || !p.cantidad_por_envase || vueltas > 4) return sueltas
+  const envase = await db.producto.get(p.envase_id)
+  if (!envase || envase.eliminado_en) return sueltas
+  return disponibleAbriendo(sueltas, Number(p.cantidad_por_envase), await disponibleLocal(envase.id, vueltas + 1))
 }
 
 /*
