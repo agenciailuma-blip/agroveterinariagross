@@ -27,6 +27,15 @@ describe('a qué sección pertenece cada dirección', () => {
     expect(seccionDe('/compras')?.pestana.etiqueta).toBe('Compras')
   })
 
+  it('Órdenes internas es una pestaña de Compras', () => {
+    expect(seccionDe('/compras/ordenes')?.pestana.etiqueta).toBe('Órdenes internas')
+  })
+
+  it('Avisos es una pestaña de Stock, y no se confunde con Stock', () => {
+    expect(seccionDe('/stock/avisos')?.pestana.etiqueta).toBe('Avisos')
+    expect(seccionDe('/stock')?.pestana.etiqueta).toBe('Stock')
+  })
+
   it('las pantallas de adentro siguen en su sección', () => {
     expect(seccionDe('/productos/importar')?.seccion.id).toBe('productos')
     expect(seccionDe('/proveedores/cuentas/importar')?.pestana.etiqueta).toBe('Cuentas proveedores')
@@ -56,8 +65,12 @@ describe('las pestañas que se ven', () => {
 
   it('Transferencias, sólo con más de un depósito', () => {
     const sinSegundo = { ...todo, variosDepositos: false }
-    expect(pestanasVisibles(seccion('stock'), sinSegundo).map((p) => p.etiqueta)).toEqual(['Stock', 'Inventario'])
-    expect(pestanasVisibles(seccion('stock'), todo)).toHaveLength(3)
+    expect(pestanasVisibles(seccion('stock'), sinSegundo).map((p) => p.etiqueta)).toEqual([
+      'Stock',
+      'Avisos',
+      'Inventario',
+    ])
+    expect(pestanasVisibles(seccion('stock'), todo)).toHaveLength(4)
   })
 
   it('Tesorería la ve quien maneja la cartera; el cajero recibe cheques pero no la ve', () => {

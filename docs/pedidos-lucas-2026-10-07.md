@@ -1,7 +1,7 @@
 ---
 fecha: 2026-10-07
 actualizado: 2026-10-08
-estado: la caja y la suelta, construida y publicada (0.14.0); las órdenes de compra, con el modelo de Lucas, sin construir
+estado: la caja y la suelta (0.14.0) y la orden de compra interna (0.15.0), construidas y publicadas; el pedido a proveedor, sin construir
 ---
 
 # Los audios de Lucas del 07/10 — caja y unidad, orden de compra interna, stock por proveedor
@@ -85,6 +85,10 @@ Un dibujo a mano —«más o menos como una factura»— y tres audios. El dibuj
 | Abajo | **Observación**: «urgente», o «se necesita para el 5 de marzo» |
 | Abajo | **El contacto del cliente**, si es para un cliente: cuando llega, ya se sabe para quién es y se le avisa |
 | Al pie | **Firma del responsable** que la emite, una vez impresa |
+
+### ✅ Construida el 09/10 y publicada en la 0.15.0, con el modelo de Lucas
+
+Como en el dibujo, con dos diferencias chicas: los renglones se cargan de a uno como en una factura y en el papel salen ordenados por proveedor, y se puede **corregir** mientras está pendiente. El detalle está en [[Lo construido, en detalle]], §11b.
 
 ### La propuesta: Compras → Órdenes internas
 

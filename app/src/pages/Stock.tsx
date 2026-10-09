@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
+import HistorialDeStock from '@/components/HistorialDeStock'
 import { useAuth } from '@/auth/AuthProvider'
 import { listarDepositos, stockPorDeposito } from '@/lib/api/depositos'
 import { comoTexto, listarStock, resumenStock } from '@/lib/api/stock'
@@ -41,6 +43,8 @@ export default function Stock() {
   const [copiado, setCopiado] = useState(false)
   // null es «todos»: el total de cada producto.
   const [deposito, setDeposito] = useState<string | null>(null)
+  // El producto que tiene abiertos sus movimientos, si hay uno.
+  const [conMovimientos, setConMovimientos] = useState<string | null>(null)
 
   useEffect(() => {
     const t = setTimeout(() => setDebounced(texto.trim()), 250)
@@ -245,10 +249,24 @@ export default function Stock() {
                 */
                 const faltan = Math.max(0, f.umbral_bajo - (f.envase_id ? Number(f.disponible) : f.cantidad))
                 const costo = f.costo ? faltan * Number(f.costo) : null
+                const abierto = conMovimientos === f.producto_id
                 return (
-                  <tr key={f.producto_id}>
+                  <Fragment key={f.producto_id}>
+                  <tr>
                     <td className="px-4 py-2.5">
-                      <p className="font-medium text-tinta">{f.nombre_interno}</p>
+                      {/*
+                        Tocar el nombre abre sus movimientos: es lo que se
+                        mira cuando un número no cierra.
+                      */}
+                      <button
+                        type="button"
+                        onClick={() => setConMovimientos(abierto ? null : f.producto_id)}
+                        aria-expanded={abierto}
+                        className="text-left font-medium text-tinta hover:text-marca-700 hover:underline"
+                        title="Ver los movimientos"
+                      >
+                        {f.nombre_interno}
+                      </button>
                       <p className="font-mono text-xs text-piedra-400">{f.codigo}</p>
                     </td>
                     <td className="py-2.5 text-right tabular-nums text-tinta">
@@ -298,6 +316,19 @@ export default function Stock() {
                       )}
                     </td>
                   </tr>
+                  {abierto && (
+                    <tr>
+                      <td colSpan={5 + columnasPorDeposito.length} className="px-3 pb-3">
+                        <HistorialDeStock
+                          productoId={f.producto_id}
+                          depositoId={deposito}
+                          conDeposito={variosDepositos && deposito === null}
+                          siempreAbierto
+                        />
+                      </td>
+                    </tr>
+                  )}
+                  </Fragment>
                 )
               })}
             </tbody>
@@ -306,8 +337,11 @@ export default function Stock() {
       )}
 
       <p className="text-xs text-piedra-400">
-        El umbral de cada producto se configura en Productos, adentro de su ficha. Si no tiene uno
-        propio, hereda el de su categoría o el general de Configuración.
+        Tocá el nombre de un producto para ver sus movimientos. Con cuántos avisa cada uno se cambia en{' '}
+        <Link to="/stock/avisos" className="font-medium text-marca-700 hover:underline">
+          Avisos
+        </Link>
+        : el general y el de cada categoría; el de un producto solo, en su ficha.
         {variosDepositos &&
           ' Mirando un depósito solo, el estado se calcula con lo que hay en ese depósito contra el mismo umbral.'}
       </p>

@@ -71,6 +71,8 @@ export interface UmbralLocal {
   bajo: number
   critico: number
   actualizado_en: string
+  /** Aviso quitado. Puede faltar en lo que se bajó antes del 09/10. */
+  eliminado_en?: string | null
 }
 
 export interface ClienteLocal {

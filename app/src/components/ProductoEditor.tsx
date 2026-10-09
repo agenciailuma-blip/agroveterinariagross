@@ -9,6 +9,7 @@ import { describirEnTienda } from '@/lib/api/ventaOnline'
 import type { EstadoEnTienda, TonoEnTienda } from '@/lib/api/ventaOnline'
 import HistorialDeCostos from '@/components/HistorialDeCostos'
 import CajaYSuelto from '@/components/CajaYSuelto'
+import HistorialDeStock from '@/components/HistorialDeStock'
 import { avanzarConEnter } from '@/lib/teclado'
 import { useBotonConAtajo } from '@/lib/atajos'
 import { TeclaAtajo } from '@/components/Atajos'
@@ -585,10 +586,15 @@ export default function ProductoEditor({
                 <strong>{estado.umbral.critico || 'sin definir'}</strong> (crítico)
                 {estado.umbral.propio
                   ? ', puesto para este producto.'
-                  : ', heredado de su categoría o del valor general.'}
+                  : ', heredado de su categoría o del valor general (se cambian en Stock → Avisos).'}
               </p>
             )}
           </div>
+
+          {/* Cómo llegó a ese número. El punto 2 de terminado: cada movimiento, con quién y cuándo. */}
+          {!esNuevo && estado.campos.id && (
+            <HistorialDeStock productoId={estado.campos.id} conDeposito={!!porDeposito && porDeposito.length > 1} />
+          )}
         </Seccion>
 
         <Seccion titulo="Caja y suelto">

@@ -60,7 +60,7 @@ const MAESTROS: Definicion[] = [
   {
     tabla: 'umbral',
     origen: 'umbral_stock',
-    columnas: 'id, ambito, producto_id, categoria_id, bajo, critico, actualizado_en',
+    columnas: 'id, ambito, producto_id, categoria_id, bajo, critico, actualizado_en, eliminado_en',
   },
   {
     tabla: 'cliente',
@@ -393,9 +393,15 @@ async function bajarColaCaja() {
 
   2 — 18/09: el cliente suma tipo de documento, domicilio y la
       exclusión de percepción, para poder facturar sin conexión.
+  3 — 09/10: el producto suma de qué envase sale y cuántas trae (la
+      caja y la suelta, 0.14.0, que se olvidó de subir este número), y
+      el aviso de stock suma `eliminado_en`. Los avisos además se
+      vacían antes de bajarlos: hasta hoy quitar uno lo borraba, y lo
+      borrado nunca llegó a las PC.
 */
-const VERSION_BAJADA = 2
+const VERSION_BAJADA = 3
 const TABLAS_DE_LA_VERSION_2 = ['cliente']
+const TABLAS_DE_LA_VERSION_3 = ['producto', 'umbral']
 
 async function rebajarLoQueCambio() {
   const marca = await db.cursor.get('version_bajada')
@@ -403,6 +409,10 @@ async function rebajarLoQueCambio() {
   if (guardada >= VERSION_BAJADA) return
 
   if (guardada < 2) await db.cursor.bulkDelete(TABLAS_DE_LA_VERSION_2)
+  if (guardada < 3) {
+    await db.cursor.bulkDelete(TABLAS_DE_LA_VERSION_3)
+    await db.umbral.clear()
+  }
 
   await db.cursor.put({
     tabla: 'version_bajada',

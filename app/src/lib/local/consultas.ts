@@ -34,7 +34,8 @@ export async function estadoDeStock(
 ): Promise<EstadoStock> {
   if (cantidad < 0) return 'sobrevendido'
 
-  const umbrales = await db.umbral.toArray()
+  // Un aviso quitado no cuenta, igual que en vista_stock.
+  const umbrales = (await db.umbral.toArray()).filter((u) => !u.eliminado_en)
   const porProducto = umbrales.find((u) => u.ambito === 'producto' && u.producto_id === productoId)
   const porCategoria = categoriaId
     ? umbrales.find((u) => u.ambito === 'categoria' && u.categoria_id === categoriaId)

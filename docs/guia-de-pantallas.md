@@ -75,7 +75,7 @@ Contesta **qué hay que pedir**. No es el catálogo con otra columna: arranca fi
 | **Qué veo** | Cuatro números arriba (sobrevendidos, críticos, bajos, en stock) que se leen de un vistazo · por producto: cuánto queda, con cuánto avisa, en qué estado está y **cuánto costaría reponerlo** hasta el umbral. |
 | **Qué exporto** | La lista de faltantes **al portapapeles**, en texto, lista para pegar. |
 
-> **El umbral de cada producto se configura en su ficha**, dentro de Productos. Si no tiene uno propio, hereda el de su categoría; y si la categoría tampoco, el general de Configuración.
+> **Con cuántos avisa cada producto** se cambia en la pestaña **Avisos**: el general y el de cada categoría. El de un producto solo, en su ficha. Gana el más específico. Y **tocando el nombre de un producto** se ven sus movimientos: cómo llegó a ese número.
 
 ---
 

@@ -645,6 +645,29 @@ Pantalla **Compras**, entre Proveedores y Ventas. Se carga la cabecera de la fac
 
 **Verificado contra la base real:** 26 comprobaciones en [`supabase/pruebas/caja-y-suelta.sql`](../../supabase/pruebas/caja-y-suelta.sql), con ventas cobradas y anuladas como un Administrador: el ejemplo de Lucas en tres niveles, abrir sólo lo que hace falta, lo que no alcanza, el ajuste que no abre, los frenos, el costo, la bolsa de 15 kg y el otro depósito. Se corrió en seco junto con la migración. **La corrida encontró un error real**: «trae 0» daba *division by zero* en vez del mensaje de la base; corregido antes de aplicar. **Se rompió a propósito** sacando `apertura` del disparador, y la prueba lo atrapó: quedaba la caja entera y la tableta en −1.
 
+### ✅ 3f. Los avisos de stock en sus tres niveles (09/10)
+
+**El §4 del alcance** («umbrales de stock bajo y crítico configurables en tres niveles: general, por categoría y por producto») y el punto 11 de terminado. La cascada existía en `vista_stock` desde agosto; faltaba dónde cargar el general y el de cada categoría. [Migración](../../supabase/migrations/20261009120000_avisos_de_stock.sql).
+
+- **Stock → Avisos** (`/stock/avisos`): el general, cada categoría con cuántos productos tiene (`avisos_por_categoria()`), y los productos con aviso propio. El de categoría se edita en un formulario debajo de la fila, a todo el ancho.
+- **`definir_umbral_categoria`** tiene la misma forma que la del producto: corre como quien llama y el permiso lo exige la RLS de `umbral_stock`.
+- **`definir_umbral_general`** es SECURITY DEFINER y controla `stock.configurar_umbrales` a mano: escribe en `configuracion`, que pide `configuracion.gestionar`, y el Encargado configura avisos pero no Configuración.
+- **Quitar un aviso marca `eliminado_en`, no borra.** Antes se borraba, y la sincronización —que baja por `actualizado_en`— nunca se enteraba: los mostradores seguían con el aviso viejo. Sigue habiendo una fila por producto y por categoría (los índices únicos no cambiaron); ponerlo de nuevo la revive. `vista_stock` y la copia local ignoran los marcados.
+- **La copia local subió a `VERSION_BAJADA = 3`**: vacía los avisos y los vuelve a bajar, y baja los productos enteros otra vez —lo que la 0.14.0 se olvidó al sumar `envase_id`—.
+
+**Verificado:** 27 comprobaciones en [`supabase/pruebas/avisos-y-movimientos.sql`](../../supabase/pruebas/avisos-y-movimientos.sql), como un Administrador y sin cuenta. Se rompió a propósito volviendo a borrar al quitar: atrapado.
+
+### ✅ 3g. El historial de movimientos de un producto (09/10)
+
+**El §4 del alcance** («con historial de cómo llegó a ese número») y el punto 2 de terminado («el movimiento queda con usuario y hora»). [Migración](../../supabase/migrations/20261009130000_historial_de_movimientos.sql) y [el arreglo del orden](../../supabase/migrations/20261009150000_la_apertura_antes_que_la_venta.sql).
+
+- **`movimientos_de_producto(producto, depósito, límite)`**: el libro del más nuevo al más viejo, con el **saldo después de cada movimiento** sumado en el orden en que pasaron (`ocurrido_en`), quién lo registró, quién vendió si es otro, la terminal, el depósito y si se hizo sin internet. SECURITY DEFINER para poder nombrar a las personas, con `stock.ver` controlado a mano.
+- **El documento sale del motivo**, que ya lo nombra («Venta CAJA1-000010», «Factura de compra 0002-…»): no hace falta cruzar tablas.
+- **A la misma hora, `fraccionamiento` va antes.** La venta de una suelta y la apertura de la caja tienen la misma hora a propósito; el desempate por id era al azar y la mitad de las veces la venta decía «queda −1». Visto en pantalla; la prueba lo arma con los ids en contra.
+- **En pantalla:** [`HistorialDeStock`](../../app/src/components/HistorialDeStock.tsx), cerrado en la ficha y abierto desde el nombre en cada fila de Stock, con *Ver más* de a 50.
+
+**Verificado:** en la misma prueba de los avisos. Se rompió ordenando por cuándo llegó y sacando el desempate: los dos atrapados.
+
 ### 🟡 3. Pantallas que faltan
 Reportes. *(El panel de comprobantes con semáforo, la configuración general, el inventario por sectores y las métricas de Inicio ya están hechos.)*
 
@@ -722,6 +745,20 @@ Segunda pieza de V1-B. `POST /pedidos` por la misma puerta y con la misma clave:
 - **55 comprobaciones por internet** contra la función publicada, incluido un pedido que entra de verdad y su reintento. Ese tramo va detrás de `API_TIENDA_ESCRIBIR=1` porque escribe una venta real; lo que dejó se borró después.
 - **25 pruebas nuevas de la puerta** en la suite de la app, que pasó de 353 a 378.
 - **Se rompió a propósito de siete maneras y las siete fueron atrapadas:** sin idempotencia, con lo no pagado descontando stock, con la puerta sin mirar la clave, sin avisar del precio raro, sin avisar de la falta de stock, deshaciendo el arreglo del precio de la línea, y desarmando el guardián del medio de pago. Y otras tres en la puerta: `/pedidos` aceptando `GET`, una lista pasando por pedido, y el detalle interno de Postgres saliendo al exterior.
+
+### ✅ 11b. La orden de compra interna (09/10)
+
+**Pedido de Lucas del 07/10, con su dibujo del 08/10** ([`pedidos-lucas-2026-10-07.md`](../pedidos-lucas-2026-10-07.md)). Un sector le pide a otro lo que hay que comprar, en papel. [Migración](../../supabase/migrations/20261009140000_orden_de_compra_interna.sql).
+
+- **Tablas nuevas:** `sector` (Depósito, Ventas, Venta mostrador, Administración, Consultorio, Compras; se suman con `crear_sector`, que reconoce un nombre repetido escrito distinto), `orden_compra_interna` (numerada por la base, con emite, recibe, observación, cliente y contacto, y estado *pendiente / pedida / anulada*) y sus renglones, que guardan código y descripción como estaban —un renglón sin producto es lo que no está en el catálogo—.
+- **Sólo se escriben por funciones:** `guardar_orden_interna` (crea, o reemplaza entera mientras está pendiente; el id lo genera la pantalla, así un reintento no crea dos), `marcar_orden_interna` (de quien compra, `compras.ver`) y `anular_orden_interna` (con motivo). La RLS sólo deja leer.
+- **Permiso nuevo `compras.solicitar`, para todos los puestos**: el de depósito pide sin ver costos ni cuentas. La sección Compras le aparece con una sola pestaña.
+- **`orden_interna(id)`** trae la orden con los nombres y los renglones ordenados por proveedor; la pantalla los agrupa.
+- **En pantalla:** Compras → *Órdenes internas* (`/compras/ordenes`) y la hoja A4 en `/orden-interna/:id`, fuera del menú como el resumen de cuenta. La firma, como en el dibujo: sólo la del responsable que emite.
+
+**Lo que no se hizo:** el pedido al proveedor que arma Compras juntando órdenes —espera la respuesta de Lucas sobre el mínimo de cada proveedor— y que la recepción de mercadería avise «esto estaba pedido para el cliente X».
+
+**Verificado:** 31 comprobaciones en [`supabase/pruebas/orden-de-compra-interna.sql`](../../supabase/pruebas/orden-de-compra-interna.sql), como Administrador, como Vendedor —un administrador con el rol cambiado adentro de la transacción— y sin cuenta. Se rompió dejando que marque pedida quien sólo puede pedir: atrapado.
 
 ### 🟢 5. Deploy y empaquetado
 Cloudflare Pages (10 minutos cuando haya algo que publicar) y Tauri para las 4 PC del mostrador, con impresión ESC/POS a la Hasar por red.

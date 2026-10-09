@@ -108,9 +108,9 @@ Un producto puede pertenecer a varios ejes a la vez. Esto es lo que después hab
 ## 4. Stock
 
 - Movimientos de entrada, salida y ajuste, con motivo y responsable
-- Stock disponible calculado, con historial de cómo llegó a ese número
+- Stock disponible calculado, con historial de cómo llegó a ese número → ✅ **la pantalla del historial, 09/10 (0.15.0)**
 - **Toma de inventario por sectores**, con planilla de conteo y ajuste automático
-- **Umbrales de stock bajo y crítico configurables en tres niveles**: general, por categoría y por producto específico *(el más específico gana)*
+- **Umbrales de stock bajo y crítico configurables en tres niveles**: general, por categoría y por producto específico *(el más específico gana)* → ✅ **los tres con pantalla desde el 09/10 (0.15.0): Stock → Avisos y la ficha**
 - Alertas de stock bajo en el panel
 
 ## 5. Lector de códigos de barra
@@ -177,7 +177,7 @@ Un producto puede pertenecer a varios ejes a la vez. Esto es lo que después hab
 
 - Ficha de proveedor → ✅ **hecha el 09/09, en V1-A** (entró por los puntos 4 y 5 de Lucas)
 - Registro de facturas de compra → ✅ **hecho el 10/09, movido a V1-A** (ver abajo)
-- Órdenes de compra → **aclarado por Lucas el 07/10: son dos.** La **interna**, que un sector (depósito, ventas, compras) le hace a compras, y la que se le manda **al proveedor**. Ver [`pedidos-lucas-2026-10-07.md`](pedidos-lucas-2026-10-07.md)
+- Órdenes de compra → ✅ **la interna, construida el 09/10 (0.15.0)**; la del proveedor, pendiente. **Aclarado por Lucas el 07/10: son dos.** La **interna**, que un sector (depósito, ventas, compras) le hace a compras, y la que se le manda **al proveedor**. Ver [`pedidos-lucas-2026-10-07.md`](pedidos-lucas-2026-10-07.md)
 - Recepción de mercadería con ingreso automático de stock
 - Costos y márgenes por producto
 - **Umbrales de stock por proveedor** → **aclarado por Lucas el 07/10: no es un umbral distinto por proveedor.** El mínimo sigue siendo por producto; lo que pide es armar el pedido mirando el stock de un proveedor entero, para sumar al envío un poco de cada cosa

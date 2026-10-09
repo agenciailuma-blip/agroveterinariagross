@@ -1,5 +1,5 @@
 ---
-actualizado: 2026-10-08
+actualizado: 2026-10-09
 estado: en curso
 ---
 
@@ -12,7 +12,7 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Publicado: 0.14.0** (08/10), con **la caja y la suelta**: se carga la caja como llega y, cuando se vende una pastilla y no quedan sueltas, el sistema abre una caja solo —también en tres niveles, caja, tableta y pastilla—. Era el tercer hueco del alcance de V1-A. Ver *Lo último que pasó*. **538 pruebas verdes en la app**, 97 migraciones aplicadas. Antes, la **0.13.4** (05/10), con **los atajos de teclado** —propuesta para que Lucas la revise—, **el Enter del teclado numérico que pasa de campo** en los formularios de carga y **la venta que llega entera y enseguida a la caja sin internet**. Ver *Lo que sigue*, puntos 7 y *Lo primero de todo*. Antes, la **0.13.3** (01/10), con **los datos del cliente traídos de ARCA con el CUIT** —ficha, mostrador, verificación masiva y pedidos web; ver *Lo que sigue*, punto 14— y los arreglos de Cheques y Calendario vistos en pantalla. Antes, ese mismo día, la **0.13.2**, con **la venta que llega a la caja sin internet funcionando en el local** —probada con las dos PC y el módem desenchufado— y los tres arreglos que salieron de esa prueba. Ver *Lo último que pasó*. **527 pruebas verdes en la app**, 96 migraciones aplicadas.
+**Publicado: 0.15.0** (09/10), con **los avisos de stock en sus tres niveles** —una pestaña nueva en Stock, *Avisos*— y **el historial de movimientos de cada producto**, que eran los dos huecos que quedaban del alcance de V1-A, y con **la orden de compra interna** con el modelo de Lucas. Ver *Lo último que pasó*. **552 pruebas verdes en la app**, 101 migraciones aplicadas. Antes, la **0.14.0** (08/10), con **la caja y la suelta**: se carga la caja como llega y, cuando se vende una pastilla y no quedan sueltas, el sistema abre una caja solo —también en tres niveles, caja, tableta y pastilla—. Era el tercer hueco del alcance de V1-A. Ver *Lo último que pasó*. **538 pruebas verdes en la app**, 97 migraciones aplicadas. Antes, la **0.13.4** (05/10), con **los atajos de teclado** —propuesta para que Lucas la revise—, **el Enter del teclado numérico que pasa de campo** en los formularios de carga y **la venta que llega entera y enseguida a la caja sin internet**. Ver *Lo que sigue*, puntos 7 y *Lo primero de todo*. Antes, la **0.13.3** (01/10), con **los datos del cliente traídos de ARCA con el CUIT** —ficha, mostrador, verificación masiva y pedidos web; ver *Lo que sigue*, punto 14— y los arreglos de Cheques y Calendario vistos en pantalla. Antes, ese mismo día, la **0.13.2**, con **la venta que llega a la caja sin internet funcionando en el local** —probada con las dos PC y el módem desenchufado— y los tres arreglos que salieron de esa prueba. Ver *Lo último que pasó*. **527 pruebas verdes en la app**, 96 migraciones aplicadas.
 
 Antes, la **0.13.0** (01/10), con **los cheques y el calendario de recibos** —sección nueva, Tesorería—, **el historial de costos por proveedor** y **el CBU del proveedor**, con el manual en PDF actualizado.
 
@@ -44,14 +44,54 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 
 📋 **El guion de la prueba del corte** está en una página propia: https://claude.ai/artifact/2LjCRbUhEr8RPvmQRG8keD — los doce puntos de terminado del alcance, cinco controles previos y cinco pruebas de lo que se sumó, cada uno con sus pasos, cuándo sale bien, y botones para marcar *Anduvo* / *Falló* con una nota. **Los resultados quedan guardados** y se leen desde acá (colección `resultados`, un documento por punto: `a1`…`a5`, `p01`…`p12`, `e1`…`e5`). Es privada: para que Lucas marque, se la comparte como *Colaborador*.
 
-🔴 **Dos huecos del alcance de la fase 1-A siguen abiertos**, encontrados al armar el guion (05/10). El tercero, la venta fraccionada, se cerró el 08/10:
-- **Umbrales de stock por categoría y general — no hay pantalla para cargarlos.** El sistema los usa (hay uno para Antiparasitarios: bajo 5, crítico 2), pero sólo se pueden poner producto por producto, en su ficha. El punto 11 de terminado y el punto 4 del alcance («configurables en tres niveles: general, por categoría y por producto») lo piden.
-- **El historial de movimientos de stock de un producto — no hay pantalla.** Cada movimiento se guarda con quién y cuándo, pero no se ve en ningún lado. El punto 2 de terminado («el movimiento queda con usuario y hora») y el punto 4 del alcance («con historial de cómo llegó a ese número») lo piden.
-- ~~**La venta fraccionada — la caja y la unidad suelta.**~~ ✅ **Hecha el 08/10 y publicada en la 0.14.0.** Ver *Lo último que pasó*. No está en el guion de la prueba del corte —los doce puntos no la nombran—: conviene sumarla como una prueba más.
+✅ **Los tres huecos del alcance de la fase 1-A, cerrados.** Los dos primeros se encontraron al armar el guion (05/10) y se cerraron el 09/10; el tercero, el 08/10. **Ninguno está en el guion de la prueba del corte** —los doce puntos no los nombran o los nombran de pasada—: conviene sumar las tres pruebas.
+- ~~**Umbrales de stock por categoría y general — no hay pantalla para cargarlos.**~~ ✅ **Stock → Avisos, en la 0.15.0.** El sistema los usa (hay uno para Antiparasitarios: bajo 5, crítico 2), pero sólo se pueden poner producto por producto, en su ficha. El punto 11 de terminado y el punto 4 del alcance («configurables en tres niveles: general, por categoría y por producto») lo piden.
+- ~~**El historial de movimientos de stock de un producto — no hay pantalla.**~~ ✅ **En Stock —tocando el nombre— y en la ficha, en la 0.15.0.** Cada movimiento se guarda con quién y cuándo, pero no se ve en ningún lado. El punto 2 de terminado («el movimiento queda con usuario y hora») y el punto 4 del alcance («con historial de cómo llegó a ese número») lo piden.
+- ~~**La venta fraccionada — la caja y la unidad suelta.**~~ ✅ **Hecha el 08/10 y publicada en la 0.14.0.**
 
 🟡 **Actualizar la caja y el mostrador a la 0.13.4** la próxima vez que se vaya al local, y abrir el sistema en la caja con internet para que suba la factura 0009-00000001. Hasta actualizar, **si se corta internet, cerrar y abrir el sistema en la caja** antes de vender: la 0.13.1 puede haber dejado de escuchar sin avisar.
 
 🟡 **Lo que la venta tardaba en llegar a la caja sin internet** — arreglado el 05/10 y publicado en la 0.13.4, **sin probar en el local**. El mostrador le pasaba las ventas a la caja una vez por minuto, y la caja miraba su cola cada ocho segundos: hasta 68 segundos con el cliente esperando. Y llegaba de a partes porque, mientras la cabecera intentaba subir al servidor —hasta doce segundos sin internet—, salían los renglones solos. Ahora la venta sale al segundo y medio de apretar *Enviar a caja* (y otra vez a los catorce, por si el intento de subir tardó), viaja entera o espera entera, y la caja la muestra apenas llega. Se comprueba en el próximo corte: la venta tiene que aparecer en la caja en un par de segundos y completa.
+
+---
+
+## Lo último que pasó — 9 de octubre
+
+**Los dos huecos que quedaban del alcance de V1-A, cerrados, y la orden de compra interna. Publicado en la 0.15.0.** El detalle, en [[Lo construido, en detalle]], §3f, §3g y §11b.
+
+### 1. Los avisos de stock, en sus tres niveles
+
+**Una pestaña nueva en Stock: *Avisos*.** El general y el de cada categoría —con cuántos productos tiene cada una—, y la lista de los productos que tienen uno propio. El del producto se sigue cambiando en su ficha.
+
+> **Cómo se lo contás a Lucas:** en Stock → Avisos ponés con cuánto avisa todo el local, y si una categoría necesita otro número —Alimentos, que se pide por bolsa—, se lo ponés a la categoría y vale para todos sus productos. Un producto que necesita uno propio, en su ficha. Gana el más específico.
+
+- **El general lo cambia quien configura avisos** (Administrador y Encargado), con una función propia: vivía en Configuración, que el Encargado no puede tocar.
+- 🔴 **Encontrado de paso: quitar un aviso no llegaba a las PC del local.** Se borraba la fila, y la sincronización baja «lo que cambió», no lo borrado: el mostrador seguía pintando Crítico con un aviso que ya no existía. Ahora quitar marca la fila (`eliminado_en`) y la marca viaja. Pasaba también con el aviso del producto, desde el 08/09.
+
+### 2. El historial de movimientos de cada producto
+
+**En Stock, tocando el nombre de un producto, y en su ficha, en el desplegable *Movimientos de stock*.** Cada movimiento con cuándo pasó, qué fue, el documento, quién lo hizo y en qué computadora, cuánto movió y **cuánto quedó después**. Lo que se hizo sin internet va a la hora en que pasó y lleva la marca *sin internet*. Era el punto 2 de terminado: «el movimiento queda con usuario y hora».
+
+- 🔴 **Encontrado mirándolo en pantalla:** la venta de una suelta y la apertura de la caja pasan en el mismo instante, y el orden entre las dos quedaba al azar. La mitad de las veces el historial habría dicho «Venta −1, queda −1». Ahora la apertura va siempre antes. Migración aparte, con una prueba que lo arma a propósito con el desempate en contra: sin el arreglo da `{9, −1}`.
+
+### 3. La orden de compra interna
+
+**Compras → *Órdenes internas*, como el dibujo de Lucas.** Emite y recibe de una lista de sectores (se suman ahí mismo), renglones con código, descripción, el proveedor de la ficha ya puesto y cantidad, renglones libres para lo que no está en el catálogo, observación y el cliente con su contacto. Se imprime en A4 con la firma del responsable. Ver [`pedidos-lucas-2026-10-07.md`](pedidos-lucas-2026-10-07.md), punto 2.
+
+> **Cómo se lo contás a Lucas:** el de depósito entra a Compras → Órdenes internas, toca *Nueva orden*, elige «Depósito» y «Compras», pasa el lector por lo que falta y pone cuánto. Al lado de cada producto ya aparece a quién se le compra. La imprime, la firma y te la da. Vos la marcás *pedida* cuando la pediste. Las pendientes quedan a la vista hasta que alguien las resuelve.
+
+- **La hace cualquier puesto** (permiso nuevo, *compras.solicitar*, para todos) **sin ver costos ni cuentas**; **marcarla pedida es de quien compra** (*compras.ver*).
+- **Se corrige mientras está pendiente**; pedida o anulada, ya no. Se anula con motivo.
+- **No mueve stock ni plata**: tablas y funciones nuevas, al costado de lo que anda.
+- **Lo que no está todavía: el pedido al proveedor** —elegir un proveedor y ver todos sus productos con stock, mínimo y lo que pidieron las órdenes—. Espera una respuesta de Lucas: el mínimo que le acepta un proveedor, ¿es en plata, en bultos o en kilos?
+
+### 4. Lo que faltaba de la 0.14.0
+
+**La copia local de las PC ahora baja los productos enteros una vez.** El proyecto lo exige cada vez que se suman columnas a lo que baja la copia local, y la 0.14.0 —la caja y la suelta— no lo hizo: una suelta armada mientras una PC seguía con la versión anterior habría quedado, en esa PC, sin saber de qué caja sale. Sólo afectaba lo que muestra el mostrador, no lo que se descuenta. Con la 0.15.0 cada PC vuelve a bajar los productos y los avisos una vez.
+
+**Verificado contra la base real:** **27 comprobaciones** en [`supabase/pruebas/avisos-y-movimientos.sql`](../supabase/pruebas/avisos-y-movimientos.sql) y **31** en [`supabase/pruebas/orden-de-compra-interna.sql`](../supabase/pruebas/orden-de-compra-interna.sql) —la orden también como Vendedor y sin cuenta—, corridas en seco junto con las migraciones. **Se rompió a propósito cuatro veces** —quitar un aviso borrando la fila, el historial ordenado por cuándo llegó, la apertura después de la venta, y el vendedor marcando pedida— y **las cuatro fueron atrapadas**. **552 pruebas** en la app, 14 nuevas. Y en pantalla: un aviso de 20/8 a Alimentos pasó de 2 a 4 sus críticos y quitarlo llegó a la copia local marcado; el general a 12/4 y de vuelta a 10/3, y un crítico mayor que el bajo apaga el botón; el historial de la suelta de prueba; una orden con dos productos —con su proveedor puesto— y un renglón libre, corregida, marcada pedida, vuelta a pendiente y anulada, y su hoja impresa. Nada se desplaza hacia el costado en 375, 640, 768 ni 1024 px —la hoja de la orden se pisaba en el celular, corregida—.
+
+⚠️ **Datos de prueba que quedaron:** la orden interna **000002**, anulada («Prueba del sistema, 09/10») —la 000001 se la llevó una corrida de prueba que se deshizo—, y el aviso de Alimentos, quitado. Siguen los de la caja y la suelta (*PRUEBA-CAJA10* y su suelta).
 
 ---
 
@@ -655,7 +695,7 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
     - La página de la API de la tienda se actualizó a la **versión 4**: con el CUIT alcanza, la condición no hace falta.
 
 15. ~~🔴 **La caja y la unidad suelta**~~ ✅ **Construida el 08/10 y publicada en la 0.14.0**, con tres niveles. Ver *Lo último que pasó*. Lo que se había planteado: Pedido de Lucas del 07/10. **Dos productos atados** —la caja, que se compra y se cuenta, y la suelta, con su precio— y **la caja se abre sola** cuando se vende una suelta y no quedan sueltas: queda en el libro como *Apertura de caja*. Stock, la ficha y el mostrador las muestran juntas: *0 cajas cerradas + 9 sueltas*. Uno solo con el stock en unidades obligaría a tocar la venta, la factura, la copia sin internet y la API; dos atados no tocan nada de eso, y es como ya trabajan en OBTech. **Mediano**; el disparador nuevo va en el libro de stock y se corre en seco antes de aplicar. Detalle, decisiones y tres preguntas para Lucas en [`pedidos-lucas-2026-10-07.md`](pedidos-lucas-2026-10-07.md).
-16. 🟢 **La orden de compra interna y el pedido a proveedor** — V1-B, §11. Pedido de Lucas del 07/10, **con su modelo dibujado el 08/10** (en [`pedidos-lucas-2026-10-07.md`](pedidos-lucas-2026-10-07.md), punto 2). **Orden interna:** número y fecha arriba al costado, *Emite* y *Recibe* desplegables con los sectores (Depósito, Ventas, Venta mostrador, Administración, Consultorio…), renglones con código, descripción, proveedor de la ficha y cantidad —y libres, para lo que no está en el catálogo—, observación, el contacto del cliente si es para uno, y la firma del responsable al pie de la hoja impresa. **Pedido a proveedor:** se elige un proveedor, aparecen todos sus productos con stock, mínimo y lo que pidieron las órdenes, y se arma la orden que se le manda. **Lucas aclaró que «umbrales de stock por proveedor» quería decir esto**, no un umbral distinto por proveedor: el mínimo sigue siendo por producto. Pantallas nuevas, sin riesgo para lo que anda: no bloquean el corte, pero se pueden hacer antes si sobra tiempo. De paso, **la planilla de importación de productos tiene que traer el mínimo**: Lucas lo va a cargar al dar de alta el catálogo.
+16. 🟢 **La orden de compra interna y el pedido a proveedor** — V1-B, §11. ✅ **La orden interna, construida el 09/10 y publicada en la 0.15.0** (ver *Lo último que pasó*). **Falta el pedido a proveedor**, que espera saber en qué es el mínimo de cada proveedor. Lo que se había planteado: Pedido de Lucas del 07/10, **con su modelo dibujado el 08/10** (en [`pedidos-lucas-2026-10-07.md`](pedidos-lucas-2026-10-07.md), punto 2). **Orden interna:** número y fecha arriba al costado, *Emite* y *Recibe* desplegables con los sectores (Depósito, Ventas, Venta mostrador, Administración, Consultorio…), renglones con código, descripción, proveedor de la ficha y cantidad —y libres, para lo que no está en el catálogo—, observación, el contacto del cliente si es para uno, y la firma del responsable al pie de la hoja impresa. **Pedido a proveedor:** se elige un proveedor, aparecen todos sus productos con stock, mínimo y lo que pidieron las órdenes, y se arma la orden que se le manda. **Lucas aclaró que «umbrales de stock por proveedor» quería decir esto**, no un umbral distinto por proveedor: el mínimo sigue siendo por producto. Pantallas nuevas, sin riesgo para lo que anda: no bloquean el corte, pero se pueden hacer antes si sobra tiempo. De paso, **la planilla de importación de productos tiene que traer el mínimo**: Lucas lo va a cargar al dar de alta el catálogo.
 
 > ✅ **Los desplegables de *Percepciones* ya usan el estilo común**, así que muestran el recuadro de foco como el resto del sistema — un paso menos para el punto 6. La pantalla tenía además el botón y la tarjeta escritos a mano; los tres ahora salen de [`estilos.ts`](../app/src/estilos.ts).
 
@@ -742,6 +782,9 @@ Está andando y verificado. Si algo de acá se rompe, es una regresión:
 - **La apertura de una caja lleva como referencia el movimiento de la venta, nunca la venta** (`referencia_tipo = 'fraccionamiento'`). La anulación y las devoluciones leen «lo que salió por la venta»: con la venta como referencia, anular devolvería una caja cerrada y sacaría diez pastillas.
 - **El disparador que abre la caja corre después del que suma al saldo**, por orden alfabético: `movimiento_stock_aplicar` antes que `movimiento_stock_sin_sueltas_abre_envase`. Renombrar cualquiera de los dos puede hacer que lea el saldo de antes de la venta y no abra nada. Y **reacciona a `apertura`**: es lo que hace andar los tres niveles. Se probó sacándolo.
 - **El estado de una suelta se calcula con lo disponible** —sueltas más lo que se puede abrir—, en `vista_stock` y en la copia local. Con las sueltas solas, la pastilla de una caja llena aparece en Crítico todos los días.
+- **Quitar un aviso de stock marca la fila (`eliminado_en`), no la borra.** La sincronización baja lo que cambió: lo borrado no llega a las PC y el mostrador sigue avisando con un número que ya no existe. Se probó volviendo a borrar.
+- **El historial ordena por cuándo pasó (`ocurrido_en`), no por cuándo llegó, y a la misma hora la apertura de la caja va antes.** Por cuándo llegó, una venta hecha sin internet cambia los saldos del medio; sin la apertura antes, la venta de una suelta dice «queda −1».
+- **Cada vez que la copia local baja columnas nuevas de una tabla, se sube `VERSION_BAJADA`** en `sync.ts` y se borra el cursor de esa tabla. La 0.14.0 se lo olvidó y la 0.15.0 lo corrigió.
 - **La impresora se guarda por terminal, no en la configuración del comercio.** Volverla a un solo valor para todo el local deja tres de las cuatro PC imprimiendo a un nombre que en su lista no existe. Y el nombre se elige de la lista de Windows: escribirlo a mano falla en silencio.
 
 ## Cómo arrancar
