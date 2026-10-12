@@ -37,6 +37,8 @@ export interface RenglonOrden {
   proveedor_id: string | null
   proveedor?: string | null
   cantidad: number
+  /** El pedido a proveedor en que entró, si ya se pidió. */
+  pedido_numero?: number | null
 }
 
 export interface OrdenCompleta {
@@ -96,7 +98,15 @@ export async function obtenerOrden(id: string): Promise<OrdenCompleta | null> {
   if (error) throw new Error(error.message)
   if (!data) return null
   const o = data as OrdenCompleta
-  return { ...o, numero: Number(o.numero), lineas: o.lineas.map((l) => ({ ...l, cantidad: Number(l.cantidad) })) }
+  return {
+    ...o,
+    numero: Number(o.numero),
+    lineas: o.lineas.map((l) => ({
+      ...l,
+      cantidad: Number(l.cantidad),
+      pedido_numero: l.pedido_numero == null ? null : Number(l.pedido_numero),
+    })),
+  }
 }
 
 export interface DatosOrden {

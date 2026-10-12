@@ -123,7 +123,7 @@ A quién se le compra cada producto. Y, sobre todo, **cómo cambiarle el precio 
 
 | | |
 |---|---|
-| **Contiene** | Los proveedores, con su ficha corta: nombre, CUIT, contacto y **para transferirle: CBU o CVU y alias**. |
+| **Contiene** | Los proveedores, con su ficha corta: nombre, CUIT, contacto, **para transferirle: CBU o CVU y alias**, y su **pedido mínimo** —en pesos, bultos o kilos—. |
 | **Qué hago** | Crear, editar y dar de baja · **ajustar precios en masa** por proveedor y/o por rubro · **deshacer un ajuste**. |
 | **Qué veo** | Por proveedor: CUIT, contacto y **cuántos productos tiene asignados** — que es a cuántos les va a pegar un ajuste. |
 | **Qué exporto** | Nada. |
@@ -139,6 +139,8 @@ A quién se le compra cada producto. Y, sobre todo, **cómo cambiarle el precio 
 > Al deshacer, cada producto vuelve al precio **exacto** que tenía — no se aplica el porcentaje inverso, que por redondeo dejaría centavos corridos para siempre. Y **los productos que alguien corrigió a mano después se dejan como están**: esa corrección es más nueva y más deliberada.
 
 > **El CBU se controla al escribirlo**, con sus dos dígitos verificadores —la misma cuenta que hacen los bancos—, y la ficha dice de qué banco es. Un número cambiado es una transferencia a otra persona. Al registrarle un pago por transferencia, en Cuentas proveedores, el CBU, el alias y el CUIT aparecen **listos para copiar**.
+
+> **El pedido a proveedor** está en Compras → *Pedidos*: se elige el proveedor y aparecen todos sus productos con stock, aviso, último costo y lo que pidieron las órdenes internas. *Pedir* arranca con lo de las órdenes; la pantalla dice cuánto falta para el mínimo del proveedor. Se imprime sin precios o se copia para WhatsApp, y las órdenes que entraron quedan pedidas solas.
 
 ---
 

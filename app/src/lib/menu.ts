@@ -112,6 +112,9 @@ export const SECCIONES: Seccion[] = [
       // Cuánto costó cada cosa a cada proveedor, y si otro la tiene a menos.
       { a: '/compras/costos', etiqueta: 'Costos', permiso: 'compras.ver' },
       { a: '/compras/ordenes', etiqueta: 'Órdenes internas', permiso: 'compras.solicitar' },
+      // Lo que se le pide a cada proveedor, mirando todo lo que se le compra.
+      // Va después de las órdenes: el pedido junta lo que ellas pidieron.
+      { a: '/compras/pedidos', etiqueta: 'Pedidos', permiso: 'compras.ver' },
     ],
   },
   {

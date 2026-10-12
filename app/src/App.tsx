@@ -13,6 +13,8 @@ import Stock from '@/pages/Stock'
 import Avisos from '@/pages/Avisos'
 import OrdenesInternas from '@/pages/OrdenesInternas'
 import OrdenInternaImprimible from '@/pages/OrdenInternaImprimible'
+import PedidosProveedor from '@/pages/PedidosProveedor'
+import PedidoProveedorImprimible from '@/pages/PedidoProveedorImprimible'
 import Transferencias from '@/pages/Transferencias'
 import Precios from '@/pages/Precios'
 import Proveedores from '@/pages/Proveedores'
@@ -128,6 +130,7 @@ function Rutas() {
         <Route path="stock" element={<Stock />} />
         <Route path="stock/avisos" element={<Avisos />} />
         <Route path="compras/ordenes" element={<OrdenesInternas />} />
+        <Route path="compras/pedidos" element={<PedidosProveedor />} />
         <Route path="inventario" element={<Inventario />} />
         <Route path="transferencias" element={<Transferencias />} />
         <Route path="precios" element={<Precios />} />
@@ -158,6 +161,7 @@ function Rutas() {
       <Route path="comprobante/:id" element={<ComprobanteImprimible />} />
       <Route path="no-fiscal/:id" element={<NoFiscalImprimible />} />
       <Route path="orden-interna/:id" element={<OrdenInternaImprimible />} />
+      <Route path="pedido-proveedor/:id" element={<PedidoProveedorImprimible />} />
       <Route path="cuenta-corriente/:clienteId" element={<ResumenCuentaCorriente />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

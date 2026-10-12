@@ -20,6 +20,7 @@ import {
   problemaConOrden,
 } from '@/lib/api/ordenesInternas'
 import type { EstadoOrden, RenglonOrden, Sector } from '@/lib/api/ordenesInternas'
+import { numeroDePedido } from '@/lib/api/pedidosProveedor'
 import { enCastellano } from '@/lib/errores'
 import { numero } from '@/lib/tipos'
 import { boton, botonChico } from '@/estilos'
@@ -243,6 +244,11 @@ export default function OrdenesInternas() {
                       <span className="min-w-0">
                         <span className="block text-tinta">{l.descripcion}</span>
                         {l.codigo && <span className="font-mono text-xs text-piedra-400">{l.codigo}</span>}
+                        {l.pedido_numero != null && (
+                          <span className="block text-xs text-verde-700">
+                            En el pedido {numeroDePedido(l.pedido_numero)}
+                          </span>
+                        )}
                       </span>
                       <span className="shrink-0 tabular-nums font-medium text-tinta">{numero.format(l.cantidad)}</span>
                     </li>
@@ -278,7 +284,8 @@ export default function OrdenesInternas() {
             <Link to={`/orden-interna/${detalle.data.id}`} className={boton.principal}>
               Imprimir
             </Link>
-            {detalle.data.estado === 'pendiente' && puedeHacer && (
+            {/* Con renglones ya pedidos no se corrige: perderían el vínculo con su pedido. */}
+            {detalle.data.estado === 'pendiente' && puedeHacer && !detalle.data.lineas.some((l) => l.pedido_numero != null) && (
               <button onClick={corregir} className={boton.secundario}>
                 Corregir
               </button>

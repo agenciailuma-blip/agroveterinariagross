@@ -10,7 +10,7 @@ import {
   listarProveedores,
   productosPorProveedor,
 } from '@/lib/api/proveedores'
-import type { Proveedor } from '@/lib/api/proveedores'
+import type { Proveedor, TipoMinimo } from '@/lib/api/proveedores'
 import { bancoDelCbu, limpiarCbu, problemaConAlias, problemaConCbu } from '@/lib/cbu'
 import { numero } from '@/lib/tipos'
 import { avanzarConEnter } from '@/lib/teclado'
@@ -269,7 +269,9 @@ function FichaProveedor({
   // no se guarda hasta que los dígitos verificadores cierren.
   const problemaCbu = problemaConCbu(form.cbu ?? '')
   const problemaAlias = problemaConAlias(form.alias ?? '')
-  const listo = (form.nombre ?? '').trim().length >= 2 && !problemaCbu && !problemaAlias
+  // Si cuenta un mínimo, tiene que decir cuánto.
+  const faltaMinimo = !!form.minimo_tipo && !((form.minimo_valor ?? 0) > 0)
+  const listo = (form.nombre ?? '').trim().length >= 2 && !problemaCbu && !problemaAlias && !faltaMinimo
 
   return (
     <div
@@ -395,6 +397,46 @@ function FichaProveedor({
               placeholder="MESA.SOL.CASA"
               aria-invalid={!!problemaAlias}
               className={`${clase} ${problemaAlias ? 'border-red-400' : ''}`}
+            />
+          </Campo>
+
+          {/*
+            El mínimo que acepta para un pedido. Es variado: unos piden
+            un monto, otros bultos y otros kilos. El pedido dice cuánto
+            falta para llegar.
+          */}
+          <p className="col-span-2 border-t border-borde pt-3 text-xs font-semibold tracking-wide text-piedra-400 uppercase">
+            Pedido mínimo
+          </p>
+          <Campo etiqueta="Lo cuenta en">
+            <select
+              value={form.minimo_tipo ?? ''}
+              onChange={(e) => {
+                const tipo = (e.target.value || null) as TipoMinimo | null
+                set({ minimo_tipo: tipo, minimo_valor: tipo ? form.minimo_valor ?? null : null })
+              }}
+              className={clase}
+            >
+              <option value="">No pide mínimo</option>
+              <option value="monto">Pesos (con IVA)</option>
+              <option value="bultos">Bultos</option>
+              <option value="kilos">Kilos</option>
+            </select>
+          </Campo>
+          <Campo
+            etiqueta="Mínimo"
+            ayuda={faltaMinimo ? 'Falta cuánto' : form.minimo_tipo === 'monto' ? 'Con IVA, como los costos' : undefined}
+          >
+            <input
+              type="number"
+              step="any"
+              min="0"
+              disabled={!form.minimo_tipo}
+              value={form.minimo_valor ?? ''}
+              onChange={(e) => set({ minimo_valor: e.target.value === '' ? null : Number(e.target.value) })}
+              placeholder={form.minimo_tipo ? '' : '—'}
+              aria-invalid={faltaMinimo}
+              className={`${clase} text-right tabular-nums disabled:bg-piedra-50 ${faltaMinimo ? 'border-red-400' : ''}`}
             />
           </Campo>
 

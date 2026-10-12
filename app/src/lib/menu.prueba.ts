@@ -31,6 +31,11 @@ describe('a qué sección pertenece cada dirección', () => {
     expect(seccionDe('/compras/ordenes')?.pestana.etiqueta).toBe('Órdenes internas')
   })
 
+  it('Pedidos es una pestaña de Compras', () => {
+    expect(seccionDe('/compras/pedidos')?.pestana.etiqueta).toBe('Pedidos')
+    expect(seccionDe('/compras/pedidos')?.seccion.id).toBe('compras')
+  })
+
   it('Avisos es una pestaña de Stock, y no se confunde con Stock', () => {
     expect(seccionDe('/stock/avisos')?.pestana.etiqueta).toBe('Avisos')
     expect(seccionDe('/stock')?.pestana.etiqueta).toBe('Stock')

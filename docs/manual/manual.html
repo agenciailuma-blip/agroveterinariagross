@@ -194,11 +194,11 @@
         <tr><td><b>Clientes</b></td><td>Clientes <span class="gris">(5)</span></td></tr>
         <tr><td><b>Productos</b></td><td>Productos <span class="gris">(6)</span> · Precios <span class="gris">(7)</span></td></tr>
         <tr><td><b>Stock</b></td><td>Stock <span class="gris">(8)</span> · Avisos <span class="gris">(en la 8)</span> · Inventario <span class="gris">(9)</span> · Transferencias <span class="gris">(con más de un depósito; en la 8)</span></td></tr>
-        <tr><td><b>Compras</b></td><td>Compras <span class="gris">(10)</span> · Cuentas de proveedores <span class="gris">(11)</span> · Proveedores <span class="gris">(12)</span> · Costos <span class="gris">(13)</span> · Órdenes internas <span class="gris">(14)</span></td></tr>
-        <tr><td><b>Tesorería</b></td><td>Cheques <span class="gris">(15)</span> · Calendario <span class="gris">(16)</span></td></tr>
-        <tr><td><b>Comprobantes</b></td><td>Facturación <span class="gris">(17)</span> · Remitos <span class="gris">(18)</span> · Presupuestos <span class="gris">(19)</span></td></tr>
-        <tr><td><b>Reportes</b></td><td>Reportes <span class="gris">(20)</span></td></tr>
-        <tr><td><b>Administración</b></td><td>Usuarios <span class="gris">(21)</span> · Configuración <span class="gris">(22)</span></td></tr>
+        <tr><td><b>Compras</b></td><td>Compras <span class="gris">(10)</span> · Cuentas de proveedores <span class="gris">(11)</span> · Proveedores <span class="gris">(12)</span> · Costos <span class="gris">(13)</span> · Órdenes internas <span class="gris">(14)</span> · Pedidos <span class="gris">(15)</span></td></tr>
+        <tr><td><b>Tesorería</b></td><td>Cheques <span class="gris">(16)</span> · Calendario <span class="gris">(17)</span></td></tr>
+        <tr><td><b>Comprobantes</b></td><td>Facturación <span class="gris">(18)</span> · Remitos <span class="gris">(19)</span> · Presupuestos <span class="gris">(20)</span></td></tr>
+        <tr><td><b>Reportes</b></td><td>Reportes <span class="gris">(21)</span></td></tr>
+        <tr><td><b>Administración</b></td><td>Usuarios <span class="gris">(22)</span> · Configuración <span class="gris">(23)</span></td></tr>
     </table>
     <p style="margin-top:4mm">Y al final: <b>qué se imprime y qué se exporta</b>, <b>trabajar sin internet</b>,
     <b>desde el celular</b> y <b>cómo piensa el sistema</b>.</p>
@@ -390,7 +390,7 @@
     </div>
   </section>
 
-  <p class="seccion-menu">Sección Compras · Compras · Cuentas de proveedores · Proveedores · Costos · Órdenes internas</p>
+  <p class="seccion-menu">Sección Compras · Compras · Cuentas de proveedores · Proveedores · Costos · Órdenes internas · Pedidos</p>
 
   <section class="pantalla">
     <header><span class="numero">10</span><div><h3>Compras</h3><p class="lema">La factura del proveedor, y la mercadería que trae.</p></div></header>
@@ -439,7 +439,7 @@
     <header><span class="numero">12</span><div><h3>Proveedores</h3><p class="lema">A quién se le compra, y cómo cambiarle el precio a todo un laboratorio de una vez.</p></div></header>
     <div class="cuerpo">
       <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Cuando llega la lista nueva de un laboratorio, aplicar el aumento a todos sus productos en una operación, y poder volver atrás si el número salió mal.</div></div>
-      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Por proveedor: CUIT, contacto y <b>cuántos productos tiene asignados</b>, que es a cuántos les va a pegar un ajuste. En su ficha, <b>para transferirle: CBU o CVU y alias</b>. El CBU se controla al escribirlo con sus dígitos verificadores, como hacen los bancos, y la ficha dice de qué banco es.</div></div>
+      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Por proveedor: CUIT, contacto y <b>cuántos productos tiene asignados</b>, que es a cuántos les va a pegar un ajuste. En su ficha, <b>para transferirle: CBU o CVU y alias</b>, y su <b>pedido mínimo</b>: en pesos, en bultos o en kilos, según cómo lo cuente él. El CBU se controla al escribirlo con sus dígitos verificadores, como hacen los bancos, y la ficha dice de qué banco es.</div></div>
       <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Crear, editar y dar de baja · <b>ajustar precios en masa</b> por proveedor y rubro · <b>deshacer</b> un ajuste.</div></div>
       <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">Nada.</div></div>
 
@@ -483,13 +483,35 @@
         <li>Al guardar, la orden toma su número. La hoja impresa lleva arriba <i>Orden de compra interna</i>, el número y la fecha; quién emite y quién recibe; los renglones con código, descripción, proveedor y cantidad; la observación; y al pie, <b>la firma del responsable</b>.</li>
       </ul>
       <div class="nota">La hace <b>cualquier puesto</b>, y la ve cualquiera que pueda hacer una. <b>Marcarla pedida es de quien compra</b>: es Compras el que dice «esto ya lo pedí». Una vez pedida ya no se corrige; si hace falta, primero se vuelve a pendiente.</div>
+      <div class="nota verde"><b>Con el pedido a proveedor se marca sola.</b> Lo que pide una orden aparece al armar el pedido de su proveedor (ver <b>15</b>). Cuando entra en un pedido, cada renglón dice <i>En el pedido 000012</i>, y la orden queda <b>pedida</b> cuando se pidió todo —si tiene renglones de dos proveedores, cuando se pidieron los dos—. Mientras tenga renglones en un pedido no se corrige; si se anula el pedido, vuelve a pendiente.</div>
+    </div>
+  </section>
+
+  <section class="pantalla">
+    <header><span class="numero">15</span><div><h3>Pedidos</h3><p class="lema">Lo que se le pide a un proveedor, mirando todo lo que se le compra.</p></div></header>
+    <div class="cuerpo">
+      <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Armar el pedido a un proveedor con todos sus productos a la vista: lo que pidieron las órdenes internas y lo que conviene sumar al mismo envío. Y saber, mientras se arma, si llega al mínimo que acepta ese proveedor.</div></div>
+      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Los pedidos hechos y los anulados, con su número, el proveedor, la fecha, los renglones y el total. Al armar uno, <b>todos los productos del proveedor</b> —lo urgente primero—, cada uno con cuánto hay, con cuánto avisa, el último costo, el bulto y el peso, y <b>lo que pidieron las órdenes internas</b>, con sus números.</div></div>
+      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor"><b>Nuevo pedido</b> · elegir el proveedor y completar cuánto pedir de cada cosa · <b>hacer el pedido</b> · <b>imprimirlo</b> · <b>copiarlo para WhatsApp</b> · <b>anularlo</b>, con motivo.</div></div>
+      <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">La nota de pedido en A4, para imprimir o guardar en PDF, y el texto para pegar en WhatsApp.</div></div>
+
+      <p style="margin:3mm 0 1mm"><b>Armar un pedido</b></p>
+      <ul class="limpia">
+        <li>Se elige el proveedor. La columna <b>Pedir</b> ya trae lo que pidieron las órdenes internas; se cambia y se completa a mano —«un poco de cada cosa»—. Al lado de cada cantidad dice cuántos <b>bultos</b> son, si el producto lo sabe.</li>
+        <li>Arriba, el <b>mínimo del proveedor</b> y cuánto falta: <i>«Pide un mínimo de 100 kg. Lleva 45 kg: faltan 55 kg»</i>, y en verde cuando llega. Si algún producto no tiene el dato para contar —el peso, el bulto o el costo—, lo dice.</li>
+        <li>Lo que una orden pidió y no está en el catálogo aparece primero, con su descripción.</li>
+        <li>Abajo, una <b>observación para el proveedor</b>, cuántos renglones son y el <b>total</b> al último costo, con IVA.</li>
+        <li>El pedido se va guardando en esa computadora mientras se arma: se puede salir a mirar otra cosa y volver.</li>
+      </ul>
+      <div class="nota">La <b>nota de pedido</b> lleva quién pide y a quién, la tabla con código, descripción, cantidad y bultos, y la observación. <b>No lleva precios</b>: son los de Gross, y el proveedor tiene los suyos. El texto para WhatsApp dice lo mismo, sin códigos.</div>
+      <div class="nota">El pedido no mueve stock ni plata: lo que llega se recibe en <b>Compras</b>, con la factura. Lo hace quien registra compras; anularlo devuelve a pendiente las órdenes internas que había cubierto.</div>
     </div>
   </section>
 
   <p class="seccion-menu">Sección Tesorería · Cheques · Calendario</p>
 
   <section class="pantalla">
-    <header><span class="numero">15</span><div><h3>Cheques</h3><p class="lema">Los que se recibieron, los que se libraron, y dónde está cada uno.</p></div></header>
+    <header><span class="numero">16</span><div><h3>Cheques</h3><p class="lema">Los que se recibieron, los que se libraron, y dónde está cada uno.</p></div></header>
     <div class="cuerpo">
       <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Un cheque no es plata que entró: es una promesa con fecha, que además se mueve. Esta pantalla dice qué cheques hay, de quién, por cuánto, para cuándo y dónde está cada uno.</div></div>
       <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Arriba: cuánto hay <b>en cartera</b>, cuáles <b>hay que depositar esta semana</b> y cuánto falta que se debite de los <b>propios</b>. Tres vistas: <b>En cartera</b> —ordenados por fecha de pago—, <b>Propios a debitar</b> y <b>Todos</b>, con buscador. Por cheque: banco, número, si es e-cheq, al día o diferido, <b>cuántos días quedan para depositarlo</b>, quién lo firmó, quién lo entregó y a quién se le dio. Al abrirlo, su <b>historia</b>: cuándo entró, quién lo recibió, a quién se endosó.</div></div>
@@ -509,7 +531,7 @@
   </section>
 
   <section class="pantalla">
-    <header><span class="numero">16</span><div><h3>Calendario</h3><p class="lema">Qué se cobra y qué se paga, día por día.</p></div></header>
+    <header><span class="numero">17</span><div><h3>Calendario</h3><p class="lema">Qué se cobra y qué se paga, día por día.</p></div></header>
     <div class="cuerpo">
       <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Contestar una pregunta: ¿alcanza lo que entra estos días para lo que sale? Es lo que dicen los papeles, no una promesa: un cliente puede no pagar el día que vence.</div></div>
       <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Para los próximos 7, 15, 30 o 60 días: lo que <b>entra</b> —cheques en cartera por su fecha de pago, cuentas de clientes por su vencimiento— y lo que <b>sale</b> —facturas de proveedores por su vencimiento, cheques propios el día que se debitan—, con el total de cada día y la diferencia. Arriba, lo <b>atrasado o para cobrar ya</b>; abajo, las facturas cargadas sin vencimiento.</div></div>
@@ -522,7 +544,7 @@
   <p class="seccion-menu">Sección Comprobantes · Facturación · Remitos · Presupuestos</p>
 
   <section class="pantalla">
-    <header><span class="numero">17</span><div><h3>Facturación</h3><p class="lema">El semáforo de todo lo que se le informa a ARCA.</p></div></header>
+    <header><span class="numero">18</span><div><h3>Facturación</h3><p class="lema">El semáforo de todo lo que se le informa a ARCA.</p></div></header>
     <div class="cuerpo">
       <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Ver de un vistazo si todo lo que se cobró tiene su comprobante, y resolver lo que quedó en el camino.</div></div>
       <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">El semáforo por comprobante —autorizado e impreso, autorizado sin imprimir, esperando autorización, rechazado— · <b>el motivo exacto del rechazo</b> · el aviso de los días que quedan para pedir el código de autorización · y el <b>panel rojo</b> de ventas cobradas sin comprobante, que es el caso grave: la plata entró y falta el respaldo · el cuadro <b>Por facturar</b>, con lo que los clientes se llevaron a cuenta para facturar después.</div></div>
@@ -556,7 +578,7 @@
   </section>
 
   <section class="pantalla">
-    <header><span class="numero">18</span><div><h3>Remitos</h3><p class="lema">La mercadería que sale del local, con su comprobante de entrega.</p></div></header>
+    <header><span class="numero">19</span><div><h3>Remitos</h3><p class="lema">La mercadería que sale del local, con su comprobante de entrega.</p></div></header>
     <div class="cuerpo">
       <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Que lo que sale en la camioneta tenga un papel que alguien firma, y que el stock salga una sola vez.</div></div>
       <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor"><b>Entregado y sin cobrar</b>, arriba y en ámbar: mercadería que salió y plata que no entró, con cuántos días lleva · el listado con destino, transporte, si descontó stock y a qué venta corresponde.</div></div>
@@ -569,7 +591,7 @@
   </section>
 
   <section class="pantalla">
-    <header><span class="numero">19</span><div><h3>Presupuestos</h3><p class="lema">El archivo de los comprobantes que numera Gross.</p></div></header>
+    <header><span class="numero">20</span><div><h3>Presupuestos</h3><p class="lema">El archivo de los comprobantes que numera Gross.</p></div></header>
     <div class="cuerpo">
       <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Tener juntos los papeles propios —presupuestos, remitos e internos— separados de los que numera y controla ARCA.</div></div>
       <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Número, fecha, cliente, total y estado, con los presupuestos <b>vencidos</b> marcados.</div></div>
@@ -580,7 +602,7 @@
   </section>
 
   <section class="pantalla">
-    <header><span class="numero">20</span><div><h3>Reportes</h3><p class="lema">Cómo viene el mes y quién tiene plata de Gross en la calle.</p></div></header>
+    <header><span class="numero">21</span><div><h3>Reportes</h3><p class="lema">Cómo viene el mes y quién tiene plata de Gross en la calle.</p></div></header>
     <div class="cuerpo">
       <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Mirar el negocio con tiempo, no de paso: la venta comparada contra el período anterior, y la deuda de los clientes junta, que en la ficha se ve de a un cliente por vez.</div></div>
       <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Ventas de hoy, de los últimos 7 días y del mes, cada una <b>comparada contra el período anterior</b> · cuánta plata hay en la calle, cuánta está vencida y cuánta por vencer · cuántos clientes pasaron su límite · y por cliente: cuánto debe, cuánto está vencido, cuántos días de atraso y su teléfono.</div></div>
@@ -593,7 +615,7 @@
   <p class="seccion-menu">Sección Administración · Usuarios · Configuración</p>
 
   <section class="pantalla">
-    <header><span class="numero">21</span><div><h3>Usuarios</h3><p class="lema">Quién entra, qué puede hacer y con qué PIN.</p></div></header>
+    <header><span class="numero">22</span><div><h3>Usuarios</h3><p class="lema">Quién entra, qué puede hacer y con qué PIN.</p></div></header>
     <div class="cuerpo">
       <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Que cada uno vea y pueda hacer lo de su puesto, y que toda operación quede con nombre y apellido.</div></div>
       <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Los usuarios, su rol, y los permisos de cada rol agrupados por tema.</div></div>
@@ -604,7 +626,7 @@
   </section>
 
   <section class="pantalla">
-    <header><span class="numero">22</span><div><h3>Configuración</h3><p class="lema">Lo que puede cambiar sin depender de una actualización.</p></div></header>
+    <header><span class="numero">23</span><div><h3>Configuración</h3><p class="lema">Lo que puede cambiar sin depender de una actualización.</p></div></header>
     <div class="cuerpo">
       <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Que lo que cambia por resolución, por costumbre del mostrador o por cómo está armado el local se pueda tocar sin llamar a nadie.</div></div>
       <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Está en tres pestañas, según a quién le importa el cambio: <b>Facturación</b> —lo que sale impreso y lo que se le informa a ARCA y a Rentas—, <b>El local</b> —las máquinas, los depósitos y cómo se arma una venta; vale para todas las computadoras— y <b>Esta computadora</b> —lo que se guarda en la máquina que se tiene adelante—. Ver el cuadro de abajo.</div></div>
@@ -642,6 +664,7 @@
     <tr><td><b>Comprobante interno</b></td><td>Caja (cobrando «sin factura» o «factura después»)</td><td>Ticket de 80 mm · Hoja A4</td></tr>
     <tr><td><b>Resumen de cuenta corriente</b></td><td>Clientes y Reportes</td><td>Hoja A4 · se guarda como PDF</td></tr>
     <tr><td><b>Orden de compra interna</b></td><td>Compras → Órdenes internas</td><td>Hoja A4 · con la firma del responsable</td></tr>
+    <tr><td><b>Nota de pedido a proveedor</b></td><td>Compras → Pedidos</td><td>Hoja A4 sin precios · texto para WhatsApp</td></tr>
     <tr><td><b>Ventas del mes para el contador</b></td><td>Facturación</td><td>Archivo de Excel</td></tr>
     <tr><td><b>Percepciones de IIBB del mes</b></td><td>Facturación</td><td>Archivo de Excel</td></tr>
     <tr><td><b>Compras del mes</b></td><td>Facturación</td><td>Archivo de Excel</td></tr>

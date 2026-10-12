@@ -239,6 +239,14 @@ begin
   perform pg_temp.falla(format('select public.anular_pedido_proveedor(%L, %L)', v_pa, 'otra vez'),
     'El pedido % ya estaba anulado.', 'se anuló dos veces');
 
+  -- O1 sigue con el renglón del collar en el pedido a B: corregirla le
+  -- borraría el vínculo, y el collar aparecería otra vez para pedir.
+  perform pg_temp.falla(format('select public.guardar_orden_interna(%L, %L, %L, %L)',
+      (select id from public.orden_compra_interna where numero = v_o1), v_dep, v_compras,
+      jsonb_build_array(jsonb_build_object('descripcion', 'PRUEBA otra cosa', 'cantidad', 1))),
+    'La orden % ya tiene renglones en un pedido a proveedor: no se puede corregir.%',
+    'se pudo corregir una orden con un renglón ya pedido');
+
   -- ─── 6. El mínimo del proveedor ───
   reset role;
   perform pg_temp.falla(format('update public.proveedor set minimo_valor = null where id = %L', v_a),
