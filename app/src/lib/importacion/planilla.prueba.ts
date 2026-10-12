@@ -6,6 +6,7 @@ import {
   detectarEncabezado,
   elegirHoja,
   leerCsv,
+  ordenarPorEnvase,
   prepararFilas,
   proponerMapeo,
 } from '@/lib/importacion/planilla'
@@ -290,5 +291,118 @@ describe('la planilla de categorización de Gross', () => {
     // una ruta vacía les borraría la categoría que ya tuvieran.
     const payload = aPayloadImportacion({ codigo: '1', nombre_interno: 'X' })
     expect(payload.categoria_ruta).toBeUndefined()
+  })
+})
+
+/*
+  ─────────────────────────────────────────────────────────────
+  El mínimo y la suelta en la planilla
+
+  Lucas va a poner el mínimo al dar de alta los productos (07/10), y
+  hay productos que se venden por caja, tableta y pastilla (08/10). Lo
+  que se guarda lo prueba la base (supabase/pruebas/importar-minimo-y-
+  suelta.sql); acá, lo que la pantalla reconoce y avisa antes.
+  ─────────────────────────────────────────────────────────────
+*/
+
+describe('el mínimo y la suelta', () => {
+  it('reconoce las columnas como las escribiría Lucas', () => {
+    const mapeo = proponerMapeo(['Código', 'Descripción', 'Stock mínimo', 'Stock bajo', 'Sale de', 'Cuántas trae'])
+    expect(Object.values(mapeo)).toEqual([
+      'codigo', 'nombre_interno', 'stock_critico', 'stock_bajo', 'sale_de', 'cantidad_por_envase',
+    ])
+  })
+
+  it('el mínimo es el crítico, como lo dijo Lucas', () => {
+    // «Cuando tenga dos bolsas, avisame que estoy en crítico.»
+    expect(proponerMapeo(['Mín.'])[0]).toBe('stock_critico')
+    expect(proponerMapeo(['Mínimo'])[0]).toBe('stock_critico')
+  })
+
+  it('no confunde la columna Envase ni las unidades por caja con la suelta', () => {
+    // «Bidón», «Frasco»: es la presentación, no de qué caja sale.
+    const mapeo = proponerMapeo(['Código', 'Envase', 'Unidades por caja'])
+    expect(mapeo[1]).toBeNull()
+    expect(mapeo[2]).toBeNull()
+  })
+
+  const mapeo = proponerMapeo(['Código', 'Nombre', 'Stock bajo', 'Stock mínimo', 'Sale de', 'Trae'])
+
+  it('lee el mínimo con formato argentino', () => {
+    const [fila] = prepararFilas([['B1', 'Bolsa', '1.000', '2,5', '', '']], mapeo)
+    expect(fila.errores).toEqual([])
+    expect(fila.datos.stock_bajo).toBe('1000')
+    expect(fila.datos.stock_critico).toBe('2.5')
+  })
+
+  it('frena un crítico mayor que el bajo, que es un error de tipeo', () => {
+    const [fila] = prepararFilas([['B1', 'Bolsa', '2', '5', '', '']], mapeo)
+    expect(fila.errores).toEqual(['El stock crítico no puede ser mayor que el bajo.'])
+  })
+
+  it('acepta uno solo de los dos números', () => {
+    const filas = prepararFilas([['B1', 'Bolsa', '', '2', '', ''], ['B2', 'Otra', '6', '', '', '']], mapeo)
+    expect(filas.map((f) => f.errores)).toEqual([[], []])
+  })
+
+  it('no acepta un mínimo negativo', () => {
+    const [fila] = prepararFilas([['B1', 'Bolsa', '', '-2', '', '']], mapeo)
+    expect(fila.errores[0]).toMatch(/no puede ser negativo/)
+  })
+
+  it('la suelta necesita las dos columnas: de qué sale y cuántas trae', () => {
+    const [sinCuantas, sinEnvase] = prepararFilas(
+      [['P1', 'Pastilla', '', '', 'CAJA1', ''], ['P2', 'Pastilla', '', '', '', '10']],
+      mapeo,
+    )
+    expect(sinCuantas.errores).toEqual(['Sale de CAJA1, pero falta cuántas trae.'])
+    expect(sinEnvase.errores).toEqual(['Dice cuántas trae, pero no de qué envase sale.'])
+  })
+
+  it('frena «trae 0» y el producto que sale de sí mismo', () => {
+    const [cero, propio] = prepararFilas(
+      [['P1', 'Pastilla', '', '', 'CAJA1', '0'], ['p2', 'Pastilla', '', '', 'P2', '10']],
+      mapeo,
+    )
+    expect(cero.errores).toEqual(['Cuántas trae el envase tiene que ser más que cero.'])
+    expect(propio.errores).toEqual(['Un producto no puede salir de adentro de sí mismo.'])
+  })
+
+  it('la suelta viaja con el código de su envase y cuántas trae', () => {
+    const [fila] = prepararFilas([['P1', 'Pastilla', '', '', 'TAB1', '10']], mapeo)
+    const payload = aPayloadImportacion(fila.datos)
+    expect(payload.sale_de).toBe('TAB1')
+    expect(payload.cantidad_por_envase).toBe('10')
+  })
+})
+
+describe('las cajas viajan antes que sus sueltas', () => {
+  const mapeo = proponerMapeo(['Código', 'Nombre', 'Sale de', 'Trae'])
+  const codigos = (filas: { datos: { codigo?: string } }[]) => filas.map((f) => f.datos.codigo)
+
+  it('ordena caja, tableta y pastilla aunque en el Excel estén al revés', () => {
+    const filas = prepararFilas(
+      [
+        ['PAST', 'Pastilla', 'tab', '10'],
+        ['OTRO', 'Collar', '', ''],
+        ['TAB', 'Tableta', 'CAJA', '10'],
+        ['CAJA', 'Caja', '', ''],
+      ],
+      mapeo,
+    )
+    expect(codigos(ordenarPorEnvase(filas))).toEqual(['OTRO', 'CAJA', 'TAB', 'PAST'])
+  })
+
+  it('no cambia el orden de lo que no tiene suelta, ni de la suelta cuyo envase ya está cargado', () => {
+    const filas = prepararFilas(
+      [['B', 'Uno', '', ''], ['S', 'Suelta', 'YA-CARGADA', '5'], ['A', 'Dos', '', '']],
+      mapeo,
+    )
+    expect(codigos(ordenarPorEnvase(filas))).toEqual(['B', 'S', 'A'])
+  })
+
+  it('una vuelta escrita en la planilla no lo cuelga', () => {
+    const filas = prepararFilas([['A', 'Uno', 'B', '2'], ['B', 'Dos', 'A', '2']], mapeo)
+    expect(codigos(ordenarPorEnvase(filas)).sort()).toEqual(['A', 'B'])
   })
 })

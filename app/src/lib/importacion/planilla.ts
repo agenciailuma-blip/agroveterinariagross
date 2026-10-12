@@ -33,13 +33,19 @@ export const CAMPOS = {
   alicuota_porcentaje: 'Alícuota de IVA',
   unidad_medida: 'Unidad',
   codigo_barra: 'Código de barra',
+  stock_bajo: 'Stock bajo (amarillo)',
+  stock_critico: 'Stock mínimo o crítico (rojo)',
+  sale_de: 'Sale de adentro de (código)',
+  cantidad_por_envase: 'Cuántas trae ese envase',
 } as const
 
 export type Campo = keyof typeof CAMPOS
 
 export const OBLIGATORIOS: Campo[] = ['codigo', 'nombre_interno']
 
-export const NUMERICOS: Campo[] = ['precio_venta', 'costo', 'alicuota_porcentaje']
+export const NUMERICOS: Campo[] = [
+  'precio_venta', 'costo', 'alicuota_porcentaje', 'stock_bajo', 'stock_critico', 'cantidad_por_envase',
+]
 
 /*
   Nombres con los que cada campo puede aparecer en el encabezado.
@@ -70,6 +76,27 @@ const SINONIMOS: Record<Campo, string[]> = {
   alicuota_porcentaje: ['iva', 'alicuota', 'alicuota iva', 'porcentaje iva', 'iva %', '% iva'],
   unidad_medida: ['unidad', 'unidad de medida', 'um', 'medida', 'presentacion'],
   codigo_barra: ['codigo de barra', 'codigo barra', 'ean', 'barra', 'codigo ean', 'cod barra'],
+  /*
+    El mínimo es el crítico: así lo dijo Lucas el 07/10, «cuando tenga
+    dos bolsas, avisame que estoy en crítico». El bajo es el amarillo
+    de antes, el «hay que ir pidiendo».
+  */
+  stock_bajo: ['stock bajo', 'bajo', 'aviso bajo', 'punto de pedido', 'punto pedido', 'avisar con', 'amarillo'],
+  stock_critico: [
+    'stock minimo', 'minimo', 'stock min', 'min', 'stock critico', 'critico', 'aviso critico', 'rojo',
+  ],
+  /*
+    Sin sinónimos sueltos como «envase», «caja» o «unidades por caja».
+    En una planilla de agroveterinaria la columna Envase dice «Bidón» o
+    «Frasco», y unidades por caja es cuánto trae el bulto del
+    proveedor, no de qué se vende suelto. Leerlos como suelta frenaría
+    todas esas filas.
+  */
+  sale_de: ['sale de', 'sale de adentro de', 'codigo envase', 'codigo del envase', 'sale de la caja'],
+  cantidad_por_envase: [
+    'trae', 'cuantas trae', 'cuantas trae el envase', 'cuantas trae la caja', 'cantidad por envase',
+    'unidades por envase',
+  ],
 }
 
 /*
@@ -96,6 +123,44 @@ export interface DefinicionPlanilla<C extends string = string> {
     cuando el mismo valor aparece dos veces.
   */
   clave: C
+  /**
+    Lo que se revisa mirando la fila entera, y no una celda sola: dos
+    columnas que van juntas, o una que no puede ser mayor que otra.
+    Devuelve los errores; vacío si está bien.
+  */
+  validar?: (datos: Partial<Record<C, string>>) => string[]
+}
+
+/*
+  El aviso de stock y la suelta, revisados antes de importar.
+
+  La base revisa lo mismo y frena la fila. Acá se dice antes, con la
+  planilla abierta al lado: que un mínimo de 5 con un bajo de 2 es un
+  error de tipeo se ve mejor en la fila 340 del Excel que en un
+  informe al final.
+*/
+function validarProducto(datos: Partial<Record<Campo, string>>): string[] {
+  const errores: string[] = []
+  const bajo = datos.stock_bajo === undefined ? null : Number(datos.stock_bajo)
+  const critico = datos.stock_critico === undefined ? null : Number(datos.stock_critico)
+
+  if (bajo !== null && critico !== null && critico > bajo) {
+    errores.push('El stock crítico no puede ser mayor que el bajo.')
+  }
+
+  if (datos.sale_de && !datos.cantidad_por_envase) {
+    errores.push(`Sale de ${datos.sale_de}, pero falta cuántas trae.`)
+  } else if (!datos.sale_de && datos.cantidad_por_envase) {
+    errores.push('Dice cuántas trae, pero no de qué envase sale.')
+  }
+  if (datos.cantidad_por_envase && Number(datos.cantidad_por_envase) === 0) {
+    errores.push('Cuántas trae el envase tiene que ser más que cero.')
+  }
+  if (datos.sale_de && datos.codigo && datos.sale_de.toUpperCase() === datos.codigo.toUpperCase()) {
+    errores.push('Un producto no puede salir de adentro de sí mismo.')
+  }
+
+  return errores
 }
 
 export const PRODUCTOS: DefinicionPlanilla<Campo> = {
@@ -104,6 +169,7 @@ export const PRODUCTOS: DefinicionPlanilla<Campo> = {
   numericos: NUMERICOS,
   sinonimos: SINONIMOS,
   clave: 'codigo',
+  validar: validarProducto,
 }
 
 function normalizar(texto: string): string {
@@ -270,6 +336,7 @@ export function prepararFilas<C extends string = Campo>(
     for (const obligatorio of def.obligatorios) {
       if (!datos[obligatorio]) errores.push(`Falta ${def.campos[obligatorio].toLowerCase()}.`)
     }
+    if (def.validar) errores.push(...def.validar(datos))
 
     preparadas.push({ linea: i + primeraLinea, datos, errores })
   })
@@ -289,6 +356,47 @@ export function codigosDuplicados<C extends string = Campo>(
     vistos.set(codigo, [...(vistos.get(codigo) ?? []), f.linea])
   }
   return new Map([...vistos].filter(([, lineas]) => lineas.length > 1))
+}
+
+/*
+  Las cajas antes que lo que sale de ellas.
+
+  La base ata la suelta buscando su envase entre los productos que ya
+  existen. Si la pastilla viene en la fila 10 y su tableta en la 40,
+  cuando llega la pastilla la tableta todavía no está, y la pastilla
+  entra sin atar. Se ordena por cuántos envases tiene arriba dentro de
+  la misma planilla —la caja, después la tableta, después la pastilla—
+  y, entre iguales, se respeta el orden del archivo.
+
+  Una vuelta escrita en la planilla (A sale de B y B sale de A) no
+  cuelga nada: se corta, y la base dice cuál no se pudo atar.
+*/
+export function ordenarPorEnvase(filas: FilaImportada[]): FilaImportada[] {
+  const porCodigo = new Map<string, FilaImportada>()
+  for (const f of filas) {
+    const codigo = f.datos.codigo?.toUpperCase()
+    // Con códigos repetidos manda la última, como en la importación.
+    if (codigo) porCodigo.set(codigo, f)
+  }
+
+  const profundidad = (f: FilaImportada): number => {
+    let pasos = 0
+    const vistos = new Set<FilaImportada>([f])
+    let actual = f
+    for (;;) {
+      const envase = actual.datos.sale_de?.toUpperCase()
+      const arriba = envase ? porCodigo.get(envase) : undefined
+      if (!arriba || vistos.has(arriba)) return pasos
+      vistos.add(arriba)
+      pasos++
+      actual = arriba
+    }
+  }
+
+  return filas
+    .map((f, i) => ({ f, i, p: profundidad(f) }))
+    .sort((a, b) => a.p - b.p || a.i - b.i)
+    .map(({ f }) => f)
 }
 
 /*

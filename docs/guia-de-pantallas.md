@@ -60,7 +60,7 @@ El catálogo. Es la pantalla donde se carga y se corrige todo lo que se vende.
 
 > **Vender online.** Nada sale a la tienda web hasta que alguien lo prende. Se prende en la ficha, a un grupo marcado, o **a una categoría o marca entera** —eligiéndola en el filtro, que muestra la cantidad y la prende toda, no sólo los primeros 100 de la lista—. Prendido, sale sólo si tiene **nombre público** y **precio**; si le falta algo, la ficha lo dice y el aviso cuenta cuántos quedaron afuera. Con qué lista de precios se publica se elige en **Precios → Tienda online**.
 
-> **Importar la planilla** (`Productos → Importar planilla`) acepta `.xlsx` y `.csv`. El sistema propone a qué campo corresponde cada columna y la persona confirma, viendo un dato de ejemplo — porque los encabezados mienten: una columna que dice "Precio" puede tener el costo. **Reimportar no duplica**: reconoce por código y actualiza. Una celda vacía no borra lo que ya había; un valor distinto sí lo pisa.
+> **Importar la planilla** (`Productos → Importar planilla`) acepta `.xlsx` y `.csv`. El sistema propone a qué campo corresponde cada columna y la persona confirma, viendo un dato de ejemplo — porque los encabezados mienten: una columna que dice "Precio" puede tener el costo. **Reimportar no duplica**: reconoce por código y actualiza. Una celda vacía no borra lo que ya había; un valor distinto sí lo pisa. **Trae también el aviso de stock** —*Stock mínimo* es el rojo; *Stock bajo*, el amarillo— **y la suelta** —*Sale de*, con el código de la caja, y *Cuántas trae*—; la caja puede estar en cualquier fila.
 
 ---
 

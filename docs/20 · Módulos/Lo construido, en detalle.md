@@ -641,7 +641,7 @@ Pantalla **Compras**, entre Proveedores y Ventas. Se carga la cabecera de la fac
 
 **En pantalla:** la ficha tiene la sección **Caja y suelto** —«Sale de adentro de», cuántas trae, «Se abre en», y **Crear la suelta**, que abre un producto nuevo con la categoría, la marca, el proveedor y el IVA de la caja—; arriba, la cadena: *«En stock: 1 CAJA · 9 SUELTO»* y el total contado en sueltas. Stock y la lista de Productos dicen *«9 sueltas · 19 abriendo lo cerrado»*. El mostrador muestra lo disponible y, debajo, las sueltas, con y sin internet.
 
-**Lo que no se hizo:** la planilla de importación no trae todavía las columnas de envase —con cinco productos de tres niveles, se atan a mano en la ficha—. Y la tienda publica las sueltas que hay, sin contar las que se pueden abrir: vende cajas.
+**Lo que no se hizo entonces:** la planilla de importación no traía las columnas de envase —✅ las trae desde el 12/10, ver §4—. Y la tienda publica las sueltas que hay, sin contar las que se pueden abrir: vende cajas.
 
 **Verificado contra la base real:** 26 comprobaciones en [`supabase/pruebas/caja-y-suelta.sql`](../../supabase/pruebas/caja-y-suelta.sql), con ventas cobradas y anuladas como un Administrador: el ejemplo de Lucas en tres niveles, abrir sólo lo que hace falta, lo que no alcanza, el ajuste que no abre, los frenos, el costo, la bolsa de 15 kg y el otro depósito. Se corrió en seco junto con la migración. **La corrida encontró un error real**: «trae 0» daba *division by zero* en vez del mensaje de la base; corregido antes de aplicar. **Se rompió a propósito** sacando `apertura` del disparador, y la prueba lo atrapó: quedaba la caja entera y la tableta en −1.
 
@@ -688,6 +688,15 @@ Decisiones que importan:
 **74 pruebas automáticas** cubren la lectura. La que más importa: `"12.500"` se lee como doce mil quinientos y no como doce con cinco — un precio mil veces más barato entrando al mostrador sin dar ningún error. **Ese error existía y lo encontró la prueba.**
 
 ⏳ Falta la planilla de Lucas. El importador ya está probado de punta a punta contra la base con un archivo desprolijo de ejemplo.
+
+**El mínimo y la suelta (12/10).** Cuatro columnas más, ninguna obligatoria. [Migración](../../supabase/migrations/20261012120000_la_planilla_trae_el_minimo_y_la_suelta.sql).
+- **`stock_bajo` y `stock_critico`** son el aviso propio del producto y pasan por `definir_umbral_producto()`, como la ficha. «Stock mínimo» se reconoce como crítico (Lucas: «cuando tenga dos bolsas, avisame que estoy en crítico»). Si viene uno solo, el otro queda como estaba, o toma el mismo número si no había aviso propio; si choca con el que estaba, se acomoda el que no vino. Reimportar el mismo número no reescribe la fila: cada reescritura viaja a todas las PC. Sin `stock.configurar_umbrales`, el producto entra y la fila lo dice.
+- **`sale_de` y `cantidad_por_envase`** atan la suelta por el código del envase. **La pantalla ordena las filas** (`ordenarPorEnvase`) por cuántos envases tienen arriba dentro de la planilla, así la caja existe cuando llega su suelta; `aFilasDelArchivo()` devuelve los mensajes en el orden del Excel. Si el envase no existe, ya se abre en otro producto o atarlo armaría una vuelta, el producto entra con el motivo en la fila, como el código de barra repetido —que antes cortaba la fila y ahora suma su aviso a los demás—.
+- **El costo de una suelta ya atada se vuelve a sacar de su envase** al final de la fila: el `update` general le pisaba el costo con el de la planilla, y el disparador sólo recalcula cuando cambia el envase o cuántas trae.
+- **Lo mal escrito se frena antes de crear el producto**, en la base y antes en la pantalla (`validar` de la definición de la planilla): crítico mayor que el bajo, negativos, una de las dos columnas de la suelta sin la otra, «trae 0», salir de sí mismo.
+- **Sin sinónimos ambiguos para la suelta:** *Envase* y *Unidades por caja* quedan sin mapear, porque en estas planillas dicen la presentación o el bulto del proveedor.
+
+**Verificado:** 29 comprobaciones en [`supabase/pruebas/importar-minimo-y-suelta.sql`](../../supabase/pruebas/importar-minimo-y-suelta.sql), en seco con la migración y después de aplicarla. Rotas a propósito en la base: sin el recálculo del costo (la pastilla quedó en 999), sin mirar la otra suelta del envase (*duplicate key* en vez del motivo) y con el número viejo ganando (*violates check constraint*). En la pantalla: sin `validar` y sin el orden. Las siete, atrapadas. En pantalla, una planilla con la cadena al revés entró atada y el aviso nombró la fila del Excel.
 
 ### ✅ 13a. La API de la tienda: leer el catálogo (18/09)
 

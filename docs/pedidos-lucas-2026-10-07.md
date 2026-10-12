@@ -110,7 +110,7 @@ El alcance de V1-B dice *Umbrales de stock por proveedor*. **Lucas aclaró que n
 
 **Lo que ya está:** el mínimo por producto, con dos niveles —bajo y crítico—, en la ficha: *Avisarme cuando queden pocos*. «Avisame con dos bolsas» se carga hoy. Stock ordena por urgencia y dice cuánto cuesta reponer; Inicio cuenta los críticos.
 
-**Lo que falta de eso:** que la planilla de importación traiga el mínimo —dijo que lo va a poner al cargar los productos— y la pantalla del umbral general y por categoría, ya anotada como hueco del corte en [`AHORA.md`](AHORA.md).
+**Lo que faltaba de eso, ya hecho:** la pantalla del aviso general y por categoría —Stock → Avisos, 09/10— y que la planilla de importación traiga el mínimo —dijo que lo va a poner al cargar los productos—, el 12/10. La planilla trae también de qué caja sale cada suelta.
 
 ### La propuesta: Compras → Pedido a proveedor
 
@@ -122,6 +122,8 @@ El alcance de V1-B dice *Umbrales de stock por proveedor*. **Lucas aclaró que n
 **Tamaño: mediano.** La recepción desde la orden, chica y aparte.
 
 **Pregunta para Lucas:** el mínimo del proveedor —«no le puedo pedir sólo cinco bolsas»—, ¿es en plata, en bultos o en kilos? Si se carga en la ficha del proveedor, la pantalla dice cuánto falta para llegar.
+
+**Respuesta (12/10): es variado.** Hay proveedores directos y otros que revenden varias marcas, y cada uno se maneja distinto. Entonces el mínimo se carga en la ficha de cada proveedor **con su unidad** —pesos, bultos, kilos o ninguno—, y el pedido dice cuánto falta en esa unidad. En pesos alcanza con el costo de la última compra. **En kilos hace falta el peso de cada producto, y en bultos cuántas unidades trae el bulto**: ninguno de los dos se carga hoy, y lo más barato es que entren con la planilla del catálogo.
 
 ---
 

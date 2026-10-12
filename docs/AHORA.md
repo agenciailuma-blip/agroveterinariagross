@@ -1,5 +1,5 @@
 ---
-actualizado: 2026-10-09
+actualizado: 2026-10-12
 estado: en curso
 ---
 
@@ -11,6 +11,8 @@ estado: en curso
 ---
 
 ## Dónde está todo, hoy
+
+**Construido el 12/10, falta publicarlo: la planilla de productos trae el mínimo y la suelta** (ver *Lo último que pasó*). La base ya lo acepta; la pantalla sale con la 0.15.1. **566 pruebas verdes en la app**, 102 migraciones aplicadas.
 
 **Publicado: 0.15.0** (09/10), con **los avisos de stock en sus tres niveles** —una pestaña nueva en Stock, *Avisos*— y **el historial de movimientos de cada producto**, que eran los dos huecos que quedaban del alcance de V1-A, y con **la orden de compra interna** con el modelo de Lucas. Ver *Lo último que pasó*. **552 pruebas verdes en la app**, 101 migraciones aplicadas. Antes, la **0.14.0** (08/10), con **la caja y la suelta**: se carga la caja como llega y, cuando se vende una pastilla y no quedan sueltas, el sistema abre una caja solo —también en tres niveles, caja, tableta y pastilla—. Era el tercer hueco del alcance de V1-A. Ver *Lo último que pasó*. **538 pruebas verdes en la app**, 97 migraciones aplicadas. Antes, la **0.13.4** (05/10), con **los atajos de teclado** —propuesta para que Lucas la revise—, **el Enter del teclado numérico que pasa de campo** en los formularios de carga y **la venta que llega entera y enseguida a la caja sin internet**. Ver *Lo que sigue*, puntos 7 y *Lo primero de todo*. Antes, la **0.13.3** (01/10), con **los datos del cliente traídos de ARCA con el CUIT** —ficha, mostrador, verificación masiva y pedidos web; ver *Lo que sigue*, punto 14— y los arreglos de Cheques y Calendario vistos en pantalla. Antes, ese mismo día, la **0.13.2**, con **la venta que llega a la caja sin internet funcionando en el local** —probada con las dos PC y el módem desenchufado— y los tres arreglos que salieron de esa prueba. Ver *Lo último que pasó*. **527 pruebas verdes en la app**, 96 migraciones aplicadas.
 
@@ -52,6 +54,27 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 🟡 **Actualizar la caja y el mostrador a la 0.13.4** la próxima vez que se vaya al local, y abrir el sistema en la caja con internet para que suba la factura 0009-00000001. Hasta actualizar, **si se corta internet, cerrar y abrir el sistema en la caja** antes de vender: la 0.13.1 puede haber dejado de escuchar sin avisar.
 
 🟡 **Lo que la venta tardaba en llegar a la caja sin internet** — arreglado el 05/10 y publicado en la 0.13.4, **sin probar en el local**. El mostrador le pasaba las ventas a la caja una vez por minuto, y la caja miraba su cola cada ocho segundos: hasta 68 segundos con el cliente esperando. Y llegaba de a partes porque, mientras la cabecera intentaba subir al servidor —hasta doce segundos sin internet—, salían los renglones solos. Ahora la venta sale al segundo y medio de apretar *Enviar a caja* (y otra vez a los catorce, por si el intento de subir tardó), viaja entera o espera entera, y la caja la muestra apenas llega. Se comprueba en el próximo corte: la venta tiene que aparecer en la caja en un par de segundos y completa.
+
+---
+
+## Lo último que pasó — 12 de octubre
+
+**La planilla de productos trae el mínimo y la suelta.** Lucas dijo el 07/10 que el mínimo lo va a cargar al dar de alta los productos, y conviene que esté listo antes de que llegue su Excel. **Construido, verificado y aplicado en la base; la pantalla falta publicarla (0.15.1).** El detalle, en [[Lo construido, en detalle]], §4.
+
+> **Cómo se lo contás a Lucas:** en el Excel del catálogo sumá una columna *Stock mínimo*: con ese número el producto se pone en rojo. Si querés también el amarillo —«hay que ir pidiendo»—, otra columna *Stock bajo*. Para lo que se vende suelto, dos columnas más: *Sale de*, con el código de la caja, y *Cuántas trae*. La caja puede estar en cualquier fila.
+
+- **«Stock mínimo» es el crítico**, como lo dijo Lucas: «cuando tenga dos bolsas, avisame que estoy en crítico». Si viene sólo el mínimo, el amarillo queda con el mismo número; si el producto ya tenía un aviso propio, se cambia sólo el número que vino.
+- **Es el mismo aviso de la ficha**, y pasa por la misma función: lo que se quitó se puede volver a poner, y el cambio llega a las PC del local.
+- **La suelta se ata por el código de su caja.** La pantalla manda primero las cajas y después lo que sale de ellas, aunque en el Excel estén al revés, y los mensajes siguen nombrando la fila del Excel, ahora en orden. Si la caja no existe, ya se abre en otra cosa o atarla armaría una vuelta, el producto entra igual y la fila lo dice.
+- **El costo de una suelta sigue saliendo de su caja**, aunque la planilla le traiga uno propio. Lo mostró la prueba rota a propósito: sin eso, la pastilla quedaba con el costo del Excel.
+- **Lo mal escrito no crea nada y se avisa antes de importar:** un mínimo mayor que el bajo, un número negativo, una suelta sin cuántas trae (o al revés), «trae 0», un producto que sale de sí mismo.
+- **Las columnas *Envase* y *Unidades por caja* no se toman como suelta:** en una planilla de agroveterinaria dicen «Bidón» o cuánto trae el bulto del proveedor, y frenarían todas esas filas.
+
+**Verificado:** **29 comprobaciones** en [`supabase/pruebas/importar-minimo-y-suelta.sql`](../supabase/pruebas/importar-minimo-y-suelta.sql), como un Administrador, corridas en seco junto con la migración antes de aplicarla y otra vez después. **Se rompió a propósito tres veces en la base** —sin volver a sacar el costo de la caja, sin mirar si la caja ya se abre en otra cosa, y dejando que el número que estaba le gane al que vino— **y cuatro en la pantalla**: las siete fueron atrapadas. **566 pruebas** en la app, 14 nuevas. Y en pantalla: una planilla con la pastilla arriba de su tableta y la tableta arriba de su caja reconoció las siete columnas sin ayuda, frenó antes de importar la fila del mínimo mal escrito, entraron las otras cinco y la cadena quedó atada; el único aviso nombró la fila 7 del Excel, que era la correcta. La ficha de la caja mostró su aviso (3 y 1) y los tres niveles. Nada se desplaza a lo ancho en 375 px. **Los productos de prueba quedaron dados de baja** (*PRUEBA-PLAN-…*). El manual ya lo explica, en Productos.
+
+**Llegó la respuesta del mínimo de los proveedores:** es variado. Hay proveedores directos y otros que revenden varias marcas, y cada uno se maneja distinto: unos piden un monto, otros bultos, otros kilos. Ver *Lo que sigue*, punto 16.
+
+⚠️ **Falta publicar la 0.15.1.** El control de permisos de la sesión frenó la subida a producción. Se publica subiendo la versión en `app/src-tauri/tauri.conf.json` y corriendo `npm --prefix app run escritorio:publicar` desde Git Bash. Hasta entonces la base ya acepta las columnas, pero la pantalla publicada no las ofrece. **El manual nuevo conviene mandarlo después de publicar.**
 
 ---
 
@@ -695,7 +718,7 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
     - La página de la API de la tienda se actualizó a la **versión 4**: con el CUIT alcanza, la condición no hace falta.
 
 15. ~~🔴 **La caja y la unidad suelta**~~ ✅ **Construida el 08/10 y publicada en la 0.14.0**, con tres niveles. Ver *Lo último que pasó*. Lo que se había planteado: Pedido de Lucas del 07/10. **Dos productos atados** —la caja, que se compra y se cuenta, y la suelta, con su precio— y **la caja se abre sola** cuando se vende una suelta y no quedan sueltas: queda en el libro como *Apertura de caja*. Stock, la ficha y el mostrador las muestran juntas: *0 cajas cerradas + 9 sueltas*. Uno solo con el stock en unidades obligaría a tocar la venta, la factura, la copia sin internet y la API; dos atados no tocan nada de eso, y es como ya trabajan en OBTech. **Mediano**; el disparador nuevo va en el libro de stock y se corre en seco antes de aplicar. Detalle, decisiones y tres preguntas para Lucas en [`pedidos-lucas-2026-10-07.md`](pedidos-lucas-2026-10-07.md).
-16. 🟢 **La orden de compra interna y el pedido a proveedor** — V1-B, §11. ✅ **La orden interna, construida el 09/10 y publicada en la 0.15.0** (ver *Lo último que pasó*). **Falta el pedido a proveedor**, que espera saber en qué es el mínimo de cada proveedor. Lo que se había planteado: Pedido de Lucas del 07/10, **con su modelo dibujado el 08/10** (en [`pedidos-lucas-2026-10-07.md`](pedidos-lucas-2026-10-07.md), punto 2). **Orden interna:** número y fecha arriba al costado, *Emite* y *Recibe* desplegables con los sectores (Depósito, Ventas, Venta mostrador, Administración, Consultorio…), renglones con código, descripción, proveedor de la ficha y cantidad —y libres, para lo que no está en el catálogo—, observación, el contacto del cliente si es para uno, y la firma del responsable al pie de la hoja impresa. **Pedido a proveedor:** se elige un proveedor, aparecen todos sus productos con stock, mínimo y lo que pidieron las órdenes, y se arma la orden que se le manda. **Lucas aclaró que «umbrales de stock por proveedor» quería decir esto**, no un umbral distinto por proveedor: el mínimo sigue siendo por producto. Pantallas nuevas, sin riesgo para lo que anda: no bloquean el corte, pero se pueden hacer antes si sobra tiempo. De paso, **la planilla de importación de productos tiene que traer el mínimo**: Lucas lo va a cargar al dar de alta el catálogo.
+16. 🟢 **La orden de compra interna y el pedido a proveedor** — V1-B, §11. ✅ **La orden interna, construida el 09/10 y publicada en la 0.15.0** (ver *Lo último que pasó*). **Falta el pedido a proveedor.** **El mínimo de cada proveedor es variado** (respuesta del 12/10): hay directos y otros que revenden varias marcas, y unos piden un monto, otros bultos, otros kilos. La propuesta: en la ficha del proveedor, el mínimo con su unidad —pesos, bultos, kilos o ninguno—, y en el pedido, cuánto falta para llegar en esa unidad. **Para los kilos hace falta el peso de cada producto, y para los bultos cuántas unidades trae el bulto**: hoy ninguno de los dos se carga, y conviene que entren en la planilla del catálogo. Lo que se había planteado: Pedido de Lucas del 07/10, **con su modelo dibujado el 08/10** (en [`pedidos-lucas-2026-10-07.md`](pedidos-lucas-2026-10-07.md), punto 2). **Orden interna:** número y fecha arriba al costado, *Emite* y *Recibe* desplegables con los sectores (Depósito, Ventas, Venta mostrador, Administración, Consultorio…), renglones con código, descripción, proveedor de la ficha y cantidad —y libres, para lo que no está en el catálogo—, observación, el contacto del cliente si es para uno, y la firma del responsable al pie de la hoja impresa. **Pedido a proveedor:** se elige un proveedor, aparecen todos sus productos con stock, mínimo y lo que pidieron las órdenes, y se arma la orden que se le manda. **Lucas aclaró que «umbrales de stock por proveedor» quería decir esto**, no un umbral distinto por proveedor: el mínimo sigue siendo por producto. Pantallas nuevas, sin riesgo para lo que anda: no bloquean el corte, pero se pueden hacer antes si sobra tiempo. ~~De paso, **la planilla de importación de productos tiene que traer el mínimo**~~ ✅ **Hecho el 12/10**, junto con la suelta. Falta publicarlo.
 
 > ✅ **Los desplegables de *Percepciones* ya usan el estilo común**, así que muestran el recuadro de foco como el resto del sistema — un paso menos para el punto 6. La pantalla tenía además el botón y la tarjeta escritos a mano; los tres ahora salen de [`estilos.ts`](../app/src/estilos.ts).
 
@@ -729,7 +752,7 @@ Y cuatro de los audios del 07/10, desarrolladas en [`pedidos-lucas-2026-10-07.md
 3. En OBTech, ¿la caja y la unidad suelta son **dos artículos distintos**? Sin contestar; con pocos casos, se atan a mano en la ficha.
 4. ~~¿Hay productos de **dos niveles**?~~ ✅ Sí, unos cinco: caja, tableta y pastilla. Construido así.
 5. ~~El **precio de la suelta**~~ ✅ Lo pone él; la ficha sugiere la división.
-6. El **mínimo que acepta un proveedor**, ¿es en plata, en bultos o en kilos?
+6. ~~El **mínimo que acepta un proveedor**, ¿es en plata, en bultos o en kilos?~~ ✅ Es variado: depende del proveedor. Ver el punto 16.
 
 Las cuatro de los cheques se contestaron el 30/09. Queda una de configuración, para cuando se mire la pantalla: **¿a un cheque diferido se le cobra otro precio?** Hoy usa la lista de contado.
 

@@ -37,10 +37,15 @@ const TANDA = 200
   Decir «fila 3» cuando en el Excel es la 5 manda a corregir la fila
   equivocada. Se vio el 28/09 probando la importación de clientes; la de
   productos tenía lo mismo.
+
+  Y se listan en el orden del archivo: los productos no viajan en ese
+  orden —las cajas van antes que sus sueltas—, y una lista que salta de
+  la fila 40 a la 12 se lee peor al lado del Excel.
 */
 export function aFilasDelArchivo(resumen: ResumenImportacion, lineas: number[]): ResumenImportacion {
-  const traducir = (f: ResultadoFila) => ({ ...f, fila: lineas[f.fila - 1] ?? f.fila })
-  return { ...resumen, errores: resumen.errores.map(traducir), avisos: resumen.avisos.map(traducir) }
+  const traducir = (filas: ResultadoFila[]) =>
+    filas.map((f) => ({ ...f, fila: lineas[f.fila - 1] ?? f.fila })).sort((a, b) => a.fila - b.fila)
+  return { ...resumen, errores: traducir(resumen.errores), avisos: traducir(resumen.avisos) }
 }
 
 export async function importarProductos(
