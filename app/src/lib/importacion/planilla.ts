@@ -37,6 +37,8 @@ export const CAMPOS = {
   stock_critico: 'Stock mínimo o crítico (rojo)',
   sale_de: 'Sale de adentro de (código)',
   cantidad_por_envase: 'Cuántas trae ese envase',
+  peso_kg: 'Peso de una unidad (kg)',
+  unidades_por_bulto: 'Unidades por bulto',
 } as const
 
 export type Campo = keyof typeof CAMPOS
@@ -45,6 +47,7 @@ export const OBLIGATORIOS: Campo[] = ['codigo', 'nombre_interno']
 
 export const NUMERICOS: Campo[] = [
   'precio_venta', 'costo', 'alicuota_porcentaje', 'stock_bajo', 'stock_critico', 'cantidad_por_envase',
+  'peso_kg', 'unidades_por_bulto',
 ]
 
 /*
@@ -89,13 +92,23 @@ const SINONIMOS: Record<Campo, string[]> = {
     Sin sinónimos sueltos como «envase», «caja» o «unidades por caja».
     En una planilla de agroveterinaria la columna Envase dice «Bidón» o
     «Frasco», y unidades por caja es cuánto trae el bulto del
-    proveedor, no de qué se vende suelto. Leerlos como suelta frenaría
-    todas esas filas.
+    proveedor (más abajo), no de qué se vende suelto. Leerlos como
+    suelta frenaría todas esas filas.
   */
   sale_de: ['sale de', 'sale de adentro de', 'codigo envase', 'codigo del envase', 'sale de la caja'],
   cantidad_por_envase: [
     'trae', 'cuantas trae', 'cuantas trae el envase', 'cuantas trae la caja', 'cantidad por envase',
     'unidades por envase',
+  ],
+  /*
+    El peso y el bulto son para el pedido al proveedor: unos piden un
+    mínimo en kilos y otros en bultos. «Unidades por caja» va acá y no
+    a la suelta: en una planilla de compras es el bulto del proveedor.
+  */
+  peso_kg: ['peso', 'peso kg', 'kg', 'kilos', 'peso en kilos', 'peso unitario', 'peso neto', 'kilos por unidad'],
+  unidades_por_bulto: [
+    'unidades por bulto', 'bulto', 'unidades bulto', 'cantidad por bulto', 'por bulto', 'unidades por caja',
+    'cantidad por caja',
   ],
 }
 
@@ -158,6 +171,11 @@ function validarProducto(datos: Partial<Record<Campo, string>>): string[] {
   }
   if (datos.sale_de && datos.codigo && datos.sale_de.toUpperCase() === datos.codigo.toUpperCase()) {
     errores.push('Un producto no puede salir de adentro de sí mismo.')
+  }
+  // Cero no es un peso ni un bulto: es una celda mal llenada.
+  if (datos.peso_kg && Number(datos.peso_kg) === 0) errores.push('El peso tiene que ser más que cero.')
+  if (datos.unidades_por_bulto && Number(datos.unidades_por_bulto) === 0) {
+    errores.push('Las unidades por bulto tienen que ser más que cero.')
   }
 
   return errores

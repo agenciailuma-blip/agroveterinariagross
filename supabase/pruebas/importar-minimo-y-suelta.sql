@@ -12,7 +12,8 @@
 -- —el mismo de la ficha— sin borrar lo que la planilla no trae; que la
 -- caja, la tableta y la pastilla queden atadas en una sola importación;
 -- que lo que no se puede atar no frene el producto, y que lo mal escrito
--- no cree nada.
+-- no cree nada. Y el peso y las unidades por bulto, que necesita el
+-- pedido al proveedor cuando su mínimo es en kilos o en bultos.
 -- ═══════════════════════════════════════════════════════════════
 
 create function pg_temp.comprobar(p_ok boolean, p_que text)
@@ -217,7 +218,43 @@ begin
       where producto_id = pg_temp.id('PRUEBA-IMP-BOLSA')),
     'con dos bolsas y mínimo 2, Stock no la pinta crítica');
 
-  -- ─── 7. Sin permiso para avisos, el producto entra y lo dice ───
+  -- ─── 7. El peso y el bulto ───
+  v_r := pg_temp.importar(jsonb_build_array(
+    jsonb_build_object('codigo', 'PRUEBA-IMP-ALIM', 'nombre_interno', 'PRUEBA ALIMENTO 15 KG',
+                       'peso_kg', '15', 'unidades_por_bulto', '1'),
+    jsonb_build_object('codigo', 'PRUEBA-IMP-PIPETA', 'unidades_por_bulto', '12')));
+  perform pg_temp.comprobar(
+    (select peso_kg = 15 and unidades_por_bulto = 1 from public.producto where id = pg_temp.id('PRUEBA-IMP-ALIM'))
+    and (select peso_kg is null and unidades_por_bulto = 12 from public.producto where id = pg_temp.id('PRUEBA-IMP-PIPETA')),
+    'el peso y las unidades por bulto no quedaron como en la planilla: ' || v_r::text);
+
+  v_r := pg_temp.importar(jsonb_build_array(
+    jsonb_build_object('codigo', 'PRUEBA-IMP-ALIM', 'precio_venta', '80000')));
+  perform pg_temp.comprobar(
+    (select peso_kg = 15 and unidades_por_bulto = 1 from public.producto where id = pg_temp.id('PRUEBA-IMP-ALIM')),
+    'reimportar sin las columnas borró el peso o el bulto');
+
+  v_r := pg_temp.importar(jsonb_build_array(
+    jsonb_build_object('codigo', 'PRUEBA-IMP-ALIM', 'peso_kg', '0'),
+    jsonb_build_object('codigo', 'PRUEBA-IMP-ALIM', 'unidades_por_bulto', '0'),
+    jsonb_build_object('codigo', 'PRUEBA-IMP-NUEVO0', 'nombre_interno', 'PRUEBA PESO CERO', 'peso_kg', '0')));
+  perform pg_temp.comprobar(
+    pg_temp.fila(v_r, 1, 'detalle') = 'El peso tiene que ser más que cero.'
+    and pg_temp.fila(v_r, 2, 'detalle') = 'Las unidades por bulto tienen que ser más que cero.'
+    and pg_temp.fila(v_r, 3, 'resultado') = 'error'
+    and pg_temp.id('PRUEBA-IMP-NUEVO0') is null
+    and (select peso_kg = 15 and unidades_por_bulto = 1 from public.producto where id = pg_temp.id('PRUEBA-IMP-ALIM')),
+    'un peso o un bulto en cero entró, o no dijo por qué: ' || v_r::text);
+
+  -- Desde la ficha, la base frena lo mismo.
+  begin
+    update public.producto set peso_kg = 0 where id = pg_temp.id('PRUEBA-IMP-ALIM');
+    perform pg_temp.comprobar(false, 'la base aceptó un peso cero desde la ficha');
+  exception when check_violation then
+    perform pg_temp.comprobar(sqlerrm like '%producto_peso_positivo%', 'el peso cero se frenó por otro motivo: ' || sqlerrm);
+  end;
+
+  -- ─── 8. Sin permiso para avisos, el producto entra y lo dice ───
   delete from public.rol_permiso rp using public.rol r
    where r.id = rp.rol_id and r.nombre = 'Administrador' and rp.permiso_clave = 'stock.configurar_umbrales';
   perform set_config('role', 'authenticated', true);

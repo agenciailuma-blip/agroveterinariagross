@@ -320,10 +320,11 @@ describe('el mínimo y la suelta', () => {
   })
 
   it('no confunde la columna Envase ni las unidades por caja con la suelta', () => {
-    // «Bidón», «Frasco»: es la presentación, no de qué caja sale.
+    // «Bidón», «Frasco»: es la presentación, no de qué caja sale. Y
+    // las unidades por caja son el bulto del proveedor.
     const mapeo = proponerMapeo(['Código', 'Envase', 'Unidades por caja'])
     expect(mapeo[1]).toBeNull()
-    expect(mapeo[2]).toBeNull()
+    expect(mapeo[2]).toBe('unidades_por_bulto')
   })
 
   const mapeo = proponerMapeo(['Código', 'Nombre', 'Stock bajo', 'Stock mínimo', 'Sale de', 'Trae'])
@@ -404,5 +405,31 @@ describe('las cajas viajan antes que sus sueltas', () => {
   it('una vuelta escrita en la planilla no lo cuelga', () => {
     const filas = prepararFilas([['A', 'Uno', 'B', '2'], ['B', 'Dos', 'A', '2']], mapeo)
     expect(codigos(ordenarPorEnvase(filas)).sort()).toEqual(['A', 'B'])
+  })
+})
+
+describe('el peso y el bulto, para el pedido al proveedor', () => {
+  it('reconoce las columnas como se escriben', () => {
+    const mapeo = proponerMapeo(['Código', 'Peso (kg)', 'Unidades por bulto'])
+    expect(mapeo[1]).toBe('peso_kg')
+    expect(mapeo[2]).toBe('unidades_por_bulto')
+    expect(proponerMapeo(['Kilos', 'Bulto'])).toEqual({ 0: 'peso_kg', 1: 'unidades_por_bulto' })
+  })
+
+  const mapeo = proponerMapeo(['Código', 'Nombre', 'Peso', 'Bulto'])
+
+  it('lee el peso con coma decimal', () => {
+    const [fila] = prepararFilas([['A1', 'Alimento', '7,5', '1']], mapeo)
+    expect(fila.errores).toEqual([])
+    expect(fila.datos.peso_kg).toBe('7.5')
+    expect(fila.datos.unidades_por_bulto).toBe('1')
+  })
+
+  it('frena un peso o un bulto en cero', () => {
+    const [fila] = prepararFilas([['A1', 'Alimento', '0', '0']], mapeo)
+    expect(fila.errores).toEqual([
+      'El peso tiene que ser más que cero.',
+      'Las unidades por bulto tienen que ser más que cero.',
+    ])
   })
 })

@@ -123,7 +123,7 @@ El alcance de V1-B dice *Umbrales de stock por proveedor*. **Lucas aclaró que n
 
 **Pregunta para Lucas:** el mínimo del proveedor —«no le puedo pedir sólo cinco bolsas»—, ¿es en plata, en bultos o en kilos? Si se carga en la ficha del proveedor, la pantalla dice cuánto falta para llegar.
 
-**Respuesta (12/10): es variado.** Hay proveedores directos y otros que revenden varias marcas, y cada uno se maneja distinto. Entonces el mínimo se carga en la ficha de cada proveedor **con su unidad** —pesos, bultos, kilos o ninguno—, y el pedido dice cuánto falta en esa unidad. En pesos alcanza con el costo de la última compra. **En kilos hace falta el peso de cada producto, y en bultos cuántas unidades trae el bulto**: ninguno de los dos se carga hoy, y lo más barato es que entren con la planilla del catálogo.
+**Respuesta (12/10): es variado.** Hay proveedores directos y otros que revenden varias marcas, y cada uno se maneja distinto. Entonces el mínimo se carga en la ficha de cada proveedor **con su unidad** —pesos, bultos, kilos o ninguno—, y el pedido dice cuánto falta en esa unidad. En pesos alcanza con el costo de la última compra. **En kilos hace falta el peso de cada producto, y en bultos cuántas unidades trae el bulto**: ninguno de los dos se cargaba, y lo más barato era que entraran con la planilla del catálogo. ✅ **Sumados el 12/10**: *Peso (kg)* y *Unidades por bulto*, en la planilla y en la ficha del producto, sección Proveedor.
 
 ---
 

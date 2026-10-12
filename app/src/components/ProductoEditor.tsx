@@ -633,6 +633,35 @@ export default function ProductoEditor({
               ))}
             </select>
           </Campo>
+          {/*
+            Para el pedido al proveedor: unos piden un mínimo en kilos y
+            otros en bultos. Se cargan con la planilla del catálogo; acá
+            se ven y se corrigen.
+          */}
+          <Campo etiqueta="Unidades por bulto" ayuda="Cuántas trae el bulto en que se compra">
+            <input
+              type="number"
+              step="any"
+              min="0"
+              value={estado.campos.unidades_por_bulto ?? ''}
+              onChange={(e) =>
+                set({ unidades_por_bulto: e.target.value === '' ? null : Number(e.target.value) })
+              }
+              className={`${claseInput} text-right tabular-nums`}
+              placeholder="—"
+            />
+          </Campo>
+          <Campo etiqueta="Peso de una unidad (kg)" ayuda="Para los que piden un mínimo en kilos">
+            <input
+              type="number"
+              step="any"
+              min="0"
+              value={estado.campos.peso_kg ?? ''}
+              onChange={(e) => set({ peso_kg: e.target.value === '' ? null : Number(e.target.value) })}
+              className={`${claseInput} text-right tabular-nums`}
+              placeholder="—"
+            />
+          </Campo>
         </Seccion>
 
         <Seccion titulo="Clasificación">

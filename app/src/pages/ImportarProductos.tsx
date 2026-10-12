@@ -351,7 +351,9 @@ function Revision({
         disabled={validas === 0 || importando}
         className="rounded-lg bg-marca-700 px-5 py-2.5 font-medium text-white hover:bg-marca-600 disabled:opacity-40"
       >
-        {importando ? 'Importando…' : `Importar ${numero.format(validas)} productos`}
+        {importando
+          ? 'Importando…'
+          : `Importar ${numero.format(validas)} ${validas === 1 ? 'producto' : 'productos'}`}
       </button>
     </div>
   )

@@ -56,6 +56,13 @@ export interface ProductoDetalle {
   */
   envase_id: string | null
   cantidad_por_envase: number | null
+  /*
+    Para el pedido al proveedor, que pide un mínimo en kilos o en
+    bultos según quién sea: cuánto pesa una unidad y cuántas trae el
+    bulto en que se compra.
+  */
+  peso_kg: number | null
+  unidades_por_bulto: number | null
 }
 
 export interface Referencia {
@@ -367,6 +374,19 @@ export interface DatosGuardado {
 }
 
 /*
+  Lo que dice la base cuando no acepta un dato de la ficha, en palabras
+  de la pantalla: el envase de la suelta, y el peso y el bulto, que no
+  pueden ser cero —vacío sí, quiere decir «no se sabe»—.
+*/
+export function explicarErrorDelProducto(mensaje: string): string | null {
+  if (mensaje.includes('producto_peso_positivo'))
+    return 'El peso tiene que ser más que cero. Si no se sabe, dejalo vacío.'
+  if (mensaje.includes('producto_unidades_por_bulto_positivas'))
+    return 'Las unidades por bulto tienen que ser más que cero. Si no se sabe, dejalo vacío.'
+  return explicarErrorDeEnvase(mensaje)
+}
+
+/*
   Guarda todo el producto de una vez: campos, códigos de barra,
   clasificación y, si corresponde, el ajuste de stock.
 
@@ -387,14 +407,14 @@ export async function guardarProducto(datos: DatosGuardado): Promise<string> {
 
   if (productoId) {
     const { error } = await supabase.from('producto').update(campos).eq('id', productoId)
-    if (error) throw new Error(explicarErrorDeEnvase(error.message) ?? `No se pudo guardar el producto: ${error.message}`)
+    if (error) throw new Error(explicarErrorDelProducto(error.message) ?? `No se pudo guardar el producto: ${error.message}`)
   } else {
     const { data, error } = await supabase
       .from('producto')
       .insert(campos)
       .select('id')
       .single<{ id: string }>()
-    if (error) throw new Error(explicarErrorDeEnvase(error.message) ?? `No se pudo crear el producto: ${error.message}`)
+    if (error) throw new Error(explicarErrorDelProducto(error.message) ?? `No se pudo crear el producto: ${error.message}`)
     productoId = data.id
   }
 

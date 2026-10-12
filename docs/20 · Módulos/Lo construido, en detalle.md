@@ -698,6 +698,14 @@ Decisiones que importan:
 
 **Verificado:** 29 comprobaciones en [`supabase/pruebas/importar-minimo-y-suelta.sql`](../../supabase/pruebas/importar-minimo-y-suelta.sql), en seco con la migración y después de aplicarla. Rotas a propósito en la base: sin el recálculo del costo (la pastilla quedó en 999), sin mirar la otra suelta del envase (*duplicate key* en vez del motivo) y con el número viejo ganando (*violates check constraint*). En la pantalla: sin `validar` y sin el orden. Las siete, atrapadas. En pantalla, una planilla con la cadena al revés entró atada y el aviso nombró la fila del Excel.
 
+**El peso y el bulto (12/10).** Para el pedido al proveedor, cuyo mínimo puede ser en kilos o en bultos. [Migración](../../supabase/migrations/20261012130000_el_peso_y_el_bulto.sql).
+- **`producto.peso_kg` y `producto.unidades_por_bulto`**, `numeric(14,4)`, con restricciones de mayor que cero (`producto_peso_positivo`, `producto_unidades_por_bulto_positivas`). Vacío quiere decir «no se sabe».
+- **No son `contenido`/`contenido_unidad`**, la reserva del 12/08 sin uso: el contenido puede venir en ml o g, y el pedido tendría que convertir para sumar kilos.
+- **No bajan a la copia local** (`sync.ts` pide columnas con nombre): el pedido se arma con internet, y sumarlas obligaría a subir `VERSION_BAJADA`.
+- **La planilla** las reconoce como *Peso (kg)*, *Kilos*, *Bulto*, *Unidades por caja*… —esta última ya no se confunde con la suelta—, y frena el cero antes de importar y en la base. **La ficha** las muestra en la sección Proveedor, y `explicarErrorDelProducto()` traduce el error de la base si alguien guarda un cero.
+
+**Verificado:** 4 comprobaciones más en la misma prueba (33). Rotas a propósito: sin frenar el cero (la base devolvía el nombre de la restricción) y con el `update` borrando lo que no vino; en la pantalla, sin la validación y sin la traducción. Las cuatro, atrapadas.
+
 ### ✅ 13a. La API de la tienda: leer el catálogo (18/09)
 
 Primera pieza de V1-B, adelantada para que Zubu arranque la tienda en paralelo. Los dos caminos de lectura: productos con nombre público, precio, clasificaciones, stock con el colchón y la frescura. Los pedidos están abajo, en 13b. Para Zubu: [`api-tienda.md`](../api-tienda.md). El diseño se aprobó antes de construir, con una página propia.
