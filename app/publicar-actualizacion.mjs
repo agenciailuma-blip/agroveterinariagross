@@ -204,6 +204,12 @@ console.log(`
 
   Si `wrangler` no está autenticado, no se rompe nada: queda el `dist`
   completo para arrastrar a mano, como antes.
+
+  Con los certificados de Windows (`--use-system-ca`): el antivirus de
+  esta PC revisa las conexiones seguras y pone su propio certificado en
+  el medio. Windows lo conoce y Node no, así que sin esto wrangler corta
+  con «unable to verify the first certificate». Pasó el 12/10 al
+  publicar la 0.16.0.
 */
 console.log('\n  Subiendo a Cloudflare…\n')
 
@@ -211,7 +217,12 @@ try {
   execFileSync(
     'npx',
     ['wrangler', 'pages', 'deploy', 'dist', '--project-name', 'gross-sistema', '--commit-dirty', 'true'],
-    { cwd: aqui, stdio: 'inherit', shell: true },
+    {
+      cwd: aqui,
+      stdio: 'inherit',
+      shell: true,
+      env: { ...process.env, NODE_OPTIONS: `${process.env.NODE_OPTIONS ?? ''} --use-system-ca`.trim() },
+    },
   )
   console.log(`
   Publicado. Las 4 PC van a ver la ${version} en el próximo arranque, o
@@ -221,9 +232,10 @@ try {
   console.log(`
   [!] No se pudo subir solo.
 
-      Suele ser que falta autenticar una vez:
+      Suele ser que falta autenticar una vez (en PowerShell,
+      con la cuenta de Cloudflare correcta abierta en el navegador):
 
-          npx wrangler login
+          $env:NODE_OPTIONS = '--use-system-ca'; npx.cmd wrangler login
 
       Mientras tanto queda todo listo para arrastrar app/dist a
       Cloudflare Pages, al proyecto gross-sistema.
