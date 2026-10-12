@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest'
 import {
   avanceDelMinimo,
   bultosDe,
+  avisosPorLoQueLlego,
   claveDeFila,
+  faltaDe,
+  loQueNoVino,
   pedirConBorrador,
   pedirInicial,
   renglonesAPedir,
@@ -125,10 +128,11 @@ describe('el texto para WhatsApp', () => {
     proveedor_cuit: null, proveedor_contacto: null, proveedor_telefono: null, proveedor_email: null,
     observacion: 'Que venga con el viajante', estado: 'pedido', minimo_tipo: null, minimo_valor: null,
     creado_por: null, creado_en: '', anulado_por: null, motivo_anulacion: null, ordenes: [],
+    recibido_por: null, recibido_en: null, motivo_cierre: null, facturas: [], avisar: [],
     lineas: [
-      { renglon: 1, producto_id: 'alim', codigo: 'A1', descripcion: 'Alimento 15 kg', cantidad: 6, costo: 50000, peso_kg: 15, unidades_por_bulto: 1 },
-      { renglon: 2, producto_id: 'pip', codigo: 'P1', descripcion: 'Pipeta', cantidad: 24, costo: 4000, peso_kg: null, unidades_por_bulto: 12 },
-      { renglon: 3, producto_id: null, codigo: null, descripcion: 'Guantes de látex', cantidad: 2, costo: null, peso_kg: null, unidades_por_bulto: null },
+      { renglon: 1, producto_id: 'alim', codigo: 'A1', descripcion: 'Alimento 15 kg', cantidad: 6, costo: 50000, peso_kg: 15, unidades_por_bulto: 1, recibido: 6 },
+      { renglon: 2, producto_id: 'pip', codigo: 'P1', descripcion: 'Pipeta', cantidad: 24, costo: 4000, peso_kg: null, unidades_por_bulto: 12, recibido: 10 },
+      { renglon: 3, producto_id: null, codigo: null, descripcion: 'Guantes de látex', cantidad: 2, costo: null, peso_kg: null, unidades_por_bulto: null, recibido: null },
     ],
   }
 
@@ -147,5 +151,40 @@ describe('el texto para WhatsApp', () => {
       ].join('\n'),
     )
     expect(texto).not.toMatch(/50\.000|A1|P1/)
+  })
+})
+
+describe('a quién avisarle', () => {
+  const avisar = [
+    { orden: 21, cliente: 'Juan', contacto: null, que: 'Alimento, arena', productos: ['alim'] },
+    { orden: 22, cliente: null, contacto: '3755-1', que: 'Collar', productos: ['col'] },
+  ]
+
+  it('sólo a quien pidió algo de lo que llegó en esta factura', () => {
+    expect(avisosPorLoQueLlego(avisar, ['alim', 'pip']).map((a) => a.orden)).toEqual([21])
+    expect(avisosPorLoQueLlego(avisar, ['pip'])).toEqual([])
+  })
+})
+
+describe('lo que no vino', () => {
+  const pedido = {
+    lineas: [
+      { renglon: 1, producto_id: 'alim', codigo: 'A1', descripcion: 'Alimento', cantidad: 6, costo: null, peso_kg: null, unidades_por_bulto: null, recibido: 6 },
+      { renglon: 2, producto_id: 'pip', codigo: 'P1', descripcion: 'Pipeta', cantidad: 24, costo: null, peso_kg: null, unidades_por_bulto: null, recibido: 10 },
+      { renglon: 3, producto_id: 'col', codigo: 'C1', descripcion: 'Collar', cantidad: 2, costo: null, peso_kg: null, unidades_por_bulto: null, recibido: null },
+      { renglon: 4, producto_id: null, codigo: null, descripcion: 'Guantes', cantidad: 2, costo: null, peso_kg: null, unidades_por_bulto: null, recibido: null },
+    ],
+  }
+
+  it('cuánto falta de cada renglón; lo que no está en el catálogo no se cuenta', () => {
+    expect(pedido.lineas.map(faltaDe)).toEqual([0, 14, 2, null])
+  })
+
+  it('si llegó de más, no falta nada', () => {
+    expect(faltaDe({ producto_id: 'x', cantidad: 6, recibido: 8 })).toBe(0)
+  })
+
+  it('lista lo del catálogo que tiene algo pendiente', () => {
+    expect(loQueNoVino(pedido).map((l) => l.descripcion)).toEqual(['Pipeta', 'Collar'])
   })
 })

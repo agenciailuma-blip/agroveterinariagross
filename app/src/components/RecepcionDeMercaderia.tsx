@@ -12,9 +12,21 @@ import {
 } from '@/lib/api/compras'
 import type { FilaCompra, ProductoParaRecibir, Recibido } from '@/lib/api/compras'
 import { depositoPropuesto, listarDepositos } from '@/lib/api/depositos'
+import {
+  atarCompraAPedido,
+  avisosPorLoQueLlego,
+  faltaDe,
+  loQueNoVino,
+  numeroDePedido,
+  obtenerPedido,
+  pedidoParaRecibir,
+  pedidosPorRecibir,
+} from '@/lib/api/pedidosProveedor'
+import type { PedidoCompleto, PedidoPorRecibir, RenglonPorRecibir } from '@/lib/api/pedidosProveedor'
+import { numeroDeOrden } from '@/lib/api/ordenesInternas'
 import { enCastellano } from '@/lib/errores'
 import { useTerminal } from '@/lib/terminal'
-import { moneda } from '@/lib/tipos'
+import { moneda, numero } from '@/lib/tipos'
 import { boton, botonChico, campo, campoDeFiltro, tarjeta } from '@/estilos'
 import { avanzarConEnter } from '@/lib/teclado'
 
@@ -37,6 +49,11 @@ import { avanzarConEnter } from '@/lib/teclado'
 
   Con más de un depósito se elige dónde entra: un proveedor puede
   descargar directo en el segundo local. Se propone el de esta PC.
+
+  Si hay pedidos a ese proveedor esperando mercadería, se ofrecen:
+  «Traer el pedido» ata la factura y carga lo que falta llegar, con las
+  cantidades puestas. Al terminar se ve qué no vino y a qué cliente
+  avisarle.
 */
 
 interface Renglon {
@@ -62,6 +79,14 @@ export default function RecepcionDeMercaderia({
   const [renglones, setRenglones] = useState<Renglon[]>([])
   const [recibido, setRecibido] = useState<Recibido[] | null>(null)
   const [error, setError] = useState<string | null>(null)
+  // El pedido que se trajo, lo que pidió y no está en el catálogo, y cómo quedó al recibir.
+  const [pedidoTraido, setPedidoTraido] = useState<{ id: string; numero: number } | null>(null)
+  const [libres, setLibres] = useState<RenglonPorRecibir[]>([])
+  const [pedidoDespues, setPedidoDespues] = useState<PedidoCompleto | null>(null)
+  const pedidos = useQuery({
+    queryKey: ['pedidos-por-recibir', compra.proveedor_id],
+    queryFn: () => pedidosPorRecibir(compra.proveedor_id),
+  })
   const { terminal } = useTerminal()
   const depositos = useQuery({ queryKey: ['depositos'], queryFn: listarDepositos })
   const activos = (depositos.data ?? []).filter((d) => d.activo)
@@ -95,11 +120,59 @@ export default function RecepcionDeMercaderia({
         })),
         dondeEntra,
       ),
-    onSuccess: (r) => {
+    onSuccess: async (r) => {
+      // Cómo quedó el pedido: qué no vino y a quién avisarle.
+      if (pedidoTraido) setPedidoDespues(await obtenerPedido(pedidoTraido.id).catch(() => null))
       setRecibido(r)
       qc.invalidateQueries({ queryKey: ['compras'] })
+      qc.invalidateQueries({ queryKey: ['pedidos-proveedor'] })
+      qc.invalidateQueries({ queryKey: ['pedido-proveedor'] })
+      qc.invalidateQueries({ queryKey: ['pedidos-por-recibir'] })
     },
     onError: (e) => setError(enCastellano(e, 'No se pudo recibir la mercadería.')),
+  })
+
+  /*
+    Traer un pedido: se ata la factura y se cargan los productos con lo
+    que falta llegar. El costo no se completa: se copia del papel, como
+    siempre, porque es el de esta factura y no el del pedido.
+  */
+  const traer = useMutation({
+    mutationFn: async (p: PedidoPorRecibir) => {
+      await atarCompraAPedido(compra.id, p.id)
+      return { p, filas: await pedidoParaRecibir(p.id) }
+    },
+    onSuccess: ({ p, filas }) => {
+      setError(null)
+      setPedidoTraido({ id: p.id, numero: p.numero })
+      setLibres(filas.filter((f) => !f.producto_id))
+      setRenglones((rs) => {
+        const nuevos = filas
+          .filter((f) => f.producto_id && !rs.some((r) => r.producto.producto_id === f.producto_id))
+          .map((f) => ({
+            producto: {
+              producto_id: f.producto_id!,
+              codigo: f.codigo ?? '',
+              nombre_interno: f.descripcion,
+              costo: f.costo,
+              alicuota_iva_id: f.alicuota_iva_id ?? 5,
+            },
+            cantidad: String(f.falta),
+            costo: '',
+          }))
+        return [...rs, ...nuevos]
+      })
+    },
+    onError: (e) => setError(enCastellano(e, 'No se pudo traer el pedido.')),
+  })
+
+  const soltar = useMutation({
+    mutationFn: () => atarCompraAPedido(compra.id, null),
+    onSuccess: () => {
+      setPedidoTraido(null)
+      setLibres([])
+    },
+    onError: (e) => setError(enCastellano(e, 'No se pudo soltar el pedido.')),
   })
 
   function agregar(p: ProductoParaRecibir) {
@@ -119,8 +192,10 @@ export default function RecepcionDeMercaderia({
   const titulo = `${compra.tipo?.descripcion ?? 'Factura'} ${numeroDeComprobante(compra.punto_venta, compra.numero)} · ${compra.proveedor?.nombre ?? ''}`
 
   if (recibido) {
-    return <Resultado titulo={titulo} recibido={recibido} onCerrar={onCerrar} />
+    return <Resultado titulo={titulo} recibido={recibido} pedido={pedidoDespues} onCerrar={onCerrar} />
   }
+
+  const ofrecidos = (pedidos.data ?? []).filter((p) => p.id !== pedidoTraido?.id)
 
   return (
     <div className={`${tarjeta} p-5`} onKeyDown={avanzarConEnter}>
@@ -132,6 +207,52 @@ export default function RecepcionDeMercaderia({
           : 'Copiá el costo unitario como está impreso: en esta factura ya incluye el IVA.'}
       </p>
 
+      {/* Los pedidos a este proveedor que esperan mercadería. */}
+      {pedidoTraido ? (
+        <div className="mt-3 rounded-lg bg-marca-50 px-3 py-2 text-sm text-marca-800 ring-1 ring-marca-200">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="min-w-0">
+              Del <strong>pedido {numeroDePedido(pedidoTraido.numero)}</strong>: los productos vienen con lo que falta
+              llegar. Corregí las cantidades si vino otra cosa y copiá el costo del papel.
+            </p>
+            <button onClick={() => soltar.mutate()} disabled={soltar.isPending} className={botonChico.suave}>
+              No es de este pedido
+            </button>
+          </div>
+          {libres.length > 0 && (
+            <p className="mt-1 text-xs">
+              También se pidió, y no está en el catálogo:{' '}
+              {libres.map((l) => `${numero.format(l.falta)} ${l.descripcion}`).join(', ')}. Si vino, dalo de alta abajo
+              con el buscador.
+            </p>
+          )}
+        </div>
+      ) : (
+        ofrecidos.length > 0 && (
+          <div className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900 ring-1 ring-amber-200">
+            <p>
+              {ofrecidos.length === 1 ? 'Hay un pedido' : `Hay ${ofrecidos.length} pedidos`} a este proveedor esperando
+              mercadería. Si esta factura trae uno, traelo y se cargan solos los productos.
+            </p>
+            <ul className="mt-1.5 space-y-1">
+              {ofrecidos.map((p) => (
+                <li key={p.id} className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="min-w-0">
+                    Pedido <strong>{numeroDePedido(p.numero)}</strong> del{' '}
+                    {new Date(`${p.fecha}T00:00:00`).toLocaleDateString('es-AR')} · {p.renglones}{' '}
+                    {p.renglones === 1 ? 'renglón' : 'renglones'}
+                    {p.llego_algo && ' · ya llegó una parte'}
+                  </span>
+                  <button onClick={() => traer.mutate(p)} disabled={traer.isPending} className={botonChico.secundario}>
+                    {traer.isPending ? 'Trayendo…' : 'Traer el pedido'}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )
+      )}
+
       <Buscador
         onElegir={agregar}
         proveedorId={compra.proveedor_id}
@@ -140,12 +261,13 @@ export default function RecepcionDeMercaderia({
 
       {renglones.length > 0 && (
         <div className="mt-4 overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-xs sm:text-sm">
             <thead className="border-b border-piedra-100 text-left text-xs text-piedra-500">
               <tr>
                 <th className="py-2 pr-3 font-medium">Producto</th>
-                <th className="w-24 py-2 pr-3 font-medium">Cantidad</th>
-                <th className="w-32 py-2 pr-3 font-medium">
+                {/* Más angostas en el celular: la fila entra sin desplazarse hacia el costado. */}
+                <th className="w-16 py-2 pr-3 font-medium sm:w-24">Cantidad</th>
+                <th className="w-24 py-2 pr-3 font-medium sm:w-32">
                   Costo unitario{discrimina ? ' (sin IVA)' : ''}
                 </th>
                 <th className="py-2 pr-3 text-right font-medium">Queda en el producto</th>
@@ -194,7 +316,9 @@ export default function RecepcionDeMercaderia({
                         <>
                           <span className="text-tinta">{moneda.format(nuevo)}</span>
                           {variacion !== null && variacion !== 0 && (
-                            <span className={`ml-1.5 text-xs ${variacion > 0 ? 'text-amber-700' : 'text-emerald-700'}`}>
+                            <span
+                              className={`block text-xs sm:ml-1.5 sm:inline ${variacion > 0 ? 'text-amber-700' : 'text-emerald-700'}`}
+                            >
                               {variacion > 0 ? '+' : ''}
                               {variacion.toLocaleString('es-AR')}%
                             </span>
@@ -458,13 +582,51 @@ function AltaRapida({
   Vienen marcados los que tienen un precio sugerido distinto del actual.
   Nada se aplica sin apretar el botón.
 */
+/*
+  Después de recibir, si la factura traía un pedido: si llegó todo, o qué
+  no vino; y a qué cliente avisarle, si una orden era para uno.
+*/
+function DelPedido({ pedido, llegaron }: { pedido: PedidoCompleto; llegaron: string[] }) {
+  const faltan = loQueNoVino(pedido)
+  const avisos = avisosPorLoQueLlego(pedido.avisar, llegaron)
+  return (
+    <div className="mt-4 space-y-2">
+      {pedido.estado === 'recibido' ? (
+        <p className="rounded-lg bg-verde-50 px-3 py-2 text-sm text-verde-800 ring-1 ring-verde-200">
+          El <strong>pedido {numeroDePedido(pedido.numero)}</strong> llegó completo y quedó recibido.
+        </p>
+      ) : (
+        <div className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900 ring-1 ring-amber-200">
+          <p>
+            Del <strong>pedido {numeroDePedido(pedido.numero)}</strong> no vino:{' '}
+            {faltan.map((l) => `${numero.format(faltaDe(l) ?? 0)} ${l.descripcion}`).join(', ')}.
+          </p>
+          <p className="mt-0.5 text-xs">
+            Sigue abierto: si llega en otra factura, al recibirla se trae el mismo pedido. Si no va a venir, se da por
+            terminado en Compras → Pedidos.
+          </p>
+        </div>
+      )}
+      {avisos.map((a) => (
+        <p key={a.orden} className="rounded-lg bg-marca-50 px-3 py-2 text-sm text-marca-800 ring-1 ring-marca-200">
+          <strong>Avisale a {[a.cliente, a.contacto].filter(Boolean).join(' · ')}</strong>: lo pidió en la orden
+          interna {numeroDeOrden(a.orden)} ({a.que}).
+        </p>
+      ))}
+    </div>
+  )
+}
+
 function Resultado({
   titulo,
   recibido,
+  pedido,
   onCerrar,
 }: {
   titulo: string
   recibido: Recibido[]
+  /** El pedido que trajo la factura, como quedó después de recibir. */
+  pedido: PedidoCompleto | null
   onCerrar: () => void
 }) {
   const qc = useQueryClient()
@@ -484,6 +646,15 @@ function Resultado({
     onError: (e) => setError(enCastellano(e, 'No se pudieron cambiar los precios.')),
   })
 
+  function alternar(id: string, elegido: boolean) {
+    setElegidos((s) => {
+      const n = new Set(s)
+      if (elegido) n.add(id)
+      else n.delete(id)
+      return n
+    })
+  }
+
   const sinPrecio = recibido.filter((r) => r.precio_actual <= 0)
   const sinMargen = recibido.filter((r) => r.margen_objetivo === null && r.precio_actual > 0)
 
@@ -495,8 +666,47 @@ function Resultado({
         Entraron al stock {recibido.length} producto{recibido.length === 1 ? '' : 's'}, y su costo
         quedó actualizado.
       </p>
+      {pedido && <DelPedido pedido={pedido} llegaron={recibido.map((r) => r.producto_id)} />}
 
-      <div className="mt-4 overflow-x-auto">
+      {/* En el celular, una tarjeta por producto: la tabla no entra sin desplazarse hacia el costado. */}
+      <ul className="mt-4 divide-y divide-piedra-100 sm:hidden">
+        {recibido.map((r) => {
+          const variacion = variacionDeCosto(r.costo_anterior, r.costo_nuevo)
+          const distinto = aRevisar.some((x) => x.producto_id === r.producto_id)
+          return (
+            <li key={r.producto_id} className="py-2 text-sm">
+              <p className="text-tinta">{r.nombre}</p>
+              <p className="text-xs text-piedra-500">
+                Costo {r.costo_anterior === null ? '—' : moneda.format(r.costo_anterior)} →{' '}
+                <span className="text-tinta">{r.costo_nuevo === null ? '—' : moneda.format(r.costo_nuevo)}</span>
+                {variacion !== null && variacion !== 0 && (
+                  <span className={`ml-1 ${variacion > 0 ? 'text-amber-700' : 'text-emerald-700'}`}>
+                    {variacion > 0 ? '+' : ''}
+                    {variacion.toLocaleString('es-AR')}%
+                  </span>
+                )}
+              </p>
+              <p className="text-xs text-piedra-500">
+                Precio{' '}
+                {r.precio_actual > 0 ? moneda.format(r.precio_actual) : <span className="text-red-700">sin precio</span>}
+                {' · '}sugerido {r.precio_sugerido === null ? 'sin margen' : moneda.format(r.precio_sugerido)}
+              </p>
+              {distinto && aplicados === null && (
+                <label className="mt-1 flex items-center gap-2 text-xs text-tinta">
+                  <input
+                    type="checkbox"
+                    checked={elegidos.has(r.producto_id)}
+                    onChange={(e) => alternar(r.producto_id, e.target.checked)}
+                  />
+                  Aplicar el precio sugerido
+                </label>
+              )}
+            </li>
+          )
+        })}
+      </ul>
+
+      <div className="mt-4 hidden overflow-x-auto sm:block">
         <table className="w-full text-sm">
           <thead className="border-b border-piedra-100 text-left text-xs text-piedra-500">
             <tr>
@@ -542,14 +752,7 @@ function Resultado({
                       <input
                         type="checkbox"
                         checked={elegidos.has(r.producto_id)}
-                        onChange={(e) =>
-                          setElegidos((s) => {
-                            const n = new Set(s)
-                            if (e.target.checked) n.add(r.producto_id)
-                            else n.delete(r.producto_id)
-                            return n
-                          })
-                        }
+                        onChange={(e) => alternar(r.producto_id, e.target.checked)}
                         aria-label={`Aplicar el precio sugerido a ${r.nombre}`}
                       />
                     )}

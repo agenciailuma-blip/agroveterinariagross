@@ -140,7 +140,7 @@ A quién se le compra cada producto. Y, sobre todo, **cómo cambiarle el precio 
 
 > **El CBU se controla al escribirlo**, con sus dos dígitos verificadores —la misma cuenta que hacen los bancos—, y la ficha dice de qué banco es. Un número cambiado es una transferencia a otra persona. Al registrarle un pago por transferencia, en Cuentas proveedores, el CBU, el alias y el CUIT aparecen **listos para copiar**.
 
-> **El pedido a proveedor** está en Compras → *Pedidos*: se elige el proveedor y aparecen todos sus productos con stock, aviso, último costo y lo que pidieron las órdenes internas. *Pedir* arranca con lo de las órdenes; la pantalla dice cuánto falta para el mínimo del proveedor. Se imprime sin precios o se copia para WhatsApp, y las órdenes que entraron quedan pedidas solas.
+> **El pedido a proveedor** está en Compras → *Pedidos*: se elige el proveedor y aparecen todos sus productos con stock, aviso, último costo y lo que pidieron las órdenes internas. *Pedir* arranca con lo de las órdenes; la pantalla dice cuánto falta para el mínimo del proveedor. Se imprime sin precios o se copia para WhatsApp, y las órdenes que entraron quedan pedidas solas. Cuando llega la mercadería, al recibir la factura se **trae el pedido**: carga lo que falta llegar y, al terminar, dice qué no vino y a qué cliente avisarle. El pedido queda recibido solo cuando llegó todo, o se da por terminado a mano.
 
 ---
 

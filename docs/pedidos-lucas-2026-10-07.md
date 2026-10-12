@@ -121,7 +121,7 @@ El alcance de V1-B dice *Umbrales de stock por proveedor*. **Lucas aclaró que n
 
 **Tamaño: mediano.** La recepción desde la orden, chica y aparte.
 
-✅ **Hecho el 12/10**, en Compras → *Pedidos*. Además del mínimo con su unidad, la pantalla dice cuántos productos no se pudieron contar (sin peso, sin bulto o sin costo), y el borrador se guarda mientras se arma. **Falta** que la recepción arranque desde el pedido.
+✅ **Hecho el 12/10**, en Compras → *Pedidos*. Además del mínimo con su unidad, la pantalla dice cuántos productos no se pudieron contar (sin peso, sin bulto o sin costo), y el borrador se guarda mientras se arma. ✅ **Y la recepción arranca desde el pedido** (12/10, a la tarde): al recibir la factura se trae el pedido con lo que falta llegar, y dice qué no vino y a qué cliente avisar.
 
 **Pregunta para Lucas:** el mínimo del proveedor —«no le puedo pedir sólo cinco bolsas»—, ¿es en plata, en bultos o en kilos? Si se carga en la ficha del proveedor, la pantalla dice cuánto falta para llegar.
 

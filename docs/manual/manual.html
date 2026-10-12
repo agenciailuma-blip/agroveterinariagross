@@ -403,10 +403,12 @@
       <p style="margin:3mm 0 1mm"><b>Recibir la mercadería, paso a paso</b></p>
       <ul class="limpia">
         <li>Al guardar una factura, el sistema pregunta si la mercadería ya llegó. Si llegó, se recibe en el momento; si no, se recibe después con el botón <b>Recibir</b> de esa factura, y puede hacerlo otra persona desde otra computadora.</li>
+        <li><b>Si la factura trae un pedido</b> (ver <b>15</b>), arriba aparecen los pedidos a ese proveedor que esperan mercadería. <b>Traer el pedido</b> carga sus productos con lo que falta llegar; se corrigen las cantidades si vino otra cosa y se copia el costo del papel. Lo que se pidió y no está en el catálogo aparece aparte.</li>
         <li>Se <b>pasa el lector</b> o se escribe el código o el nombre, y el producto se agrega. Se pone la <b>cantidad</b> y el <b>costo unitario como está impreso</b>: en una factura A, sin IVA; en una B o una C, con IVA. El sistema muestra al lado cuánto va a quedar el costo, ya con IVA, y cuánto subió.</li>
         <li>Abajo se ve la <b>suma de los renglones contra el neto de la factura</b>. Si no coinciden, puede ser un flete o una bonificación, o una cantidad mal tipeada.</li>
         <li>Si llega un producto que <b>no está en el catálogo</b>, se da de alta ahí mismo con código, nombre e IVA. Queda sin precio de venta y sin revisar, y aparece primero en Productos para completarlo.</li>
         <li>Al confirmar, <b>entra al stock</b> y el costo del producto pasa a ser el de esta factura. Con más de un depósito, al lado del botón se elige <b>en cuál entra</b>: un proveedor puede descargar directo en otro local.</li>
+        <li>Si se trajo un pedido, al terminar dice si <b>llegó completo</b> o <b>qué no vino</b>, y si algo de lo que llegó lo había pedido <b>un cliente</b> en una orden interna, a quién avisarle.</li>
       </ul>
 
       <div class="nota verde"><b>El precio de venta no cambia solo.</b> Al terminar, el sistema muestra, producto por producto, el costo de antes y el de ahora, el precio actual y el <b>precio que corresponde según el margen</b> cargado en la ficha. Vienen marcados los que cambiarían, y se aplican con un botón. Un producto sin margen cargado dice «sin margen»: no hay precio que proponer.</div>
@@ -491,8 +493,8 @@
     <header><span class="numero">15</span><div><h3>Pedidos</h3><p class="lema">Lo que se le pide a un proveedor, mirando todo lo que se le compra.</p></div></header>
     <div class="cuerpo">
       <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Armar el pedido a un proveedor con todos sus productos a la vista: lo que pidieron las órdenes internas y lo que conviene sumar al mismo envío. Y saber, mientras se arma, si llega al mínimo que acepta ese proveedor.</div></div>
-      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Los pedidos hechos y los anulados, con su número, el proveedor, la fecha, los renglones y el total. Al armar uno, <b>todos los productos del proveedor</b> —lo urgente primero—, cada uno con cuánto hay, con cuánto avisa, el último costo, el bulto y el peso, y <b>lo que pidieron las órdenes internas</b>, con sus números.</div></div>
-      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor"><b>Nuevo pedido</b> · elegir el proveedor y completar cuánto pedir de cada cosa · <b>hacer el pedido</b> · <b>imprimirlo</b> · <b>copiarlo para WhatsApp</b> · <b>anularlo</b>, con motivo.</div></div>
+      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Los pedidos <b>por recibir</b>, los <b>recibidos</b> y los anulados, con su número, el proveedor, la fecha, los renglones y el total; los que recibieron una parte dicen <i>Llegó en parte</i>. Al armar uno, <b>todos los productos del proveedor</b> —lo urgente primero—, cada uno con cuánto hay, con cuánto avisa, el último costo, el bulto y el peso, y <b>lo que pidieron las órdenes internas</b>, con sus números.</div></div>
+      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor"><b>Nuevo pedido</b> · elegir el proveedor y completar cuánto pedir de cada cosa · <b>hacer el pedido</b> · <b>imprimirlo</b> · <b>copiarlo para WhatsApp</b> · <b>darlo por terminado</b> si lo que falta no viene · <b>anularlo</b>, con motivo, si todavía no llegó nada.</div></div>
       <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">La nota de pedido en A4, para imprimir o guardar en PDF, y el texto para pegar en WhatsApp.</div></div>
 
       <p style="margin:3mm 0 1mm"><b>Armar un pedido</b></p>
@@ -504,7 +506,8 @@
         <li>El pedido se va guardando en esa computadora mientras se arma: se puede salir a mirar otra cosa y volver.</li>
       </ul>
       <div class="nota">La <b>nota de pedido</b> lleva quién pide y a quién, la tabla con código, descripción, cantidad y bultos, y la observación. <b>No lleva precios</b>: son los de Gross, y el proveedor tiene los suyos. El texto para WhatsApp dice lo mismo, sin códigos.</div>
-      <div class="nota">El pedido no mueve stock ni plata: lo que llega se recibe en <b>Compras</b>, con la factura. Lo hace quien registra compras; anularlo devuelve a pendiente las órdenes internas que había cubierto.</div>
+      <div class="nota verde"><b>Cuando llega la mercadería.</b> Se recibe en <b>Compras</b>, con la factura, y ahí se <b>trae el pedido</b> (ver <b>10</b>). Al abrirlo, cada renglón dice cuánto llegó y cuánto falta, y en qué facturas vino. Si llegó todo, queda <b>recibido</b> solo; si llega en dos facturas, se trae el mismo pedido en las dos. Si lo que falta no va a venir, <b>Dar por terminado</b>, con el motivo. Si una orden interna era para un cliente, el pedido dice a quién avisarle.</div>
+      <div class="nota">El pedido no mueve stock ni plata: lo que mueve el stock es la factura. Lo hace quien registra compras. Anularlo devuelve a pendiente las órdenes internas que había cubierto; cuando ya llegó mercadería no se anula, se da por terminado.</div>
     </div>
   </section>
 

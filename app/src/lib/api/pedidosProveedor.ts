@@ -19,12 +19,21 @@ import type { TipoMinimo } from '@/lib/api/proveedores'
   ─────────────────────────────────────────────────────────────
 */
 
-export type EstadoPedido = 'pedido' | 'anulado'
+/*
+  pedido   — salió hacia el proveedor y espera la mercadería.
+  recibido — llegó todo, o se dio por terminado sin que llegue el resto.
+  anulado  — no va.
+*/
+export type EstadoPedido = 'pedido' | 'recibido' | 'anulado'
 
 export const ESTADO_PEDIDO: Record<EstadoPedido, { etiqueta: string; clase: string }> = {
-  pedido: { etiqueta: 'Pedido', clase: 'bg-verde-50 text-verde-800 ring-verde-200' },
+  pedido: { etiqueta: 'Por recibir', clase: 'bg-amber-50 text-amber-800 ring-amber-200' },
+  recibido: { etiqueta: 'Recibido', clase: 'bg-verde-50 text-verde-800 ring-verde-200' },
   anulado: { etiqueta: 'Anulado', clase: 'bg-piedra-50 text-piedra-500 ring-borde' },
 }
+
+/** Un pedido que espera mercadería y ya recibió una parte. */
+export const LLEGO_EN_PARTE = { etiqueta: 'Llegó en parte', clase: 'bg-amber-50 text-amber-900 ring-amber-300' }
 
 export interface ProveedorParaPedido {
   id: string
@@ -67,6 +76,8 @@ export interface FilaPedido {
   total: number | null
   observacion: string | null
   creado_por: string | null
+  /** Si ya entró mercadería de este pedido. */
+  llego_algo: boolean
 }
 
 export interface RenglonPedido {
@@ -78,6 +89,25 @@ export interface RenglonPedido {
   costo: number | null
   peso_kg: number | null
   unidades_por_bulto: number | null
+  /** Cuánto llegó, por las facturas atadas al pedido. Nulo en lo que no está en el catálogo. */
+  recibido: number | null
+}
+
+export interface FacturaDelPedido {
+  id: string
+  fecha: string
+  numero: string
+  recibida_en: string | null
+}
+
+/** Una orden interna que era para un cliente: a quién avisarle cuando llega. */
+export interface AvisoAlCliente {
+  orden: number
+  cliente: string | null
+  contacto: string | null
+  que: string
+  /** Los productos del catálogo que pidió: el aviso sale cuando llega alguno. */
+  productos: string[]
 }
 
 export interface PedidoCompleto {
@@ -99,9 +129,16 @@ export interface PedidoCompleto {
   creado_en: string
   anulado_por: string | null
   motivo_anulacion: string | null
+  recibido_por: string | null
+  recibido_en: string | null
+  /** Si se dio por terminado sin que llegara todo: por qué. */
+  motivo_cierre: string | null
   lineas: RenglonPedido[]
   /** Las órdenes internas que cubrió. */
   ordenes: number[]
+  /** Las facturas que trajeron su mercadería. */
+  facturas: FacturaDelPedido[]
+  avisar: AvisoAlCliente[]
 }
 
 const n = (x: unknown) => (x == null ? null : Number(x))
@@ -141,6 +178,7 @@ export async function listarPedidos(estado: EstadoPedido | null): Promise<FilaPe
     numero: Number(f.numero),
     renglones: Number(f.renglones),
     total: n(f.total),
+    llego_algo: !!f.llego_algo,
   }))
 }
 
@@ -154,12 +192,15 @@ export async function obtenerPedido(id: string): Promise<PedidoCompleto | null> 
     numero: Number(p.numero),
     minimo_valor: n(p.minimo_valor),
     ordenes: (p.ordenes ?? []).map(Number),
+    facturas: p.facturas ?? [],
+    avisar: (p.avisar ?? []).map((a) => ({ ...a, orden: Number(a.orden), productos: a.productos ?? [] })),
     lineas: p.lineas.map((l) => ({
       ...l,
       cantidad: Number(l.cantidad),
       costo: n(l.costo),
       peso_kg: n(l.peso_kg),
       unidades_por_bulto: n(l.unidades_por_bulto),
+      recibido: n(l.recibido),
     })),
   }
 }
@@ -192,6 +233,88 @@ export async function hacerPedido(d: {
 export async function anularPedido(id: string, motivo: string) {
   const { error } = await supabase.rpc('anular_pedido_proveedor', { p_id: id, p_motivo: motivo })
   if (error) throw new Error(error.message)
+}
+
+/** Darlo por recibido sin que llegue lo que falta: el proveedor no lo tiene, o ya no hace falta. */
+export async function cerrarPedido(id: string, motivo: string) {
+  const { error } = await supabase.rpc('cerrar_pedido_proveedor', { p_id: id, p_motivo: motivo })
+  if (error) throw new Error(error.message)
+}
+
+/*
+  ─────────────────────────────────────────────────────────────
+  Recibir desde el pedido
+
+  Al recibir la mercadería de una factura se ofrecen los pedidos a ese
+  proveedor que esperan mercadería. Traer uno ata la factura al pedido
+  y carga lo que falta llegar; cuando la mercadería entra, la base
+  mira cuánto llegó y, si llegó todo, lo da por recibido.
+  ─────────────────────────────────────────────────────────────
+*/
+
+export interface PedidoPorRecibir {
+  id: string
+  numero: number
+  fecha: string
+  renglones: number
+  llego_algo: boolean
+}
+
+export interface RenglonPorRecibir {
+  /** Nulo: lo pidieron pero no está en el catálogo. */
+  producto_id: string | null
+  codigo: string | null
+  descripcion: string
+  costo: number | null
+  alicuota_iva_id: number | null
+  pedido: number
+  recibido: number
+  falta: number
+}
+
+export async function pedidosPorRecibir(proveedorId: string): Promise<PedidoPorRecibir[]> {
+  const { data, error } = await supabase.rpc('pedidos_por_recibir', { p_proveedor_id: proveedorId })
+  if (error) throw new Error(error.message)
+  return ((data ?? []) as PedidoPorRecibir[]).map((p) => ({ ...p, numero: Number(p.numero), renglones: Number(p.renglones) }))
+}
+
+export async function pedidoParaRecibir(pedidoId: string): Promise<RenglonPorRecibir[]> {
+  const { data, error } = await supabase.rpc('pedido_para_recibir', { p_pedido_id: pedidoId })
+  if (error) throw new Error(error.message)
+  return ((data ?? []) as RenglonPorRecibir[]).map((r) => ({
+    ...r,
+    costo: n(r.costo),
+    pedido: Number(r.pedido),
+    recibido: Number(r.recibido),
+    falta: Number(r.falta),
+  }))
+}
+
+/** Ata la factura al pedido, o la desata con null. Sólo antes de recibir. */
+export async function atarCompraAPedido(compraId: string, pedidoId: string | null) {
+  const { error } = await supabase.rpc('atar_compra_a_pedido', { p_compra_id: compraId, p_pedido_id: pedidoId })
+  if (error) throw new Error(error.message)
+}
+
+/** Cuánto falta de un renglón. Nulo en lo que no está en el catálogo: el sistema no lo recibe. */
+export function faltaDe(l: Pick<RenglonPedido, 'producto_id' | 'cantidad' | 'recibido'>): number | null {
+  if (!l.producto_id) return null
+  return Math.max(0, Math.round((l.cantidad - (l.recibido ?? 0)) * 10000) / 10000)
+}
+
+/*
+  A qué clientes avisarles después de recibir una factura: a los que
+  pidieron algo de lo que llegó en ella. Si llegó sólo lo de otro, no:
+  el cliente ya habría sido llamado, o todavía no hay nada para él.
+*/
+export function avisosPorLoQueLlego(avisar: AvisoAlCliente[], llegaron: string[]): AvisoAlCliente[] {
+  const llego = new Set(llegaron)
+  return avisar.filter((a) => a.productos.some((id) => llego.has(id)))
+}
+
+/** Lo que no vino: los renglones del catálogo con algo pendiente. */
+export function loQueNoVino(p: Pick<PedidoCompleto, 'lineas'>): RenglonPedido[] {
+  return p.lineas.filter((l) => (faltaDe(l) ?? 0) > 0)
 }
 
 /*

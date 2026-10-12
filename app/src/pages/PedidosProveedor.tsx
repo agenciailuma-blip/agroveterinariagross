@@ -7,11 +7,14 @@ import { TeclaAtajo } from '@/components/Atajos'
 import { datosEmisor } from '@/lib/api/comprobante'
 import {
   ESTADO_PEDIDO,
+  LLEGO_EN_PARTE,
   anularPedido,
   avanceDelMinimo,
   borrarBorrador,
   bultosDe,
+  cerrarPedido,
   claveDeFila,
+  faltaDe,
   guardarBorrador,
   hacerPedido,
   leerBorrador,
@@ -44,7 +47,10 @@ import { boton } from '@/estilos'
   del proveedor, en lo que él lo cuente: pesos, bultos o kilos.
 
   Hecho el pedido, se imprime o se copia para WhatsApp. Las órdenes
-  internas que entraron quedan pedidas.
+  internas que entraron quedan pedidas. Cuando llega la mercadería, se
+  trae el pedido desde la recepción de la factura, y el pedido dice qué
+  llegó y qué falta; queda recibido solo cuando llegó todo, o se da por
+  terminado a mano si lo que falta no viene.
 
   Lo ve quien compra (`compras.ver`); lo hace y lo anula quien registra
   compras (`compras.registrar`).
@@ -55,7 +61,8 @@ const claseInput =
   'w-full rounded-lg border border-borde px-2.5 py-1.5 text-sm text-tinta outline-none focus:border-marca-500 focus:ring-2 focus:ring-marca-500/20'
 
 const FILTROS: { valor: EstadoPedido | null; etiqueta: string }[] = [
-  { valor: 'pedido', etiqueta: 'Pedidos' },
+  { valor: 'pedido', etiqueta: 'Por recibir' },
+  { valor: 'recibido', etiqueta: 'Recibidos' },
   { valor: 'anulado', etiqueta: 'Anulados' },
   { valor: null, etiqueta: 'Todos' },
 ]
@@ -141,6 +148,10 @@ export default function PedidosProveedor() {
             avisar('Pedido anulado. Las órdenes internas que había cubierto vuelven a estar pendientes.')
             refrescar()
           }}
+          onCerrado={() => {
+            avisar('Pedido dado por terminado: lo que faltaba ya no se espera.')
+            refrescar()
+          }}
           onAviso={avisar}
           onError={setError}
         />
@@ -167,7 +178,7 @@ export default function PedidosProveedor() {
       ) : !lista.data?.length ? (
         <div className="grid place-items-center rounded-xl border border-dashed border-borde bg-white/60 py-12 text-center">
           <p className="text-sm text-piedra-500">
-            {filtro === 'pedido' ? 'Todavía no se hizo ningún pedido.' : 'No hay pedidos en este estado.'}
+            {filtro === 'pedido' ? 'No hay pedidos esperando mercadería.' : 'No hay pedidos en este estado.'}
           </p>
         </div>
       ) : (
@@ -193,9 +204,7 @@ export default function PedidosProveedor() {
                   </span>
                   {p.observacion && <span className="block text-xs break-words text-piedra-400">{p.observacion}</span>}
                 </span>
-                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ring-1 ${ESTADO_PEDIDO[p.estado].clase}`}>
-                  {ESTADO_PEDIDO[p.estado].etiqueta}
-                </span>
+                <Estado estado={p.estado} llegoAlgo={p.llego_algo} />
               </button>
             </li>
           ))}
@@ -203,6 +212,12 @@ export default function PedidosProveedor() {
       )}
     </div>
   )
+}
+
+/** El estado, y «Llegó en parte» si espera mercadería y ya entró algo. */
+function Estado({ estado, llegoAlgo }: { estado: EstadoPedido; llegoAlgo: boolean }) {
+  const e = estado === 'pedido' && llegoAlgo ? LLEGO_EN_PARTE : ESTADO_PEDIDO[estado]
+  return <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ring-1 ${e.clase}`}>{e.etiqueta}</span>
 }
 
 /*
@@ -539,6 +554,7 @@ function DetallePedido({
   puedeAnular,
   onCerrar,
   onAnulado,
+  onCerrado,
   onAviso,
   onError,
 }: {
@@ -546,6 +562,7 @@ function DetallePedido({
   puedeAnular: boolean
   onCerrar: () => void
   onAnulado: () => void
+  onCerrado: () => void
   onAviso: (t: string) => void
   onError: (e: string | null) => void
 }) {
@@ -559,12 +576,20 @@ function DetallePedido({
     onError: (e) => onError(enCastellano(e, 'No se pudo anular el pedido.')),
   })
 
+  const cerrar = useMutation({
+    mutationFn: (motivo: string) => cerrarPedido(id, motivo),
+    onSuccess: onCerrado,
+    onError: (e) => onError(enCastellano(e, 'No se pudo dar por terminado el pedido.')),
+  })
+
   const p = pedido.data
   if (pedido.isPending) return <p className="text-sm text-piedra-500">Abriendo el pedido…</p>
   if (!p) return null
 
   const avance = avanceDelMinimo(p.lineas, p.minimo_tipo, p.minimo_valor)
   const total = totalDelPedido(p.lineas)
+  // Si ya entró mercadería, cada renglón dice cuánto llegó y cuánto falta.
+  const llegoAlgo = p.facturas.some((f) => f.recibida_en)
 
   async function copiar() {
     const t = textoParaWhatsapp(p!, emisor.data?.nombre_fantasia || emisor.data?.razon_social || 'Agroveterinaria Gross')
@@ -590,9 +615,7 @@ function DetallePedido({
             {fechaCorta(p.fecha)} · lo hizo {p.creado_por ?? '—'}
           </p>
         </div>
-        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ring-1 ${ESTADO_PEDIDO[p.estado].clase}`}>
-          {ESTADO_PEDIDO[p.estado].etiqueta}
-        </span>
+        <Estado estado={p.estado} llegoAlgo={llegoAlgo} />
       </div>
 
       <ul className="mt-3 divide-y divide-piedra-100">
@@ -613,6 +636,15 @@ function DetallePedido({
                 {bultos != null && (
                   <span className="block text-[11px] text-piedra-500">
                     {numero.format(bultos)} {bultos === 1 ? 'bulto' : 'bultos'}
+                  </span>
+                )}
+                {llegoAlgo && l.producto_id && (
+                  <span
+                    className={`block text-[11px] ${(faltaDe(l) ?? 0) > 0 ? 'text-amber-700' : 'text-verde-700'}`}
+                  >
+                    {(faltaDe(l) ?? 0) > 0
+                      ? `llegaron ${numero.format(l.recibido ?? 0)} · faltan ${numero.format(faltaDe(l) ?? 0)}`
+                      : 'llegó'}
                   </span>
                 )}
               </span>
@@ -646,6 +678,21 @@ function DetallePedido({
             {p.ordenes.map(numeroDeOrden).join(', ')}
           </p>
         )}
+        {p.facturas.length > 0 && (
+          <p>
+            <span className="text-piedra-500">Llegó en:</span>{' '}
+            {p.facturas
+              .map((f) => `factura ${f.numero}${f.recibida_en ? '' : ' (sin recibir todavía)'}`)
+              .join(', ')}
+          </p>
+        )}
+        {p.estado === 'recibido' && (
+          <p className="text-piedra-500">
+            {p.motivo_cierre
+              ? `Dado por terminado por ${p.recibido_por ?? '—'}: ${p.motivo_cierre}`
+              : `Llegó todo${p.recibido_en ? `, el ${new Date(p.recibido_en).toLocaleDateString('es-AR')}` : ''}.`}
+          </p>
+        )}
         {p.estado === 'anulado' && (
           <p className="text-piedra-500">
             Anulado por {p.anulado_por ?? '—'}
@@ -653,6 +700,19 @@ function DetallePedido({
           </p>
         )}
       </div>
+
+      {p.avisar.length > 0 && (
+        <div className="mt-2 space-y-1">
+          {p.avisar.map((a) => (
+            <p key={a.orden} className="rounded-lg bg-marca-50 px-3 py-2 text-sm text-marca-800 ring-1 ring-marca-200">
+              <strong>
+                {p.estado === 'pedido' ? 'Para avisarle a' : 'Era para'} {[a.cliente, a.contacto].filter(Boolean).join(' · ')}
+              </strong>
+              {p.estado === 'pedido' ? ' cuando llegue' : ''}: lo pidió en la orden interna {numeroDeOrden(a.orden)} ({a.que}).
+            </p>
+          ))}
+        </div>
+      )}
 
       {texto && (
         <label className="mt-3 block">
@@ -668,7 +728,26 @@ function DetallePedido({
         <button onClick={copiar} className={boton.secundario}>
           Copiar para WhatsApp
         </button>
-        {p.estado === 'pedido' && puedeAnular && (
+        {p.estado === 'pedido' && puedeAnular && llegoAlgo && (
+          <button
+            onClick={async () => {
+              const motivo = await pedirTexto({
+                titulo: `¿Dar por terminado el pedido ${numeroDePedido(p.numero)}?`,
+                etiqueta: 'Por qué no se espera lo que falta',
+                ejemplo: 'El proveedor no lo tiene',
+                minimo: 3,
+                aceptar: 'Dar por terminado',
+              })
+              if (motivo) cerrar.mutate(motivo)
+            }}
+            disabled={cerrar.isPending}
+            className={boton.secundario}
+          >
+            Dar por terminado
+          </button>
+        )}
+        {/* Con mercadería recibida no se anula: se da por terminado. */}
+        {p.estado === 'pedido' && puedeAnular && !llegoAlgo && (
           <button
             onClick={async () => {
               const motivo = await pedirTexto({
