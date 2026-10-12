@@ -151,7 +151,7 @@
       <p>Qué hay en cada sección, para qué sirve, qué se puede hacer y qué documentos salen de ahí.</p>
       <p>Escrito para tenerlo al lado mientras se usa, y para entrenar a quien recién empieza.</p>
       <div class="pie">
-        Septiembre de 2026 · Desarrollado por ILUMA para Agroveterinaria Gross
+        Octubre de 2026 · Desarrollado por ILUMA para Agroveterinaria Gross
       </div>
     </div>
   </div>
@@ -227,8 +227,8 @@
     <header><span class="numero">2</span><div><h3>Mostrador</h3><p class="lema">Armar la venta y mandarla a la caja.</p></div></header>
     <div class="cuerpo">
       <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Es la pantalla donde más tiempo pasa el día: el vendedor atiende, arma la venta y se la pasa a la caja, sin dejar de atender.</div></div>
-      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">El detalle con precios y subtotal · <b>el total en efectivo y con tarjeta al mismo tiempo</b> · aviso si no hay stock suficiente · el borrador se conserva si la pantalla se refresca por accidente.</div></div>
-      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Identificarme con <b>PIN</b> · buscar o escanear productos · <b>escribir una línea que no está en el catálogo</b> · cambiar cantidades · <b>rebajar el precio de una línea</b>, por monto o por porcentaje · elegir el cliente · anticipar con qué va a pagar · <b>enviar a caja</b> o <b>hacer un presupuesto</b> · descartar la venta.</div></div>
+      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">El detalle con precios y subtotal · <b>el total en efectivo y con tarjeta al mismo tiempo</b> · cuánto queda de cada producto al buscarlo y aviso si no alcanza · en lo que se vende suelto, <b>cuántas hay sueltas</b> debajo de lo disponible, que cuenta también lo que se puede abrir · el borrador se conserva si la pantalla se refresca por accidente.</div></div>
+      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Identificarme con <b>PIN</b> · buscar o escanear productos · <b>escribir una línea que no está en el catálogo</b> · cambiar cantidades · <b>rebajar el precio de una línea</b>, por monto o por porcentaje · elegir el cliente, o <b>agregar uno nuevo con su CUIT</b> · anticipar con qué va a pagar · <b>enviar a caja</b> o <b>hacer un presupuesto</b> · descartar la venta.</div></div>
       <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">El <b>presupuesto impreso</b>, en ticket de 80 mm o en hoja A4.</div></div>
 
       <p style="margin:3mm 0 1mm"><b>Tres cosas que conviene saber</b></p>
@@ -238,6 +238,7 @@
         <li><b>Rebajar un precio pide motivo y PIN.</b> El motivo sale de una lista, para poder contarlos después. Y <b>quien pone el PIN queda como responsable de la rebaja</b>, que puede no ser el vendedor: es lo que permite que un encargado se acerque y autorice.</li>
       </ul>
 
+      <div class="nota verde"><b>El cliente nuevo, con el CUIT y nada más.</b> Si se escribe en el buscador de clientes un CUIT que no está cargado, aparece <i>Traer de ARCA y agregarlo</i>: el sistema le pregunta a ARCA el nombre o la razón social, el domicilio y <b>la condición frente al IVA</b>, da de alta al cliente y lo deja elegido. La tarjeta dice, por ejemplo, <i>Responsable Inscripto · Factura A</i>. No hace falta preguntarle al cliente si es responsable inscripto: con que diga «factura A» y dé su CUIT, alcanza.</div>
       <div class="nota"><b>La línea escrita a mano</b> es para lo que se pide especialmente y se vende una vez: no crea nada en el catálogo y no mueve stock. Se le pregunta el IVA porque puede terminar en una factura. Si algo se vende dos veces, va al catálogo.</div>
     </div>
   </section>
@@ -271,6 +272,7 @@
       <div class="nota"><b>Lo que se cobró en la web no se entrega sin factura</b>, y la factura no puede salir por más de lo que el cliente pagó. Pasa cuando al comprador le corresponde percepción de IIBB: el sistema frena y dice por qué, para hablarlo con el cliente antes. Un pedido marcado <i>para revisar</i> pide confirmar «lo revisé», y queda el nombre de quien lo hizo.</div>
       <div class="nota verde"><b>Cancelar y devolver.</b> Cancelar antes de entregar anula la venta y devuelve el stock; si ya estaba facturado, sale la nota de crédito. Lo entregado vuelve por <b>Devolver parte</b>, en Facturación. Si el cliente pagó en la web, la plata la tiene la pasarela de pago de la tienda: cada cancelación o devolución deja un pendiente <i>«a devolver por la tienda»</i>, a la vista hasta que alguien anota que se devolvió.</div>
       <div class="nota">Si el cliente eligió <b>pagar en el local</b>, la venta le aparece a la caja como cualquier otra.</div>
+      <div class="nota">Al abrir un pedido sin facturar que trae CUIT, el sistema <b>le pregunta a ARCA</b> la condición del comprador. Si ARCA dice otra que la que tiene el cliente, lo avisa y ofrece actualizarlo, antes de que salga una factura de la clase equivocada.</div>
     </div>
   </section>
 
@@ -279,10 +281,12 @@
     <div class="cuerpo">
       <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Tener los datos con los que se factura y, para el que compra en cuenta, saber cuánto debe, desde cuándo y hasta cuánto puede seguir comprando.</div></div>
       <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Datos fiscales (condición de IVA, CUIT o DNI, domicilio) · <b>saldo actual</b>, límite de crédito y crédito disponible · los movimientos de la cuenta con su origen.</div></div>
-      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Buscar · crear y editar · definir si tiene <b>cuenta corriente</b> y con qué <b>límite</b> · fijarle un <b>descuento</b> propio y una lista de precios · cargar la <b>exclusión de percepción de IIBB</b> con su certificado y vigencia · <b>registrar una cobranza</b> · <b>importar la planilla de clientes</b>, con el saldo que debe cada uno.</div></div>
+      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Buscar · crear y editar · <b>traer los datos de ARCA</b> con el CUIT · <b>verificar con ARCA</b> la condición de todos los clientes · definir si tiene <b>cuenta corriente</b> y con qué <b>límite</b> · fijarle un <b>descuento</b> propio y una lista de precios · cargar la <b>exclusión de percepción de IIBB</b> con su certificado y vigencia · <b>registrar una cobranza</b> · <b>importar la planilla de clientes</b>, con el saldo que debe cada uno.</div></div>
       <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">El <b>resumen de cuenta corriente en PDF</b>, para mandarle al cliente.</div></div>
 
       <div class="nota"><b>Importar la planilla de clientes</b> —botón <i>Importar planilla</i>— trae todos los clientes de una vez, con el <b>saldo que debe cada uno a una fecha</b>. El sistema reconoce las columnas y las muestra con un dato de ejemplo para confirmarlas. Antes de importar muestra <b>la suma de todos los saldos</b>: ése es el número que hay que comparar con el total del sistema anterior. Se puede importar la misma planilla las veces que haga falta: cada cliente se reconoce por su código o su CUIT y el saldo queda <b>igual</b> al de la planilla, no se suma. Un CUIT con el último dígito mal no entra, porque ARCA rechazaría la factura.</div>
+      <div class="nota verde"><b>Los datos fiscales los da ARCA.</b> En la ficha, con un CUIT bien escrito aparece <i>Traer datos de ARCA</i>, y en un cliente nuevo la consulta sale sola: completa el nombre o la razón social, el domicilio y la condición frente al IVA. Si ARCA no emite la constancia de ese CUIT —por ejemplo, porque le falta el domicilio fiscal electrónico— trae el nombre y lo dice, y la condición se elige a mano. Con DNI no hay consulta: es consumidor final.</div>
+      <div class="nota"><b>Verificar con ARCA</b> —botón en Clientes— le pregunta a ARCA por cada cliente con CUIT y muestra <b>los que tienen cargada otra condición</b> que la que dice ARCA, para corregirlos todos de una vez. Aparte, lista los CUIT mal escritos o que ARCA no conoce. El nombre con que se lo conoce en el local no se toca: sólo la condición. Conviene hacerlo después de importar la planilla de clientes.</div>
       <div class="nota"><b>Cobrar la cuenta con cheques.</b> En la cobranza se elige «Cheque» y se carga cada cheque con su importe, banco, número y fecha de pago; pueden ser varios. Cada uno queda como un renglón de la cuenta —<i>«Cobranza con cheque Credicoop N° 555001 al 30/11»</i>— y pasa a la cartera de <b>Tesorería</b>.</div>
       <div class="nota verde"><b>El resumen de cuenta</b> tiene la forma de un resumen del banco: saldo anterior, cada factura, pago y nota de crédito con el saldo que va quedando, y el saldo al cierre. Se elige el período —este mes, el mes pasado o todo— y se guarda como PDF con el nombre del cliente ya puesto, listo para adjuntar a un mail. Si el resumen llega hasta hoy, dice además cuánto de ese saldo está vencido y desde cuándo.</div>
     </div>
