@@ -34,6 +34,10 @@ export interface FilaStock {
   estado: EstadoStock
   precio_venta: number
   costo: number | null
+  /** De qué envase sale, si es una suelta: entonces `cantidad` son las sueltas. */
+  envase_id: string | null
+  /** Las sueltas más lo que se puede abrir. Es con lo que se calcula el estado. */
+  disponible: number
 }
 
 /** El orden en que hay que mirarlos: primero lo que ya se vendió de más. */
@@ -64,7 +68,7 @@ export async function listarStock(
 ): Promise<FilaStock[]> {
   let q = origen(depositoId)
     .select(
-      'producto_id, codigo, nombre_interno, unidad_medida, cantidad, umbral_bajo, umbral_critico, estado, precio_venta, costo',
+      'producto_id, codigo, nombre_interno, unidad_medida, cantidad, umbral_bajo, umbral_critico, estado, precio_venta, costo, envase_id, disponible',
     )
     .eq('activo', true)
     .limit(500)

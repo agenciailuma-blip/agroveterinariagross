@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { CLAVES_EMISOR, guardarTextos, obtenerTextos } from '@/lib/api/configuracion'
+import { avanzarConEnter } from '@/lib/teclado'
 
 /*
   Datos del emisor.
@@ -108,7 +109,7 @@ export default function DatosDelEmisor() {
   )
 
   return (
-    <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-borde">
+    <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-borde" onKeyDown={avanzarConEnter}>
       <h2 className="font-medium text-tinta">Datos del emisor</h2>
       <p className="mt-1 text-sm text-piedra-500">
         Lo que va impreso en el encabezado de toda factura, tanto en el ticket como en la hoja A4.

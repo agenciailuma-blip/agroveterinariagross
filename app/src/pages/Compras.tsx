@@ -18,6 +18,9 @@ import { listarProveedores } from '@/lib/api/proveedores'
 import { enCastellano } from '@/lib/errores'
 import { moneda } from '@/lib/tipos'
 import { boton, campo } from '@/estilos'
+import { avanzarConEnter } from '@/lib/teclado'
+import { useBotonConAtajo } from '@/lib/atajos'
+import { TeclaAtajo } from '@/components/Atajos'
 
 /*
   Las facturas de compra.
@@ -300,6 +303,7 @@ function FormularioDeCompra({
   onListo: (id: string) => void
   onCancelar: () => void
 }) {
+  const botonGuardar = useBotonConAtajo('F9')
   const proveedores = useQuery({ queryKey: ['proveedores'], queryFn: () => listarProveedores() })
   const tipos = useQuery({ queryKey: ['tipos-de-compra'], queryFn: tiposParaCompra })
   const alicuotas = useQuery({ queryKey: ['alicuotas-iva'], queryFn: alicuotasDeIva })
@@ -367,7 +371,7 @@ function FormularioDeCompra({
   }
 
   return (
-    <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-borde">
+    <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-borde" onKeyDown={avanzarConEnter}>
       <h2 className="font-medium text-tinta">Cargar una factura de compra</h2>
       <p className="mt-1 text-sm text-piedra-500">
         Copiá lo que dice el papel. El total se arma solo abajo: si no coincide con el de la
@@ -666,6 +670,7 @@ function FormularioDeCompra({
             Cancelar
           </button>
           <button
+            ref={botonGuardar}
             onClick={() => {
               setError(null)
               guardar.mutate()
@@ -675,6 +680,7 @@ function FormularioDeCompra({
             className={boton.principal}
           >
             {guardar.isPending ? 'Guardando…' : 'Guardar la factura'}
+            {!guardar.isPending && <TeclaAtajo tecla="F9" clara />}
           </button>
         </div>
       </div>

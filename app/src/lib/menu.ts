@@ -91,6 +91,7 @@ export const SECCIONES: Seccion[] = [
     icono: 'M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-4l-1.5 3h-5L8 13H4',
     pestanas: [
       { a: '/stock', etiqueta: 'Stock', permiso: 'stock.ver' },
+      { a: '/stock/avisos', etiqueta: 'Avisos', permiso: 'stock.ver' },
       { a: '/inventario', etiqueta: 'Inventario', permiso: 'stock.inventariar' },
       { a: '/transferencias', etiqueta: 'Transferencias', permiso: 'stock.ver', conVariosDepositos: true },
     ],
@@ -110,6 +111,10 @@ export const SECCIONES: Seccion[] = [
       { a: '/proveedores', etiqueta: 'Proveedores', permiso: 'proveedores.ver' },
       // Cuánto costó cada cosa a cada proveedor, y si otro la tiene a menos.
       { a: '/compras/costos', etiqueta: 'Costos', permiso: 'compras.ver' },
+      { a: '/compras/ordenes', etiqueta: 'Órdenes internas', permiso: 'compras.solicitar' },
+      // Lo que se le pide a cada proveedor, mirando todo lo que se le compra.
+      // Va después de las órdenes: el pedido junta lo que ellas pidieron.
+      { a: '/compras/pedidos', etiqueta: 'Pedidos', permiso: 'compras.ver' },
     ],
   },
   {

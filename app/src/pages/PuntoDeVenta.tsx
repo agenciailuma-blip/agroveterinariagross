@@ -11,6 +11,8 @@ import {
   pasoCantidad,
 } from '@/lib/api/ventas'
 import type { ClienteVenta, LineaVenta, ProductoVenta } from '@/lib/api/ventas'
+import { clienteDesdeArca } from '@/lib/api/clientes'
+import { cuitValido } from '@/lib/api/cheques'
 import { cargarPrecios, previsualizarPrecio } from '@/lib/api/precios'
 import type { MedioPago } from '@/lib/api/precios'
 import { useSync } from '@/lib/local/SyncProvider'
@@ -23,6 +25,8 @@ import { confirmar, pedirNumero, pedirTexto } from '@/components/Dialogo'
 import { MOTIVOS_DE_PRECIO } from '@/lib/motivos'
 import LineaLibre from '@/components/LineaLibre'
 import type { DatosLineaLibre } from '@/components/LineaLibre'
+import { useAtajo, useBotonConAtajo } from '@/lib/atajos'
+import { TeclaAtajo } from '@/components/Atajos'
 
 const BORRADOR = 'gross.venta-en-curso'
 
@@ -41,6 +45,8 @@ export default function PuntoDeVenta() {
   const [cliente, setCliente] = useState<ClienteVenta | null>(null)
   const [buscandoCliente, setBuscandoCliente] = useState(false)
   const [textoCliente, setTextoCliente] = useState('')
+  const [consultandoArca, setConsultandoArca] = useState(false)
+  const [errorArca, setErrorArca] = useState<string | null>(null)
   const [medioAnticipado, setMedioAnticipado] = useState<string | null>(null)
   const [cuotasAnticipadas, setCuotasAnticipadas] = useState(1)
   const [texto, setTexto] = useState('')
@@ -49,6 +55,14 @@ export default function PuntoDeVenta() {
   const [exito, setExito] = useState<string | null>(null)
   const [pasoEnvio, setPasoEnvio] = useState<string | null>(null)
   const busqueda = useRef<HTMLInputElement>(null)
+
+  // F2 vuelve al buscador, F3 abre el del cliente y F9 manda a caja.
+  useAtajo('F2', () => {
+    busqueda.current?.focus()
+    busqueda.current?.select()
+  })
+  useAtajo('F3', () => setBuscandoCliente(true))
+  const botonEnviar = useBotonConAtajo('F9')
 
   /*
     La rebaja que está esperando el PIN que la autorice.
@@ -147,7 +161,9 @@ export default function PuntoDeVenta() {
     if (pedirCantidad) {
       const pedido = await pedirNumero({
         titulo: p.nombre_interno,
-        detalle: `${moneda.format(p.precio_venta)} por ${p.unidad_medida} · quedan ${numero.format(p.cantidad)}`,
+        detalle: `${moneda.format(p.precio_venta)} por ${p.unidad_medida} · quedan ${numero.format(p.cantidad)}${
+          p.sueltas !== undefined ? ` (${numero.format(p.sueltas)} sueltas)` : ''
+        }`,
         etiqueta: '¿Cuántos?',
         valorInicial: '1',
         aceptar: 'Agregar',
@@ -611,6 +627,12 @@ export default function PuntoDeVenta() {
                     >
                       {numero.format(p.cantidad)} {p.unidad_medida}
                     </p>
+                    {/* Una suelta: cuántas hay sueltas; el resto sale de abrir una caja. */}
+                    {p.sueltas !== undefined && (
+                      <p className="text-[11px] tabular-nums text-piedra-400">
+                        {numero.format(p.sueltas)} sueltas
+                      </p>
+                    )}
                   </div>
                 </button>
               ))}
@@ -733,8 +755,11 @@ export default function PuntoDeVenta() {
               <input
                 autoFocus
                 value={textoCliente}
-                onChange={(e) => setTextoCliente(e.target.value)}
-                placeholder="Nombre o documento…"
+                onChange={(e) => {
+                  setTextoCliente(e.target.value)
+                  setErrorArca(null)
+                }}
+                placeholder="Nombre, documento o CUIT…"
                 className="w-full rounded-lg border border-borde px-2.5 py-1.5 text-sm outline-none focus:border-marca-500"
               />
               <div className="mt-1 max-h-56 overflow-y-auto">
@@ -756,6 +781,41 @@ export default function PuntoDeVenta() {
                   </button>
                 ))}
               </div>
+              {/*
+                El cliente que dice «factura A» y da su CUIT. Si no está
+                entre los clientes, se trae de ARCA y queda elegido: nadie
+                le pregunta si es responsable inscripto.
+              */}
+              {cuitValido(textoCliente) &&
+                !clientes.data?.some(
+                  (c) => (c.numero_documento ?? '').replace(/\D/g, '') === textoCliente.replace(/\D/g, ''),
+                ) && (
+                  <button
+                    onClick={async () => {
+                      setConsultandoArca(true)
+                      setErrorArca(null)
+                      const r = await clienteDesdeArca(textoCliente)
+                      setConsultandoArca(false)
+                      if (!r.ok) {
+                        setErrorArca(r.error)
+                        return
+                      }
+                      setCliente(r.cliente as ClienteVenta)
+                      setBuscandoCliente(false)
+                      setTextoCliente('')
+                      busqueda.current?.focus()
+                    }}
+                    disabled={consultandoArca}
+                    className="mt-1 block w-full rounded-lg bg-marca-50 px-2 py-1.5 text-left text-sm font-medium text-marca-700 ring-1 ring-marca-200 hover:bg-marca-100 disabled:opacity-60"
+                  >
+                    {consultandoArca ? 'Consultando a ARCA…' : 'Traer de ARCA y agregarlo'}
+                  </button>
+                )}
+              {errorArca && (
+                <p className="mt-1 rounded-lg bg-amber-50 px-2 py-1.5 text-xs text-amber-800 ring-1 ring-amber-200">
+                  {errorArca}
+                </p>
+              )}
               <button
                 onClick={() => setBuscandoCliente(false)}
                 className="mt-1 text-xs text-piedra-500 hover:underline"
@@ -774,7 +834,9 @@ export default function PuntoDeVenta() {
                   {numero.format(cliente.descuento_porcentaje)}% dto.
                 </span>
               )}
-              <span className="mt-0.5 block text-xs text-piedra-400">tocá para cambiar</span>
+              <span className="mt-0.5 block text-xs text-piedra-400">
+                {cliente?.condicion_iva_id === 1 ? 'Responsable Inscripto · Factura A · ' : ''}tocá para cambiar
+              </span>
             </button>
           )}
         </div>
@@ -922,10 +984,18 @@ Se muestra en la cola del cajero. Si no hace falta, dejalo vacío.`,
             if (nombre === null) return
             enviar.mutate(nombre || null)
           }}
+          ref={botonEnviar}
           disabled={!lineas.length || !cliente || enviar.isPending || presupuestar.isPending}
           className="rounded-xl bg-marca-700 px-4 py-4 text-base font-medium text-white hover:bg-marca-600 disabled:opacity-40"
         >
-          {enviar.isPending ? `Enviando… ${pasoEnvio ?? ''}` : 'Enviar a caja'}
+          {enviar.isPending ? (
+            `Enviando… ${pasoEnvio ?? ''}`
+          ) : (
+            <>
+              Enviar a caja
+              <TeclaAtajo tecla="F9" clara />
+            </>
+          )}
         </button>
 
         {/*

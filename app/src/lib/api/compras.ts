@@ -40,6 +40,8 @@ export interface FilaCompra {
   observaciones: string | null
   /** Cuándo entró la mercadería al stock. Nulo: todavía no. */
   recibida_en: string | null
+  /** El pedido a proveedor que trae, si se trajo al recibir. */
+  pedido_id: string | null
   proveedor_id: string
   proveedor: { nombre: string } | null
   tipo: { descripcion: string; clase: string; signo: number } | null
@@ -75,7 +77,7 @@ export interface CompraNueva {
 
 const COLUMNAS =
   'id, fecha, punto_venta, numero, neto_gravado, neto_no_gravado, exento, iva_total, ' +
-  'tributos_total, total, observaciones, recibida_en, proveedor_id, proveedor:proveedor_id(nombre), ' +
+  'tributos_total, total, observaciones, recibida_en, pedido_id, proveedor_id, proveedor:proveedor_id(nombre), ' +
   'tipo:tipo_comprobante_id(descripcion, clase, signo)'
 
 export async function listarCompras(limite = 100): Promise<FilaCompra[]> {

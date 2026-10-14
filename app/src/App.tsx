@@ -10,6 +10,11 @@ import Productos from '@/pages/Productos'
 import ImportarProductos from '@/pages/ImportarProductos'
 import Inventario from '@/pages/Inventario'
 import Stock from '@/pages/Stock'
+import Avisos from '@/pages/Avisos'
+import OrdenesInternas from '@/pages/OrdenesInternas'
+import OrdenInternaImprimible from '@/pages/OrdenInternaImprimible'
+import PedidosProveedor from '@/pages/PedidosProveedor'
+import PedidoProveedorImprimible from '@/pages/PedidoProveedorImprimible'
 import Transferencias from '@/pages/Transferencias'
 import Precios from '@/pages/Precios'
 import Proveedores from '@/pages/Proveedores'
@@ -20,6 +25,7 @@ import PuntoDeVenta from '@/pages/PuntoDeVenta'
 import Caja from '@/pages/Caja'
 import PedidosWeb from '@/pages/PedidosWeb'
 import Clientes from '@/pages/Clientes'
+import VerificarClientesArca from '@/pages/VerificarClientesArca'
 import Usuarios from '@/pages/Usuarios'
 import Configuracion from '@/pages/Configuracion'
 import Facturacion from '@/pages/Facturacion'
@@ -122,6 +128,9 @@ function Rutas() {
         <Route path="productos" element={<Productos />} />
         <Route path="productos/importar" element={<ImportarProductos />} />
         <Route path="stock" element={<Stock />} />
+        <Route path="stock/avisos" element={<Avisos />} />
+        <Route path="compras/ordenes" element={<OrdenesInternas />} />
+        <Route path="compras/pedidos" element={<PedidosProveedor />} />
         <Route path="inventario" element={<Inventario />} />
         <Route path="transferencias" element={<Transferencias />} />
         <Route path="precios" element={<Precios />} />
@@ -135,6 +144,7 @@ function Rutas() {
         <Route path="pedidos" element={<PedidosWeb />} />
         <Route path="clientes" element={<Clientes />} />
         <Route path="clientes/importar" element={<ImportarSaldos tipo="clientes" />} />
+        <Route path="clientes/verificar" element={<VerificarClientesArca />} />
         <Route path="usuarios" element={<Usuarios />} />
         <Route path="configuracion" element={<Configuracion />} />
         <Route path="facturacion" element={<Facturacion />} />
@@ -150,6 +160,8 @@ function Rutas() {
       */}
       <Route path="comprobante/:id" element={<ComprobanteImprimible />} />
       <Route path="no-fiscal/:id" element={<NoFiscalImprimible />} />
+      <Route path="orden-interna/:id" element={<OrdenInternaImprimible />} />
+      <Route path="pedido-proveedor/:id" element={<PedidoProveedorImprimible />} />
       <Route path="cuenta-corriente/:clienteId" element={<ResumenCuentaCorriente />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

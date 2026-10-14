@@ -8,6 +8,11 @@ import { boton } from '@/estilos'
 import { describirEnTienda } from '@/lib/api/ventaOnline'
 import type { EstadoEnTienda, TonoEnTienda } from '@/lib/api/ventaOnline'
 import HistorialDeCostos from '@/components/HistorialDeCostos'
+import CajaYSuelto from '@/components/CajaYSuelto'
+import HistorialDeStock from '@/components/HistorialDeStock'
+import { avanzarConEnter } from '@/lib/teclado'
+import { useBotonConAtajo } from '@/lib/atajos'
+import { TeclaAtajo } from '@/components/Atajos'
 
 export interface EstadoFormulario {
   campos: Partial<ProductoDetalle>
@@ -62,6 +67,8 @@ interface Props {
   enTienda: EstadoEnTienda | null
   /** Si en el formulario hay cambios sin guardar que cambian lo que ve la tienda. */
   tiendaPendiente: boolean
+  /** Abre un producto nuevo atado a éste, con sus datos ya puestos. Sin permiso de alta no se pasa. */
+  onCrearSuelta?: () => void
 }
 
 function Campo({
@@ -122,7 +129,9 @@ export default function ProductoEditor({
   onReferenciaCreada,
   enTienda,
   tiendaPendiente,
+  onCrearSuelta,
 }: Props) {
+  const botonGuardar = useBotonConAtajo('F9')
   const [codigoBarra, setCodigoBarra] = useState('')
   const refNombre = useRef<HTMLInputElement>(null)
 
@@ -183,7 +192,7 @@ export default function ProductoEditor({
     onCambio({ ...estado, tienda: { ...estado.tienda, ...parcial } })
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col" onKeyDown={avanzarConEnter}>
       <div className="flex items-center justify-between border-b border-borde px-5 py-3">
         <h2 className="font-semibold text-tinta">
           {esNuevo ? 'Nuevo producto' : estado.campos.nombre_interno || 'Producto'}
@@ -577,10 +586,25 @@ export default function ProductoEditor({
                 <strong>{estado.umbral.critico || 'sin definir'}</strong> (crítico)
                 {estado.umbral.propio
                   ? ', puesto para este producto.'
-                  : ', heredado de su categoría o del valor general.'}
+                  : ', heredado de su categoría o del valor general (se cambian en Stock → Avisos).'}
               </p>
             )}
           </div>
+
+          {/* Cómo llegó a ese número. El punto 2 de terminado: cada movimiento, con quién y cuándo. */}
+          {!esNuevo && estado.campos.id && (
+            <HistorialDeStock productoId={estado.campos.id} conDeposito={!!porDeposito && porDeposito.length > 1} />
+          )}
+        </Seccion>
+
+        <Seccion titulo="Caja y suelto">
+          <CajaYSuelto
+            productoId={esNuevo ? null : (estado.campos.id ?? null)}
+            envaseId={estado.campos.envase_id ?? null}
+            cantidadPorEnvase={estado.campos.cantidad_por_envase ?? null}
+            onCambio={(envase_id, cantidad_por_envase) => set({ envase_id, cantidad_por_envase })}
+            onCrearSuelta={onCrearSuelta}
+          />
         </Seccion>
 
         <Seccion titulo="Proveedor">
@@ -608,6 +632,35 @@ export default function ProductoEditor({
                 </option>
               ))}
             </select>
+          </Campo>
+          {/*
+            Para el pedido al proveedor: unos piden un mínimo en kilos y
+            otros en bultos. Se cargan con la planilla del catálogo; acá
+            se ven y se corrigen.
+          */}
+          <Campo etiqueta="Unidades por bulto" ayuda="Cuántas trae el bulto en que se compra">
+            <input
+              type="number"
+              step="any"
+              min="0"
+              value={estado.campos.unidades_por_bulto ?? ''}
+              onChange={(e) =>
+                set({ unidades_por_bulto: e.target.value === '' ? null : Number(e.target.value) })
+              }
+              className={`${claseInput} text-right tabular-nums`}
+              placeholder="—"
+            />
+          </Campo>
+          <Campo etiqueta="Peso de una unidad (kg)" ayuda="Para los que piden un mínimo en kilos">
+            <input
+              type="number"
+              step="any"
+              min="0"
+              value={estado.campos.peso_kg ?? ''}
+              onChange={(e) => set({ peso_kg: e.target.value === '' ? null : Number(e.target.value) })}
+              className={`${claseInput} text-right tabular-nums`}
+              placeholder="—"
+            />
           </Campo>
         </Seccion>
 
@@ -747,11 +800,13 @@ export default function ProductoEditor({
 
       <div className="flex items-center gap-2 border-t border-borde bg-piedra-50 px-5 py-3">
         <button
+          ref={botonGuardar}
           onClick={() => onGuardar(true, true)}
           disabled={guardando || umbralInvalido}
           className={`flex-1 ${boton.principal}`}
         >
           {guardando ? 'Guardando…' : 'Revisado y siguiente'}
+          {!guardando && <TeclaAtajo tecla="F9" clara />}
         </button>
         <button
           onClick={() => onGuardar(false, false)}

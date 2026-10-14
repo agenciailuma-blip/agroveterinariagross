@@ -184,6 +184,28 @@ where
     let _ = conexion.flush();
 }
 
+/*
+  Abrir el puerto, esperando un momento si todavía lo tiene la escucha
+  anterior.
+
+  Al cerrar, el hilo que atiende suelta el puerto recién cuando mira la
+  bandera de corte, hasta 120 ms después. Reabrir en ese rato falla con
+  «dirección en uso», y la caja quedaba sin escuchar hasta reiniciar el
+  programa: pasó en el local el 01/10, al volver internet.
+*/
+fn escuchar_en(direccion: &str, puerto: u16) -> std::io::Result<TcpListener> {
+    let mut intentos = 0;
+    loop {
+        match TcpListener::bind((direccion, puerto)) {
+            Err(e) if e.kind() == std::io::ErrorKind::AddrInUse && intentos < 20 => {
+                intentos += 1;
+                std::thread::sleep(Duration::from_millis(50));
+            }
+            resultado => return resultado,
+        }
+    }
+}
+
 #[tauri::command]
 pub fn abrir_punto_de_encuentro(app: AppHandle, clave: String, puerto: Option<u16>) -> Result<u16, String> {
     let puerto = puerto.unwrap_or(PUERTO);
@@ -201,23 +223,36 @@ pub fn abrir_punto_de_encuentro(app: AppHandle, clave: String, puerto: Option<u1
       programa comunicarse en redes privadas. Hay que decirle que sí, y
       es una sola vez en la máquina de la caja.
     */
-    let oyente = TcpListener::bind(("0.0.0.0", puerto)).map_err(|e| {
+    let oyente = escuchar_en("0.0.0.0", puerto).map_err(|e| {
         format!(
             "No se pudo escuchar en el puerto {puerto}. \
              Puede haber otro programa usándolo, o Windows puede haber bloqueado el acceso. ({e})"
         )
     })?;
 
-    let seguir = Arc::new(AtomicBool::new(true));
-    let bandera = seguir.clone();
+    /*
+      Y también en IPv6, porque es por donde Windows encuentra a la caja
+      cuando se la busca por nombre: en el local, el 01/10,
+      `ping DESKTOP-O4R9STD` contestó desde fe80::…. En Windows un oyente
+      IPv6 no atiende IPv4, por eso son dos. Si la máquina no tiene IPv6
+      no es un error: queda la de IPv4.
+    */
+    let oyente_v6 = escuchar_en("::", puerto).ok();
 
-    std::thread::spawn(move || {
-        atender(oyente, bandera, clave, move |m| {
-            // La ventana es la que sabe qué hacer con esto: guardarlo en
-            // su base local y mostrarle la venta al cajero.
-            let _ = app.emit("operaciones-de-la-red", m);
+    let seguir = Arc::new(AtomicBool::new(true));
+
+    for oyente in std::iter::once(oyente).chain(oyente_v6) {
+        let bandera = seguir.clone();
+        let app = app.clone();
+        let clave = clave.clone();
+        std::thread::spawn(move || {
+            atender(oyente, bandera, clave, move |m| {
+                // La ventana es la que sabe qué hacer con esto: guardarlo en
+                // su base local y mostrarle la venta al cajero.
+                let _ = app.emit("operaciones-de-la-red", m);
+            });
         });
-    });
+    }
 
     *guardia = Some(Escucha { seguir });
     Ok(puerto)
@@ -259,17 +294,46 @@ pub fn cerrar_punto_de_encuentro() -> Result<(), String> {
   igual que con la impresora. Lo que sí se hace es traducir el error de
   red a algo que se pueda leer en el mostrador.
 */
-fn hablar(host: &str, puerto: u16, mensaje: &str) -> Result<Respuesta, String> {
-    let destino = (host, puerto)
-        .to_socket_addrs()
-        .map_err(|_| format!("No se encontró «{host}» en la red del local."))?
-        .next()
-        .ok_or_else(|| format!("La dirección «{host}» no resolvió a ninguna computadora."))?;
 
-    let mut conexion = TcpStream::connect_timeout(&destino, ESPERA).map_err(|e| {
+/*
+  Las direcciones de la caja, con las IPv4 adelante.
+
+  Windows resuelve el nombre de otra PC del local devolviendo primero su
+  dirección IPv6 de enlace local (fe80::…), y la caja escucha sólo en
+  IPv4. Tomar la primera que vuelve es conectarse justo a la única
+  dirección donde no hay nadie. Se prueban todas, en este orden.
+*/
+fn primero_ipv4(mut destinos: Vec<std::net::SocketAddr>) -> Vec<std::net::SocketAddr> {
+    destinos.sort_by_key(|d| !d.is_ipv4());
+    destinos
+}
+fn hablar(host: &str, puerto: u16, mensaje: &str) -> Result<Respuesta, String> {
+    let destinos = primero_ipv4(
+        (host, puerto)
+            .to_socket_addrs()
+            .map_err(|_| format!("No se encontró «{host}» en la red del local."))?
+            .collect(),
+    );
+    if destinos.is_empty() {
+        return Err(format!("La dirección «{host}» no resolvió a ninguna computadora."));
+    }
+
+    let mut conexion = None;
+    let mut ultimo_error = None;
+    for destino in &destinos {
+        match TcpStream::connect_timeout(destino, ESPERA) {
+            Ok(c) => {
+                conexion = Some(c);
+                break;
+            }
+            Err(e) => ultimo_error = Some(format!("{destino}: {e}")),
+        }
+    }
+    let mut conexion = conexion.ok_or_else(|| {
         format!(
             "La computadora de la caja no contestó en {host}:{puerto}. \
-             Fijate que esté prendida y con el sistema abierto. ({e})"
+             Fijate que esté prendida y con el sistema abierto. ({})",
+            ultimo_error.unwrap_or_default()
         )
     })?;
 
@@ -415,5 +479,59 @@ mod pruebas {
             error.contains("prendida"),
             "el mensaje no dice qué mirar: {error}"
         );
+    }
+
+    /*
+      Lo que pasó en el local el 01/10: el nombre de la caja resolvía
+      primero a IPv6 y la caja escucha en IPv4.
+    */
+    #[test]
+    fn prueba_primero_las_ipv4() {
+        let v6: std::net::SocketAddr = "[fe80::1]:8737".parse().unwrap();
+        let v4: std::net::SocketAddr = "192.168.0.10:8737".parse().unwrap();
+        assert_eq!(primero_ipv4(vec![v6, v4]), vec![v4, v6]);
+    }
+
+    /*
+      Cerrar y reabrir enseguida, como cuando la ventana refresca la
+      terminal: el puerto todavía lo tiene la escucha que se está yendo.
+    */
+    #[test]
+    fn reabre_aunque_la_escucha_anterior_no_haya_soltado_el_puerto() {
+        let (puerto, seguir, _r) = levantar("clave");
+        seguir.store(false, Ordering::Relaxed);
+
+        let oyente = escuchar_en("127.0.0.1", puerto)
+            .expect("tendría que haber esperado a que se libere el puerto");
+        assert_eq!(oyente.local_addr().unwrap().port(), puerto);
+    }
+
+    // El otro lado del mismo arreglo: una caja que escucha en IPv6
+    // atiende al mostrador que llega por ahí.
+    #[test]
+    fn la_caja_atiende_por_ipv6() {
+        let oyente = TcpListener::bind("[::1]:0").expect("esta máquina no tiene IPv6");
+        let puerto = oyente.local_addr().unwrap().port();
+        let seguir = Arc::new(AtomicBool::new(true));
+        let bandera = seguir.clone();
+        std::thread::spawn(move || atender(oyente, bandera, "clave".into(), |_| {}));
+
+        let r = hablar("::1", puerto, r#"{"clave":"clave","tipo":"salud"}"#)
+            .expect("tendría que haber contestado por IPv6");
+        assert!(r.ok, "contestó que no: {}", r.detalle);
+        seguir.store(false, Ordering::Relaxed);
+    }
+
+    #[test]
+    fn llega_por_nombre_aunque_resuelva_primero_a_ipv6() {
+        let (puerto, seguir, _recibe) = levantar("clave-del-local");
+        let r = hablar(
+            "localhost",
+            puerto,
+            r#"{"clave":"clave-del-local","tipo":"salud","terminal":"Mostrador 1"}"#,
+        )
+        .expect("tendría que haber encontrado a la caja por su nombre");
+        assert!(r.ok, "contestó que no: {}", r.detalle);
+        seguir.store(false, Ordering::Relaxed);
     }
 }

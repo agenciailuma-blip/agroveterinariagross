@@ -15,6 +15,7 @@ import {
   USUARIO_NUEVO,
 } from '@/lib/api/usuarios'
 import type { UsuarioAdmin } from '@/lib/api/usuarios'
+import { avanzarConEnter } from '@/lib/teclado'
 
 type Pestania = 'gente' | 'roles'
 
@@ -217,7 +218,7 @@ function Personas() {
       )}
 
       {(creando || editando) && refs.data && (
-        <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-borde">
+        <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-borde" onKeyDown={avanzarConEnter}>
           <h2 className="mb-3 font-medium text-tinta">
             {creando ? 'Nueva persona' : `Editando ${form.nombre}`}
           </h2>

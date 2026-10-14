@@ -9,6 +9,8 @@ import { abrirComprobante, abrirNoFiscal } from '@/lib/escritorio'
 import { enCastellano } from '@/lib/errores'
 import { moneda, numero } from '@/lib/tipos'
 import { boton, botonChico, tarjeta } from '@/estilos'
+import { cambiosDesdeArca, clientePorCuit, consultarCuitEnArca, guardarCliente, referenciasFiscales } from '@/lib/api/clientes'
+import { cuitValido } from '@/lib/api/cheques'
 import {
   accionesPosibles,
   cancelar,
@@ -448,6 +450,10 @@ function FichaPedido({
         </div>
       )}
 
+      {p.estado !== 'cancelado' && (
+        <CondicionSegunArca documento={p.cliente_documento} facturado={!!p.comprobante_id} />
+      )}
+
       {p.estado === 'cancelado' && (
         <p className="rounded-lg bg-piedra-50 px-3 py-2 text-sm text-piedra-600 ring-1 ring-borde">
           Cancelado{p.cancelado_en ? ` el ${fechaHora(p.cancelado_en)}` : ''}
@@ -645,5 +651,96 @@ function FichaPedido({
         />
       )}
     </aside>
+  )
+}
+
+/*
+  La condición frente al IVA del comprador, según ARCA.
+
+  La tienda no pregunta si el comprador es responsable inscripto: manda
+  el CUIT y nada más. Sin esto, el cliente nuevo entraba como
+  consumidor final y salía Factura B aunque fuera inscripto. Antes de
+  facturar se le pregunta a ARCA, y si dice otra cosa se avisa acá,
+  con el botón para corregirlo.
+
+  Sólo mientras no tiene factura: después ya no cambia nada.
+*/
+function CondicionSegunArca({ documento, facturado }: { documento: string | null; facturado: boolean }) {
+  const { tienePermiso } = useAuth()
+  const qc = useQueryClient()
+  const cuit = (documento ?? '').replace(/\D/g, '')
+  const habilitado = cuitValido(cuit) && !facturado
+
+  const cliente = useQuery({
+    queryKey: ['cliente-por-cuit', cuit],
+    queryFn: () => clientePorCuit(cuit),
+    enabled: habilitado,
+  })
+  const arca = useQuery({
+    queryKey: ['arca-constancia', cuit],
+    queryFn: () => consultarCuitEnArca(cuit),
+    enabled: habilitado,
+    staleTime: 10 * 60_000,
+    retry: false,
+  })
+  const referencias = useQuery({ queryKey: ['referencias-fiscales'], queryFn: referenciasFiscales, staleTime: 10 * 60_000 })
+
+  const actualizar = useMutation({
+    mutationFn: async () => {
+      if (!cliente.data || !arca.data?.ok) return
+      await guardarCliente(cliente.data.id, cambiosDesdeArca(arca.data.datos))
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['cliente-por-cuit', cuit] })
+      qc.invalidateQueries({ queryKey: ['pedidos-web'] })
+    },
+  })
+
+  if (!habilitado) return null
+
+  const describir = (id: number | null | undefined) => {
+    const c = referencias.data?.condiciones.find((x) => x.id === id)
+    return c ? `${c.descripcion} · Factura ${c.tipo_comprobante}` : '—'
+  }
+
+  if (arca.isLoading || cliente.isLoading) {
+    return <p className="text-xs text-piedra-500">Consultando a ARCA la condición frente al IVA…</p>
+  }
+  if (!arca.data) return null
+  if (!arca.data.ok) {
+    return (
+      <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 ring-1 ring-amber-200">
+        No se pudo confirmar con ARCA la condición frente al IVA: {arca.data.error}
+      </p>
+    )
+  }
+
+  const deArca = arca.data.datos.condicion_iva_id
+  if (deArca === null) {
+    return (
+      <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 ring-1 ring-amber-200">
+        {arca.data.datos.avisos.join(' ')}
+      </p>
+    )
+  }
+  if (cliente.data && deArca === cliente.data.condicion_iva_id) {
+    return <p className="text-xs text-verde-700">ARCA lo confirma: {describir(deArca)}.</p>
+  }
+
+  return (
+    <div className="space-y-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900 ring-1 ring-amber-200">
+      <p>
+        <span className="font-medium">Según ARCA es {describir(deArca)}</span>
+        <span className="block text-xs">
+          {arca.data.datos.nombre} · hoy está cargado como {describir(cliente.data?.condicion_iva_id)}.
+        </span>
+      </p>
+      {cliente.data && tienePermiso('clientes.editar') && (
+        <button onClick={() => actualizar.mutate()} disabled={actualizar.isPending} className={botonChico.principal}>
+          {actualizar.isPending ? 'Actualizando…' : 'Actualizar el cliente con los datos de ARCA'}
+        </button>
+      )}
+      {actualizar.error && <p className="text-xs text-red-700">{enCastellano(actualizar.error)}</p>}
+    </div>
   )
 }

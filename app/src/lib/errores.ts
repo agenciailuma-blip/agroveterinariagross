@@ -17,7 +17,8 @@
   saber.
 */
 export function enCastellano(e: unknown, siNoSeSabe = 'No se pudo completar la operación.'): string {
-  const crudo = e instanceof Error ? e.message : ''
+  // El programa de escritorio rechaza con el texto pelado, no con un Error.
+  const crudo = e instanceof Error ? e.message : typeof e === 'string' ? e : ''
   if (!crudo.trim()) return siNoSeSabe
 
   /*

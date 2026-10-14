@@ -39,8 +39,16 @@ export interface Proveedor {
   cbu: string | null
   /** Alias de la cuenta, como lo da el banco. */
   alias: string | null
+  /*
+    El mínimo que acepta para un pedido, y en qué lo cuenta: unos piden
+    un monto, otros bultos y otros kilos. Vacío: no pide mínimo.
+  */
+  minimo_tipo: TipoMinimo | null
+  minimo_valor: number | null
   activo: boolean
 }
+
+export type TipoMinimo = 'monto' | 'bultos' | 'kilos'
 
 export const PROVEEDOR_NUEVO: Omit<Proveedor, 'id'> = {
   codigo: null,
@@ -61,11 +69,13 @@ export const PROVEEDOR_NUEVO: Omit<Proveedor, 'id'> = {
   observaciones: null,
   cbu: null,
   alias: null,
+  minimo_tipo: null,
+  minimo_valor: null,
   activo: true,
 }
 
 const CAMPOS =
-  'id, codigo, nombre, nombre_fantasia, condicion_iva_id, tipo_documento_id, numero_documento, domicilio, localidad, provincia, telefono, email, contacto, observaciones, cbu, alias, activo'
+  'id, codigo, nombre, nombre_fantasia, condicion_iva_id, tipo_documento_id, numero_documento, domicilio, localidad, provincia, telefono, email, contacto, observaciones, cbu, alias, minimo_tipo, minimo_valor, activo'
 
 export async function listarProveedores(texto = ''): Promise<Proveedor[]> {
   let q = supabase
@@ -82,7 +92,11 @@ export async function listarProveedores(texto = ''): Promise<Proveedor[]> {
 
   const { data, error } = await q
   if (error) throw new Error(error.message)
-  return (data ?? []) as Proveedor[]
+  // El mínimo llega como texto (numeric de la base).
+  return ((data ?? []) as Proveedor[]).map((p) => ({
+    ...p,
+    minimo_valor: p.minimo_valor == null ? null : Number(p.minimo_valor),
+  }))
 }
 
 /** Cuántos productos tiene asignados cada proveedor. */
@@ -150,6 +164,9 @@ function traducir(mensaje: string): string {
   }
   if (mensaje.includes('proveedor_cbu_valido')) {
     return 'El CBU o CVU no es válido: los dígitos verificadores no cierran. Fijate que no haya un número cambiado.'
+  }
+  if (mensaje.includes('proveedor_minimo_completo') || mensaje.includes('proveedor_minimo_valor_check')) {
+    return 'El pedido mínimo necesita las dos cosas: en qué lo cuenta y cuánto, mayor que cero.'
   }
   if (mensaje.includes('proveedor_alias_valido')) {
     return 'El alias no es válido: tiene entre 6 y 20 caracteres, sólo letras, números, puntos y guiones.'

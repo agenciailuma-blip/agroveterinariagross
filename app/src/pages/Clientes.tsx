@@ -13,10 +13,13 @@ import type { Cliente } from '@/lib/api/clientes'
 import ClienteEditor from '@/components/ClienteEditor'
 import CuentaCorriente from '@/components/CuentaCorriente'
 import { moneda, numero } from '@/lib/tipos'
+import { useBotonConAtajo } from '@/lib/atajos'
+import { TeclaAtajo } from '@/components/Atajos'
 
 type Pestania = 'datos' | 'cuenta'
 
 export default function Clientes() {
+  const botonGuardar = useBotonConAtajo('F9')
   const { perfil, tienePermiso } = useAuth()
   const qc = useQueryClient()
 
@@ -124,6 +127,15 @@ export default function Clientes() {
               className="rounded-lg px-4 py-2 text-sm font-medium text-marca-700 ring-1 ring-borde hover:bg-marca-50"
             >
               Importar planilla
+            </Link>
+          )}
+          {/* Después de importar: que la condición de cada uno sea la de ARCA. */}
+          {puedeEditar && (
+            <Link
+              to="/clientes/verificar"
+              className="rounded-lg px-4 py-2 text-sm font-medium text-marca-700 ring-1 ring-borde hover:bg-marca-50"
+            >
+              Verificar con ARCA
             </Link>
           )}
           {puedeCrear && (
@@ -313,6 +325,7 @@ export default function Clientes() {
                   </p>
                 )}
                 <button
+                  ref={botonGuardar}
                   onClick={() => guardar.mutate()}
                   disabled={
                     !form.nombre?.trim() ||
@@ -322,6 +335,7 @@ export default function Clientes() {
                   className="w-full rounded-lg bg-marca-700 px-4 py-2.5 text-sm font-medium text-white hover:bg-marca-600 disabled:opacity-40"
                 >
                   {guardar.isPending ? 'Guardando…' : creando ? 'Crear cliente' : 'Guardar cambios'}
+                  {!guardar.isPending && <TeclaAtajo tecla="F9" clara />}
                 </button>
               </div>
             )}

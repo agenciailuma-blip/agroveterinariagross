@@ -619,6 +619,55 @@ Pantalla **Compras**, entre Proveedores y Ventas. Se carga la cabecera de la fac
 
 **Verificado contra la base real:** 48 comprobaciones en [`supabase/pruebas/transferencias-entre-depositos.sql`](../../supabase/pruebas/transferencias-entre-depositos.sql), como usuario. La migración se corrió primero en seco junto con la prueba —todo en una transacción que se deshace—, porque toca el disparador por el que pasa cada venta.
 
+### ✅ 3e. La caja y la suelta — venta fraccionada (08/10)
+
+**El §3 del alcance de V1-A** («se da de baja la unidad completa y se vende por porción»), pedido por Lucas el 07/10 con su ejemplo: tiene una caja de diez pastillas, vende una, y tiene que ver nueve sueltas y ninguna caja. El 08/10 agregó que hay unos cinco productos de **tres niveles**: caja, tableta y pastilla. [Migración](../../supabase/migrations/20261008120000_la_caja_y_la_suelta.sql).
+
+**Productos atados, no un producto con el stock en la unidad más chica.** Cada nivel es un producto entero —su precio, su código de barras, su renglón en la factura—, y la suelta guarda de qué envase sale (`envase_id`) y cuántas trae (`cantidad_por_envase`). Con eso la venta, la factura, la copia sin internet, las devoluciones, los remitos y la API de la tienda no cambiaron una línea. Un solo producto con stock en pastillas obligaba a tocar todo eso a tres semanas del corte. Y es como trabajan en OBTech, donde abrir una caja es una transferencia al depósito *Fraccionamiento*.
+
+**La caja se abre sola, en la base.** Un disparador nuevo en el libro (`movimiento_stock_sin_sueltas_abre_envase`) corre después de que la venta ya se sumó al saldo —los AFTER van en orden alfabético, y `aplicar` va antes que `sin_sueltas`—. Si la suelta quedó en negativo en ese depósito, abre los envases que hagan falta y no más de los que hay: `apertura` negativo en el envase y `fraccionamiento` positivo —tipo nuevo— en la suelta, con la fecha, la persona, la terminal y el depósito de la venta. **Reacciona a venta, remito y apertura**: lo último es lo que hace andar los tres niveles solos —abrir una tableta que no hay deja la tableta en negativo, y eso abre una caja—. **No reacciona a ajuste, inventario ni transferencia**: dicen que el conteo dio menos o deshacen otra cosa, no que alguien abrió una caja.
+
+**La referencia de la apertura es el movimiento de la venta, nunca la venta.** Las devoluciones y la anulación leen «lo que salió por la venta» por `referencia_tipo = 'venta'`: si la apertura llevara esa referencia, anular la venta devolvería una caja cerrada y sacaría diez pastillas. Por eso va como `fraccionamiento`, con el id del movimiento que la provocó; en tres niveles, todas las aperturas apuntan al movimiento de la venta original.
+
+**Lo que vuelve, vuelve suelto.** Una anulación o una devolución reingresa la suelta; la caja ya está abierta y no se cierra.
+
+**Cuánto hay, contando lo que se puede abrir:** `app.disponible_abriendo(producto, depósito)`, las sueltas más lo que traen los envases enteros de arriba, recursiva. Media tableta no se abre y un envase vendido de más no resta. Con depósito, sólo lo de ese depósito: la caja del otro local no se abre acá. La copia local del mostrador hace la misma cuenta ([`lib/envases.ts`](../../app/src/lib/envases.ts), `disponibleLocal` en `consultas.ts`).
+
+**`vista_stock` suma tres columnas al final** —`envase_id`, `cantidad_por_envase`, `disponible`— y **el estado de una suelta se calcula con lo disponible**: con la caja llena, tres pastillas sueltas aparecerían en Crítico todos los días. El de la caja no cambia: avisa con sus cajas cerradas, que es lo que se le pide al proveedor. `vista_stock_por_deposito`, lo mismo por depósito. `vista_stock_canal` —la de la tienda— no se tocó.
+
+**El costo baja por la cadena.** Al atar, la suelta toma el costo del envase dividido lo que trae; cuando la recepción le cambia el costo a la caja, un disparador se lo cambia a la tableta, y el mismo disparador a la pastilla. El precio no: lo pone Lucas, y la ficha sugiere la división.
+
+**Lo que la base no deja:** que la cadena dé vueltas (la caja adentro de su pastilla), más de cuatro niveles, un envase que se abra en dos sueltas distintas (índice único), una suelta sin decir cuántas trae, o «trae 0». Un envase dado de baja no se abre.
+
+**En pantalla:** la ficha tiene la sección **Caja y suelto** —«Sale de adentro de», cuántas trae, «Se abre en», y **Crear la suelta**, que abre un producto nuevo con la categoría, la marca, el proveedor y el IVA de la caja—; arriba, la cadena: *«En stock: 1 CAJA · 9 SUELTO»* y el total contado en sueltas. Stock y la lista de Productos dicen *«9 sueltas · 19 abriendo lo cerrado»*. El mostrador muestra lo disponible y, debajo, las sueltas, con y sin internet.
+
+**Lo que no se hizo entonces:** la planilla de importación no traía las columnas de envase —✅ las trae desde el 12/10, ver §4—. Y la tienda publica las sueltas que hay, sin contar las que se pueden abrir: vende cajas.
+
+**Verificado contra la base real:** 26 comprobaciones en [`supabase/pruebas/caja-y-suelta.sql`](../../supabase/pruebas/caja-y-suelta.sql), con ventas cobradas y anuladas como un Administrador: el ejemplo de Lucas en tres niveles, abrir sólo lo que hace falta, lo que no alcanza, el ajuste que no abre, los frenos, el costo, la bolsa de 15 kg y el otro depósito. Se corrió en seco junto con la migración. **La corrida encontró un error real**: «trae 0» daba *division by zero* en vez del mensaje de la base; corregido antes de aplicar. **Se rompió a propósito** sacando `apertura` del disparador, y la prueba lo atrapó: quedaba la caja entera y la tableta en −1.
+
+### ✅ 3f. Los avisos de stock en sus tres niveles (09/10)
+
+**El §4 del alcance** («umbrales de stock bajo y crítico configurables en tres niveles: general, por categoría y por producto») y el punto 11 de terminado. La cascada existía en `vista_stock` desde agosto; faltaba dónde cargar el general y el de cada categoría. [Migración](../../supabase/migrations/20261009120000_avisos_de_stock.sql).
+
+- **Stock → Avisos** (`/stock/avisos`): el general, cada categoría con cuántos productos tiene (`avisos_por_categoria()`), y los productos con aviso propio. El de categoría se edita en un formulario debajo de la fila, a todo el ancho.
+- **`definir_umbral_categoria`** tiene la misma forma que la del producto: corre como quien llama y el permiso lo exige la RLS de `umbral_stock`.
+- **`definir_umbral_general`** es SECURITY DEFINER y controla `stock.configurar_umbrales` a mano: escribe en `configuracion`, que pide `configuracion.gestionar`, y el Encargado configura avisos pero no Configuración.
+- **Quitar un aviso marca `eliminado_en`, no borra.** Antes se borraba, y la sincronización —que baja por `actualizado_en`— nunca se enteraba: los mostradores seguían con el aviso viejo. Sigue habiendo una fila por producto y por categoría (los índices únicos no cambiaron); ponerlo de nuevo la revive. `vista_stock` y la copia local ignoran los marcados.
+- **La copia local subió a `VERSION_BAJADA = 3`**: vacía los avisos y los vuelve a bajar, y baja los productos enteros otra vez —lo que la 0.14.0 se olvidó al sumar `envase_id`—.
+
+**Verificado:** 27 comprobaciones en [`supabase/pruebas/avisos-y-movimientos.sql`](../../supabase/pruebas/avisos-y-movimientos.sql), como un Administrador y sin cuenta. Se rompió a propósito volviendo a borrar al quitar: atrapado.
+
+### ✅ 3g. El historial de movimientos de un producto (09/10)
+
+**El §4 del alcance** («con historial de cómo llegó a ese número») y el punto 2 de terminado («el movimiento queda con usuario y hora»). [Migración](../../supabase/migrations/20261009130000_historial_de_movimientos.sql) y [el arreglo del orden](../../supabase/migrations/20261009150000_la_apertura_antes_que_la_venta.sql).
+
+- **`movimientos_de_producto(producto, depósito, límite)`**: el libro del más nuevo al más viejo, con el **saldo después de cada movimiento** sumado en el orden en que pasaron (`ocurrido_en`), quién lo registró, quién vendió si es otro, la terminal, el depósito y si se hizo sin internet. SECURITY DEFINER para poder nombrar a las personas, con `stock.ver` controlado a mano.
+- **El documento sale del motivo**, que ya lo nombra («Venta CAJA1-000010», «Factura de compra 0002-…»): no hace falta cruzar tablas.
+- **A la misma hora, `fraccionamiento` va antes.** La venta de una suelta y la apertura de la caja tienen la misma hora a propósito; el desempate por id era al azar y la mitad de las veces la venta decía «queda −1». Visto en pantalla; la prueba lo arma con los ids en contra.
+- **En pantalla:** [`HistorialDeStock`](../../app/src/components/HistorialDeStock.tsx), cerrado en la ficha y abierto desde el nombre en cada fila de Stock, con *Ver más* de a 50.
+
+**Verificado:** en la misma prueba de los avisos. Se rompió ordenando por cuándo llegó y sacando el desempate: los dos atrapados.
+
 ### 🟡 3. Pantallas que faltan
 Reportes. *(El panel de comprobantes con semáforo, la configuración general, el inventario por sectores y las métricas de Inicio ya están hechos.)*
 
@@ -639,6 +688,23 @@ Decisiones que importan:
 **74 pruebas automáticas** cubren la lectura. La que más importa: `"12.500"` se lee como doce mil quinientos y no como doce con cinco — un precio mil veces más barato entrando al mostrador sin dar ningún error. **Ese error existía y lo encontró la prueba.**
 
 ⏳ Falta la planilla de Lucas. El importador ya está probado de punta a punta contra la base con un archivo desprolijo de ejemplo.
+
+**El mínimo y la suelta (12/10).** Cuatro columnas más, ninguna obligatoria. [Migración](../../supabase/migrations/20261012120000_la_planilla_trae_el_minimo_y_la_suelta.sql).
+- **`stock_bajo` y `stock_critico`** son el aviso propio del producto y pasan por `definir_umbral_producto()`, como la ficha. «Stock mínimo» se reconoce como crítico (Lucas: «cuando tenga dos bolsas, avisame que estoy en crítico»). Si viene uno solo, el otro queda como estaba, o toma el mismo número si no había aviso propio; si choca con el que estaba, se acomoda el que no vino. Reimportar el mismo número no reescribe la fila: cada reescritura viaja a todas las PC. Sin `stock.configurar_umbrales`, el producto entra y la fila lo dice.
+- **`sale_de` y `cantidad_por_envase`** atan la suelta por el código del envase. **La pantalla ordena las filas** (`ordenarPorEnvase`) por cuántos envases tienen arriba dentro de la planilla, así la caja existe cuando llega su suelta; `aFilasDelArchivo()` devuelve los mensajes en el orden del Excel. Si el envase no existe, ya se abre en otro producto o atarlo armaría una vuelta, el producto entra con el motivo en la fila, como el código de barra repetido —que antes cortaba la fila y ahora suma su aviso a los demás—.
+- **El costo de una suelta ya atada se vuelve a sacar de su envase** al final de la fila: el `update` general le pisaba el costo con el de la planilla, y el disparador sólo recalcula cuando cambia el envase o cuántas trae.
+- **Lo mal escrito se frena antes de crear el producto**, en la base y antes en la pantalla (`validar` de la definición de la planilla): crítico mayor que el bajo, negativos, una de las dos columnas de la suelta sin la otra, «trae 0», salir de sí mismo.
+- **Sin sinónimos ambiguos para la suelta:** *Envase* y *Unidades por caja* quedan sin mapear, porque en estas planillas dicen la presentación o el bulto del proveedor.
+
+**Verificado:** 29 comprobaciones en [`supabase/pruebas/importar-minimo-y-suelta.sql`](../../supabase/pruebas/importar-minimo-y-suelta.sql), en seco con la migración y después de aplicarla. Rotas a propósito en la base: sin el recálculo del costo (la pastilla quedó en 999), sin mirar la otra suelta del envase (*duplicate key* en vez del motivo) y con el número viejo ganando (*violates check constraint*). En la pantalla: sin `validar` y sin el orden. Las siete, atrapadas. En pantalla, una planilla con la cadena al revés entró atada y el aviso nombró la fila del Excel.
+
+**El peso y el bulto (12/10).** Para el pedido al proveedor, cuyo mínimo puede ser en kilos o en bultos. [Migración](../../supabase/migrations/20261012130000_el_peso_y_el_bulto.sql).
+- **`producto.peso_kg` y `producto.unidades_por_bulto`**, `numeric(14,4)`, con restricciones de mayor que cero (`producto_peso_positivo`, `producto_unidades_por_bulto_positivas`). Vacío quiere decir «no se sabe».
+- **No son `contenido`/`contenido_unidad`**, la reserva del 12/08 sin uso: el contenido puede venir en ml o g, y el pedido tendría que convertir para sumar kilos.
+- **No bajan a la copia local** (`sync.ts` pide columnas con nombre): el pedido se arma con internet, y sumarlas obligaría a subir `VERSION_BAJADA`.
+- **La planilla** las reconoce como *Peso (kg)*, *Kilos*, *Bulto*, *Unidades por caja*… —esta última ya no se confunde con la suelta—, y frena el cero antes de importar y en la base. **La ficha** las muestra en la sección Proveedor, y `explicarErrorDelProducto()` traduce el error de la base si alguien guarda un cero.
+
+**Verificado:** 4 comprobaciones más en la misma prueba (33). Rotas a propósito: sin frenar el cero (la base devolvía el nombre de la restricción) y con el `update` borrando lo que no vino; en la pantalla, sin la validación y sin la traducción. Las cuatro, atrapadas.
 
 ### ✅ 13a. La API de la tienda: leer el catálogo (18/09)
 
@@ -696,6 +762,47 @@ Segunda pieza de V1-B. `POST /pedidos` por la misma puerta y con la misma clave:
 - **55 comprobaciones por internet** contra la función publicada, incluido un pedido que entra de verdad y su reintento. Ese tramo va detrás de `API_TIENDA_ESCRIBIR=1` porque escribe una venta real; lo que dejó se borró después.
 - **25 pruebas nuevas de la puerta** en la suite de la app, que pasó de 353 a 378.
 - **Se rompió a propósito de siete maneras y las siete fueron atrapadas:** sin idempotencia, con lo no pagado descontando stock, con la puerta sin mirar la clave, sin avisar del precio raro, sin avisar de la falta de stock, deshaciendo el arreglo del precio de la línea, y desarmando el guardián del medio de pago. Y otras tres en la puerta: `/pedidos` aceptando `GET`, una lista pasando por pedido, y el detalle interno de Postgres saliendo al exterior.
+
+### ✅ 11b. La orden de compra interna (09/10)
+
+**Pedido de Lucas del 07/10, con su dibujo del 08/10** ([`pedidos-lucas-2026-10-07.md`](../pedidos-lucas-2026-10-07.md)). Un sector le pide a otro lo que hay que comprar, en papel. [Migración](../../supabase/migrations/20261009140000_orden_de_compra_interna.sql).
+
+- **Tablas nuevas:** `sector` (Depósito, Ventas, Venta mostrador, Administración, Consultorio, Compras; se suman con `crear_sector`, que reconoce un nombre repetido escrito distinto), `orden_compra_interna` (numerada por la base, con emite, recibe, observación, cliente y contacto, y estado *pendiente / pedida / anulada*) y sus renglones, que guardan código y descripción como estaban —un renglón sin producto es lo que no está en el catálogo—.
+- **Sólo se escriben por funciones:** `guardar_orden_interna` (crea, o reemplaza entera mientras está pendiente; el id lo genera la pantalla, así un reintento no crea dos), `marcar_orden_interna` (de quien compra, `compras.ver`) y `anular_orden_interna` (con motivo). La RLS sólo deja leer.
+- **Permiso nuevo `compras.solicitar`, para todos los puestos**: el de depósito pide sin ver costos ni cuentas. La sección Compras le aparece con una sola pestaña.
+- **`orden_interna(id)`** trae la orden con los nombres y los renglones ordenados por proveedor; la pantalla los agrupa.
+- **En pantalla:** Compras → *Órdenes internas* (`/compras/ordenes`) y la hoja A4 en `/orden-interna/:id`, fuera del menú como el resumen de cuenta. La firma, como en el dibujo: sólo la del responsable que emite.
+
+**Lo que no se hizo entonces:** el pedido al proveedor que arma Compras juntando órdenes —✅ hecho el 12/10, ver §11c— y que la recepción de mercadería avise «esto estaba pedido para el cliente X».
+
+**Verificado:** 31 comprobaciones en [`supabase/pruebas/orden-de-compra-interna.sql`](../../supabase/pruebas/orden-de-compra-interna.sql), como Administrador, como Vendedor —un administrador con el rol cambiado adentro de la transacción— y sin cuenta. Se rompió dejando que marque pedida quien sólo puede pedir: atrapado.
+
+### ✅ 11c. El pedido a proveedor (12/10)
+
+**Pedido de Lucas del 07/10, punto 3** ([`pedidos-lucas-2026-10-07.md`](../pedidos-lucas-2026-10-07.md)): armar el pedido mirando todo lo que se le compra a un proveedor. El mínimo de cada uno es variado (respuesta del 12/10). Migraciones: [el pedido](../../supabase/migrations/20261012140000_pedido_a_proveedor.sql), [sin sesión no se llaman](../../supabase/migrations/20261012141000_sin_sesion_no_se_llaman.sql) y [la orden con pedido no se corrige](../../supabase/migrations/20261012150000_la_orden_con_pedido_no_se_corrige.sql). Antes, el [peso y el bulto](../../supabase/migrations/20261012130000_el_peso_y_el_bulto.sql) de cada producto.
+
+- **El mínimo del proveedor:** `proveedor.minimo_tipo` (`monto` con IVA, `bultos` o `kilos`) y `minimo_valor`, los dos o ninguno. Se carga en la ficha, sección *Pedido mínimo*.
+- **`productos_para_pedido(proveedor)`:** sus productos activos, sin sueltas —se compra la caja—, con stock, aviso y estado (de `vista_stock`), el costo de la última compra a ese proveedor (`vista_costo_por_proveedor`) o el de la ficha, peso, bulto, y lo que pidieron las órdenes internas pendientes, sumado por producto con los ids de los renglones y los números de orden. Los renglones de órdenes que no están en el catálogo van primero, uno por renglón; un producto de otro proveedor aparece si una orden se lo pidió a éste.
+- **`hacer_pedido_proveedor(id, proveedor, renglones, observación)`:** numerado por la base, el id lo pone la pantalla y un reintento devuelve el mismo número. Cada renglón lleva el costo con que se calculó el total y el peso y el bulto del momento; el pedido, el mínimo como estaba. Los `lineas_orden` de cada renglón se atan con `orden_compra_interna_linea.pedido_id` sólo si siguen pendientes, son de ese proveedor y del mismo producto; si no, no sale nada («una orden interna cambió mientras se armaba el pedido»). **La orden queda pedida cuando entraron todos sus renglones** —una con renglones de dos proveedores, cuando se pidieron los dos—.
+- **`anular_pedido_proveedor`**, con motivo: suelta los renglones de órdenes y devuelve a pendiente las órdenes que había cerrado. El pedido no se corrige.
+- **`guardar_orden_interna` frena corregir una orden con renglones ya pedidos:** reemplazaba todos los renglones y el vínculo con el pedido se perdía. Visto con la función de antes (quedaban 0 renglones pedidos) y con el arreglo.
+- **Lectura:** `pedidos_a_proveedores` (lista con renglones y total) y `pedido_a_proveedor` (entero, con los datos del proveedor y las órdenes que cubrió). `orden_interna` suma `pedido_numero` por renglón.
+- **Permisos:** lo ve `compras.ver`; lo hace y lo anula `compras.registrar`. De paso, las funciones con permiso de dueño ya no se pueden llamar sin sesión (salvo la API de la tienda), y los avisos de stock fijan su `search_path`: lo había marcado el revisor de seguridad de Supabase.
+- **En pantalla:** Compras → *Pedidos* (`/compras/pedidos`): elegir el proveedor, *Pedir* arranca con lo de las órdenes, el mínimo con cuánto falta en su unidad y cuántos renglones no se pudieron contar, búsqueda y «sólo lo que hace falta», total al último costo; el borrador se guarda en `localStorage` por proveedor (`gross.pedido.<id>`) hasta hacer el pedido. El detalle, con *Copiar para WhatsApp* (sin precios ni códigos) y la nota de pedido A4 en `/pedido-proveedor/:id`, sin precios. Los cálculos viven en [`pedidosProveedor.ts`](../../app/src/lib/api/pedidosProveedor.ts).
+- **No baja a las PC del local:** se arma con internet.
+
+**Recibir desde el pedido (12/10, a la tarde).** [Migración](../../supabase/migrations/20261012160000_recibir_desde_el_pedido.sql) y [el aviso con sus productos](../../supabase/migrations/20261012161000_el_aviso_dice_sus_productos.sql).
+- **`compra.pedido_id`:** la factura se ata al pedido con `atar_compra_a_pedido` —sólo antes de recibir, mismo proveedor, pedido esperando—. **`recibir_mercaderia` no se tocó.**
+- **El disparador `compra_revisa_su_pedido`** (al cambiar `recibida_en`, `eliminado_en` o `pedido_id`) llama a `app.revisar_pedido_recibido`, que suma lo recibido por producto de las facturas vivas (`app.falta_del_pedido`): si llegó todo, el pedido pasa a `recibido`; si se había cerrado solo y una factura se dio de baja, vuelve a `pedido`. Uno cerrado a mano (`motivo_cierre`) no se toca. Lo que no está en el catálogo no cuenta para «llegó todo».
+- **`cerrar_pedido_proveedor`**, con motivo: lo que falta no viene. **`anular_pedido_proveedor`** ya no anula uno con mercadería recibida, y suelta la factura atada sin recibir.
+- **Para la pantalla:** `pedidos_por_recibir(proveedor)`, `pedido_para_recibir(pedido)` (lo que falta, con lo que la recepción necesita; lo que no está en el catálogo, aparte), `pedidos_a_proveedores` suma `llego_algo`, y `pedido_a_proveedor` suma `recibido` por renglón, `facturas` y `avisar` —las órdenes que eran para un cliente, con sus productos, para avisarle sólo cuando llega algo suyo—.
+- **En pantalla:** en la recepción, «Traer el pedido» y, al terminar, qué no vino y a quién avisar; en Pedidos, *Por recibir / Recibidos*, *Llegó en parte*, cuánto llegó por renglón y *Dar por terminado*. De paso, la recepción no se desplaza a lo ancho en el celular: letra más chica en la tabla, el porcentaje abajo, y el resultado en tarjetas.
+
+**Lo que no se hizo:** la numeración arranca alta —las corridas de prueba gastan números aunque se deshagan, como pasó con la orden interna—.
+
+**Verificado (recepción):** 26 comprobaciones en [`supabase/pruebas/recepcion-desde-el-pedido.sql`](../../supabase/pruebas/recepcion-desde-el-pedido.sql), en seco y después de aplicar. Rotas a propósito: anular con mercadería recibida, reabrir uno cerrado a mano, y el disparador sin mirar las bajas de factura (el pedido quedaba recibido). En pantalla: una factura con 6 bolsas y 10 de 24 pipetas dejó el pedido *Llegó en parte* con «faltan 14» y avisó al cliente; la segunda lo completó sin repetir el aviso; dar de baja una factura lo volvió a *por recibir*.
+
+**Verificado:** 39 comprobaciones en [`supabase/pruebas/pedido-a-proveedor.sql`](../../supabase/pruebas/pedido-a-proveedor.sql), en seco y después de aplicar; rotas a propósito: las sueltas a la vista, la orden pedida con renglones sin pedir y anular sin devolver, y en la pantalla, la fila en cero que entraba al pedido y el mínimo que contaba lo que no tiene dato. En pantalla, a 375 px y en escritorio: un pedido con los guantes de una orden, 7 bolsas y 24 pipetas llegó al mínimo de 100 kg, el borrador volvió después de ir a Stock, la orden quedó pedida con *En el pedido 000008* por renglón, se copió para WhatsApp, se imprimió, se anuló y la orden volvió a pendiente.
 
 ### 🟢 5. Deploy y empaquetado
 Cloudflare Pages (10 minutos cuando haya algo que publicar) y Tauri para las 4 PC del mostrador, con impresión ESC/POS a la Hasar por red.

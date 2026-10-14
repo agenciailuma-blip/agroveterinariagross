@@ -60,7 +60,7 @@ El catálogo. Es la pantalla donde se carga y se corrige todo lo que se vende.
 
 > **Vender online.** Nada sale a la tienda web hasta que alguien lo prende. Se prende en la ficha, a un grupo marcado, o **a una categoría o marca entera** —eligiéndola en el filtro, que muestra la cantidad y la prende toda, no sólo los primeros 100 de la lista—. Prendido, sale sólo si tiene **nombre público** y **precio**; si le falta algo, la ficha lo dice y el aviso cuenta cuántos quedaron afuera. Con qué lista de precios se publica se elige en **Precios → Tienda online**.
 
-> **Importar la planilla** (`Productos → Importar planilla`) acepta `.xlsx` y `.csv`. El sistema propone a qué campo corresponde cada columna y la persona confirma, viendo un dato de ejemplo — porque los encabezados mienten: una columna que dice "Precio" puede tener el costo. **Reimportar no duplica**: reconoce por código y actualiza. Una celda vacía no borra lo que ya había; un valor distinto sí lo pisa.
+> **Importar la planilla** (`Productos → Importar planilla`) acepta `.xlsx` y `.csv`. El sistema propone a qué campo corresponde cada columna y la persona confirma, viendo un dato de ejemplo — porque los encabezados mienten: una columna que dice "Precio" puede tener el costo. **Reimportar no duplica**: reconoce por código y actualiza. Una celda vacía no borra lo que ya había; un valor distinto sí lo pisa. **Trae también el aviso de stock** —*Stock mínimo* es el rojo; *Stock bajo*, el amarillo— **y la suelta** —*Sale de*, con el código de la caja, y *Cuántas trae*—; la caja puede estar en cualquier fila. Y **el peso y las unidades por bulto**, para el pedido al proveedor que pide un mínimo en kilos o en bultos; en la ficha están en la sección Proveedor.
 
 ---
 
@@ -75,7 +75,7 @@ Contesta **qué hay que pedir**. No es el catálogo con otra columna: arranca fi
 | **Qué veo** | Cuatro números arriba (sobrevendidos, críticos, bajos, en stock) que se leen de un vistazo · por producto: cuánto queda, con cuánto avisa, en qué estado está y **cuánto costaría reponerlo** hasta el umbral. |
 | **Qué exporto** | La lista de faltantes **al portapapeles**, en texto, lista para pegar. |
 
-> **El umbral de cada producto se configura en su ficha**, dentro de Productos. Si no tiene uno propio, hereda el de su categoría; y si la categoría tampoco, el general de Configuración.
+> **Con cuántos avisa cada producto** se cambia en la pestaña **Avisos**: el general y el de cada categoría. El de un producto solo, en su ficha. Gana el más específico. Y **tocando el nombre de un producto** se ven sus movimientos: cómo llegó a ese número.
 
 ---
 
@@ -123,7 +123,7 @@ A quién se le compra cada producto. Y, sobre todo, **cómo cambiarle el precio 
 
 | | |
 |---|---|
-| **Contiene** | Los proveedores, con su ficha corta: nombre, CUIT, contacto y **para transferirle: CBU o CVU y alias**. |
+| **Contiene** | Los proveedores, con su ficha corta: nombre, CUIT, contacto, **para transferirle: CBU o CVU y alias**, y su **pedido mínimo** —en pesos, bultos o kilos—. |
 | **Qué hago** | Crear, editar y dar de baja · **ajustar precios en masa** por proveedor y/o por rubro · **deshacer un ajuste**. |
 | **Qué veo** | Por proveedor: CUIT, contacto y **cuántos productos tiene asignados** — que es a cuántos les va a pegar un ajuste. |
 | **Qué exporto** | Nada. |
@@ -139,6 +139,8 @@ A quién se le compra cada producto. Y, sobre todo, **cómo cambiarle el precio 
 > Al deshacer, cada producto vuelve al precio **exacto** que tenía — no se aplica el porcentaje inverso, que por redondeo dejaría centavos corridos para siempre. Y **los productos que alguien corrigió a mano después se dejan como están**: esa corrección es más nueva y más deliberada.
 
 > **El CBU se controla al escribirlo**, con sus dos dígitos verificadores —la misma cuenta que hacen los bancos—, y la ficha dice de qué banco es. Un número cambiado es una transferencia a otra persona. Al registrarle un pago por transferencia, en Cuentas proveedores, el CBU, el alias y el CUIT aparecen **listos para copiar**.
+
+> **El pedido a proveedor** está en Compras → *Pedidos*: se elige el proveedor y aparecen todos sus productos con stock, aviso, último costo y lo que pidieron las órdenes internas. *Pedir* arranca con lo de las órdenes; la pantalla dice cuánto falta para el mínimo del proveedor. Se imprime sin precios o se copia para WhatsApp, y las órdenes que entraron quedan pedidas solas. Cuando llega la mercadería, al recibir la factura se **trae el pedido**: carga lo que falta llegar y, al terminar, dice qué no vino y a qué cliente avisarle. El pedido queda recibido solo cuando llegó todo, o se da por terminado a mano.
 
 ---
 

@@ -10,6 +10,7 @@ import {
   elegirHoja,
   OBLIGATORIOS,
   codigosDuplicados,
+  ordenarPorEnvase,
   prepararFilas,
   proponerMapeo,
 } from '@/lib/importacion/planilla'
@@ -96,17 +97,24 @@ export default function ImportarProductos() {
   const campoMapeado = (c: Campo) => Object.values(mapeo).includes(c)
   const faltanObligatorios = OBLIGATORIOS.filter((c) => !campoMapeado(c))
 
+  /*
+    Las cajas viajan antes que sus sueltas: la base ata la suelta a un
+    envase que ya exista. El informe vuelve en este orden, y por eso
+    las filas del Excel se toman de acá y no de `validas`.
+  */
+  const aMandar = ordenarPorEnvase(validas)
+
   const importar = useMutation({
     mutationFn: () => {
-      setAvance({ hechas: 0, total: validas.length })
+      setAvance({ hechas: 0, total: aMandar.length })
       return importarProductos(
-        validas.map((f) => f.datos),
+        aMandar.map((f) => f.datos),
         crearReferencias,
         (hechas, total) => setAvance({ hechas, total }),
       )
     },
     onSuccess: (r) => {
-      setResumen(aFilasDelArchivo(r, validas.map((f) => f.linea)))
+      setResumen(aFilasDelArchivo(r, aMandar.map((f) => f.linea)))
       setAvance(null)
       qc.invalidateQueries({ queryKey: ['productos'] })
       qc.invalidateQueries({ queryKey: ['avance-carga'] })
@@ -343,7 +351,9 @@ function Revision({
         disabled={validas === 0 || importando}
         className="rounded-lg bg-marca-700 px-5 py-2.5 font-medium text-white hover:bg-marca-600 disabled:opacity-40"
       >
-        {importando ? 'Importando…' : `Importar ${numero.format(validas)} productos`}
+        {importando
+          ? 'Importando…'
+          : `Importar ${numero.format(validas)} ${validas === 1 ? 'producto' : 'productos'}`}
       </button>
     </div>
   )

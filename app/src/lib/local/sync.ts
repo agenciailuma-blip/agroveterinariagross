@@ -45,7 +45,7 @@ const MAESTROS: Definicion[] = [
     tabla: 'producto',
     origen: 'producto',
     columnas:
-      'id, codigo, nombre_interno, nombre_publico, precio_venta, costo, margen_sobre_costo, unidad_medida, alicuota_iva_id, condicion_iva, categoria_id, marca_id, activo, revisado_en, actualizado_en, eliminado_en',
+      'id, codigo, nombre_interno, nombre_publico, precio_venta, costo, margen_sobre_costo, unidad_medida, alicuota_iva_id, condicion_iva, categoria_id, marca_id, activo, revisado_en, actualizado_en, eliminado_en, envase_id, cantidad_por_envase',
     mapear: (f) => ({
       ...f,
       busqueda: normalizar(`${f.codigo ?? ''} ${f.nombre_interno ?? ''} ${f.nombre_publico ?? ''}`),
@@ -60,7 +60,7 @@ const MAESTROS: Definicion[] = [
   {
     tabla: 'umbral',
     origen: 'umbral_stock',
-    columnas: 'id, ambito, producto_id, categoria_id, bajo, critico, actualizado_en',
+    columnas: 'id, ambito, producto_id, categoria_id, bajo, critico, actualizado_en, eliminado_en',
   },
   {
     tabla: 'cliente',
@@ -393,9 +393,15 @@ async function bajarColaCaja() {
 
   2 — 18/09: el cliente suma tipo de documento, domicilio y la
       exclusión de percepción, para poder facturar sin conexión.
+  3 — 09/10: el producto suma de qué envase sale y cuántas trae (la
+      caja y la suelta, 0.14.0, que se olvidó de subir este número), y
+      el aviso de stock suma `eliminado_en`. Los avisos además se
+      vacían antes de bajarlos: hasta hoy quitar uno lo borraba, y lo
+      borrado nunca llegó a las PC.
 */
-const VERSION_BAJADA = 2
+const VERSION_BAJADA = 3
 const TABLAS_DE_LA_VERSION_2 = ['cliente']
+const TABLAS_DE_LA_VERSION_3 = ['producto', 'umbral']
 
 async function rebajarLoQueCambio() {
   const marca = await db.cursor.get('version_bajada')
@@ -403,6 +409,10 @@ async function rebajarLoQueCambio() {
   if (guardada >= VERSION_BAJADA) return
 
   if (guardada < 2) await db.cursor.bulkDelete(TABLAS_DE_LA_VERSION_2)
+  if (guardada < 3) {
+    await db.cursor.bulkDelete(TABLAS_DE_LA_VERSION_3)
+    await db.umbral.clear()
+  }
 
   await db.cursor.put({
     tabla: 'version_bajada',
@@ -426,6 +436,15 @@ export async function bajarCambios() {
   Subida
   ─────────────────────────────────────────────────────────────
 */
+
+/*
+  Aviso de que entró algo a la cola.
+
+  Lo escucha la entrega a la caja: una venta que el vendedor acaba de
+  mandar no puede esperar al envío de cada minuto con el cliente
+  parado frente a la caja.
+*/
+export const avisosDeLaCola = new EventTarget()
 
 export async function encolar(
   lote: string,
@@ -465,6 +484,7 @@ export async function encolar(
       estado: 'pendiente' as const,
     })),
   )
+  avisosDeLaCola.dispatchEvent(new Event('encolada'))
 }
 
 async function enviarOperacion(op: OperacionPendiente) {

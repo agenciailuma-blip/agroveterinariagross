@@ -33,10 +33,10 @@ if (!url || !key) {
 const LIMITE_MS = 12_000
 
 /*
-  Salvo lo que espera a ARCA, que es otro servidor y tarda lo suyo: ver
-  lib/funcionesDeArca.ts. Cortarlo a los doce dejaba al cajero con un
-  error mientras el CAE salía igual, y lo hacía pasar por caída de
-  internet.
+  Salvo lo que espera a ARCA —el CAE, el CAEA y la consulta de un CUIT—,
+  que es otro servidor y tarda lo suyo: ver lib/funcionesDeArca.ts.
+  Cortarlo a los doce dejaba al cajero con un error mientras el CAE
+  salía igual, y lo hacía pasar por caída de internet.
 */
 function limitePara(entrada: RequestInfo | URL): number {
   return esFuncionDeArca(entrada) ? LIMITE_ARCA_MS : LIMITE_MS

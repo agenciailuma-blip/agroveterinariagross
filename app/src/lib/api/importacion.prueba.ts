@@ -21,4 +21,25 @@ describe('el número de fila de los mensajes', () => {
     expect(resumen.errores[0].fila).toBe(5)
     expect(resumen.avisos[0].fila).toBe(6)
   })
+
+  it('los lista en el orden del archivo aunque hayan viajado en otro', () => {
+    // La pastilla (fila 3 del Excel) viajó después de su caja (fila 9).
+    const lineas = [9, 3]
+    const resumen = aFilasDelArchivo(
+      {
+        creados: 2,
+        actualizados: 0,
+        errores: [],
+        avisos: [
+          { fila: 1, codigo: 'CAJA', resultado: 'creado', detalle: 'mirala' },
+          { fila: 2, codigo: 'PAST', resultado: 'creado', detalle: 'mirala' },
+        ],
+      },
+      lineas,
+    )
+    expect(resumen.avisos.map((a) => [a.fila, a.codigo])).toEqual([
+      [3, 'PAST'],
+      [9, 'CAJA'],
+    ])
+  })
 })

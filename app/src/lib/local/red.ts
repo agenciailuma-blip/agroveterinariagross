@@ -108,7 +108,7 @@ export async function ponerseAEscuchar(): Promise<{ puerto: number; nombre: stri
   Está separado del acceso a la base porque es la regla que puede
   equivocarse en silencio y salir cara, igual que `conciliarCola`.
 
-  Tres decisiones:
+  Cuatro decisiones:
 
   · La venta se le muestra al cajero **sólo si viene esperando cobro**.
     Un presupuesto o un remito que un mostrador manda para que suba
@@ -125,6 +125,11 @@ export async function ponerseAEscuchar(): Promise<{ puerto: number; nombre: stri
     la del mostrador no vuelve a encenderse, la venta sube igual desde
     acá. Lo peor que puede pasar es que la segunda choque contra la
     clave primaria, que es exactamente para lo que existen esos id.
+
+  · La cabecera viaja como va al servidor, **sin total**: allá lo
+    calcula la base. Acá no hay quien lo calcule, y la cola de la caja
+    mostraba «$ NaN» hasta que el cajero elegía cómo pagaba (en el
+    local, el 01/10). Se suma igual que el mostrador en su propia copia.
 */
 export function loQueSeGuarda(
   llegan: OperacionAbierta[],
@@ -137,17 +142,27 @@ export function loQueSeGuarda(
   const esVenta = (o: OperacionAbierta) => o.tipo === 'insert' && o.tabla === 'venta'
   const esLinea = (o: OperacionAbierta) => o.tipo === 'insert' && o.tabla === 'venta_linea'
 
-  const ventas = llegan
+  const enCaja = llegan
     .filter(esVenta)
     .map((o) => o.datos as unknown as VentaLocal)
     .filter((v) => v.estado === 'en_caja' && !yaCobradasAca.has(v.id))
 
-  const visibles = new Set(ventas.map((v) => v.id))
+  const visibles = new Set(enCaja.map((v) => v.id))
 
   const lineas = llegan
     .filter(esLinea)
     .map((o) => o.datos as unknown as VentaLineaLocal)
     .filter((l) => visibles.has(l.venta_id))
+
+  const ventas = enCaja.map((v) => ({
+    ...v,
+    total: v.total ?? Math.round(
+      lineas
+        .filter((l) => l.venta_id === v.id)
+        .reduce((s, l) => s + Number(l.cantidad) * Number(l.precio_unitario), 0) * 100,
+    ) / 100,
+    descuento_total: v.descuento_total ?? 0,
+  }))
 
   return { ventas, lineas, paraLaCola: llegan }
 }
@@ -203,12 +218,18 @@ export async function guardarLoQueLlego(mensaje: MensajeDelLocal): Promise<numbe
   Lo que todavía no llegó al servidor y todavía no se le pasó a la caja.
   Se sigue guardando en la cola después de entregarlo: la caja lo va a
   subir, pero si esa máquina se apaga, esta también tiene que poder.
+
+  Y por venta entera: si una operación del lote está subiendo, ese lote
+  espera al próximo envío. Los renglones sin su cabecera no le sirven a
+  la caja —no sabe de qué venta son— y, marcados como entregados, ya no
+  se vuelven a mandar.
 */
-export function loQueFaltaEntregar<T extends Pick<OperacionPendiente, 'entregado_en' | 'estado'>>(
+export function loQueFaltaEntregar<T extends Pick<OperacionPendiente, 'entregado_en' | 'estado' | 'lote'>>(
   cola: T[],
 ): T[] {
+  const subiendo = new Set(cola.filter((o) => o.estado === 'enviando').map((o) => o.lote))
   return cola.filter(
-    (o) => !o.entregado_en && (o.estado === 'pendiente' || o.estado === 'error'),
+    (o) => !o.entregado_en && (o.estado === 'pendiente' || o.estado === 'error') && !subiendo.has(o.lote),
   )
 }
 
@@ -348,8 +369,16 @@ export async function entregarALaCaja(terminal: Terminal | null): Promise<Entreg
     return { estado: 'no_contesta', esperando: falta.length, motivo: r.detalle }
   }
 
+  /*
+    Sólo la marca de entregado, sobre lo que todavía esté en la cola.
+    Mientras se hablaba con la caja, la subida pudo haber subido y
+    borrado alguna: reescribirla entera la traería de vuelta.
+  */
   const ahora = new Date().toISOString()
-  await db.outbox.bulkPut(falta.map((o) => ({ ...o, entregado_en: ahora })))
+  await db.outbox
+    .where('id')
+    .anyOf(falta.map((o) => o.id))
+    .modify({ entregado_en: ahora })
 
   return { estado: 'entregado', cuantas: falta.length }
 }

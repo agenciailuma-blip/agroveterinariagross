@@ -15,6 +15,7 @@ import { enCastellano } from '@/lib/errores'
 import CamposCheque from '@/components/CamposCheque'
 import { useTerminal } from '@/lib/terminal'
 import { moneda } from '@/lib/tipos'
+import { avanzarConEnter } from '@/lib/teclado'
 
 const fecha = new Intl.DateTimeFormat('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })
 
@@ -257,7 +258,7 @@ function ModalCobranza({
     // Con varios cheques la ventana crece hacia abajo: se desplaza entera,
     // en vez de quedar cortada arriba y abajo.
     <div className="fixed inset-0 z-50 overflow-y-auto bg-tinta/50 p-4">
-      <div className={`mx-auto my-8 w-full rounded-xl bg-white p-6 shadow-xl ${conCheque ? 'max-w-2xl' : 'max-w-md'}`}>
+      <div className={`mx-auto my-8 w-full rounded-xl bg-white p-6 shadow-xl ${conCheque ? 'max-w-2xl' : 'max-w-md'}`} onKeyDown={avanzarConEnter}>
         <h2 className="font-semibold text-tinta">Cobranza</h2>
         <p className="mt-0.5 text-sm text-piedra-500">
           {cliente.nombre} · debe {moneda.format(saldo)}

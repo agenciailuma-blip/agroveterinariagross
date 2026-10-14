@@ -1,5 +1,5 @@
 ---
-actualizado: 2026-09-30
+actualizado: 2026-10-12
 estado: en curso
 ---
 
@@ -12,7 +12,11 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Publicado: 0.13.0** (01/10), con **los cheques y el calendario de recibos** —sección nueva, Tesorería—, **el historial de costos por proveedor** y **el CBU del proveedor**, con el manual en PDF actualizado. Ver *Lo último que pasó*. **508 pruebas verdes en la app**, 95 migraciones aplicadas.
+**Publicado: 0.16.0** (12/10, a la noche). **El pedido a proveedor de punta a punta** —Compras → *Pedidos*, con el mínimo de cada proveedor, y la recepción de la factura que trae el pedido y dice qué no vino— **y la planilla de productos con el mínimo, la suelta, el peso y las unidades por bulto** (ver *Lo último que pasó*). Las PC del local la toman con *Actualizar ahora*. **589 pruebas verdes en la app**, 108 migraciones aplicadas.
+
+**Publicado: 0.15.0** (09/10), con **los avisos de stock en sus tres niveles** —una pestaña nueva en Stock, *Avisos*— y **el historial de movimientos de cada producto**, que eran los dos huecos que quedaban del alcance de V1-A, y con **la orden de compra interna** con el modelo de Lucas. Ver *Lo último que pasó*. **552 pruebas verdes en la app**, 101 migraciones aplicadas. Antes, la **0.14.0** (08/10), con **la caja y la suelta**: se carga la caja como llega y, cuando se vende una pastilla y no quedan sueltas, el sistema abre una caja solo —también en tres niveles, caja, tableta y pastilla—. Era el tercer hueco del alcance de V1-A. Ver *Lo último que pasó*. **538 pruebas verdes en la app**, 97 migraciones aplicadas. Antes, la **0.13.4** (05/10), con **los atajos de teclado** —propuesta para que Lucas la revise—, **el Enter del teclado numérico que pasa de campo** en los formularios de carga y **la venta que llega entera y enseguida a la caja sin internet**. Ver *Lo que sigue*, puntos 7 y *Lo primero de todo*. Antes, la **0.13.3** (01/10), con **los datos del cliente traídos de ARCA con el CUIT** —ficha, mostrador, verificación masiva y pedidos web; ver *Lo que sigue*, punto 14— y los arreglos de Cheques y Calendario vistos en pantalla. Antes, ese mismo día, la **0.13.2**, con **la venta que llega a la caja sin internet funcionando en el local** —probada con las dos PC y el módem desenchufado— y los tres arreglos que salieron de esa prueba. Ver *Lo último que pasó*. **527 pruebas verdes en la app**, 96 migraciones aplicadas.
+
+Antes, la **0.13.0** (01/10), con **los cheques y el calendario de recibos** —sección nueva, Tesorería—, **el historial de costos por proveedor** y **el CBU del proveedor**, con el manual en PDF actualizado.
 
 Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en pestañas y ninguna pantalla que se desplace hacia el costado; antes, ese mismo día, la 0.11.0 con **mover mercadería entre depósitos** y el stock de cada uno; antes, la 0.10.0 (28/09), con la importación de clientes con su saldo y de los saldos de proveedores; antes, la 0.9.0 ese mismo día, con *Factura después* y *Cajas y mostradores*; antes, la 0.8.0 ese mismo día, con la recepción de mercadería, las cuentas de proveedores y la percepción en la caja. Antes, la 0.7.0 (25/09), con **la pantalla Pedidos web**: preparar, facturar, entregar y cancelar lo que entra de la tienda. Antes, la 0.6.0 (24/09), con **«Vender online»** —qué productos salen a la tienda web se decide desde Productos— y con **el arreglo de la sincronización que impedía que el CAEA llegara a las máquinas**. Antes, la 0.5.0 con **la factura que sale sin internet** —la caja emite con CAEA y el ticket sale solo—. Antes, la 0.4.4 con la red del local que ahora **dice qué le pasa**, el cortacircuito que hace que la Caja abra rápido sin internet, y la cola de la caja que se actualiza al cambiar el medio de pago. Antes, ese mismo día, la 0.4.2 con el recargo por cuotas arreglado, los acentos del ticket y la impresión automática al cobrar. **La 0.4.1 quedó instalada en el local el 17/09, en todas menos la de Windows 7** — las versiones nuevas entran solas con *Actualizar ahora*. **470 pruebas verdes en la app y 11 en el programa**, 92 migraciones aplicadas.
 
@@ -22,12 +26,14 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 
 | Qué | Cómo se verifica |
 |---|---|
-| **Cheques: depositar, debitar, devolver y deshacer** (01/10) | 🟡 Probados contra la base, **no en pantalla todavía**: se cortó la prueba el 01/10 para mandar el manual. Lo demás sí se vio —ver *Lo último que pasó*—. Quedan los datos de prueba para seguir: el e-cheq Nación y el Credicoop en cartera, y el e-cheq propio Galicia por debitar. También falta mirar Cheques y Calendario a 375 px |
-| ~~La impresión por impresora de Windows~~ | ✅ **Imprimió el 17/09.** Falta ver en papel lo corregido después: los acentos y el ticket que sale solo al cobrar |
-| **La venta que llega a la caja sin internet** | 🔴 **Se probó el 17/09 y NO funcionó.** Ver *Lo que sigue* |
-| El actualizador de punta a punta | Apretando *Actualizar ahora* en una PC, sin desinstalar antes. **La 0.7.0 es la oportunidad** |
-| **Facturar sin internet, con CAEA** | 🔴 En el local, con la conexión cortada de verdad: cobrar en la caja y que salga el ticket con el CAEA. **Recién ahora es posible probarlo**: hasta el 24/09 el CAEA no llegaba a las máquinas (abajo). Cada PC tiene que sincronizar **una vez con internet** después de actualizar a la 0.6.0, y recién ahí tiene el código guardado |
-| **Que la sincronización llegue completa en las PC del local** | 🟡 Arreglado y verificado en el navegador el 24/09. En el local se comprueba en la pantalla de inicio: el indicador de arriba tiene que decir *Copia local lista* y **Configuración → La red del local** no tiene que mostrar errores |
+| **La factura 0009-00000001, emitida con CAEA en el local el 01/10** | 🟡 Quedó en la cola de la caja: el servidor la rechazaba por un permiso que faltaba, **ya agregado**. Sube sola la próxima vez que se abra el sistema en la caja con internet. Se comprueba en Comprobantes → Facturación: deja de decir *Falta subir* |
+| **La caja que sigue escuchando después de volver internet** (0.13.2) | 🟡 Arreglado y probado en esta PC, **no en el local**. Se comprueba actualizando la caja y el mostrador a la 0.13.3, abriendo varias pantallas con internet y mirando que *La red del local* siga diciendo **Escuchando ahora: Sí** |
+| ~~Cheques: depositar, debitar, devolver y deshacer~~ | ✅ **Vistos en pantalla el 01/10**, los cuatro, y Cheques y Calendario a 375 px. Calendario se desplazaba 13 px a lo ancho en el celular: corregido y publicado en la 0.13.3 |
+| ~~La impresión por impresora de Windows~~ | ✅ **Imprimió el 17/09**, y el 01/10 el ticket salió solo al cobrar, con *Régimen* y *Alícuota* bien escritos y sin el `$á` |
+| ~~La venta que llega a la caja sin internet~~ | ✅ **Funcionó en el local el 01/10**, con la 0.13.1. Llega lenta, de a partes: para mejorar más adelante |
+| ~~El actualizador de punta a punta~~ | ✅ **El 01/10**, caja y mostrador pasaron a la 0.13.1 con *Actualizar ahora*, sin desinstalar nada |
+| ~~Facturar sin internet, con CAEA~~ | ✅ **El 01/10**: la caja cobró sin internet y salió el ticket con el CAEA y su vencimiento. Falta que suba (primer renglón) |
+| ~~Que la sincronización llegue completa en las PC del local~~ | ✅ **El 01/10**: caja y mostrador con *Copia local lista* y sin errores en el diagnóstico |
 | ~~Las pantallas de **La red del local** y **Percepciones**~~ | ✅ **Vistas el 11/09.** Percepciones entera, con datos de agosto y el caso de la nota de crédito. De La red del local sólo se puede ver en el navegador el aviso de que hace falta el programa instalado: es así a propósito |
 
 🟡 **`cargo test` falla en esta máquina, y ya se sabe por qué: hay tres antivirus instalados.** Norton Security y Avast conviven con Windows Defender —que quedó desactivado, porque los otros dos le sacaron el control—. Cada `.exe` que el compilador crea lo intercepta el antivirus antes de que termine de escribirse, y el enlazador falla con `LNK1104`, «no se puede abrir el archivo». El archivo, efectivamente, no está: lo hicieron desaparecer.
@@ -38,11 +44,165 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 
 ## Lo primero de todo
 
-🔴 **Que la venta llegue a la caja sin internet.** Se probó en el local el 17/09 y no llegó. Es la promesa grande del sistema —el punto 2-bis— y lo único de V1-A que se probó y falló. Lo primero es que el mostrador **avise** cuando no encuentra a la caja: hoy no lo intenta y no dice nada, así que no se puede ni saber por qué falló.
+📋 **El guion de la prueba del corte** está en una página propia: https://claude.ai/artifact/2LjCRbUhEr8RPvmQRG8keD — los doce puntos de terminado del alcance, cinco controles previos y cinco pruebas de lo que se sumó, cada uno con sus pasos, cuándo sale bien, y botones para marcar *Anduvo* / *Falló* con una nota. **Los resultados quedan guardados** y se leen desde acá (colección `resultados`, un documento por punto: `a1`…`a5`, `p01`…`p12`, `e1`…`e5`). Es privada: para que Lucas marque, se la comparte como *Colaborador*.
 
-🔴 **Que cada PC sincronice una vez con internet, y que el CAEA quede guardado.** Hasta el 24/09 la bajada se cortaba y **el código para facturar sin internet no estaba en ninguna máquina** (ver *Lo último que pasó*). La base ya está arreglada, así que alcanza con abrir el sistema en cada PC estando en línea. **Cómo se comprueba**: el indicador de arriba dice *Copia local lista* y *La red del local* no muestra errores. Sin eso, la prueba del corte de internet vuelve a fallar y por el mismo motivo de fondo: el papel no sale.
+✅ **Los tres huecos del alcance de la fase 1-A, cerrados.** Los dos primeros se encontraron al armar el guion (05/10) y se cerraron el 09/10; el tercero, el 08/10. **Ninguno está en el guion de la prueba del corte** —los doce puntos no los nombran o los nombran de pasada—: conviene sumar las tres pruebas.
+- ~~**Umbrales de stock por categoría y general — no hay pantalla para cargarlos.**~~ ✅ **Stock → Avisos, en la 0.15.0.** El sistema los usa (hay uno para Antiparasitarios: bajo 5, crítico 2), pero sólo se pueden poner producto por producto, en su ficha. El punto 11 de terminado y el punto 4 del alcance («configurables en tres niveles: general, por categoría y por producto») lo piden.
+- ~~**El historial de movimientos de stock de un producto — no hay pantalla.**~~ ✅ **En Stock —tocando el nombre— y en la ficha, en la 0.15.0.** Cada movimiento se guarda con quién y cuándo, pero no se ve en ningún lado. El punto 2 de terminado («el movimiento queda con usuario y hora») y el punto 4 del alcance («con historial de cómo llegó a ese número») lo piden.
+- ~~**La venta fraccionada — la caja y la unidad suelta.**~~ ✅ **Hecha el 08/10 y publicada en la 0.14.0.**
 
-🟡 **El actualizador sigue sin probarse de punta a punta.** La 0.2.2 entró bien, pero desinstalando la versión vieja primero, así que **el arreglo del archivo tomado no se ejercitó**. **La 0.7.0 es la oportunidad**: en una sola PC, *Actualizar ahora*, sin desinstalar nada. Molesta después del 26/10, cuando una corrección tenga que llegar a las 4 PC sin viajar a Oberá.
+🟡 **Actualizar la caja y el mostrador a la 0.13.4** la próxima vez que se vaya al local, y abrir el sistema en la caja con internet para que suba la factura 0009-00000001. Hasta actualizar, **si se corta internet, cerrar y abrir el sistema en la caja** antes de vender: la 0.13.1 puede haber dejado de escuchar sin avisar.
+
+🟡 **Lo que la venta tardaba en llegar a la caja sin internet** — arreglado el 05/10 y publicado en la 0.13.4, **sin probar en el local**. El mostrador le pasaba las ventas a la caja una vez por minuto, y la caja miraba su cola cada ocho segundos: hasta 68 segundos con el cliente esperando. Y llegaba de a partes porque, mientras la cabecera intentaba subir al servidor —hasta doce segundos sin internet—, salían los renglones solos. Ahora la venta sale al segundo y medio de apretar *Enviar a caja* (y otra vez a los catorce, por si el intento de subir tardó), viaja entera o espera entera, y la caja la muestra apenas llega. Se comprueba en el próximo corte: la venta tiene que aparecer en la caja en un par de segundos y completa.
+
+---
+
+## Lo último que pasó — 12 de octubre
+
+### El pedido a proveedor, entero
+
+**Compras → *Pedidos*, nueva.** Se elige el proveedor y aparecen todos sus productos —sin las sueltas: se compra la caja—, con cuánto hay, con cuánto avisa, el último costo, el bulto, el peso y **lo que pidieron las órdenes internas**. *Pedir* arranca con lo de las órdenes y se completa a mano; arriba, **el mínimo del proveedor y cuánto falta**, en su unidad. El pedido sale numerado, se imprime **sin precios** o se copia para WhatsApp, y **las órdenes internas que entraron quedan pedidas solas**. El detalle, en [[Lo construido, en detalle]], §11c.
+
+> **Cómo se lo contás a Lucas:** en la ficha de cada proveedor ponés su pedido mínimo —en pesos, en bultos o en kilos—. Cuando vas a pedir, entrás a Compras → Pedidos, elegís el proveedor y ves todo lo que le comprás: lo que está en rojo arriba, y al lado lo que te pidió el de depósito en sus órdenes, que ya viene puesto. Sumás un poco de cada cosa y arriba te va diciendo «faltan 55 kg» hasta que llegás. Lo imprimís o lo copiás y se lo mandás por WhatsApp. Las órdenes del depósito quedan como pedidas.
+
+- **Una orden con renglones de dos proveedores** queda pedida recién cuando se pidieron los dos; cada renglón dice *En el pedido 000012*. **Anular el pedido** la devuelve a pendiente.
+- **Un pedido armado sobre una orden que cambió no sale**, y un reintento por un corte de conexión no lo hace dos veces.
+- **El pedido se va guardando en esa computadora** mientras se arma: se puede salir a mirar otra cosa y volver.
+- 🔴 **Encontrado al armarlo: corregir una orden interna con renglones ya pedidos les borraba el pedido**, y volvían a aparecer para pedir. Ahora no se puede corregir; primero se anula el pedido. Visto con la función de antes y con el arreglo.
+- **De paso, por el revisor de seguridad de Supabase:** las funciones con permiso de dueño ya no se pueden llamar sin iniciar sesión (salvo la API de la tienda, que entra con su clave), y los avisos de stock fijan su `search_path`. No eran una puerta abierta: todas controlan el permiso de la persona adentro.
+
+**Verificado:** **39 comprobaciones** en [`supabase/pruebas/pedido-a-proveedor.sql`](../supabase/pruebas/pedido-a-proveedor.sql), en seco y después de aplicar; **rota a propósito cinco veces** —tres en la base, dos en la pantalla— y las cinco atrapadas. **585 pruebas** en la app, 14 nuevas. Y en pantalla, en escritorio y a 375 px sin nada que se desplace: un pedido con los guantes de una orden, 7 bolsas y 24 pipetas llegó al mínimo de 100 kg; el borrador volvió después de ir a Stock; la orden quedó pedida; se copió, se imprimió y se anuló, y la orden volvió a pendiente. La ficha del proveedor no deja guardar un mínimo sin número.
+
+⚠️ **Datos de prueba que quedaron:** el pedido **000008**, anulado, y la orden interna **000015**, anulada; el proveedor *PRUEBA PEDIDOS SRL* y sus productos *PRUEBA-PP-…*, dados de baja. **La numeración de pedidos arranca en el 8**: las corridas de prueba gastan números aunque se deshagan.
+
+### Y la recepción, desde el pedido
+
+**Al recibir la mercadería de una factura, si hay pedidos a ese proveedor esperando, se ofrecen: *Traer el pedido* carga sus productos con lo que falta llegar.** Al terminar dice si llegó completo o qué no vino, y si algo de lo que llegó lo había pedido un cliente, a quién avisarle. El detalle, en [[Lo construido, en detalle]], §11c.
+
+> **Cómo se lo contás a Lucas:** cuando llega la factura del proveedor y vas a recibir la mercadería, arriba te aparece el pedido que le hiciste. Tocás *Traer el pedido* y ya están los productos con las cantidades: corregís lo que vino distinto y copiás los costos del papel. Al final te dice qué no vino. Si el resto llega en otra factura, traés el mismo pedido; si no va a venir, en Pedidos tocás *Dar por terminado*. Y si algo era para un cliente, te avisa a quién llamar.
+
+- **El pedido queda recibido solo cuando llegó todo**; si llegó una parte, dice *Llegó en parte* y, en cada renglón, cuánto llegó y cuánto falta.
+- **Dar de baja una factura que había completado un pedido lo vuelve a dejar por recibir.** Uno cerrado a mano no se reabre.
+- **Con mercadería recibida, el pedido ya no se anula**: se da por terminado. Anularlo devolvería las órdenes a pendiente y se pediría dos veces lo mismo.
+- **El aviso al cliente sale sólo cuando llega algo suyo**: visto en pantalla, salía también en la segunda factura, que traía sólo lo de otro.
+- **`recibir_mercaderia` no se tocó**: la factura se ata al pedido antes de recibir, y un disparador mira cuánto llegó.
+- **De paso, la recepción ya no se desplaza a lo ancho en el celular**: la tabla se pasaba 9 px —«Quitar» quedaba cortado— y el resultado, 94. Estaba así desde el 28/09.
+
+**Verificado:** **26 comprobaciones** en [`supabase/pruebas/recepcion-desde-el-pedido.sql`](../supabase/pruebas/recepcion-desde-el-pedido.sql), en seco y después de aplicar; **rota a propósito tres veces** —anular con mercadería recibida, reabrir uno cerrado a mano, y el disparador sin mirar las bajas de factura— y las tres atrapadas. **589 pruebas** en la app. Y en pantalla: una factura con las 6 bolsas y 10 de las 24 pipetas dejó el pedido *Llegó en parte* con «faltan 14» y el aviso al cliente; dar de baja la segunda factura lo volvió a *por recibir*; una tercera con las 14 lo completó sin repetir el aviso. A 375 px, nada se desplaza.
+
+⚠️ **Datos de prueba que quedaron:** el pedido **000021** y la orden interna **000021**, anulados; las facturas *0009-00777001* a *00777003* de *PRUEBA RECEPCION SRL*, dadas de baja (su mercadería salió del stock); el proveedor, sus productos *PRUEBA-RP-…* y el cliente *PRUEBA CLIENTE RECEPCION*, dados de baja.
+
+
+**La planilla de productos trae el mínimo y la suelta.** Lucas dijo el 07/10 que el mínimo lo va a cargar al dar de alta los productos, y conviene que esté listo antes de que llegue su Excel. **Construido, verificado y aplicado en la base; la pantalla falta publicarla (0.15.1).** El detalle, en [[Lo construido, en detalle]], §4.
+
+> **Cómo se lo contás a Lucas:** en el Excel del catálogo sumá una columna *Stock mínimo*: con ese número el producto se pone en rojo. Si querés también el amarillo —«hay que ir pidiendo»—, otra columna *Stock bajo*. Para lo que se vende suelto, dos columnas más: *Sale de*, con el código de la caja, y *Cuántas trae*. La caja puede estar en cualquier fila.
+
+- **«Stock mínimo» es el crítico**, como lo dijo Lucas: «cuando tenga dos bolsas, avisame que estoy en crítico». Si viene sólo el mínimo, el amarillo queda con el mismo número; si el producto ya tenía un aviso propio, se cambia sólo el número que vino.
+- **Es el mismo aviso de la ficha**, y pasa por la misma función: lo que se quitó se puede volver a poner, y el cambio llega a las PC del local.
+- **La suelta se ata por el código de su caja.** La pantalla manda primero las cajas y después lo que sale de ellas, aunque en el Excel estén al revés, y los mensajes siguen nombrando la fila del Excel, ahora en orden. Si la caja no existe, ya se abre en otra cosa o atarla armaría una vuelta, el producto entra igual y la fila lo dice.
+- **El costo de una suelta sigue saliendo de su caja**, aunque la planilla le traiga uno propio. Lo mostró la prueba rota a propósito: sin eso, la pastilla quedaba con el costo del Excel.
+- **Lo mal escrito no crea nada y se avisa antes de importar:** un mínimo mayor que el bajo, un número negativo, una suelta sin cuántas trae (o al revés), «trae 0», un producto que sale de sí mismo.
+- **Las columnas *Envase* y *Unidades por caja* no se toman como suelta:** en una planilla de agroveterinaria dicen «Bidón» o cuánto trae el bulto del proveedor, y frenarían todas esas filas.
+
+**Verificado:** **29 comprobaciones** en [`supabase/pruebas/importar-minimo-y-suelta.sql`](../supabase/pruebas/importar-minimo-y-suelta.sql), como un Administrador, corridas en seco junto con la migración antes de aplicarla y otra vez después. **Se rompió a propósito tres veces en la base** —sin volver a sacar el costo de la caja, sin mirar si la caja ya se abre en otra cosa, y dejando que el número que estaba le gane al que vino— **y cuatro en la pantalla**: las siete fueron atrapadas. **566 pruebas** en la app, 14 nuevas. Y en pantalla: una planilla con la pastilla arriba de su tableta y la tableta arriba de su caja reconoció las siete columnas sin ayuda, frenó antes de importar la fila del mínimo mal escrito, entraron las otras cinco y la cadena quedó atada; el único aviso nombró la fila 7 del Excel, que era la correcta. La ficha de la caja mostró su aviso (3 y 1) y los tres niveles. Nada se desplaza a lo ancho en 375 px. **Los productos de prueba quedaron dados de baja** (*PRUEBA-PLAN-…*). El manual ya lo explica, en Productos.
+
+**Llegó la respuesta del mínimo de los proveedores:** es variado. Hay proveedores directos y otros que revenden varias marcas, y cada uno se maneja distinto: unos piden un monto, otros bultos, otros kilos. Ver *Lo que sigue*, punto 16.
+
+### Y el peso y el bulto de cada producto
+
+Para que el pedido al proveedor pueda decir «faltan 40 kilos» o «faltan 2 bultos», cada producto tiene que saber cuánto pesa y cuántas unidades trae el bulto en que se compra. **Se sumaron como dos columnas más de la planilla**, para que entren con el Excel del catálogo, y **en la ficha, sección Proveedor**, donde se ven y se corrigen.
+
+> **Cómo se lo contás a Lucas:** en el Excel sumá *Peso (kg)* —cuánto pesa una unidad: la bolsa de 15 kg, 15— y *Unidades por bulto* —cuántas trae la caja en que se la comprás al proveedor—. No hace falta para todo: el peso, para lo que se le pide a un proveedor que cuenta en kilos; el bulto, para el que cuenta en bultos.
+
+- **Columnas nuevas, no las de «contenido»** que estaban sin uso: el contenido puede estar en mililitros o gramos, y el pedido tendría que convertir para sumar kilos. El peso va siempre en kilos.
+- **No bajan a las PC del local:** el pedido se arma con internet, y sumarlas a la copia local obligaría a volver a bajar los productos en cada máquina.
+- **«Unidades por caja» se lee como bulto**, no como suelta: en una planilla de compras es lo que trae el bulto del proveedor.
+- **Cero no se acepta** —ni en la planilla ni en la ficha—; vacío sí, y quiere decir «no se sabe».
+
+**Verificado:** la misma prueba suma 4 comprobaciones (**33**), en seco y después de aplicar. Rota a propósito dos veces en la base —sin frenar el cero y borrando lo que la planilla no trae— y dos en la pantalla: las cuatro atrapadas. **571 pruebas** en la app. En pantalla, a 375 px: la planilla reconoció *Peso (kg)* y *Unidades por caja* sin ayuda y frenó un peso en cero; el producto entró con 15 kg y 1 por bulto, la ficha los mostró en Proveedor, y guardar un peso en cero dijo *«El peso tiene que ser más que cero. Si no se sabe, dejalo vacío.»* sin guardar nada. El producto de prueba (*PRUEBA-PESO-1*) quedó dado de baja. De paso, el botón dice *Importar 1 producto* y no *1 productos*.
+
+✅ **Publicada la 0.16.0 el 12/10** —lleva todo lo del 12/10; la 0.15.1 no llegó a salir—. Verificado en Cloudflare: `actualizaciones/latest.json` dice 0.16.0, el instalador se descarga y la web es la nueva. **El manual nuevo ya se puede mandar.** Publicarla costó tres vueltas, anotadas en *Cómo arrancar* → *Publicar una corrección*: PowerShell no deja correr `npm`, el antivirus corta la conexión de wrangler, y el control de permisos de las sesiones no deja publicar desde el chat.
+
+---
+
+## Lo último que pasó — 9 de octubre
+
+**Los dos huecos que quedaban del alcance de V1-A, cerrados, y la orden de compra interna. Publicado en la 0.15.0.** El detalle, en [[Lo construido, en detalle]], §3f, §3g y §11b.
+
+### 1. Los avisos de stock, en sus tres niveles
+
+**Una pestaña nueva en Stock: *Avisos*.** El general y el de cada categoría —con cuántos productos tiene cada una—, y la lista de los productos que tienen uno propio. El del producto se sigue cambiando en su ficha.
+
+> **Cómo se lo contás a Lucas:** en Stock → Avisos ponés con cuánto avisa todo el local, y si una categoría necesita otro número —Alimentos, que se pide por bolsa—, se lo ponés a la categoría y vale para todos sus productos. Un producto que necesita uno propio, en su ficha. Gana el más específico.
+
+- **El general lo cambia quien configura avisos** (Administrador y Encargado), con una función propia: vivía en Configuración, que el Encargado no puede tocar.
+- 🔴 **Encontrado de paso: quitar un aviso no llegaba a las PC del local.** Se borraba la fila, y la sincronización baja «lo que cambió», no lo borrado: el mostrador seguía pintando Crítico con un aviso que ya no existía. Ahora quitar marca la fila (`eliminado_en`) y la marca viaja. Pasaba también con el aviso del producto, desde el 08/09.
+
+### 2. El historial de movimientos de cada producto
+
+**En Stock, tocando el nombre de un producto, y en su ficha, en el desplegable *Movimientos de stock*.** Cada movimiento con cuándo pasó, qué fue, el documento, quién lo hizo y en qué computadora, cuánto movió y **cuánto quedó después**. Lo que se hizo sin internet va a la hora en que pasó y lleva la marca *sin internet*. Era el punto 2 de terminado: «el movimiento queda con usuario y hora».
+
+- 🔴 **Encontrado mirándolo en pantalla:** la venta de una suelta y la apertura de la caja pasan en el mismo instante, y el orden entre las dos quedaba al azar. La mitad de las veces el historial habría dicho «Venta −1, queda −1». Ahora la apertura va siempre antes. Migración aparte, con una prueba que lo arma a propósito con el desempate en contra: sin el arreglo da `{9, −1}`.
+
+### 3. La orden de compra interna
+
+**Compras → *Órdenes internas*, como el dibujo de Lucas.** Emite y recibe de una lista de sectores (se suman ahí mismo), renglones con código, descripción, el proveedor de la ficha ya puesto y cantidad, renglones libres para lo que no está en el catálogo, observación y el cliente con su contacto. Se imprime en A4 con la firma del responsable. Ver [`pedidos-lucas-2026-10-07.md`](pedidos-lucas-2026-10-07.md), punto 2.
+
+> **Cómo se lo contás a Lucas:** el de depósito entra a Compras → Órdenes internas, toca *Nueva orden*, elige «Depósito» y «Compras», pasa el lector por lo que falta y pone cuánto. Al lado de cada producto ya aparece a quién se le compra. La imprime, la firma y te la da. Vos la marcás *pedida* cuando la pediste. Las pendientes quedan a la vista hasta que alguien las resuelve.
+
+- **La hace cualquier puesto** (permiso nuevo, *compras.solicitar*, para todos) **sin ver costos ni cuentas**; **marcarla pedida es de quien compra** (*compras.ver*).
+- **Se corrige mientras está pendiente**; pedida o anulada, ya no. Se anula con motivo.
+- **No mueve stock ni plata**: tablas y funciones nuevas, al costado de lo que anda.
+- **Lo que no está todavía: el pedido al proveedor** —elegir un proveedor y ver todos sus productos con stock, mínimo y lo que pidieron las órdenes—. Espera una respuesta de Lucas: el mínimo que le acepta un proveedor, ¿es en plata, en bultos o en kilos?
+
+### 4. Lo que faltaba de la 0.14.0
+
+**La copia local de las PC ahora baja los productos enteros una vez.** El proyecto lo exige cada vez que se suman columnas a lo que baja la copia local, y la 0.14.0 —la caja y la suelta— no lo hizo: una suelta armada mientras una PC seguía con la versión anterior habría quedado, en esa PC, sin saber de qué caja sale. Sólo afectaba lo que muestra el mostrador, no lo que se descuenta. Con la 0.15.0 cada PC vuelve a bajar los productos y los avisos una vez.
+
+**Verificado contra la base real:** **27 comprobaciones** en [`supabase/pruebas/avisos-y-movimientos.sql`](../supabase/pruebas/avisos-y-movimientos.sql) y **31** en [`supabase/pruebas/orden-de-compra-interna.sql`](../supabase/pruebas/orden-de-compra-interna.sql) —la orden también como Vendedor y sin cuenta—, corridas en seco junto con las migraciones. **Se rompió a propósito cuatro veces** —quitar un aviso borrando la fila, el historial ordenado por cuándo llegó, la apertura después de la venta, y el vendedor marcando pedida— y **las cuatro fueron atrapadas**. **552 pruebas** en la app, 14 nuevas. Y en pantalla: un aviso de 20/8 a Alimentos pasó de 2 a 4 sus críticos y quitarlo llegó a la copia local marcado; el general a 12/4 y de vuelta a 10/3, y un crítico mayor que el bajo apaga el botón; el historial de la suelta de prueba; una orden con dos productos —con su proveedor puesto— y un renglón libre, corregida, marcada pedida, vuelta a pendiente y anulada, y su hoja impresa. Nada se desplaza hacia el costado en 375, 640, 768 ni 1024 px —la hoja de la orden se pisaba en el celular, corregida—.
+
+⚠️ **Datos de prueba que quedaron:** la orden interna **000002**, anulada («Prueba del sistema, 09/10») —la 000001 se la llevó una corrida de prueba que se deshizo—, y el aviso de Alimentos, quitado. Siguen los de la caja y la suelta (*PRUEBA-CAJA10* y su suelta).
+
+---
+
+## Lo último que pasó — 8 de octubre
+
+**La caja y la suelta, construida, verificada y publicada en la 0.14.0.** Lucas la pidió el 07/10 y el 08/10 contestó que le parecía bien, y que hay unos cinco productos que se venden por caja, por tableta y por pastilla. Era el tercer hueco del alcance de V1-A. El detalle, en [`pedidos-lucas-2026-10-07.md`](pedidos-lucas-2026-10-07.md) y en [[Lo construido, en detalle]], §3e.
+
+> **Cómo se lo contás a Lucas:** cargás la caja como te llega. En la ficha de la caja tocás *Crear la suelta*, ponés cuántas trae y el precio de la pastilla, y listo; si hay tres niveles, a la tableta le creás su suelta, la pastilla. Cuando el vendedor vende una pastilla y no quedan sueltas, el sistema abre una tableta, y si no quedan tabletas, abre una caja. Te va a mostrar *0 cajas, 9 tabletas, 9 pastillas*: nunca una caja que ya no está. El aviso de stock bajo lo da la caja, que es lo que pedís; nueve pastillas sueltas con la caja llena no te aparecen como faltante.
+
+- **Cada nivel es un producto**, con su precio y su código; la suelta dice de qué envase sale y cuántas trae. Por eso la venta, la factura, el trabajo sin internet, las devoluciones y la tienda no cambiaron.
+- **La caja la abre la base, en la misma venta**, también para las PC que todavía no se actualizaron. Queda en el libro como apertura, con la venta que la provocó, quién y cuándo.
+- **Lo que vuelve, vuelve suelto**: la caja ya está abierta.
+- **El costo de la suelta sale de la caja** y se actualiza solo con cada recepción; **el precio lo pone Lucas**, y la ficha sugiere la división.
+- **En pantalla:** la sección *Caja y suelto* en la ficha, *«9 sueltas · 19 abriendo lo cerrado»* en Stock y en Productos, y en el mostrador lo disponible con las sueltas debajo, con y sin internet.
+
+Verificado contra la base real: **26 comprobaciones** en [`supabase/pruebas/caja-y-suelta.sql`](../supabase/pruebas/caja-y-suelta.sql), con ventas cobradas y anuladas como un Administrador, corridas en seco junto con la migración antes de aplicarla. **La corrida encontró un error real** —«trae 0» daba una división por cero en vez del mensaje de la base— y se corrigió antes de aplicar. Se rompió a propósito sacándole al disparador la reacción a la apertura, y la prueba lo atrapó. **538 pruebas** en la app, 11 nuevas. Y en pantalla: se creó la suelta desde la ficha de una caja, se simuló la venta de una y quedaron 1 caja y 9 sueltas; la copia local del mostrador contó lo mismo que el servidor; nada se desplaza hacia el costado en 375, 640 ni 768 px —la lista de Productos se pasaba 45 px con la línea nueva, corregido—.
+
+⚠️ **Quedaron como datos de prueba** los productos *PRUEBA-CAJA10* (1 caja) y *PRUEBA-CAJA10-S* (9 sueltas), con una venta simulada en el libro. Sirven para mostrárselo a Lucas; después, darlos de baja.
+
+**Y la consulta de CUIT a ARCA ya anda contra ARCA de pruebas**: Lucas creó la autorización el 08/10. Con su CUIT devolvió el nombre y el aviso de que le falta el domicilio fiscal electrónico —la pantalla lo muestra y deja elegir la condición a mano—; con el de una empresa, la constancia completa; y con otro, *«ARCA no devolvió los datos»* con el motivo. Los datos de pruebas de ARCA son inventados, así que no sirven para controlar contenidos, sólo que se lean bien. **Falta lo mismo para producción**, con el certificado de producción.
+
+**Lucas mandó el modelo de la orden de compra interna**: un dibujo como una factura, con *Emite* y *Recibe* desplegables, código, descripción, proveedor y cantidad, observación, el contacto del cliente si es para uno, y la firma del responsable. Ver *Lo que sigue*, punto 16.
+
+---
+
+## Lo último que pasó — 1 de octubre, en el local y a la tarde
+
+**La venta llegó a la caja sin internet.** Era la promesa grande —el punto 2-bis— y lo único de V1-A que se había probado y fallado. Con el módem desenchufado, el mostrador mandó la venta, la caja la cobró, emitió con el CAEA y el ticket salió solo, con los acentos bien.
+
+> **Cómo se lo contás a Lucas:** si se corta internet, el vendedor manda la venta a la caja igual que siempre, por el cable del local, y la caja la cobra y le da el ticket al cliente. Cuando vuelve internet, todo sube solo.
+
+**Por qué no andaba el 17/09:** el mostrador buscaba a la caja por su nombre, y Windows contesta primero con la dirección nueva (IPv6, `fe80::…`), donde la caja no escuchaba. `ping DESKTOP-O4R9STD` lo mostró en el local. Arreglado en la 0.13.1: el mostrador prueba todas las direcciones, primero las IPv4, y la caja escucha también en IPv6. *Probar la conexión* ahora dice el motivo real cuando falla —antes se perdía y decía sólo «No se pudo hablar con el punto de encuentro»—.
+
+**Lo que salió de la prueba, ya arreglado:**
+- 🔴 **La factura emitida con CAEA no subía.** El servidor contestaba *«new row violates row-level security policy for table secuencia_comprobante»*: la función que la recibe corre como el usuario, y había permiso para leer y actualizar la serie pero no para crearla. La 0009-00000001 era la primera de su serie. Migración `permiso_crear_secuencia`, aplicada; **7 comprobaciones** en [`supabase/pruebas/factura-caea-sin-conexion.sql`](../supabase/pruebas/factura-caea-sin-conexion.sql), como usuario, que antes de la migración daban el mismo error del local. Las pruebas viejas corrían como dueño de la base y no lo veían.
+- 🔴 **La caja dejaba de escuchar al volver internet.** Cada pantalla que consulta la terminal la refresca, y eso reiniciaba la escucha; al reabrir, el puerto seguía tomado unos milisegundos y Windows lo negaba. Ahora la escucha depende sólo de si la terminal es la que escucha, y al reabrir espera a que se libere el puerto. Probado en esta PC: sin la espera, «dirección en uso»; con ella, reabre. En la 0.13.2.
+- 🟡 **«$ NaN» en la cola de la caja** mientras llegaba la venta: la cabecera viaja sin total, porque con internet lo calcula el servidor. Ahora la caja lo suma de los renglones. En la 0.13.2.
+
+**Y a la tarde, los cheques en pantalla:** depositar, deshacer el depósito, devolver al cliente y marcar un propio como debitado, con los datos de prueba. Los cuatro anduvieron. A 375 px, Cheques y sus ventanas entran; **Calendario se desplazaba 13 px a lo ancho** —la grilla de Entra / Sale no tenía columna para el celular—, corregido. También el texto de debitar un solo cheque, que decía *«Marcar debitados»*. Los dos arreglos salieron en la 0.13.3.
+
+⚠️ **Los datos de prueba de cheques quedaron cambiados:** el e-cheq Nación N° 12345 quedó *devuelto* y el Galicia N° 90001, *debitado*. Siguen pendientes de borrar el cliente PRUEBA CHEQUES, los proveedores PRUEBA CHEQUES SRL y PRUEBA COSTOS DOS, y el producto PRUEBA-CHQ.
 
 ---
 
@@ -586,7 +746,7 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 4. ~~**Devoluciones parciales**~~ ✅ **Hechas el 11/09 y publicadas el 14/09** en la 0.3.1.
 5. ~~**Reportes**~~ ✅ **Hecha y publicada el 11/09** en la 0.3.0.
 6. ~~**La versión móvil**~~ ✅ **Hecha y publicada el 14/09 (0.4.1).** Lo prometido en la primera reunión: *consultar stock, ver reportes o pasar un precio desde el depósito*; vender sigue siendo en la PC con el lector. Cómo se instala en el celular: [paso 10](instalacion-en-el-local.md). **Falta probarla en un teléfono de verdad.**
-7. **Todo con teclado** — **en espera**: Gross tiene que confirmar qué atajos prefiere. Cuando se haga, van definidos en un solo lugar del código y Configuración los **muestra** en una lista; que se puedan editar por PC, sólo si lo piden (cada máquina con teclas distintas complica capacitar y dar soporte).
+7. **Todo con teclado** — ✅ **construido el 05/10 y publicado en la 0.13.4; los atajos son una propuesta para que Lucas la revise.** **La navegación:** en los formularios de carga, **el Enter del teclado numérico pasa al campo siguiente** —pedido así: el del teclado numérico, no el grande—. El Enter grande queda como estaba, y por eso el lector de códigos, que manda el grande, no se confunde. Saltea botones y textos largos, respeta los campos que ya usan Enter (agregar un código de barra) y en el último campo no hace nada. Está en clientes, productos, proveedores, factura de compra, recepción, cobranza con cheques, pagos y saldos de proveedores, usuarios y Configuración. **Los atajos**, definidos en un solo lugar ([`atajos.ts`](../app/src/lib/atajos.ts)) y mostrados con **F1** desde cualquier pantalla y en **Configuración → Esta computadora**: F2 Mostrador (en el Mostrador, vuelve al buscador), F3 elegir cliente en el Mostrador / próxima venta en la Caja, F4 Caja, F6 Clientes, F7 Productos, F8 Stock, **F9 lo principal de la pantalla** —enviar a caja, cobrar, guardar, aceptar—, Esc cerrar. F9 aprieta el botón de verdad, así que si está apagado no hace nada; los botones llevan la tecla escrita al lado. Las de ir a otra pantalla sólo llevan adonde la persona puede entrar. Están en el manual, bloque *Trabajar con el teclado*. **Verificado en pantalla:** F1 y Esc, F2/F4/F6/F7/F8, F2 y F3 en el Mostrador, F9 guardando una ficha de cliente y el Enter numérico recorriendo la ficha en orden. **Falta:** que Lucas confirme o cambie teclas —cambiar una es cambiar la tabla— y probar F3 y F9 en la Caja con una venta en la cola.
 8. ~~**Que Gross dé de alta sus cajas y mostradores desde el sistema.**~~ ✅ **Hecho el 28/09.** Pedido por Francisco el 28/09, **para después de la cuenta corriente de proveedores y la percepción en la caja**. Hoy una terminal nueva la da de alta alguien de nuestro lado; con dos locales en camino, Gross tiene que poder hacerlo solo desde Configuración.
 9. ~~🟡 **Ordenar el sistema: menú, Configuración y celular.**~~ ✅ **Hecho el 30/09**, arriba. Lo que se había pedido:
    - **El menú de la izquierda tiene demasiadas entradas.** La referencia es OBTech —pocas secciones arriba y submenús con varias opciones—, como ejemplo de orden y no para copiarlo. La idea a evaluar: agrupar lo que se usa junto (Stock, Inventario y Transferencias como pestañas de una sección; Proveedores, Compras y Cuentas proveedores en otra; Facturación, Remitos y Presupuestos en otra). Transferencias ya quedó sin entrada propia a propósito, para no sumarle una más.
@@ -596,6 +756,16 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 11. ~~🟡 **Cheques: recibidos, endosados a proveedores y propios.**~~ ✅ **Construido el 30/09**, con las cuatro respuestas de Lucas y el calendario de recibos. Falta verlo en pantalla y publicarlo. [`cheques.md`](cheques.md).
 12. ~~🟡 **El historial de costos por proveedor**~~ ✅ **Construido el 30/09**: el desplegable en la ficha del producto y Compras → Costos. Falta verlo en pantalla y publicarlo.
 13. ~~🟡 **Los datos bancarios de cada proveedor: CBU, CVU o alias.**~~ ✅ **Construido el 30/09**: en la ficha del proveedor, y listos para copiar en el pago por transferencia. Falta verlo en pantalla y publicarlo.
+
+14. 🟡 **Traer los datos del cliente de ARCA con el CUIT, y no preguntar nunca la condición frente al IVA.** ✅ **Construido el 01/10 y publicado en la 0.13.3.** Observación de ese día: los sistemas actuales piden sólo el CUIT y completan solos razón social, domicilio y condición; el cliente dice «factura A» y nada más. Se hace con el servicio de ARCA **Consulta de Constancia de Inscripción** (`ws_sr_constancia_inscripcion`), con el mismo certificado que factura. Con DNI no hay consulta: es consumidor final.
+    - **Dónde está:** la **ficha del cliente** —con un CUIT bien escrito aparece *Traer datos de ARCA*, y en un cliente nuevo la consulta sale sola—; el **buscador de clientes del mostrador** —un CUIT que no está ofrece *Traer de ARCA y agregarlo*, lo da de alta y lo deja elegido, y la tarjeta dice *Responsable Inscripto · Factura A*—; **Clientes → Verificar con ARCA**, para después de importar de OBTech: pregunta por cada cliente con CUIT, lista los que tienen otra condición y los corrige de una vez, y aparte los CUIT mal escritos o inexistentes; y **el detalle de un pedido web** sin facturar, que consulta solo y avisa si ARCA dice otra condición, con el botón para actualizar el cliente. El nombre que se pone en el local no se pisa en la verificación masiva: sólo la condición.
+    - **Verificado:** la función `arca-constancia` está desplegada; desde la app, un CUIT mal escrito se frena antes de preguntar, sin sesión contesta 401, y con sesión llega a ARCA firmada con el certificado: hoy ARCA contesta *«Computador no autorizado a acceder al servicio»*, y la pantalla lo dice así. **17 pruebas** de cómo se lee la respuesta de ARCA —inscripto, monotributo, monotributo social, exento, empleado sin IVA, empresa, CUIT inactivo, constancia observada, inexistente—, rotas a propósito de tres maneras y las tres atrapadas. En pantalla, con la respuesta de ARCA simulada: el alta desde el mostrador, la verificación masiva con su corrección y el aviso del pedido web con su actualización. Los datos de prueba quedaron dados de baja.
+    - ✅ **Con ARCA de pruebas, verificada el 08/10**: Lucas autorizó el servicio en WSASS y las tres respuestas reales —con aviso, completa y rechazada— se leyeron bien. 🔴 **Falta la autorización para el certificado de producción**, con el trámite del certificado —está en [`certificado-produccion.md`](certificado-produccion.md)—.
+    - ⏱️ **La primera consulta del día tarda** lo que ARCA en dar el permiso: diez segundos en pruebas, medido. Las siguientes, medio segundo. Por eso esa llamada tiene un límite de 30 s y no los 12 del resto.
+    - La página de la API de la tienda se actualizó a la **versión 4**: con el CUIT alcanza, la condición no hace falta.
+
+15. ~~🔴 **La caja y la unidad suelta**~~ ✅ **Construida el 08/10 y publicada en la 0.14.0**, con tres niveles. Ver *Lo último que pasó*. Lo que se había planteado: Pedido de Lucas del 07/10. **Dos productos atados** —la caja, que se compra y se cuenta, y la suelta, con su precio— y **la caja se abre sola** cuando se vende una suelta y no quedan sueltas: queda en el libro como *Apertura de caja*. Stock, la ficha y el mostrador las muestran juntas: *0 cajas cerradas + 9 sueltas*. Uno solo con el stock en unidades obligaría a tocar la venta, la factura, la copia sin internet y la API; dos atados no tocan nada de eso, y es como ya trabajan en OBTech. **Mediano**; el disparador nuevo va en el libro de stock y se corre en seco antes de aplicar. Detalle, decisiones y tres preguntas para Lucas en [`pedidos-lucas-2026-10-07.md`](pedidos-lucas-2026-10-07.md).
+16. 🟢 **La orden de compra interna y el pedido a proveedor** — V1-B, §11. ✅ **La orden interna, construida el 09/10 y publicada en la 0.15.0** (ver *Lo último que pasó*). ✅ **El pedido a proveedor, construido el 12/10, con la recepción desde el pedido** (ver *Lo último que pasó*). **El mínimo de cada proveedor es variado** (respuesta del 12/10): hay directos y otros que revenden varias marcas, y unos piden un monto, otros bultos, otros kilos. La propuesta: en la ficha del proveedor, el mínimo con su unidad —pesos, bultos, kilos o ninguno—, y en el pedido, cuánto falta para llegar en esa unidad. ✅ **El peso de cada producto y sus unidades por bulto ya se cargan** (12/10), en la planilla y en la ficha: es lo que necesitan los kilos y los bultos. Lo que se había planteado: Pedido de Lucas del 07/10, **con su modelo dibujado el 08/10** (en [`pedidos-lucas-2026-10-07.md`](pedidos-lucas-2026-10-07.md), punto 2). **Orden interna:** número y fecha arriba al costado, *Emite* y *Recibe* desplegables con los sectores (Depósito, Ventas, Venta mostrador, Administración, Consultorio…), renglones con código, descripción, proveedor de la ficha y cantidad —y libres, para lo que no está en el catálogo—, observación, el contacto del cliente si es para uno, y la firma del responsable al pie de la hoja impresa. **Pedido a proveedor:** se elige un proveedor, aparecen todos sus productos con stock, mínimo y lo que pidieron las órdenes, y se arma la orden que se le manda. **Lucas aclaró que «umbrales de stock por proveedor» quería decir esto**, no un umbral distinto por proveedor: el mínimo sigue siendo por producto. Pantallas nuevas, sin riesgo para lo que anda: no bloquean el corte, pero se pueden hacer antes si sobra tiempo. ~~De paso, **la planilla de importación de productos tiene que traer el mínimo**~~ ✅ **Hecho el 12/10**, junto con la suelta. Falta publicarlo.
 
 > ✅ **Los desplegables de *Percepciones* ya usan el estilo común**, así que muestran el recuadro de foco como el resto del sistema — un paso menos para el punto 6. La pantalla tenía además el botón y la tarjeta escritos a mano; los tres ahora salen de [`estilos.ts`](../app/src/estilos.ts).
 
@@ -623,6 +793,13 @@ Dos, y las dos cambian el tamaño de algo. Están desarrolladas en sus documento
 
 1. ¿Le llevan **la cuenta a cada proveedor** en OBTech, o eso lo miran en otro lado? → [`plan-compras.md`](plan-compras.md)
 2. En la grilla del IVA de compras, la columna **Centro de Costo**: ¿elegís algo o la dejás como viene? → [`compras-e-iva.md`](compras-e-iva.md)
+
+Y cuatro de los audios del 07/10, desarrolladas en [`pedidos-lucas-2026-10-07.md`](pedidos-lucas-2026-10-07.md):
+
+3. En OBTech, ¿la caja y la unidad suelta son **dos artículos distintos**? Sin contestar; con pocos casos, se atan a mano en la ficha.
+4. ~~¿Hay productos de **dos niveles**?~~ ✅ Sí, unos cinco: caja, tableta y pastilla. Construido así.
+5. ~~El **precio de la suelta**~~ ✅ Lo pone él; la ficha sugiere la división.
+6. ~~El **mínimo que acepta un proveedor**, ¿es en plata, en bultos o en kilos?~~ ✅ Es variado: depende del proveedor. Ver el punto 16.
 
 Las cuatro de los cheques se contestaron el 30/09. Queda una de configuración, para cuando se mire la pantalla: **¿a un cheque diferido se le cobra otro precio?** Hoy usa la lista de contado.
 
@@ -672,6 +849,12 @@ Está andando y verificado. Si algo de acá se rompe, es una regresión:
 - **Anular un pago a proveedor devuelve el cheque a la cartera antes de sacarle el proveedor.** Al revés, la base lo frena: un cheque endosado sin proveedor no puede existir. Pasó en la primera corrida en seco.
 - **El historial de costos compara el costo con IVA** (`costo_con_iva`), nunca el del papel. El de una A viene sin IVA: compararlo contra una B daría un 21% de aumento que no existe.
 - **El CBU lo controla la base con sus dos dígitos verificadores** (`app.cbu_valido`). Un número cambiado es una transferencia a otra persona.
+- **La apertura de una caja lleva como referencia el movimiento de la venta, nunca la venta** (`referencia_tipo = 'fraccionamiento'`). La anulación y las devoluciones leen «lo que salió por la venta»: con la venta como referencia, anular devolvería una caja cerrada y sacaría diez pastillas.
+- **El disparador que abre la caja corre después del que suma al saldo**, por orden alfabético: `movimiento_stock_aplicar` antes que `movimiento_stock_sin_sueltas_abre_envase`. Renombrar cualquiera de los dos puede hacer que lea el saldo de antes de la venta y no abra nada. Y **reacciona a `apertura`**: es lo que hace andar los tres niveles. Se probó sacándolo.
+- **El estado de una suelta se calcula con lo disponible** —sueltas más lo que se puede abrir—, en `vista_stock` y en la copia local. Con las sueltas solas, la pastilla de una caja llena aparece en Crítico todos los días.
+- **Quitar un aviso de stock marca la fila (`eliminado_en`), no la borra.** La sincronización baja lo que cambió: lo borrado no llega a las PC y el mostrador sigue avisando con un número que ya no existe. Se probó volviendo a borrar.
+- **El historial ordena por cuándo pasó (`ocurrido_en`), no por cuándo llegó, y a la misma hora la apertura de la caja va antes.** Por cuándo llegó, una venta hecha sin internet cambia los saldos del medio; sin la apertura antes, la venta de una suelta dice «queda −1».
+- **Cada vez que la copia local baja columnas nuevas de una tabla, se sube `VERSION_BAJADA`** en `sync.ts` y se borra el cursor de esa tabla. La 0.14.0 se lo olvidó y la 0.15.0 lo corrigió.
 - **La impresora se guarda por terminal, no en la configuración del comercio.** Volverla a un solo valor para todo el local deja tres de las cuatro PC imprimiendo a un nombre que en su lista no existe. Y el nombre se elige de la lista de Windows: escribirlo a mano falla en silencio.
 
 ## Cómo arrancar
@@ -684,7 +867,7 @@ Queda en `http://localhost:5173`.
 
 ⚠️ **El conector de Supabase tiene que apuntar a `ywggnhoifhtoncnxrodh`.** Hay tres conectores y **dos apuntan a otro lado**. Verificar **siempre** antes de aplicar una migración.
 
-**Publicar una corrección:** subir la versión en `app/src-tauri/tauri.conf.json` y correr `npm --prefix app run escritorio:publicar` **desde Git Bash**. Sube solo a Cloudflare. Ojo: `actualizaciones/latest.json` puede tardar un minuto en cambiar de número —queda un rato cacheado en el borde de Cloudflare—, así que si se mira enseguida todavía dice la versión anterior y no es que falló. **Nunca** subir `dist` a mano: un `dist` de `npm run build` no tiene `actualizaciones/` y deja a las 4 PC sin correcciones, en silencio.
+**Publicar una corrección:** subir la versión en `app/src-tauri/tauri.conf.json` y correr `npm --prefix app run escritorio:publicar` **desde Git Bash** —o, desde PowerShell, `npm.cmd --prefix app run escritorio:publicar`: PowerShell no deja correr `npm` a secas por la política de scripts—. Sube solo a Cloudflare. **Tres trampas vistas el 12/10:** (1) **el antivirus revisa las conexiones seguras** y Node no acepta su certificado: wrangler corta con *unable to verify the first certificate*. El publicador ya corre wrangler con `--use-system-ca`; para iniciar sesión a mano, `$env:NODE_OPTIONS = '--use-system-ca'; npx.cmd wrangler login`, con la cuenta de Cloudflare correcta abierta en el navegador. (2) **Avast puede avisar que bloqueó un PowerShell** al abrir el navegador del inicio de sesión: es un falso positivo, se cierra el aviso y se sigue. (3) **Las sesiones de Claude no pueden publicar**: el control de permisos lo frena aunque se autorice en el chat; lo corre la persona. Ojo: `actualizaciones/latest.json` puede tardar un minuto en cambiar de número —queda un rato cacheado en el borde de Cloudflare—, así que si se mira enseguida todavía dice la versión anterior y no es que falló. **Nunca** subir `dist` a mano: un `dist` de `npm run build` no tiene `actualizaciones/` y deja a las 4 PC sin correcciones, en silencio.
 
 ---
 
