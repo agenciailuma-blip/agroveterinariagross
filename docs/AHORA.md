@@ -12,7 +12,7 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Lista para publicar: 0.16.1** (14/10). **La factura ya no se corta a los doce segundos** cuando ARCA tarda: la app espera 35 s a las funciones de ARCA y no se da por desconectada mientras tanto. Lo del servidor ya está publicado y probado con ARCA de homologación (ver *Lo último que pasó*). **596 pruebas verdes en la app.**
+**Publicado: 0.16.1** (14/10, a la tarde). **La factura ya no se corta a los doce segundos** cuando ARCA tarda: la app espera 35 s a las funciones de ARCA y no se da por desconectada mientras tanto. Probado con ARCA de homologación (ver *Lo último que pasó*). Las PC del local la toman con *Actualizar ahora*. **596 pruebas verdes en la app.**
 
 **Publicado: 0.16.0** (12/10, a la noche). **El pedido a proveedor de punta a punta** —Compras → *Pedidos*, con el mínimo de cada proveedor, y la recepción de la factura que trae el pedido y dice qué no vino— **y la planilla de productos con el mínimo, la suelta, el peso y las unidades por bulto** (ver *Lo último que pasó*). Las PC del local la toman con *Actualizar ahora*. **589 pruebas verdes en la app**, 108 migraciones aplicadas.
 
@@ -75,7 +75,9 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 
 **Verificado contra la base real y ARCA de homologación, el 14/10:** la venta CAJA1-000026 (del 17/09, en el panel rojo) se facturó desde Facturación con el permiso forzado a renovarse: **WSAA tardó doce segundos** en contestar, el pedido entero dieciséis, salió con CAE —factura B 00001-00000028— y el indicador siguió en *Al día*. Con el límite viejo se cortaba. Un reintento con CUIT inventado volvió rechazado con el motivo a la vista. La tarea diaria, con dos pedidos juntos y el permiso a punto de vencer, contestó bien las dos veces. **Ese dato de los doce segundos subió el plazo de 20 a 25** y la espera de la app de 30 a 35: con 20, el CAE se había pedido con cinco segundos justos. **596 pruebas** en la app, 7 nuevas; se rompió a propósito el reconocimiento de las funciones y la prueba lo atrapó.
 
-✅ **Las funciones ya están publicadas** (CAE v8, CAEA v7). 🟡 **La 0.16.1, con la espera de 35 s, está lista para publicar**: lo corre la persona (ver *Cómo arrancar*). Hasta que las PC se actualicen, la app sigue cortando a los doce.
+✅ **Publicado el 14/10**: las funciones (CAE v8, CAEA v7) y **la 0.16.1**, con la espera de 35 s. Verificado en Cloudflare: `actualizaciones/latest.json` dice 0.16.1, firmada. La publicó la persona desde `cmd`, sin tropiezos. **Hasta que cada PC haga *Actualizar ahora*, esa PC sigue cortando a los doce.**
+
+⚠️ **No apretar *Facturar* en la venta MOS1-000014** ($68.000, del 01/10), que aparece en el panel rojo de Facturación. Casi seguro es la venta de la prueba sin internet: se cobró en el local ese día a las 12:46, fiscal y en efectivo, y en el servidor no tiene factura; su factura con CAEA sería la 0009-00000001, que quedó en la cola de la caja. Facturarla de nuevo dejaría dos facturas para la misma venta. **Se confirma en la caja**, en Facturación, entre las emitidas en el corte que dicen *Falta subir*; y se resuelve abriendo el sistema ahí con internet.
 
 ⚠️ **Quedan dos cosas del mismo tema, para decidir:** (1) **dos pedidos de CAE para el mismo comprobante a la vez** —un reintento apretado mientras el primero sigue— pueden sacar dos números autorizados para una sola venta; ahora es mucho menos probable porque la pantalla ya no se rinde antes, pero cerrarlo del todo pide un candado en la base. (2) **Si ARCA corta la respuesta de un CAE que sí autorizó**, el reintento lo renumera y pide otro; lo correcto es preguntarle primero por ese número (`FECompConsultar`). Y uno chico de pantalla: mientras espera el CAE, el botón de la Caja dice *Cobrando…* cuando la venta ya está cobrada.
 
