@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { Cortacircuito } from '@/lib/cortacircuito'
+import { esFuncionDeArca, LIMITE_ARCA_MS } from '@/lib/funcionesDeArca'
 
 const url = import.meta.env.VITE_SUPABASE_URL
 const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
@@ -30,6 +31,16 @@ if (!url || !key) {
   ─────────────────────────────────────────────────────────────
 */
 const LIMITE_MS = 12_000
+
+/*
+  Salvo lo que espera a ARCA, que es otro servidor y tarda lo suyo: ver
+  lib/funcionesDeArca.ts. Cortarlo a los doce dejaba al cajero con un
+  error mientras el CAE salía igual, y lo hacía pasar por caída de
+  internet.
+*/
+function limitePara(entrada: RequestInfo | URL): number {
+  return esFuncionDeArca(entrada) ? LIMITE_ARCA_MS : LIMITE_MS
+}
 
 /*
   Y cuando ya se sabe que el servidor no está, ni siquiera esperar eso.
@@ -64,7 +75,7 @@ function fetchConLimite(entrada: RequestInfo | URL, init?: RequestInit): Promise
   const timer = setTimeout(() => {
     porTiempo = true
     control.abort()
-  }, LIMITE_MS)
+  }, limitePara(entrada))
 
   // Supabase puede traer su propia señal de cancelación; hay que
   // respetarla además de la nuestra.

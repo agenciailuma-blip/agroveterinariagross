@@ -99,7 +99,13 @@ function firmarCms(xml: string, certPem: string, keyPem: string): string {
   return forge.util.encode64(der);
 }
 
-async function pedirTicketAArca(servicio: string, ambiente: Ambiente, certPem: string, keyPem: string) {
+async function pedirTicketAArca(
+  servicio: string,
+  ambiente: Ambiente,
+  certPem: string,
+  keyPem: string,
+  senal: AbortSignal,
+) {
   const tra = construirTRA(servicio);
   const cms = firmarCms(tra, certPem, keyPem);
   const envelope = `<?xml version="1.0" encoding="UTF-8"?>
@@ -116,6 +122,7 @@ async function pedirTicketAArca(servicio: string, ambiente: Ambiente, certPem: s
     method: "POST",
     headers: { "Content-Type": "text/xml; charset=utf-8", SOAPAction: "" },
     body: envelope,
+    signal: senal,
   });
   const texto = await respuesta.text();
 
@@ -135,19 +142,73 @@ async function pedirTicketAArca(servicio: string, ambiente: Ambiente, certPem: s
   return { token, sign, expira_en: expirationTime };
 }
 
+type Ticket = { token: string; sign: string; expira_en: string };
+
 // deno-lint-ignore no-explicit-any
-async function obtenerTicket(supabase: any, servicio: string, ambiente: Ambiente, certPem: string, keyPem: string) {
-  const { data: cacheado } = await supabase
+async function leerTicket(supabase: any, servicio: string, ambiente: Ambiente): Promise<Ticket | null> {
+  const { data } = await supabase
     .from("arca_ticket_acceso")
     .select("token, sign, expira_en")
     .eq("servicio", servicio)
     .eq("ambiente", ambiente)
     .maybeSingle();
+  return data as Ticket | null;
+}
 
-  const vigente = !!cacheado && new Date(cacheado.expira_en).getTime() - Date.now() > 5 * 60 * 1000;
-  if (vigente) return cacheado as { token: string; sign: string; expira_en: string };
+function msHastaQueVence(t: Ticket | null): number {
+  return t ? new Date(t.expira_en).getTime() - Date.now() : 0;
+}
 
-  const nuevo = await pedirTicketAArca(servicio, ambiente, certPem, keyPem);
+/** WSAA contesta así cuando ya entregó un permiso que todavía no venció. */
+function esPermisoYaVigente(err: unknown): boolean {
+  return /ya posee un TA valido|alreadyAuthenticated/i.test(err instanceof Error ? err.message : String(err));
+}
+
+const esperar = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+async function obtenerTicket(
+  // deno-lint-ignore no-explicit-any
+  supabase: any,
+  servicio: string,
+  ambiente: Ambiente,
+  certPem: string,
+  keyPem: string,
+  plazo: number,
+) {
+  const cacheado = await leerTicket(supabase, servicio, ambiente);
+  if (msHastaQueVence(cacheado) > 5 * 60 * 1000) return cacheado as Ticket;
+
+  let nuevo: Ticket;
+  try {
+    nuevo = await pedirTicketAArca(servicio, ambiente, certPem, keyPem, senalHasta(plazo));
+  } catch (e) {
+    if (!esPermisoYaVigente(e)) throw e;
+    /*
+      ARCA no entrega un permiso nuevo mientras el anterior siga vigente,
+      y contesta «ya posee un TA valido». Pasa en dos casos, y en los dos
+      el permiso que sirve ya existe:
+
+      - En los últimos cinco minutos del guardado. Acá se lo da por
+        vencido antes de tiempo, pero para ARCA todavía vale: se lo usa
+        hasta el final.
+      - Cuando otro pedido lo renovó al mismo tiempo. El 01/10 a las 9 la
+        tarea diaria mandó dos pedidos juntos y uno falló así; lo mismo
+        le pasaría a la primera factura del día de dos computadoras a la
+        vez. El que ganó lo guarda en un instante: se lo vuelve a leer.
+    */
+    if (msHastaQueVence(cacheado) > 10_000) return cacheado as Ticket;
+    while (plazo - Date.now() > 1_500) {
+      await esperar(1_000);
+      const otro = await leerTicket(supabase, servicio, ambiente);
+      if (otro && otro.token !== cacheado?.token && msHastaQueVence(otro) > 0) return otro;
+    }
+    throw new Error(
+      "ARCA dice que el sistema ya tiene un permiso vigente, pero no quedó guardado: " +
+        "se habrá cortado un pedido a mitad de camino. ARCA no entrega otro hasta que ese " +
+        "venza, a más tardar en doce horas.",
+    );
+  }
+
   await supabase.from("arca_ticket_acceso").upsert({
     servicio,
     ambiente,
@@ -166,6 +227,45 @@ async function obtenerTicket(supabase: any, servicio: string, ambiente: Ambiente
   contingencia con CAEA.
 */
 let TIMEOUT_MS = 20000;
+
+/*
+  Y el plazo de todo el pedido, contado desde que llega.
+
+  Cada llamada a ARCA tiene su tiempo máximo, pero son tres —el permiso
+  de WSAA, el último autorizado y el CAE— y sumadas pasaban del minuto;
+  el permiso, además, no tenía ninguno. La app no espera tanto: se
+  rendía a los doce segundos y le mostraba al cajero «la factura quedó
+  pendiente» mientras acá el CAE salía igual, sin nadie esperándolo. Y
+  ese corte lo tomaba como caída de internet: la venta siguiente se
+  cobraba sin subir y la caja la facturaba con CAEA.
+
+  La regla es que esta función conteste SIEMPRE antes de que la app deje
+  de esperar, así lo que ve el cajero es lo que pasó. Veinte segundos
+  alcanzan para el peor caso medido el 01/10 —el permiso nuevo de WSAA
+  de homologación tarda unos diez, y el resto del pedido tres y medio—,
+  y la app espera treinta (LIMITE_ARCA_MS, en app/src/lib/funcionesDeArca.ts).
+  Si este número sube, aquél tiene que subir también.
+
+  No sale de la configuración a propósito: la app tiene que conocerlo de
+  antemano, y un valor que cambia sin que la app se entere rompe la regla.
+*/
+const PLAZO_ARCA_MS = 20_000;
+
+/*
+  El CAE no se pide con lo que sobra.
+
+  Si ARCA tardó tanto en los pasos previos que quedan menos de cinco
+  segundos, mandarlo es arriesgarse a cortarlo mientras ARCA lo autoriza:
+  quedaría autorizado allá y pendiente acá, y el reintento lo
+  renumeraría y pediría otro. Mejor no mandarlo, anotarlo como demora
+  de ARCA y que se reintente.
+*/
+const MINIMO_PARA_EL_CAE_MS = 5_000;
+
+/** Lo que diga la configuración para cada llamada, pero nunca más allá del plazo. */
+function senalHasta(plazo: number): AbortSignal {
+  return AbortSignal.timeout(Math.max(0, Math.min(TIMEOUT_MS, plazo - Date.now())));
+}
 
 /*
   Distingue "ARCA no está" de "ARCA dijo que no".
@@ -311,6 +411,7 @@ async function pedirCae(
   ticket: { token: string; sign: string },
   cuit: string,
   ambiente: Ambiente,
+  senal: AbortSignal,
 ) {
   const envelope = `<?xml version="1.0" encoding="UTF-8"?>
 <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ar="http://ar.gov.afip.dif.FEV1/">
@@ -346,7 +447,7 @@ async function pedirCae(
       SOAPAction: '"http://ar.gov.afip.dif.FEV1/FECAESolicitar"',
     },
     body: envelope,
-    signal: AbortSignal.timeout(TIMEOUT_MS),
+    signal: senal,
   });
   const texto = await resp.text();
   return { texto, duracion_ms: Date.now() - inicio, http: resp.status, request: envelope };
@@ -397,6 +498,7 @@ async function ultimoAutorizado(
   ticket: { token: string; sign: string },
   cuit: string,
   ambiente: Ambiente,
+  senal: AbortSignal,
 ): Promise<number> {
   const envelope = `<?xml version="1.0" encoding="UTF-8"?>
 <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ar="http://ar.gov.afip.dif.FEV1/">
@@ -416,7 +518,7 @@ async function ultimoAutorizado(
       SOAPAction: '"http://ar.gov.afip.dif.FEV1/FECompUltimoAutorizado"',
     },
     body: envelope,
-    signal: AbortSignal.timeout(TIMEOUT_MS),
+    signal: senal,
   });
   const texto = await resp.text();
 
@@ -433,6 +535,10 @@ async function ultimoAutorizado(
 Deno.serve(async (req: Request) => {
   // El navegador pregunta primero si puede. Va antes que todo lo demas.
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
+
+  // Desde que llega, no desde la primera llamada a ARCA: la app cuenta
+  // su espera desde que manda el pedido.
+  const plazo = Date.now() + PLAZO_ARCA_MS;
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
@@ -556,7 +662,7 @@ Deno.serve(async (req: Request) => {
 
     const ticket = await conRegistro(
       "WSAA",
-      () => obtenerTicket(supabase, "wsfe", ambiente, certPem, keyPem),
+      () => obtenerTicket(supabase, "wsfe", ambiente, certPem, keyPem, plazo),
     );
 
     /*
@@ -575,7 +681,15 @@ Deno.serve(async (req: Request) => {
     const pvNumero = numeroPuntoVenta(comp as unknown as Comprobante);
     const ultimo = await conRegistro(
       "FECompUltimoAutorizado",
-      () => ultimoAutorizado(pvNumero, comp.tipo_comprobante_id as number, ticket, cuit, ambiente),
+      () =>
+        ultimoAutorizado(
+          pvNumero,
+          comp.tipo_comprobante_id as number,
+          ticket,
+          cuit,
+          ambiente,
+          senalHasta(plazo),
+        ),
     );
 
     const { data: alineado, error: errAlinear } = await supabase
@@ -595,8 +709,20 @@ Deno.serve(async (req: Request) => {
 
     const resultado = await conRegistro(
       "FECAESolicitar",
-      () =>
-        pedirCae(
+      () => {
+        const restante = plazo - Date.now();
+        if (restante < MINIMO_PARA_EL_CAE_MS) {
+          // Cuenta como demora de ARCA, que es lo que fue: no se mandó nada.
+          return Promise.reject(
+            new DOMException(
+              `ARCA tardó demasiado en los pasos anteriores y no quedó tiempo para pedir el CAE ` +
+                `sin arriesgar cortarlo a mitad de camino (quedaban ${Math.max(0, restante)} ms). ` +
+                `No se mandó: se puede reintentar.`,
+              "TimeoutError",
+            ),
+          );
+        }
+        return pedirCae(
           compAlineado as unknown as Comprobante,
           alicuotas ?? [],
           tributos ?? [],
@@ -604,7 +730,9 @@ Deno.serve(async (req: Request) => {
           ticket,
           cuit,
           ambiente,
-        ),
+          senalHasta(plazo),
+        );
+      },
     );
 
     const fault = resultado.texto.match(/<faultstring>([\s\S]*?)<\/faultstring>/);
@@ -658,30 +786,63 @@ Deno.serve(async (req: Request) => {
       usuario_id: usuarioId,
     });
 
-    if (aprobado) {
-      const caeVenc = caeFchVto
-        ? `${caeFchVto.slice(0, 4)}-${caeFchVto.slice(4, 6)}-${caeFchVto.slice(6, 8)}`
-        : null;
-      await supabase
+    /*
+      Se escribe sólo si el comprobante sigue esperando ESTE pedido: el
+      mismo estado y el mismo número que tenía cuando se le preguntó a
+      ARCA.
+
+      Mientras ARCA contestaba pudo pasar otra cosa: que se lo emitiera
+      por contingencia con CAEA, o que otro pedido lo renumerara o lo
+      autorizara antes. Pisarlo dejaría un comprobante con el número de
+      un punto de venta y el CAE de otro, o un autorizado vuelto a
+      «rechazado» por una respuesta que llegó tarde. Lo que ARCA contestó
+      ya quedó en intento_arca, con el pedido y la respuesta enteros.
+    */
+    const caeVenc = caeFchVto
+      ? `${caeFchVto.slice(0, 4)}-${caeFchVto.slice(4, 6)}-${caeFchVto.slice(6, 8)}`
+      : null;
+    const { data: escrito, error: errEscribir } = await supabase
+      .from("comprobante")
+      .update(
+        aprobado
+          ? {
+            estado: "autorizado",
+            cae,
+            cae_vencimiento: caeVenc,
+            arca_resultado: "A",
+            arca_observaciones: obs.length ? obs : null,
+            autorizado_en: new Date().toISOString(),
+          }
+          : {
+            estado: "rechazado",
+            arca_resultado: "R",
+            arca_observaciones: obs.length ? obs : null,
+          },
+      )
+      .eq("id", comprobanteId)
+      .eq("numero", compAlineado.numero)
+      .in("estado", ["pendiente", "rechazado"])
+      .select("id");
+    if (errEscribir) throw new Error(`ARCA contestó pero no se pudo guardar: ${errEscribir.message}`);
+
+    if (!escrito?.length) {
+      const { data: actual } = await supabase
         .from("comprobante")
-        .update({
-          estado: "autorizado",
-          cae,
-          cae_vencimiento: caeVenc,
-          arca_resultado: "A",
-          arca_observaciones: obs.length ? obs : null,
-          autorizado_en: new Date().toISOString(),
-        })
-        .eq("id", comprobanteId);
-    } else {
-      await supabase
-        .from("comprobante")
-        .update({
-          estado: "rechazado",
-          arca_resultado: "R",
-          arca_observaciones: obs.length ? obs : null,
-        })
-        .eq("id", comprobanteId);
+        .select("estado, numero, cae")
+        .eq("id", comprobanteId)
+        .single();
+      if (aprobado) {
+        throw new Error(
+          `ARCA autorizó el número ${compAlineado.numero} con el CAE ${cae}, pero mientras tanto ` +
+            `el comprobante pasó a '${actual?.estado}' con el número ${actual?.numero}. No se lo tocó: ` +
+            `hay que revisarlo, porque para ARCA ese número quedó emitido.`,
+        );
+      }
+      // Un rechazo que llega tarde no cambia lo que ya se resolvió por otro lado.
+      if (actual?.estado === "autorizado") {
+        return responder({ ok: true, aprobado: true, cae: actual.cae, observaciones: [] });
+      }
+      throw new Error(`El comprobante ya está '${actual?.estado}': esta respuesta de ARCA llegó tarde y no cambia nada.`);
     }
 
     return responder({ ok: true, aprobado, cae, observaciones: obs });

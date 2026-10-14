@@ -95,7 +95,13 @@ function firmarCms(xml: string, certPem: string, keyPem: string): string {
   return forge.util.encode64(der);
 }
 
-async function pedirTicketAArca(servicio: string, ambiente: Ambiente, certPem: string, keyPem: string) {
+async function pedirTicketAArca(
+  servicio: string,
+  ambiente: Ambiente,
+  certPem: string,
+  keyPem: string,
+  senal: AbortSignal,
+) {
   const tra = construirTRA(servicio);
   const cms = firmarCms(tra, certPem, keyPem);
   const envelope = `<?xml version="1.0" encoding="UTF-8"?>
@@ -112,6 +118,7 @@ async function pedirTicketAArca(servicio: string, ambiente: Ambiente, certPem: s
     method: "POST",
     headers: { "Content-Type": "text/xml; charset=utf-8", SOAPAction: "" },
     body: envelope,
+    signal: senal,
   });
   const texto = await respuesta.text();
 
@@ -131,19 +138,73 @@ async function pedirTicketAArca(servicio: string, ambiente: Ambiente, certPem: s
   return { token, sign, expira_en: expirationTime };
 }
 
+type Ticket = { token: string; sign: string; expira_en: string };
+
 // deno-lint-ignore no-explicit-any
-async function obtenerTicket(supabase: any, servicio: string, ambiente: Ambiente, certPem: string, keyPem: string) {
-  const { data: cacheado } = await supabase
+async function leerTicket(supabase: any, servicio: string, ambiente: Ambiente): Promise<Ticket | null> {
+  const { data } = await supabase
     .from("arca_ticket_acceso")
     .select("token, sign, expira_en")
     .eq("servicio", servicio)
     .eq("ambiente", ambiente)
     .maybeSingle();
+  return data as Ticket | null;
+}
 
-  const vigente = !!cacheado && new Date(cacheado.expira_en).getTime() - Date.now() > 5 * 60 * 1000;
-  if (vigente) return cacheado as { token: string; sign: string; expira_en: string };
+function msHastaQueVence(t: Ticket | null): number {
+  return t ? new Date(t.expira_en).getTime() - Date.now() : 0;
+}
 
-  const nuevo = await pedirTicketAArca(servicio, ambiente, certPem, keyPem);
+/** WSAA contesta así cuando ya entregó un permiso que todavía no venció. */
+function esPermisoYaVigente(err: unknown): boolean {
+  return /ya posee un TA valido|alreadyAuthenticated/i.test(err instanceof Error ? err.message : String(err));
+}
+
+const esperar = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+async function obtenerTicket(
+  // deno-lint-ignore no-explicit-any
+  supabase: any,
+  servicio: string,
+  ambiente: Ambiente,
+  certPem: string,
+  keyPem: string,
+  plazo: number,
+) {
+  const cacheado = await leerTicket(supabase, servicio, ambiente);
+  if (msHastaQueVence(cacheado) > 5 * 60 * 1000) return cacheado as Ticket;
+
+  let nuevo: Ticket;
+  try {
+    nuevo = await pedirTicketAArca(servicio, ambiente, certPem, keyPem, senalHasta(plazo));
+  } catch (e) {
+    if (!esPermisoYaVigente(e)) throw e;
+    /*
+      ARCA no entrega un permiso nuevo mientras el anterior siga vigente,
+      y contesta «ya posee un TA valido». Pasa en dos casos, y en los dos
+      el permiso que sirve ya existe:
+
+      - En los últimos cinco minutos del guardado. Acá se lo da por
+        vencido antes de tiempo, pero para ARCA todavía vale: se lo usa
+        hasta el final.
+      - Cuando otro pedido lo renovó al mismo tiempo. Pasó el 01/10 a las
+        9: esta tarea mandó dos pedidos juntos —los dos CAEA por avisar
+        sin movimiento— y uno falló así. El que ganó lo guarda en un
+        instante: se lo vuelve a leer.
+    */
+    if (msHastaQueVence(cacheado) > 10_000) return cacheado as Ticket;
+    while (plazo - Date.now() > 1_500) {
+      await esperar(1_000);
+      const otro = await leerTicket(supabase, servicio, ambiente);
+      if (otro && otro.token !== cacheado?.token && msHastaQueVence(otro) > 0) return otro;
+    }
+    throw new Error(
+      "ARCA dice que el sistema ya tiene un permiso vigente, pero no quedó guardado: " +
+        "se habrá cortado un pedido a mitad de camino. ARCA no entrega otro hasta que ese " +
+        "venza, a más tardar en doce horas.",
+    );
+  }
+
   await supabase.from("arca_ticket_acceso").upsert({
     servicio,
     ambiente,
@@ -153,6 +214,47 @@ async function obtenerTicket(supabase: any, servicio: string, ambiente: Ambiente
     expira_en: nuevo.expira_en,
   });
   return nuevo;
+}
+
+// ── Cuánto se espera a ARCA ──
+
+/*
+  Hasta el 01/10 ninguna llamada de esta función tenía tiempo máximo: un
+  ARCA que acepta la conexión y no contesta la dejaba esperando hasta que
+  la plataforma la mataba, sin respuesta para nadie. Cada llamada espera
+  ahora lo que diga 'arca.timeout_segundos', como el pedido de CAE.
+*/
+let TIMEOUT_MS = 20000;
+
+/*
+  Y el pedido entero tiene un plazo, contado desde que llega.
+
+  Desde la pantalla de contingencia, la app espera treinta segundos
+  (LIMITE_ARCA_MS, en app/src/lib/funcionesDeArca.ts) y esta función
+  tiene que contestar antes: si la app se rinde primero, la persona ve
+  un error de algo que acá terminó bien, y además la app lo toma como
+  caída de internet y trabaja quince segundos sin conexión. Veinte
+  alcanzan para pedir un permiso nuevo a WSAA —unos diez en homologación,
+  medido el 01/10— y hacer la operación. Si este número sube, aquél
+  tiene que subir también.
+
+  La tarea diaria no tiene a nadie esperando y llama con un minuto de
+  margen (app.mantenimiento_caea): le alcanza con cortar antes de eso,
+  así su respuesta queda registrada en vez de perderse.
+*/
+const PLAZO_ARCA_MS = 20_000;
+const PLAZO_TAREA_MS = 50_000;
+
+/*
+  Un informe no se empieza con lo que sobra: cortarlo a mitad de camino
+  deja la duda de si ARCA lo registró. Los que no entran quedan para el
+  próximo intento, que es lo mismo que pasa con un fallo.
+*/
+const MINIMO_PARA_INFORMAR_MS = 5_000;
+
+/** Lo que diga la configuración para cada llamada, pero nunca más allá del plazo. */
+function senalHasta(plazo: number): AbortSignal {
+  return AbortSignal.timeout(Math.max(0, Math.min(TIMEOUT_MS, plazo - Date.now())));
 }
 
 // ── Utilidades ──
@@ -212,7 +314,7 @@ function auth(ticket: { token: string; sign: string }, cuit: string): string {
   return `<ar:Auth><ar:Token>${ticket.token}</ar:Token><ar:Sign>${ticket.sign}</ar:Sign><ar:Cuit>${cuit}</ar:Cuit></ar:Auth>`;
 }
 
-async function llamar(ambiente: Ambiente, operacion: string, cuerpo: string) {
+async function llamar(ambiente: Ambiente, operacion: string, cuerpo: string, plazo: number) {
   const envelope = `<?xml version="1.0" encoding="UTF-8"?>
 <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ar="http://ar.gov.afip.dif.FEV1/">
   <soapenv:Header/>
@@ -227,6 +329,7 @@ async function llamar(ambiente: Ambiente, operacion: string, cuerpo: string) {
       SOAPAction: `"http://ar.gov.afip.dif.FEV1/${operacion}"`,
     },
     body: envelope,
+    signal: senalHasta(plazo),
   });
   const texto = await resp.text();
 
@@ -342,6 +445,7 @@ async function ultimoRegistrado(
   ticket: { token: string; sign: string },
   cuit: string,
   ambiente: Ambiente,
+  plazo: number,
 ): Promise<number | null> {
   try {
     const r = await llamar(
@@ -350,6 +454,7 @@ async function ultimoRegistrado(
       `<ar:FECompUltimoAutorizado>${auth(ticket, cuit)}` +
         `<ar:PtoVta>${ptoVta}</ar:PtoVta><ar:CbteTipo>${cbteTipo}</ar:CbteTipo>` +
         `</ar:FECompUltimoAutorizado>`,
+      plazo,
     );
     if (bloque(r.texto, "Errors")) return null;
     const nro = r.texto.match(/<CbteNro>(\d+)<\/CbteNro>/)?.[1];
@@ -431,6 +536,9 @@ function armarDetalleInformativo(
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
 
+  // El plazo se cuenta desde que llega: es desde cuando espera quien llamó.
+  const llegada = Date.now();
+
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
@@ -502,12 +610,16 @@ Deno.serve(async (req: Request) => {
     const { data: config } = await supabase
       .from("configuracion")
       .select("clave, valor")
-      .in("clave", ["comercio.cuit", "arca.ambiente"]);
+      .in("clave", ["comercio.cuit", "arca.ambiente", "arca.timeout_segundos"]);
     const cuit = config?.find((c) => c.clave === "comercio.cuit")?.valor as string;
     const ambiente = (config?.find((c) => c.clave === "arca.ambiente")?.valor ?? "homologacion") as Ambiente;
     if (!cuit) throw new Error("Falta 'comercio.cuit' en configuracion.");
+    const segundos = Number(config?.find((c) => c.clave === "arca.timeout_segundos")?.valor ?? 20);
+    if (Number.isFinite(segundos) && segundos > 0) TIMEOUT_MS = segundos * 1000;
 
-    const ticket = await obtenerTicket(supabase, "wsfe", ambiente, certPem, keyPem);
+    const plazo = llegada + (esTareaProgramada ? PLAZO_TAREA_MS : PLAZO_ARCA_MS);
+
+    const ticket = await obtenerTicket(supabase, "wsfe", ambiente, certPem, keyPem, plazo);
 
     // ───────────────────────────────────────────────────────────
     // solicitar / consultar
@@ -523,6 +635,7 @@ Deno.serve(async (req: Request) => {
           ambiente,
           "FECAEAConsultar",
           `<ar:FECAEAConsultar>${auth(ticket, cuit)}<ar:Periodo>${periodo}</ar:Periodo><ar:Orden>${orden}</ar:Orden></ar:FECAEAConsultar>`,
+          plazo,
         );
         return r;
       };
@@ -533,6 +646,7 @@ Deno.serve(async (req: Request) => {
           ambiente,
           "FECAEASolicitar",
           `<ar:FECAEASolicitar>${auth(ticket, cuit)}<ar:Periodo>${periodo}</ar:Periodo><ar:Orden>${orden}</ar:Orden></ar:FECAEASolicitar>`,
+          plazo,
         );
 
       let datos = leerResultGet(respuesta.texto);
@@ -638,15 +752,32 @@ Deno.serve(async (req: Request) => {
         if (!pv) continue;
         const clave = `${pv}-${comp.tipo_comprobante_id}`;
         if (esperadoPorGrupo.has(clave)) continue;
-        const ultimo = await ultimoRegistrado(pv, comp.tipo_comprobante_id, ticket, cuit, ambiente);
+        const ultimo = await ultimoRegistrado(pv, comp.tipo_comprobante_id, ticket, cuit, ambiente, plazo);
         if (ultimo !== null) esperadoPorGrupo.set(clave, ultimo + 1);
       }
 
+      let sinTiempo = false;
       for (const fila of pendientes) {
         const comp = fila as unknown as Comprobante;
         const pv = unoDe(comp.punto_venta)?.numero;
         const codigoCaea = unoDe(comp.caea)?.codigo;
         const etiqueta = `${String(pv ?? 0).padStart(5, "0")}-${String(comp.numero).padStart(8, "0")}`;
+
+        /*
+          Cuando no alcanza el tiempo, los que siguen no se intentan.
+          Siguen en contingencia, así que el próximo intento —la tarea de
+          mañana, o apretar de nuevo— los toma en orden desde acá.
+        */
+        if (sinTiempo || plazo - Date.now() < MINIMO_PARA_INFORMAR_MS) {
+          sinTiempo = true;
+          fallidos++;
+          detalle.push({
+            comprobante: etiqueta,
+            ok: false,
+            motivo: "No llegó a informarse: ARCA venía lenta y se cortó antes. Se informa en el próximo intento.",
+          });
+          continue;
+        }
 
         if (pv) {
           const clave = `${pv}-${comp.tipo_comprobante_id}`;
@@ -656,11 +787,21 @@ Deno.serve(async (req: Request) => {
             detalle.push({
               comprobante: etiqueta,
               ok: false,
-              motivo:
-                `ARCA espera el número ${String(esperado).padStart(8, "0")} y este es el ` +
-                `${String(comp.numero).padStart(8, "0")}. Falta informar el que va en el medio, ` +
-                `o quedó anulado. Un comprobante ya entregado no se puede renumerar: ` +
-                `hay que resolverlo con ARCA.`,
+              /*
+                Para atrás no es un hueco: ARCA ya tiene ese número. Lo
+                más probable es que un informe anterior le haya llegado
+                y la respuesta se cortó antes de volver. Se dice así, para
+                que nadie salga a buscar un comprobante que falta.
+              */
+              motivo: comp.numero < esperado
+                ? `ARCA ya tiene registrado hasta el ${String(esperado - 1).padStart(8, "0")}, ` +
+                  `este incluido: probablemente se informó en un intento que se cortó antes de ` +
+                  `recibir la respuesta. Hay que confirmarlo con una consulta a ARCA antes de ` +
+                  `marcarlo como informado.`
+                : `ARCA espera el número ${String(esperado).padStart(8, "0")} y este es el ` +
+                  `${String(comp.numero).padStart(8, "0")}. Falta informar el que va en el medio, ` +
+                  `o quedó anulado. Un comprobante ya entregado no se puede renumerar: ` +
+                  `hay que resolverlo con ARCA.`,
             });
             continue;
           }
@@ -692,7 +833,7 @@ Deno.serve(async (req: Request) => {
 
         let respuesta;
         try {
-          respuesta = await llamar(ambiente, "FECAEARegInformativo", cuerpo);
+          respuesta = await llamar(ambiente, "FECAEARegInformativo", cuerpo, plazo);
         } catch (e) {
           fallidos++;
           const motivo = e instanceof Error ? e.message : String(e);
@@ -805,6 +946,7 @@ Deno.serve(async (req: Request) => {
           `<ar:FECAEASinMovimientoInformar>${auth(ticket, cuit)}` +
             `<ar:PtoVta>${pv.numero}</ar:PtoVta><ar:CAEA>${caea.codigo}</ar:CAEA>` +
             `</ar:FECAEASinMovimientoInformar>`,
+          plazo,
         );
 
         const obs = observaciones(bloque(respuesta.texto, "Errors") ?? "");
@@ -856,6 +998,7 @@ Deno.serve(async (req: Request) => {
         ambiente,
         "FEParamGetPtosVenta",
         `<ar:FEParamGetPtosVenta>${auth(ticket, cuit)}</ar:FEParamGetPtosVenta>`,
+        plazo,
       );
 
       const puntos: { numero: number; emision: string; bloqueado: boolean; baja: string | null }[] = [];
