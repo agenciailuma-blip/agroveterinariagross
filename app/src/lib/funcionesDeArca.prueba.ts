@@ -46,11 +46,11 @@ describe('las funciones que esperan a ARCA', () => {
   })
 
   /*
-    Las funciones contestan a más tardar a los veinte segundos (su
-    PLAZO_ARCA_MS) más lo que tarda la base. Esperar menos de eso es
-    volver a cortarlas a mitad de camino.
+    Las funciones contestan a más tardar a los veinticinco segundos (su
+    PLAZO_ARCA_MS) más lo que tarda la base en guardar. Esperar menos de
+    eso es volver a cortarlas a mitad de camino.
   */
   it('la espera queda por encima del plazo de las funciones', () => {
-    expect(LIMITE_ARCA_MS).toBeGreaterThanOrEqual(20_000 + 5_000)
+    expect(LIMITE_ARCA_MS).toBeGreaterThanOrEqual(25_000 + 5_000)
   })
 })

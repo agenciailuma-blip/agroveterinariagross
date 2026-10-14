@@ -1,5 +1,5 @@
 ---
-actualizado: 2026-10-12
+actualizado: 2026-10-14
 estado: en curso
 ---
 
@@ -11,6 +11,8 @@ estado: en curso
 ---
 
 ## Dónde está todo, hoy
+
+**Lista para publicar: 0.16.1** (14/10). **La factura ya no se corta a los doce segundos** cuando ARCA tarda: la app espera 35 s a las funciones de ARCA y no se da por desconectada mientras tanto. Lo del servidor ya está publicado y probado con ARCA de homologación (ver *Lo último que pasó*). **596 pruebas verdes en la app.**
 
 **Publicado: 0.16.0** (12/10, a la noche). **El pedido a proveedor de punta a punta** —Compras → *Pedidos*, con el mínimo de cada proveedor, y la recepción de la factura que trae el pedido y dice qué no vino— **y la planilla de productos con el mínimo, la suelta, el peso y las unidades por bulto** (ver *Lo último que pasó*). Las PC del local la toman con *Actualizar ahora*. **589 pruebas verdes en la app**, 108 migraciones aplicadas.
 
@@ -56,6 +58,26 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 🟡 **Lo que la venta tardaba en llegar a la caja sin internet** — arreglado el 05/10 y publicado en la 0.13.4, **sin probar en el local**. El mostrador le pasaba las ventas a la caja una vez por minuto, y la caja miraba su cola cada ocho segundos: hasta 68 segundos con el cliente esperando. Y llegaba de a partes porque, mientras la cabecera intentaba subir al servidor —hasta doce segundos sin internet—, salían los renglones solos. Ahora la venta sale al segundo y medio de apretar *Enviar a caja* (y otra vez a los catorce, por si el intento de subir tardó), viaja entera o espera entera, y la caja la muestra apenas llega. Se comprueba en el próximo corte: la venta tiene que aparecer en la caja en un par de segundos y completa.
 
 ---
+
+## Lo último que pasó — 14 de octubre
+
+### La factura ya no se corta a los doce segundos
+
+**El pedido de CAE espera lo que tarda ARCA, y la app no se da por desconectada mientras tanto.** Lo pidió la sesión de la consulta de CUIT el 01/10; se construyó ese día y se terminó, probó y publicó el 14/10.
+
+> **Cómo se lo contás a Lucas:** la primera factura del día le pide a ARCA un permiso nuevo, y ARCA a veces tarda más de diez segundos en darlo. El sistema cortaba a los doce: el cajero veía «la factura quedó pendiente» mientras la factura salía igual, y encima el sistema creía que se había cortado internet, así que la venta siguiente se facturaba por contingencia con internet andando. Ahora espera lo que haga falta —hasta treinta y cinco segundos— y lo que muestra la pantalla es lo que pasó.
+
+- **La app espera 35 s a las funciones que hablan con ARCA** —CAE, CAEA y la consulta de CUIT— y 12 a todo lo demás, como siempre. Están en [`funcionesDeArca.ts`](../app/src/lib/funcionesDeArca.ts).
+- **Las funciones de factura contestan siempre antes de los 25 s** (`PLAZO_ARCA_MS`), aunque ARCA no conteste. El permiso de WSAA no tenía tiempo máximo y la del CAEA no tenía ninguno: ahora todo cuelga del mismo plazo. Si ARCA tardó tanto que quedan menos de cinco segundos, **el CAE no se pide** —cortarlo a mitad de camino podría dejarlo autorizado allá y pendiente acá— y se anota como demora de ARCA.
+- **«Ya posee un TA valido»**: ARCA no entrega dos permisos juntos. El 01/10 la tarea diaria mandó dos pedidos a la vez y uno falló así; ahora el segundo usa el que guardó el primero.
+- **El resultado de ARCA se escribe sólo si el comprobante sigue esperando ese pedido**: si mientras tanto se lo emitió con CAEA o lo autorizó otro pedido, no se lo pisa y se avisa.
+- **Informar CAEA** corta a tiempo si ARCA viene lenta: lo que no entró queda para el próximo intento.
+
+**Verificado contra la base real y ARCA de homologación, el 14/10:** la venta CAJA1-000026 (del 17/09, en el panel rojo) se facturó desde Facturación con el permiso forzado a renovarse: **WSAA tardó doce segundos** en contestar, el pedido entero dieciséis, salió con CAE —factura B 00001-00000028— y el indicador siguió en *Al día*. Con el límite viejo se cortaba. Un reintento con CUIT inventado volvió rechazado con el motivo a la vista. La tarea diaria, con dos pedidos juntos y el permiso a punto de vencer, contestó bien las dos veces. **Ese dato de los doce segundos subió el plazo de 20 a 25** y la espera de la app de 30 a 35: con 20, el CAE se había pedido con cinco segundos justos. **596 pruebas** en la app, 7 nuevas; se rompió a propósito el reconocimiento de las funciones y la prueba lo atrapó.
+
+✅ **Las funciones ya están publicadas** (CAE v8, CAEA v7). 🟡 **La 0.16.1, con la espera de 35 s, está lista para publicar**: lo corre la persona (ver *Cómo arrancar*). Hasta que las PC se actualicen, la app sigue cortando a los doce.
+
+⚠️ **Quedan dos cosas del mismo tema, para decidir:** (1) **dos pedidos de CAE para el mismo comprobante a la vez** —un reintento apretado mientras el primero sigue— pueden sacar dos números autorizados para una sola venta; ahora es mucho menos probable porque la pantalla ya no se rinde antes, pero cerrarlo del todo pide un candado en la base. (2) **Si ARCA corta la respuesta de un CAE que sí autorizó**, el reintento lo renumera y pide otro; lo correcto es preguntarle primero por ese número (`FECompConsultar`). Y uno chico de pantalla: mientras espera el CAE, el botón de la Caja dice *Cobrando…* cuando la venta ya está cobrada.
 
 ## Lo último que pasó — 12 de octubre
 
@@ -813,7 +835,8 @@ Está andando y verificado. Si algo de acá se rompe, es una regresión:
 - **La reconciliación de stock del reparto** — `cobrar_venta()` lee el libro de movimientos, no las líneas del remito. Un remito que no descuenta no deja movimiento y la cuenta le da bien sola.
 - **La numeración contra ARCA** — se alinea sola después de cada rechazo.
 - **`networkMode: 'always'`** en React Query. Sacarlo cuelga el mostrador entero sin conexión.
-- **El límite de 12 s** en `supabase.ts`.
+- **El límite de 12 s** en `supabase.ts`, **salvo las funciones de ARCA, que esperan 35** (`funcionesDeArca.ts`). Y **ese número tiene que quedar por encima del plazo de las funciones** (`PLAZO_ARCA_MS`, 25 s, en `arca-wsfe-solicitar-cae` y `arca-wsfe-caea`): si la app se rinde antes, el cajero ve un error mientras el CAE sale igual, y la app se da por desconectada y factura la venta siguiente con CAEA.
+- **El CAE se escribe sólo si el comprobante sigue esperando ese pedido** —mismo estado, mismo número—. Escribirlo siempre deja un comprobante con el número de un punto de venta y el CAE de otro, o un autorizado vuelto a rechazado por una respuesta que llegó tarde.
 - **`aumentar_precios` y `revertir_aumento` son SECURITY DEFINER a propósito.** No agregarles política de insert: el registro que existe para deshacer un error no puede ser editable por fuera del mecanismo que lo deshace.
 - **La factura de compra no tiene líneas de producto, y es a propósito.** Agregárselas no es "completar la pantalla": es abrir la recepción de mercadería, que necesita emparejar códigos del proveedor con los nuestros y decidir qué pasa con los costos. Eso es V1-B.
 - **El disparador que completa el depósito del movimiento.** Sacarlo obliga a que los dieciséis lugares que escriben en el libro de stock manden el depósito, y el que se olvide no falla al compilar: falla al vender. Desde el 30/09 decide además **el de la máquina** y que **lo que vuelve vuelva adonde salió**; el orden de sus reglas importa y está explicado en la migración `20260930120000`.

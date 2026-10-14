@@ -184,17 +184,15 @@ async function obtenerTicket(
   } catch (e) {
     if (!esPermisoYaVigente(e)) throw e;
     /*
-      ARCA no entrega un permiso nuevo mientras el anterior siga vigente,
-      y contesta «ya posee un TA valido». Pasa en dos casos, y en los dos
-      el permiso que sirve ya existe:
+      ARCA no entrega dos permisos juntos: si otro pedido lo acaba de
+      renovar, contesta «ya posee un TA valido». El 01/10 a las 9 la tarea
+      diaria mandó dos pedidos a la vez y uno falló así; lo mismo le
+      pasaría a la primera factura del día de dos computadoras a la vez.
+      El que ganó lo guarda en un instante: se lo vuelve a leer. Y si el
+      guardado todavía no venció, sirve mientras tanto.
 
-      - En los últimos cinco minutos del guardado. Acá se lo da por
-        vencido antes de tiempo, pero para ARCA todavía vale: se lo usa
-        hasta el final.
-      - Cuando otro pedido lo renovó al mismo tiempo. El 01/10 a las 9 la
-        tarea diaria mandó dos pedidos juntos y uno falló así; lo mismo
-        le pasaría a la primera factura del día de dos computadoras a la
-        vez. El que ganó lo guarda en un instante: se lo vuelve a leer.
+      Probado el 14/10 con la tarea diaria: dos pedidos juntos y el
+      permiso guardado a punto de vencer, y los dos contestaron bien.
     */
     if (msHastaQueVence(cacheado) > 10_000) return cacheado as Ticket;
     while (plazo - Date.now() > 1_500) {
@@ -240,16 +238,18 @@ let TIMEOUT_MS = 20000;
   cobraba sin subir y la caja la facturaba con CAEA.
 
   La regla es que esta función conteste SIEMPRE antes de que la app deje
-  de esperar, así lo que ve el cajero es lo que pasó. Veinte segundos
-  alcanzan para el peor caso medido el 01/10 —el permiso nuevo de WSAA
-  de homologación tarda unos diez, y el resto del pedido tres y medio—,
-  y la app espera treinta (LIMITE_ARCA_MS, en app/src/lib/funcionesDeArca.ts).
-  Si este número sube, aquél tiene que subir también.
+  de esperar, así lo que ve el cajero es lo que pasó. El peor caso
+  medido: el 14/10 WSAA tardó doce segundos sólo en contestar «ya posee
+  un TA valido», y con lo de la base el CAE se pidió a los quince, con
+  cinco de margen sobre un plazo de veinte. Por eso son veinticinco, y
+  la app espera treinta y cinco (LIMITE_ARCA_MS, en
+  app/src/lib/funcionesDeArca.ts). Si este número sube, aquél tiene que
+  subir también.
 
   No sale de la configuración a propósito: la app tiene que conocerlo de
   antemano, y un valor que cambia sin que la app se entere rompe la regla.
 */
-const PLAZO_ARCA_MS = 20_000;
+const PLAZO_ARCA_MS = 25_000;
 
 /*
   El CAE no se pide con lo que sobra.

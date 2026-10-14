@@ -180,17 +180,15 @@ async function obtenerTicket(
   } catch (e) {
     if (!esPermisoYaVigente(e)) throw e;
     /*
-      ARCA no entrega un permiso nuevo mientras el anterior siga vigente,
-      y contesta «ya posee un TA valido». Pasa en dos casos, y en los dos
-      el permiso que sirve ya existe:
+      ARCA no entrega dos permisos juntos: si otro pedido lo acaba de
+      renovar, contesta «ya posee un TA valido». Pasó el 01/10 a las 9:
+      esta tarea mandó dos pedidos a la vez —los dos CAEA por avisar sin
+      movimiento— y uno falló así. El que ganó lo guarda en un instante:
+      se lo vuelve a leer. Y si el guardado todavía no venció, sirve
+      mientras tanto.
 
-      - En los últimos cinco minutos del guardado. Acá se lo da por
-        vencido antes de tiempo, pero para ARCA todavía vale: se lo usa
-        hasta el final.
-      - Cuando otro pedido lo renovó al mismo tiempo. Pasó el 01/10 a las
-        9: esta tarea mandó dos pedidos juntos —los dos CAEA por avisar
-        sin movimiento— y uno falló así. El que ganó lo guarda en un
-        instante: se lo vuelve a leer.
+      Probado el 14/10 con la misma tarea: dos pedidos juntos y el
+      permiso guardado a punto de vencer, y los dos contestaron bien.
     */
     if (msHastaQueVence(cacheado) > 10_000) return cacheado as Ticket;
     while (plazo - Date.now() > 1_500) {
@@ -229,20 +227,20 @@ let TIMEOUT_MS = 20000;
 /*
   Y el pedido entero tiene un plazo, contado desde que llega.
 
-  Desde la pantalla de contingencia, la app espera treinta segundos
-  (LIMITE_ARCA_MS, en app/src/lib/funcionesDeArca.ts) y esta función
-  tiene que contestar antes: si la app se rinde primero, la persona ve
-  un error de algo que acá terminó bien, y además la app lo toma como
-  caída de internet y trabaja quince segundos sin conexión. Veinte
-  alcanzan para pedir un permiso nuevo a WSAA —unos diez en homologación,
-  medido el 01/10— y hacer la operación. Si este número sube, aquél
-  tiene que subir también.
+  Desde la pantalla de contingencia, la app espera treinta y cinco
+  segundos (LIMITE_ARCA_MS, en app/src/lib/funcionesDeArca.ts) y esta
+  función tiene que contestar antes: si la app se rinde primero, la
+  persona ve un error de algo que acá terminó bien, y además la app lo
+  toma como caída de internet y trabaja quince segundos sin conexión.
+  Veinticinco alcanzan para esperar a WSAA —que el 14/10 tardó doce sólo
+  en contestar que ya había un permiso— y hacer la operación. Si este
+  número sube, aquél tiene que subir también.
 
   La tarea diaria no tiene a nadie esperando y llama con un minuto de
   margen (app.mantenimiento_caea): le alcanza con cortar antes de eso,
   así su respuesta queda registrada en vez de perderse.
 */
-const PLAZO_ARCA_MS = 20_000;
+const PLAZO_ARCA_MS = 25_000;
 const PLAZO_TAREA_MS = 50_000;
 
 /*
