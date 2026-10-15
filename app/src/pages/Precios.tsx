@@ -5,6 +5,7 @@ import { confirmar } from '@/components/Dialogo'
 import {
   TIPOS_MEDIO_PAGO,
   cargarPreciosServidor,
+  esTarjeta,
   darDeBajaLista,
   darDeBajaMedioPago,
   guardarCuota,
@@ -605,12 +606,15 @@ function ModalMedio({
             <select
               value={datos.tipo ?? 'efectivo'}
               onChange={(e) =>
-                // Un cheque no es plata del cajón ni se paga en cuotas: la
-                // base no lo deja guardar de otra forma.
+                // Un cheque no es plata del cajón ni se paga en cuotas, y lo
+                // de una tarjeta lo liquida la tarjeta: la base no los deja
+                // guardar de otra forma.
                 set(
                   e.target.value === 'cheque'
                     ? { tipo: 'cheque', afecta_caja: false, admite_cuotas: false, cuotas_maximas: 1 }
-                    : { tipo: e.target.value },
+                    : esTarjeta(e.target.value)
+                      ? { tipo: e.target.value, afecta_caja: false }
+                      : { tipo: e.target.value },
                 )
               }
               className={claseInput}
@@ -685,7 +689,7 @@ function ModalMedio({
           <input
             type="checkbox"
             checked={datos.afecta_caja ?? true}
-            disabled={datos.tipo === 'cheque'}
+            disabled={datos.tipo === 'cheque' || esTarjeta(datos.tipo)}
             onChange={(e) => set({ afecta_caja: e.target.checked })}
             className="mt-0.5 size-4 rounded border-borde text-marca-700 focus:ring-marca-500"
           />
@@ -694,7 +698,9 @@ function ModalMedio({
             <span className="block text-xs text-piedra-500">
               {datos.tipo === 'cheque'
                 ? 'Un cheque nunca entra al arqueo: va a la cartera de Tesorería, con su fecha.'
-                : 'Destildalo para lo que no es plata en el cajón: cuenta corriente, transferencias que van directo al banco.'}
+                : esTarjeta(datos.tipo)
+                  ? 'Una tarjeta nunca entra al arqueo: esa plata la liquida la tarjeta, no está en el cajón.'
+                  : 'Destildalo para lo que no es plata en el cajón: cuenta corriente, transferencias que van directo al banco.'}
             </span>
           </span>
         </label>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { mediosParaElegir, type MedioPago } from '@/lib/api/precios'
+import { esTarjeta, mediosParaElegir, type MedioPago } from '@/lib/api/precios'
 
 /*
   Los medios que se ofrecen al cobrar.
@@ -45,5 +45,18 @@ describe('los medios para elegir', () => {
 
   it('sin medios activos, no ofrece ninguno', () => {
     expect(mediosParaElegir([medio('Tienda online', false, 90)])).toEqual([])
+  })
+})
+
+describe('las tarjetas no van al arqueo', () => {
+  it('reconoce las dos tarjetas', () => {
+    expect(esTarjeta('tarjeta_credito')).toBe(true)
+    expect(esTarjeta('tarjeta_debito')).toBe(true)
+  })
+
+  it('el resto de los medios decide su arqueo como siempre', () => {
+    for (const tipo of ['efectivo', 'transferencia', 'cuenta_corriente', 'cheque', 'otro', undefined]) {
+      expect(esTarjeta(tipo)).toBe(false)
+    }
   })
 })

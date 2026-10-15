@@ -55,6 +55,15 @@ export const TIPOS_MEDIO_PAGO: Record<string, string> = {
 }
 
 /*
+  Lo cobrado con tarjeta lo liquida la tarjeta: no está en el cajón, y la
+  base no deja que una tarjeta entre al arqueo (desde el 15/10; el 17/09
+  había quedado tildada y el cierre daba diferencia).
+*/
+export function esTarjeta(tipo: string | undefined): boolean {
+  return tipo === 'tarjeta_credito' || tipo === 'tarjeta_debito'
+}
+
+/*
   Precios y medios de pago.
 
   Local primero, igual que los productos: el punto de venta los necesita
