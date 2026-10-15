@@ -12,7 +12,9 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Construida: 0.16.3** (15/10, a la tarde) — **falta publicarla**. *Tienda online* ya no aparece para elegir al cobrar, la lista de Productos no se aplasta al lado de la ficha, y la tabla del Mostrador se acomoda a su ancho, y en *Precios* la casilla del arqueo de una tarjeta queda apagada. Y **el guion de la prueba del corte suma lo de octubre**. Ver *Lo último que pasó*. **618 pruebas verdes en la app.**
+**Construida: 0.16.4** (15/10) — **falta publicarla**. Es la 0.16.3 más **la Caja y el Mostrador que entran en un teléfono**. Hace falta porque la 0.16.3 **se publicó a las 17:14, mientras esos cambios estaban a medio hacer** en la carpeta: lo instalado no coincide con ningún commit. La 0.16.4 sale de `main` limpio.
+
+**Publicada: 0.16.3** (15/10, 17:14), verificada en Cloudflare. *Tienda online* ya no aparece para elegir al cobrar, la lista de Productos no se aplasta al lado de la ficha, y la tabla del Mostrador se acomoda a su ancho, y en *Precios* la casilla del arqueo de una tarjeta queda apagada. Y **el guion de la prueba del corte suma lo de octubre**. Ver *Lo último que pasó*. **618 pruebas verdes en la app.**
 
 ✅ **La Caja y el Mostrador entran en un teléfono** (15/10, después de construir la 0.16.3: va en la próxima). Por debajo de 1024 px se apilan; desde 1024, iguales. Medidas en seis anchos, nada se desplaza. Ver *Lo último que pasó*.
 
