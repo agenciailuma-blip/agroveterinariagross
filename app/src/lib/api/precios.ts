@@ -30,6 +30,20 @@ export interface MedioPago {
   medio_pago_cuota: CuotaMedioPago[]
 }
 
+/*
+  Los medios que se ofrecen para elegir al cobrar.
+
+  Un medio inactivo no se ofrece, pero sigue en la lista completa: la
+  pantalla de Precios lo muestra para reactivarlo, y una venta que ya lo
+  trae —«Tienda online», con el que queda registrado lo que se cobró por
+  la web y que está inactivo justamente para que nadie lo elija en el
+  local— tiene que poder encontrarlo por su id. Por eso se filtra acá,
+  en lo que se muestra, y no al cargar.
+*/
+export function mediosParaElegir(medios: MedioPago[]): MedioPago[] {
+  return medios.filter((m) => m.activo)
+}
+
 export const TIPOS_MEDIO_PAGO: Record<string, string> = {
   efectivo: 'Efectivo',
   tarjeta_debito: 'Tarjeta de débito',

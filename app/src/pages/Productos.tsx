@@ -391,6 +391,8 @@ export default function Productos() {
     : 0
 
   const editorAbierto = creando || !!seleccionado
+  // Las columnas que no entran al lado de la ficha: van sólo con la lista sola.
+  const soloSinFicha = editorAbierto ? 'hidden' : 'hidden sm:table-cell'
 
   /*
     ¿Hay cambios sin guardar que cambian lo que ve la tienda? Entonces la
@@ -479,7 +481,7 @@ export default function Productos() {
       {avance.data && avance.data.total > 0 && (
         <div
           className={`rounded-xl bg-white p-4 shadow-sm ring-1 ring-borde ${
-            editorAbierto ? 'hidden lg:block' : ''
+            editorAbierto ? 'hidden xl:block' : ''
           }`}
         >
           <div className="mb-2 flex items-baseline justify-between text-sm">
@@ -498,7 +500,7 @@ export default function Productos() {
         </div>
       )}
 
-      <div className={`flex-wrap items-center gap-3 ${editorAbierto ? 'hidden lg:flex' : 'flex'}`}>
+      <div className={`flex-wrap items-center gap-3 ${editorAbierto ? 'hidden xl:flex' : 'flex'}`}>
         <div className="relative min-w-64 flex-1">
           <svg
             className="pointer-events-none absolute top-1/2 left-3.5 size-5 -translate-y-1/2 text-piedra-400"
@@ -709,11 +711,17 @@ export default function Productos() {
         lado de la lista: se abría a la derecha, fuera de la pantalla, y
         tocar un producto parecía no hacer nada. Ahí la ficha reemplaza a
         la lista, y cerrarla la trae de vuelta.
+
+        «Ancha» es desde 1280 px, no desde 1024. A 1024, con el menú, a la
+        lista le quedaban 114 px al lado de la ficha y se desplazaba hacia
+        el costado (visto el 30/09, medido el 15/10). Y al lado de la ficha
+        la lista se achica a lo que sirve para elegir otro producto: el
+        nombre con su código, el precio y el stock.
       */}
       <div className="flex min-h-0 flex-1 gap-4">
         <div
           className={`min-w-0 flex-1 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-borde ${
-            editorAbierto ? 'hidden lg:block' : ''
+            editorAbierto ? 'hidden xl:block' : ''
           }`}
         >
           <div className="h-full overflow-y-auto">
@@ -721,7 +729,7 @@ export default function Productos() {
               <thead className="sticky top-0 border-b border-borde bg-piedra-50 text-left text-xs tracking-wide text-piedra-500 uppercase">
                 <tr>
                   {conCasillas && (
-                    <th className="hidden w-10 px-4 py-2.5 sm:table-cell">
+                    <th className={`w-10 px-4 py-2.5 ${soloSinFicha}`}>
                       {/* Marca los que se ven. Para una categoría entera, el
                           filtro de arriba: la lista muestra de a 100. */}
                       {!verBajas && (
@@ -738,7 +746,7 @@ export default function Productos() {
                       )}
                     </th>
                   )}
-                  <th className="hidden px-4 py-2.5 font-medium sm:table-cell">Código</th>
+                  <th className={`px-4 py-2.5 font-medium ${soloSinFicha}`}>Código</th>
                   <th className="px-4 py-2.5 font-medium">Producto</th>
                   <th className="px-4 py-2.5 text-right font-medium">Precio</th>
                   {verBajas ? (
@@ -746,7 +754,7 @@ export default function Productos() {
                   ) : (
                     <>
                       <th className="px-4 py-2.5 text-right font-medium">Stock</th>
-                      <th className="hidden px-4 py-2.5 font-medium sm:table-cell">Estado</th>
+                      <th className={`px-4 py-2.5 font-medium ${soloSinFicha}`}>Estado</th>
                     </>
                   )}
                 </tr>
@@ -782,7 +790,7 @@ export default function Productos() {
                   bajas.data?.filas.map((p) => (
                     <tr key={p.id} className="hover:bg-piedra-50">
                       {conCasillas && (
-                        <td className="hidden px-4 py-2.5 sm:table-cell">
+                        <td className={`px-4 py-2.5 ${soloSinFicha}`}>
                           <input
                             type="checkbox"
                             checked={marcados.has(p.id)}
@@ -791,10 +799,10 @@ export default function Productos() {
                           />
                         </td>
                       )}
-                      <td className="hidden px-4 py-2.5 font-mono text-xs text-piedra-500 sm:table-cell">{p.codigo}</td>
+                      <td className={`px-4 py-2.5 font-mono text-xs text-piedra-500 ${soloSinFicha}`}>{p.codigo}</td>
                       <td className="px-4 py-2.5 text-piedra-600">
                         {p.nombre_interno}
-                        <p className="font-mono text-xs text-piedra-400 sm:hidden">{p.codigo}</p>
+                        <p className={`font-mono text-xs text-piedra-400 ${editorAbierto ? '' : 'sm:hidden'}`}>{p.codigo}</p>
                       </td>
                       <td className="px-4 py-2.5 text-right tabular-nums text-piedra-600">
                         {moneda.format(p.precio_venta)}
@@ -815,7 +823,7 @@ export default function Productos() {
                         className={activa ? 'bg-marca-50' : 'hover:bg-piedra-50'}
                       >
                         {conCasillas && (
-                          <td className="hidden px-4 py-2.5 sm:table-cell">
+                          <td className={`px-4 py-2.5 ${soloSinFicha}`}>
                             <input
                               type="checkbox"
                               checked={marcados.has(p.producto_id)}
@@ -833,7 +841,7 @@ export default function Productos() {
                             setCreando(false)
                             setSeleccionado(p.producto_id)
                           }}
-                          className="hidden cursor-pointer px-4 py-2.5 font-mono text-xs text-piedra-500 sm:table-cell"
+                          className={`cursor-pointer px-4 py-2.5 font-mono text-xs text-piedra-500 ${soloSinFicha}`}
                         >
                           {p.codigo}
                         </td>
@@ -861,7 +869,7 @@ export default function Productos() {
                             <MarcaWeb estado={enTienda.data?.get(p.producto_id)} />
                           </div>
                           {/* Sin la columna del código, va debajo del nombre. */}
-                          <p className="font-mono text-xs text-piedra-400 sm:hidden">{p.codigo}</p>
+                          <p className={`font-mono text-xs text-piedra-400 ${editorAbierto ? '' : 'sm:hidden'}`}>{p.codigo}</p>
                         </td>
                         <td className="px-4 py-2.5 text-right tabular-nums text-tinta">
                           {moneda.format(p.precio_venta)}
@@ -875,7 +883,7 @@ export default function Productos() {
                             </span>
                           )}
                         </td>
-                        <td className="hidden px-4 py-2.5 sm:table-cell">
+                        <td className={`px-4 py-2.5 ${soloSinFicha}`}>
                           <span
                             className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ring-1 ${estado.clase}`}
                           >
@@ -898,7 +906,7 @@ export default function Productos() {
         </div>
 
         {editorAbierto && referencias.data && (
-          <div className="w-full overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-borde lg:w-[36rem] lg:shrink-0">
+          <div className="w-full overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-borde xl:w-[36rem] xl:shrink-0">
             {detalle.isPending && !creando ? (
               <p className="p-8 text-center text-sm text-piedra-400">Cargando producto…</p>
             ) : (

@@ -13,7 +13,7 @@ import {
 import type { ClienteVenta, LineaVenta, ProductoVenta } from '@/lib/api/ventas'
 import { clienteDesdeArca } from '@/lib/api/clientes'
 import { cuitValido } from '@/lib/api/cheques'
-import { cargarPrecios, previsualizarPrecio } from '@/lib/api/precios'
+import { cargarPrecios, mediosParaElegir, previsualizarPrecio } from '@/lib/api/precios'
 import type { MedioPago } from '@/lib/api/precios'
 import { useSync } from '@/lib/local/SyncProvider'
 import { subirPendientes } from '@/lib/local/sync'
@@ -640,7 +640,16 @@ export default function PuntoDeVenta() {
           )}
         </div>
 
-        <div className="min-h-0 flex-1 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-borde">
+        {/*
+          La tabla mira el ancho que le queda, no el de la pantalla.
+
+          Al lado del panel de 20 rem, a 1024 px a la tabla le quedan unos
+          400 px y sus columnas fijas sumaban 408 más el nombre: se
+          desplazaba hacia el costado (visto el 30/09, medido el 15/10).
+          Por eso es un contenedor: cuando tiene menos de 32 rem, el
+          importe deja de ser columna y pasa debajo del precio.
+        */}
+        <div className="@container min-h-0 flex-1 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-borde">
           <div className="h-full overflow-y-auto">
             {!lineas.length ? (
               <p className="px-4 py-16 text-center text-sm text-piedra-400">
@@ -651,9 +660,9 @@ export default function PuntoDeVenta() {
                 <thead className="sticky top-0 border-b border-borde bg-piedra-50 text-left text-xs tracking-wide text-piedra-500 uppercase">
                   <tr>
                     <th className="px-4 py-2.5 font-medium">Producto</th>
-                    <th className="w-28 px-3 py-2.5 text-center font-medium">Cantidad</th>
+                    <th className="w-24 px-3 py-2.5 text-center font-medium">Cantidad</th>
                     <th className="w-32 px-3 py-2.5 text-right font-medium">Precio</th>
-                    <th className="w-32 px-4 py-2.5 text-right font-medium">Importe</th>
+                    <th className="hidden w-32 px-4 py-2.5 text-right font-medium @lg:table-cell">Importe</th>
                     <th className="w-10" />
                   </tr>
                 </thead>
@@ -722,8 +731,14 @@ export default function PuntoDeVenta() {
                               {moneda.format(l.precio_original)}
                             </p>
                           )}
+                          {/* Sin la columna del importe, va acá cuando no es el mismo precio. */}
+                          {l.cantidad !== 1 && (
+                            <p className="text-xs font-medium tabular-nums text-tinta @lg:hidden">
+                              {moneda.format(l.cantidad * l.precio_unitario)}
+                            </p>
+                          )}
                         </td>
-                        <td className="px-4 py-2.5 text-right font-medium tabular-nums text-tinta">
+                        <td className="hidden px-4 py-2.5 text-right font-medium tabular-nums text-tinta @lg:table-cell">
                           {moneda.format(l.cantidad * l.precio_unitario)}
                         </td>
                         <td className="pr-3">
@@ -854,7 +869,7 @@ export default function PuntoDeVenta() {
               ¿Cómo va a pagar?
             </p>
             <div className="flex flex-wrap gap-1.5">
-              {medios
+              {mediosParaElegir(medios)
                 .filter((m) => m.tipo !== 'cuenta_corriente' || cliente?.cuenta_corriente)
                 .flatMap((m: MedioPago) =>
                   m.admite_cuotas

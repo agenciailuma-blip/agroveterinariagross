@@ -12,7 +12,11 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Construida: 0.16.2** (15/10) — **falta publicarla**. **Una venta ya no puede salir con dos facturas autorizadas en ARCA**: un pedido de CAE por vez en cada serie, y antes de renumerar se le pregunta a ARCA si ese número ya es de esta venta. Eso vive en el servidor y **ya está andando para todas las PC**, sin actualizar nada; la 0.16.2 sólo cambia el botón de la Caja, que mientras espera el CAE dice *Cobrada · facturando…* y no *Cobrando…*. Probado contra ARCA de homologación (ver *Lo último que pasó*). **613 pruebas verdes en la app**, 110 migraciones aplicadas.
+**Construida: 0.16.3** (15/10, a la tarde) — **falta publicarla**. *Tienda online* ya no aparece para elegir al cobrar, la lista de Productos no se aplasta al lado de la ficha, y la tabla del Mostrador se acomoda a su ancho. Y **el guion de la prueba del corte suma lo de octubre**. Ver *Lo último que pasó*. **616 pruebas verdes en la app.**
+
+⚠️ **Para la prueba de mañana: la *Tarjeta de crédito* está marcada como que entra al arqueo.** Ver *Lo último que pasó*. Si no se corrige, el cierre de caja (punto 9) da diferencia apenas se cobre algo con tarjeta.
+
+**Publicado: 0.16.2** (15/10, a la tarde). **Una venta ya no puede salir con dos facturas autorizadas en ARCA**: un pedido de CAE por vez en cada serie, y antes de renumerar se le pregunta a ARCA si ese número ya es de esta venta. Eso vive en el servidor y **ya está andando para todas las PC**, sin actualizar nada; la 0.16.2 sólo cambia el botón de la Caja, que mientras espera el CAE dice *Cobrada · facturando…* y no *Cobrando…*. Probado contra ARCA de homologación (ver *Lo último que pasó*). **613 pruebas verdes en la app**, 110 migraciones aplicadas. Verificado en Cloudflare: `latest.json` dice 0.16.2, firmada.
 
 **Publicado: 0.16.1** (14/10, a la tarde). **La factura ya no se corta a los doce segundos** cuando ARCA tarda: la app espera 35 s a las funciones de ARCA y no se da por desconectada mientras tanto. Probado con ARCA de homologación (ver *Lo último que pasó*). Las PC del local la toman con *Actualizar ahora*. **596 pruebas verdes en la app.**
 
@@ -48,7 +52,7 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 
 ## Lo primero de todo
 
-📋 **El guion de la prueba del corte** está en una página propia: https://claude.ai/artifact/2LjCRbUhEr8RPvmQRG8keD — los doce puntos de terminado del alcance, cinco controles previos y cinco pruebas de lo que se sumó, cada uno con sus pasos, cuándo sale bien, y botones para marcar *Anduvo* / *Falló* con una nota. **Los resultados quedan guardados** y se leen desde acá (colección `resultados`, un documento por punto: `a1`…`a5`, `p01`…`p12`, `e1`…`e5`). Es privada: para que Lucas marque, se la comparte como *Colaborador*.
+📋 **El guion de la prueba del corte** está en una página propia: https://claude.ai/artifact/2LjCRbUhEr8RPvmQRG8keD — los doce puntos de terminado del alcance, cinco controles previos y cinco pruebas de lo que se sumó, cada uno con sus pasos, cuándo sale bien, y botones para marcar *Anduvo* / *Falló* con una nota. **Los resultados quedan guardados** y se leen desde acá (colección `resultados`, un documento por punto: `a1`…`a5`, `p01`…`p12`, `e1`…`e5`, y desde el 15/10 `o1`…`o7`). Es privada: para que Lucas marque, se la comparte como *Colaborador*.
 
 ✅ **Los tres huecos del alcance de la fase 1-A, cerrados.** Los dos primeros se encontraron al armar el guion (05/10) y se cerraron el 09/10; el tercero, el 08/10. **Ninguno está en el guion de la prueba del corte** —los doce puntos no los nombran o los nombran de pasada—: conviene sumar las tres pruebas.
 - ~~**Umbrales de stock por categoría y general — no hay pantalla para cargarlos.**~~ ✅ **Stock → Avisos, en la 0.15.0.** El sistema los usa (hay uno para Antiparasitarios: bajo 5, crítico 2), pero sólo se pueden poner producto por producto, en su ficha. El punto 11 de terminado y el punto 4 del alcance («configurables en tres niveles: general, por categoría y por producto») lo piden.
@@ -60,6 +64,28 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 🟡 **Lo que la venta tardaba en llegar a la caja sin internet** — arreglado el 05/10 y publicado en la 0.13.4, **sin probar en el local**. El mostrador le pasaba las ventas a la caja una vez por minuto, y la caja miraba su cola cada ocho segundos: hasta 68 segundos con el cliente esperando. Y llegaba de a partes porque, mientras la cabecera intentaba subir al servidor —hasta doce segundos sin internet—, salían los renglones solos. Ahora la venta sale al segundo y medio de apretar *Enviar a caja* (y otra vez a los catorce, por si el intento de subir tardó), viaja entera o espera entera, y la caja la muestra apenas llega. Se comprueba en el próximo corte: la venta tiene que aparecer en la caja en un par de segundos y completa.
 
 ---
+
+## Lo último que pasó — 15 de octubre, a la tarde
+
+**Los puntos 3 y 4 de lo pendiente.** El 2 —limpiar los datos de prueba— se dejó a propósito: mañana hay otra prueba en el local.
+
+### El guion de la prueba del corte, con lo de octubre
+
+[El guion](https://claude.ai/artifact/2LjCRbUhEr8RPvmQRG8keD) pasó de 22 a **29 puntos**: un grupo nuevo, *Lo que se sumó en octubre* (`o1`…`o7`). Son la primera factura del día (el botón *Cobrada · facturando…*), los avisos de stock en tres niveles, el historial de un producto, la caja y la suelta, la orden de compra interna, el pedido a un proveedor y recibir lo que se pidió. Y el punto `e4` ahora pide que una factura devuelta entera diga *Devuelta*. Los resultados que ya estaban marcados se conservan.
+
+### «Tienda online» ya no se ofrece al cobrar
+
+Está inactivo a propósito —es con lo que queda registrado lo que se cobró por la web—, pero aparecía para elegir en el **Mostrador, la Caja y la cobranza de cuenta corriente**: se cargan todos los medios, también los inactivos, porque Precios los necesita y una venta que ya lo trae tiene que encontrarlo. Ahora el filtro va en lo que se ofrece (`mediosParaElegir`, en [`precios.ts`](../app/src/lib/api/precios.ts)), no al cargar. **3 pruebas**, rotas a propósito y atrapadas.
+
+### Productos y el Mostrador en una pantalla mediana
+
+- **Productos, con la ficha abierta:** a 1024 px la lista quedaba de **114 px** para un contenido de 588 y se desplazaba hacia el costado. Ahora la lista y la ficha van juntas **desde 1280 px** (por debajo, la ficha reemplaza a la lista, como en una tablet), y al lado de la ficha la lista se achica a nombre con código, precio y stock. **Medido con la ficha abierta en 375, 768, 1024, 1280, 1366 y 1440 px: nada se desplaza**; la lista queda de 370 px a 1280 y de 456 a 1366. La lista sola, sin cambios en 375, 640 y 1024.
+- **La tabla del Mostrador:** al lado del panel de 20 rem, a 1024 px le quedaban unos 400 px para 408 de columnas fijas más el nombre. Ahora mira el ancho que tiene, no el de la pantalla: con menos de 32 rem, el importe deja de ser columna y pasa debajo del precio (cuando la cantidad no es 1), y la cantidad es más angosta. 🟡 **Sin ver en pantalla**: el Mostrador pide el PIN del vendedor. Se comprobó que se generan las reglas; falta mirarlo a 1024 px con una venta cargada.
+- ⚠️ **Visto de paso, sin tocar:** la **Caja y el Mostrador no entran en un teléfono**. Las dos tienen una columna fija de 20 rem —la cola, el panel del cliente y el cobro— y a 375 px a la otra parte le quedan unos pocos píxeles. La medición del 30/09 miró la página y, sin PIN, vio la pantalla del PIN. Vender sigue siendo en la PC, pero la regla es que nada se desplace a 375 px.
+
+### La tarjeta de crédito entra al arqueo
+
+⚠️ **Para decidir antes de la prueba.** En la base, *Tarjeta de crédito* tiene tildado **«Entra al arqueo de caja»**. Se sembró sin tildar; quedó tildado el **17/09 a las 17:02**, en el local, en la misma edición que le cambió la lista a Contado y las cuotas a tres —lo del recargo por cuotas de ese día—. La auditoría no registra quién. **La consecuencia:** el cierre suma al efectivo que espera en el cajón todo lo cobrado con un medio que entra al arqueo, así que cada venta con tarjeta agranda una diferencia que no existe. Se corrige en *Precios → Medios de pago → Tarjeta de crédito*, destildando la casilla.
 
 ## Lo último que pasó — 15 de octubre
 

@@ -8,7 +8,7 @@ import {
 } from '@/lib/api/clientes'
 import type { Cliente } from '@/lib/api/clientes'
 import { cajaAbierta } from '@/lib/api/caja'
-import { cargarPrecios } from '@/lib/api/precios'
+import { cargarPrecios, mediosParaElegir } from '@/lib/api/precios'
 import { chequeVacio, cobrarConCheques, faltaEnCheque } from '@/lib/api/cheques'
 import type { DatosCheque } from '@/lib/api/cheques'
 import { enCastellano } from '@/lib/errores'
@@ -210,7 +210,7 @@ function ModalCobranza({
   const [cheques, setCheques] = useState<{ datos: DatosCheque; importe: string }[]>([])
 
   const precios = useQuery({ queryKey: ['precios'], queryFn: cargarPrecios })
-  const medios = (precios.data?.medios ?? []).filter((m) => m.tipo !== 'cuenta_corriente')
+  const medios = mediosParaElegir(precios.data?.medios ?? []).filter((m) => m.tipo !== 'cuenta_corriente')
   const medio = medios.find((m) => m.id === medioPagoId)
   const conCheque = medio?.tipo === 'cheque'
 

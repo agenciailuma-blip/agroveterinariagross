@@ -24,7 +24,7 @@ import type { PagoNuevo, VentaCompleta } from '@/lib/api/caja'
 import type { LineaDeseada } from '@/lib/local/caja'
 import { buscarProductosVenta } from '@/lib/api/ventas'
 import type { ProductoVenta } from '@/lib/api/ventas'
-import { cargarPrecios } from '@/lib/api/precios'
+import { cargarPrecios, mediosParaElegir } from '@/lib/api/precios'
 import type { MedioPago } from '@/lib/api/precios'
 import { facturarVenta } from '@/lib/api/facturacion'
 import { emitirNoFiscal, marcarDocumentacion, numeroNoFiscal } from '@/lib/api/noFiscal'
@@ -972,7 +972,7 @@ function PanelCobro({
   const [agregando, setAgregando] = useState(false)
   const [descontando, setDescontando] = useState(false)
 
-  const usables = medios.filter(
+  const usables = mediosParaElegir(medios).filter(
     (m) => m.tipo !== 'cuenta_corriente' || venta.cliente?.cuenta_corriente,
   )
 
