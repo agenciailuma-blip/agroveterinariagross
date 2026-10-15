@@ -12,7 +12,7 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Construida: 0.16.2** (15/10) — **falta publicarla**. **Una venta ya no puede salir con dos facturas autorizadas en ARCA**: un pedido de CAE por vez en cada serie, y antes de renumerar se le pregunta a ARCA si ese número ya es de esta venta. Eso vive en el servidor y **ya está andando para todas las PC**, sin actualizar nada; la 0.16.2 sólo cambia el botón de la Caja, que mientras espera el CAE dice *Cobrada · facturando…* y no *Cobrando…*. Probado contra ARCA de homologación (ver *Lo último que pasó*). **613 pruebas verdes en la app**, 109 migraciones aplicadas.
+**Construida: 0.16.2** (15/10) — **falta publicarla**. **Una venta ya no puede salir con dos facturas autorizadas en ARCA**: un pedido de CAE por vez en cada serie, y antes de renumerar se le pregunta a ARCA si ese número ya es de esta venta. Eso vive en el servidor y **ya está andando para todas las PC**, sin actualizar nada; la 0.16.2 sólo cambia el botón de la Caja, que mientras espera el CAE dice *Cobrada · facturando…* y no *Cobrando…*. Probado contra ARCA de homologación (ver *Lo último que pasó*). **613 pruebas verdes en la app**, 110 migraciones aplicadas.
 
 **Publicado: 0.16.1** (14/10, a la tarde). **La factura ya no se corta a los doce segundos** cuando ARCA tarda: la app espera 35 s a las funciones de ARCA y no se da por desconectada mientras tanto. Probado con ARCA de homologación (ver *Lo último que pasó*). Las PC del local la toman con *Actualizar ahora*. **596 pruebas verdes en la app.**
 
@@ -85,7 +85,11 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 
 ⚠️ **Datos de prueba que cambiaron:** la venta de prueba CAJA1-000011 quedó facturada en homologación, B 0001-00000029, con fecha del 15/10; para eso, la alineación corrió al 37 la factura rechazada de *Granja Tres Colonias* (CAJA1-000010), que tenía el 29. La factura 28 volvió a quedar autorizada, con el mismo CAE. Y la venta **CAJA1-000033** (*PRUEBA boton facturando*, una unidad de PRUEBA-CHQ) quedó cobrada en la caja del servidor, facturada (B 0001-00000030) y devuelta (nota de crédito B 0001-00000004), todo en homologación.
 
-⚠️ **Visto de paso, sin tocar:** en Facturación, una factura **devuelta entera sigue ofreciendo *Devolver parte***. La devolución entera no anota qué mercadería volvió, y la vista calcula que todavía queda todo. **No hay riesgo**: la base lo frena con «La venta está anulada: no hay nada que devolver». Es un botón de más, y estaba así desde septiembre.
+### Y la factura devuelta entera ya no ofrece «Devolver parte»
+
+**Visto al devolver la venta de prueba.** En Facturación, una factura devuelta entera seguía ofreciendo *Devolver parte* y no mostraba *Devuelta*. Pasaba con **cuatro facturas**, desde septiembre. La devolución entera anula la venta, pero no anota renglón por renglón qué volvió, y la vista sólo miraba eso. **No había riesgo**: la base ya frenaba la devolución con «La venta está anulada: no hay nada que devolver». Ahora, en [`vista_comprobante_estado`](../supabase/migrations/20261015130000_la_devuelta_entera_no_ofrece_partes.sql), una venta anulada no tiene nada por devolver. No hizo falta tocar la app.
+
+**Verificado:** **10 comprobaciones** en [`supabase/pruebas/lo-que-queda-por-devolver.sql`](../supabase/pruebas/lo-que-queda-por-devolver.sql), como un Administrador. Contra la vista vieja **fallaba**, con las cuatro facturas; en seco junto con la migración y después de aplicarla, **anduvo**. **Rota a propósito** con un arreglo de más —cortarle el botón a toda factura con nota de crédito—: **la primera versión de la prueba no lo atrapó**, porque la única venta con devoluciones parciales ya había vuelto entera. Se le sumó una devolución parcial de una unidad, armada adentro de la prueba y deshecha al terminar, y ahí la atrapó. **En pantalla:** la factura 30 muestra *Devuelta* y sólo *Ver / imprimir*; la 29, sin devolver, sigue con *Devolver* y *Devolver parte*.
 
 ## Lo último que pasó — 14 de octubre
 
