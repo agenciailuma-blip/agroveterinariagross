@@ -1,5 +1,11 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import forge from "npm:node-forge@1.3.1";
+import {
+  armarPedidoConsulta,
+  type ComprobanteLocal,
+  esElMismoComprobante,
+  leerConsulta,
+} from "./consulta.ts";
 
 // ═══════════════════════════════════════════════════════════════
 // WSFEv1 — FECAESolicitar
@@ -261,6 +267,52 @@ const PLAZO_ARCA_MS = 25_000;
   de ARCA y que se reintente.
 */
 const MINIMO_PARA_EL_CAE_MS = 5_000;
+
+/*
+  El turno: un pedido de CAE por vez en cada serie.
+
+  Dos pedidos a la vez en la misma serie —un reintento apretado
+  mientras el primero sigue, o dos cajas facturando juntas— se pisan:
+  el segundo le pregunta a ARCA el último número, ve el que el primero
+  acaba de autorizar y todavía no guardó, renumera y pide otro CAE.
+  Dos facturas en ARCA para una sola venta. El turno vive en la base
+  (tomar_turno_cae) porque cada pedido corre en su propia instancia de
+  la función.
+
+  El que llega después espera. Lo normal es que el de adelante tarde un
+  segundo o dos; si no se libera a tiempo para hacer el pedido entero,
+  no se manda nada y se dice por qué. Eso no es una caída de ARCA y no
+  se anota como tal: no tiene que habilitar la contingencia.
+
+  El turno se toma hasta un rato después del plazo de este pedido: si
+  la función se muere a mitad de camino y no lo suelta, vence solo.
+*/
+const MINIMO_PARA_EMPEZAR_MS = 12_000;
+const MARGEN_DEL_TURNO_MS = 5_000;
+
+async function esperarTurno(
+  // deno-lint-ignore no-explicit-any
+  supabase: any,
+  comprobanteId: string,
+  ficha: string,
+  plazo: number,
+): Promise<{ tomado: true } | { tomado: false; mismoComprobante: boolean }> {
+  while (true) {
+    const { data, error } = await supabase
+      .rpc("tomar_turno_cae", {
+        p_comprobante_id: comprobanteId,
+        p_ficha: ficha,
+        p_hasta: new Date(plazo + MARGEN_DEL_TURNO_MS).toISOString(),
+      })
+      .single();
+    if (error) throw new Error(`No se pudo tomar el turno para pedir el CAE: ${error.message}`);
+    if (data.tomado) return { tomado: true };
+    if (plazo - Date.now() < MINIMO_PARA_EMPEZAR_MS) {
+      return { tomado: false, mismoComprobante: data.ocupado_por === comprobanteId };
+    }
+    await esperar(500);
+  }
+}
 
 /** Lo que diga la configuración para cada llamada, pero nunca más allá del plazo. */
 function senalHasta(plazo: number): AbortSignal {
@@ -546,6 +598,7 @@ Deno.serve(async (req: Request) => {
   );
 
   let comprobanteId: string | undefined;
+  let fichaDelTurno: string | null = null;
   try {
     /*
       AUTORIZACIÓN — no alcanza con que el JWT sea válido.
@@ -603,17 +656,44 @@ Deno.serve(async (req: Request) => {
     const segundos = Number(config?.find((c) => c.clave === "arca.timeout_segundos")?.valor ?? 20);
     if (Number.isFinite(segundos) && segundos > 0) TIMEOUT_MS = segundos * 1000;
 
+    // Antes de leer el comprobante: lo que se lee tiene que ser lo que
+    // dejó el pedido de adelante, si había uno.
+    const ficha = crypto.randomUUID();
+    const turno = await esperarTurno(supabase, comprobanteId, ficha, plazo);
+    if (!turno.tomado) {
+      return responder(
+        {
+          ok: false,
+          error: turno.mismoComprobante
+            ? "Ya se le está pidiendo el CAE a ARCA para este comprobante desde otra pantalla, y todavía " +
+              "no terminó. No se mandó otro pedido: en unos segundos el resultado se ve en Facturación."
+            : "ARCA está atendiendo otra factura de este mismo punto de venta y todavía no terminó. No se " +
+              "mandó nada: se puede reintentar en unos segundos.",
+        },
+        409,
+      );
+    }
+    fichaDelTurno = ficha;
+
     const { data: comp, error: errComp } = await supabase
       .from("comprobante")
       .select(
         "id, numero, tipo_comprobante_id, concepto, fecha, receptor_tipo_documento_id, " +
           "receptor_documento, receptor_condicion_iva_id, neto_gravado, neto_no_gravado, exento, " +
-          "iva_total, tributos_total, total, moneda, cotizacion, estado, punto_venta_id, " +
+          "iva_total, tributos_total, total, moneda, cotizacion, estado, cae, punto_venta_id, " +
           "punto_venta:punto_venta_id(numero)",
       )
       .eq("id", comprobanteId)
       .single();
     if (errComp || !comp) throw new Error(`No se encontró el comprobante: ${errComp?.message ?? comprobanteId}`);
+    /*
+      Autorizado por el pedido que tenía el turno —el reintento apretado
+      mientras el primero seguía—: el resultado es ése, y es el que tiene
+      que ver quien reintentó. Pedir otro sería justamente el problema.
+    */
+    if (comp.estado === "autorizado") {
+      return responder({ ok: true, aprobado: true, cae: comp.cae, observaciones: [] });
+    }
     if (!["pendiente", "rechazado"].includes(comp.estado)) {
       throw new Error(`El comprobante está en estado '${comp.estado}', no corresponde pedir CAE.`);
     }
@@ -691,6 +771,90 @@ Deno.serve(async (req: Request) => {
           senalHasta(plazo),
         ),
     );
+
+    /*
+      Si ARCA ya llegó a este número, primero preguntarle de quién es.
+
+      Lo normal es que el último de ARCA sea menor que el número del
+      comprobante. Si es igual o mayor, ARCA ya tiene algo con este
+      número, y lo más probable es que sea este mismo comprobante: un
+      pedido anterior que ARCA autorizó y cuya respuesta se cortó en el
+      camino. Renumerar ahí sería pedir un segundo CAE para la misma
+      venta. Se consulta (FECompConsultar) y, si es éste, se guarda el
+      CAE que ARCA ya había dado. Si es otro, se renumera como siempre.
+    */
+    if (Number(comp.numero) <= ultimo) {
+      const pedidoConsulta = armarPedidoConsulta(
+        ticket,
+        cuit,
+        pvNumero,
+        comp.tipo_comprobante_id as number,
+        Number(comp.numero),
+      );
+      const inicioConsulta = Date.now();
+      const textoConsulta = await conRegistro("FECompConsultar", async () => {
+        const resp = await fetch(WSFE[ambiente], {
+          method: "POST",
+          headers: {
+            "Content-Type": "text/xml; charset=utf-8",
+            SOAPAction: '"http://ar.gov.afip.dif.FEV1/FECompConsultar"',
+          },
+          body: pedidoConsulta,
+          signal: senalHasta(plazo),
+        });
+        return await resp.text();
+      });
+      const consulta = leerConsulta(textoConsulta);
+
+      if (consulta.encontrado) {
+        const enArca = consulta.comprobante;
+        const { mismo, diferencias } = esElMismoComprobante(comp as unknown as ComprobanteLocal, enArca);
+        await supabase.from("intento_arca").insert({
+          comprobante_id: comprobanteId,
+          punto_venta_id: comp.punto_venta_id,
+          operacion: "FECompConsultar",
+          resultado: "ok",
+          error_mensaje: mismo
+            ? null
+            : `El número ${comp.numero} ya lo tiene otro comprobante en ARCA (${diferencias.join("; ")}): se renumera.`,
+          request: { xml: pedidoConsulta },
+          response: { xml: textoConsulta },
+          duracion_ms: Date.now() - inicioConsulta,
+          usuario_id: usuarioId,
+        });
+
+        if (mismo) {
+          const { data: escrito, error: errEscribir } = await supabase
+            .from("comprobante")
+            .update({
+              estado: "autorizado",
+              cae: enArca.codAutorizacion,
+              cae_vencimiento: enArca.vencimiento,
+              arca_resultado: "A",
+              arca_observaciones: enArca.observaciones.length ? enArca.observaciones : null,
+              autorizado_en: new Date().toISOString(),
+            })
+            .eq("id", comprobanteId)
+            .eq("numero", comp.numero)
+            .in("estado", ["pendiente", "rechazado"])
+            .select("id");
+          if (errEscribir) throw new Error(`ARCA ya lo tenía autorizado pero no se pudo guardar: ${errEscribir.message}`);
+          if (!escrito?.length) {
+            throw new Error(
+              `ARCA ya tenía autorizado el número ${comp.numero} con el CAE ${enArca.codAutorizacion}, pero ` +
+                `mientras tanto el comprobante cambió. No se lo tocó: hay que revisarlo.`,
+            );
+          }
+          return responder({
+            ok: true,
+            aprobado: true,
+            cae: enArca.codAutorizacion,
+            observaciones: enArca.observaciones,
+            recuperado: true,
+          });
+        }
+      }
+    }
 
     const { data: alineado, error: errAlinear } = await supabase
       .rpc("alinear_numeracion_comprobante", {
@@ -848,5 +1012,13 @@ Deno.serve(async (req: Request) => {
     return responder({ ok: true, aprobado, cae, observaciones: obs });
   } catch (err) {
     return responder({ ok: false, error: err instanceof Error ? err.message : String(err) }, 500);
+  } finally {
+    // Pase lo que pase: un turno que no se suelta frena la serie hasta que vence.
+    if (fichaDelTurno) {
+      await supabase.rpc("soltar_turno_cae", { p_ficha: fichaDelTurno }).then(
+        () => {},
+        () => {},
+      );
+    }
   }
 });

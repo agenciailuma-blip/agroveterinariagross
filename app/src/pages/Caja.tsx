@@ -85,6 +85,13 @@ export default function Caja() {
     porque el cliente está esperando el papel.
   */
   const [errorImpresion, setErrorImpresion] = useState<string | null>(null)
+  /*
+    La plata ya entró y falta el comprobante. Pedir el CAE puede tardar
+    lo que tarde ARCA —hasta treinta y cinco segundos—, y mientras tanto
+    el botón decía «Cobrando…»: el cajero creía que el cobro no había
+    pasado y el cliente esperaba por algo que ya estaba hecho.
+  */
+  const [cobrada, setCobrada] = useState(false)
 
   const caja = useQuery({
     queryKey: ['caja', terminal?.id],
@@ -294,6 +301,7 @@ export default function Caja() {
       if (sinFactura) await marcarDocumentacion(seleccionada!, documentacion)
 
       const { subida } = await cobrar(seleccionada!, caja.data!.id, operador!.usuario_id, pagos)
+      setCobrada(true)
 
       /*
         Sin conexión, la factura la emite ESTA terminal con el CAEA.
@@ -439,6 +447,7 @@ export default function Caja() {
       qc.invalidateQueries({ queryKey: ['ventas-sin-facturar'] })
     },
     onError: (e) => setError(e instanceof Error ? e.message : 'No se pudo cobrar.'),
+    onSettled: () => setCobrada(false),
   })
 
   /*
@@ -779,6 +788,7 @@ export default function Caja() {
             saldoActual={saldo.data ?? 0}
             aplicando={aplicar.isPending}
             cobrando={cobrarVenta.isPending}
+            cobrada={cobrada}
             ajustando={ajustar.isPending}
             puedeAjustar={tienePermiso('ventas.ajustar_total')}
             documentacion={documentacion}
@@ -907,6 +917,7 @@ function PanelCobro({
   saldoActual,
   aplicando,
   cobrando,
+  cobrada,
   ajustando,
   puedeAjustar,
   documentacion,
@@ -937,6 +948,8 @@ function PanelCobro({
   saldoActual: number
   aplicando: boolean
   cobrando: boolean
+  /** Ya cobrada, esperando el comprobante. */
+  cobrada: boolean
   ajustando: boolean
   puedeAjustar: boolean
   documentacion: Documentacion
@@ -1483,7 +1496,11 @@ function PanelCobro({
             }`}
           >
             {cobrando
-              ? 'Cobrando…'
+              ? cobrada
+                ? documentacion === 'fiscal'
+                  ? 'Cobrada · facturando…'
+                  : 'Cobrada · sacando el comprobante…'
+                : 'Cobrando…'
               : documentacion === 'no_fiscal'
                 ? 'Cobrar sin factura'
                 : documentacion === 'a_facturar'

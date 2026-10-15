@@ -1,5 +1,5 @@
 ---
-actualizado: 2026-10-14
+actualizado: 2026-10-15
 estado: en curso
 ---
 
@@ -11,6 +11,8 @@ estado: en curso
 ---
 
 ## Dónde está todo, hoy
+
+**Construida: 0.16.2** (15/10) — **falta publicarla**. **Una venta ya no puede salir con dos facturas autorizadas en ARCA**: un pedido de CAE por vez en cada serie, y antes de renumerar se le pregunta a ARCA si ese número ya es de esta venta. Eso vive en el servidor y **ya está andando para todas las PC**, sin actualizar nada; la 0.16.2 sólo cambia el botón de la Caja, que mientras espera el CAE dice *Cobrada · facturando…* y no *Cobrando…*. Probado contra ARCA de homologación (ver *Lo último que pasó*). **613 pruebas verdes en la app**, 109 migraciones aplicadas.
 
 **Publicado: 0.16.1** (14/10, a la tarde). **La factura ya no se corta a los doce segundos** cuando ARCA tarda: la app espera 35 s a las funciones de ARCA y no se da por desconectada mientras tanto. Probado con ARCA de homologación (ver *Lo último que pasó*). Las PC del local la toman con *Actualizar ahora*. **596 pruebas verdes en la app.**
 
@@ -59,6 +61,28 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 
 ---
 
+## Lo último que pasó — 15 de octubre
+
+### Una venta, una sola factura en ARCA
+
+**Los dos riesgos que quedaron anotados el 14/10, cerrados.** El detalle está en [`un_pedido_de_cae_por_vez`](../supabase/migrations/20261015120000_un_pedido_de_cae_por_vez.sql) y en [`consulta.ts`](../supabase/functions/arca-wsfe-solicitar-cae/consulta.ts).
+
+> **Cómo se lo contás a Lucas:** si el cajero aprieta *Reintentar* mientras la factura todavía se está pidiendo, o si ARCA autoriza la factura y la respuesta se pierde en el camino, antes el sistema podía pedir otro número y quedaban dos facturas en ARCA para una sola venta. Ahora el segundo pedido espera al primero y devuelve la misma factura; y antes de pedir un número nuevo, el sistema le pregunta a ARCA si ya tiene esa factura, y si la tiene, la toma.
+
+- **Un pedido de CAE por vez en cada serie** (punto de venta y tipo de comprobante). Es un turno anotado en la base, con vencimiento: la función habla con la base en llamadas sueltas, y un bloqueo común se soltaría en la primera. Si la función se muere a mitad de camino, el turno vence solo, a los treinta segundos.
+- **El que llega segundo espera** y, si era para la misma venta, devuelve el CAE que sacó el primero. Si el turno no se libera a tiempo —unos trece segundos—, no manda nada y lo dice. **Eso no se anota como caída de ARCA**: no habilita la contingencia.
+- **Si el último número de ARCA ya alcanzó al del comprobante, primero se le pregunta qué tiene** (`FECompConsultar`). Si es esta venta —mismo receptor, fecha y total, autorizada con CAE—, se guarda ese CAE. Si es otra, se renumera como antes, y queda anotado el motivo. Si ARCA no puede decir qué tiene, no se renumera sobre la duda: se devuelve el error.
+- **La Caja**: mientras espera el CAE, el botón dice *Cobrada · facturando…* (o *sacando el comprobante…*): la plata ya entró y el cajero no tiene que dudar.
+
+**Verificado:** **15 comprobaciones** del turno en [`supabase/pruebas/turno-del-pedido-de-cae.sql`](../supabase/pruebas/turno-del-pedido-de-cae.sql), en seco junto con la migración y otra vez después de aplicarla; **rota a propósito** —tomar el turno sin mirar el vencimiento— y atrapada. **17 pruebas** nuevas de cómo se lee la consulta y cuándo es el mismo comprobante, **rotas a propósito dos veces** —aceptar lo emitido con CAEA y tomar cualquier error como «no tiene nada»— y las dos atrapadas. Una tercera rotura no la atrapó nada y mostró que ese código sobraba: se sacó. **613 pruebas** en la app. Y **contra ARCA de homologación, con la función v9**:
+- **Dos pedidos a la vez** para la venta CAJA1-000011: los dos devolvieron el mismo CAE; a ARCA llegó un solo pedido, con el número 29.
+- **La respuesta perdida**: la factura B 0001-00000028 se dejó a mano como pendiente y sin CAE, y se reintentó. Una sola consulta a ARCA (148 ms) recuperó el mismo CAE y vencimiento, con el mismo número, sin pedir otro.
+- **El turno que no se libera**: con uno tomado a mano, el pedido esperó catorce segundos, contestó con el motivo, no llegó a ARCA y no dejó ningún intento anotado.
+
+🟡 **Falta:** ver en pantalla el texto nuevo del botón de la Caja (sale sólo mientras se cobra con factura) y **publicar la 0.16.2**. Y el caso «el número es de otra venta» se probó en las pruebas, no contra ARCA: armarlo pide un número ocupado en ARCA por otra cosa.
+
+⚠️ **Datos de prueba que cambiaron:** la venta de prueba CAJA1-000011 quedó facturada en homologación, B 0001-00000029, con fecha del 15/10; la factura 28 volvió a quedar autorizada, con el mismo CAE.
+
 ## Lo último que pasó — 14 de octubre
 
 ### La factura ya no se corta a los doce segundos
@@ -79,7 +103,7 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 
 ⚠️ **No apretar *Facturar* en la venta MOS1-000014** ($68.000, del 01/10), que aparece en el panel rojo de Facturación. Casi seguro es la venta de la prueba sin internet: se cobró en el local ese día a las 12:46, fiscal y en efectivo, y en el servidor no tiene factura; su factura con CAEA sería la 0009-00000001, que quedó en la cola de la caja. Facturarla de nuevo dejaría dos facturas para la misma venta. **Se confirma en la caja**, en Facturación, entre las emitidas en el corte que dicen *Falta subir*; y se resuelve abriendo el sistema ahí con internet.
 
-⚠️ **Quedan dos cosas del mismo tema, para decidir:** (1) **dos pedidos de CAE para el mismo comprobante a la vez** —un reintento apretado mientras el primero sigue— pueden sacar dos números autorizados para una sola venta; ahora es mucho menos probable porque la pantalla ya no se rinde antes, pero cerrarlo del todo pide un candado en la base. (2) **Si ARCA corta la respuesta de un CAE que sí autorizó**, el reintento lo renumera y pide otro; lo correcto es preguntarle primero por ese número (`FECompConsultar`). Y uno chico de pantalla: mientras espera el CAE, el botón de la Caja dice *Cobrando…* cuando la venta ya está cobrada.
+✅ ~~**Quedan dos cosas del mismo tema, para decidir:**~~ **Cerradas el 15/10**, arriba. Lo que decía: (1) **dos pedidos de CAE para el mismo comprobante a la vez** —un reintento apretado mientras el primero sigue— pueden sacar dos números autorizados para una sola venta; ahora es mucho menos probable porque la pantalla ya no se rinde antes, pero cerrarlo del todo pide un candado en la base. (2) **Si ARCA corta la respuesta de un CAE que sí autorizó**, el reintento lo renumera y pide otro; lo correcto es preguntarle primero por ese número (`FECompConsultar`). Y uno chico de pantalla: mientras espera el CAE, el botón de la Caja dice *Cobrando…* cuando la venta ya está cobrada.
 
 ## Lo último que pasó — 12 de octubre
 
