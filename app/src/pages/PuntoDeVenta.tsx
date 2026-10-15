@@ -542,8 +542,13 @@ export default function PuntoDeVenta() {
     )
   }
 
+  /*
+    En la PC el panel del cliente y el total va a la derecha con 20 rem
+    fijos. Debajo de lg no entra al lado de la tabla: va debajo, a todo
+    el ancho, y la página se desplaza hacia abajo. Medido el 15/10.
+  */
   return (
-    <div className="flex h-full gap-4" onKeyDown={renovar}>
+    <div className="flex flex-col gap-4 lg:h-full lg:flex-row" onKeyDown={renovar}>
       {escribiendoLinea && (
         <LineaLibre onAgregar={agregarLibre} onCerrar={() => setEscribiendoLinea(false)} />
       )}
@@ -580,7 +585,7 @@ export default function PuntoDeVenta() {
             value={texto}
             onChange={(e) => setTexto(e.target.value)}
             placeholder="Escaneá un código de barra o buscá por nombre…"
-            className="w-full rounded-xl border border-borde bg-white py-3 pr-4 pl-4 text-lg text-tinta shadow-sm outline-none focus:border-marca-500 focus:ring-2 focus:ring-marca-500/20"
+            className="w-full min-w-0 rounded-xl border border-borde bg-white py-3 pr-4 pl-4 text-lg text-tinta shadow-sm outline-none focus:border-marca-500 focus:ring-2 focus:ring-marca-500/20"
           />
 
           {/*
@@ -648,6 +653,11 @@ export default function PuntoDeVenta() {
           desplazaba hacia el costado (visto el 30/09, medido el 15/10).
           Por eso es un contenedor: cuando tiene menos de 32 rem, el
           importe deja de ser columna y pasa debajo del precio.
+
+          Y con menos de 24 rem —el teléfono, con todo apilado— se
+          ajusta más: márgenes chicos, «Cant.», el % arriba del precio y
+          el nombre que puede cortarse en cualquier letra. A 375 px se
+          pasaba 6 px (medido el 15/10).
         */}
         <div className="@container min-h-0 flex-1 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-borde">
           <div className="h-full overflow-y-auto">
@@ -659,11 +669,14 @@ export default function PuntoDeVenta() {
               <table className="w-full text-sm">
                 <thead className="sticky top-0 border-b border-borde bg-piedra-50 text-left text-xs tracking-wide text-piedra-500 uppercase">
                   <tr>
-                    <th className="px-4 py-2.5 font-medium">Producto</th>
-                    <th className="w-24 px-3 py-2.5 text-center font-medium">Cantidad</th>
-                    <th className="w-32 px-3 py-2.5 text-right font-medium">Precio</th>
+                    <th className="px-2 py-2.5 font-medium @sm:px-4">Producto</th>
+                    <th className="w-16 px-1.5 py-2.5 text-center font-medium @sm:w-24 @sm:px-3">
+                      <span className="@sm:hidden">Cant.</span>
+                      <span className="hidden @sm:inline">Cantidad</span>
+                    </th>
+                    <th className="w-24 px-1.5 py-2.5 text-right font-medium @sm:w-32 @sm:px-3">Precio</th>
                     <th className="hidden w-32 px-4 py-2.5 text-right font-medium @lg:table-cell">Importe</th>
-                    <th className="w-10" />
+                    <th className="w-8 @sm:w-10" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-piedra-100">
@@ -672,9 +685,9 @@ export default function PuntoDeVenta() {
                     const falta = !!l.producto_id && l.cantidad > l.stock_disponible
                     return (
                       <tr key={l.id} className={falta ? 'bg-amber-50/60' : ''}>
-                        <td className="px-4 py-2.5">
-                          <p className="font-medium text-tinta">{l.descripcion}</p>
-                          <p className="font-mono text-xs text-piedra-400">{l.codigo_producto}</p>
+                        <td className="px-2 py-2.5 @sm:px-4">
+                          <p className="font-medium [overflow-wrap:anywhere] text-tinta">{l.descripcion}</p>
+                          <p className="font-mono text-xs [overflow-wrap:anywhere] text-piedra-400">{l.codigo_producto}</p>
                           {falta && (
                             <p className="mt-0.5 text-xs text-amber-700">
                               Hay {numero.format(l.stock_disponible)} en stock
@@ -686,7 +699,7 @@ export default function PuntoDeVenta() {
                             </p>
                           )}
                         </td>
-                        <td className="px-3 py-2.5">
+                        <td className="px-1.5 py-2.5 @sm:px-3">
                           <input
                             type="number"
                             min="0"
@@ -701,8 +714,8 @@ export default function PuntoDeVenta() {
                             </p>
                           )}
                         </td>
-                        <td className="px-3 py-2.5 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
+                        <td className="px-1.5 py-2.5 text-right @sm:px-3">
+                          <div className="flex flex-col items-end gap-0.5 @sm:flex-row @sm:items-center @sm:justify-end @sm:gap-1.5">
                             {/*
                               Sugerencia 19 de Lucas: descontar por
                               porcentaje. Va pegado al precio porque es
@@ -741,7 +754,7 @@ export default function PuntoDeVenta() {
                         <td className="hidden px-4 py-2.5 text-right font-medium tabular-nums text-tinta @lg:table-cell">
                           {moneda.format(l.cantidad * l.precio_unitario)}
                         </td>
-                        <td className="pr-3">
+                        <td className="pr-1 @sm:pr-3">
                           <button
                             onClick={() => cambiarCantidad(l.id, 0)}
                             className="rounded p-1 text-piedra-300 hover:bg-red-50 hover:text-red-600"
@@ -762,7 +775,7 @@ export default function PuntoDeVenta() {
         </div>
       </div>
 
-      <aside className="flex w-80 shrink-0 flex-col gap-4">
+      <aside className="flex flex-col gap-4 lg:w-80 lg:shrink-0">
         <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-borde">
           <p className="mb-2 text-xs font-medium tracking-wide text-piedra-400 uppercase">Cliente</p>
           {buscandoCliente ? (

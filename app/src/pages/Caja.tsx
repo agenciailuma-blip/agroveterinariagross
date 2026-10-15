@@ -568,9 +568,15 @@ export default function Caja() {
   if (!caja.data)
     return <AbrirCaja terminalId={terminal.id} cajeroId={operador.usuario_id} onAbierta={() => caja.refetch()} />
 
+  /*
+    En la PC la cola va a la izquierda con 20 rem fijos. Debajo de lg
+    no entra al lado del cobro (a 375 px le dejaba unos píxeles): se
+    apila, la cola arriba con su propio alto y la página se desplaza
+    hacia abajo. Medido el 15/10.
+  */
   return (
-    <div className="flex h-full gap-4">
-      <div className="flex w-80 shrink-0 flex-col gap-3">
+    <div className="flex flex-col gap-4 lg:h-full lg:flex-row">
+      <div className="flex flex-col gap-3 lg:w-80 lg:shrink-0">
         <div>
           <h1 className="text-xl font-semibold tracking-tight text-tinta">Caja</h1>
           <p className="text-sm text-piedra-500">
@@ -587,7 +593,7 @@ export default function Caja() {
               Esperando cobro {cola.data?.length ? `· ${cola.data.length}` : ''}
             </p>
           </div>
-          <div className="h-full overflow-y-auto">
+          <div className="max-h-72 overflow-y-auto lg:h-full lg:max-h-none">
             {!cola.data?.length && (
               <p className="px-4 py-10 text-center text-sm text-piedra-400">
                 No hay ventas esperando.
@@ -769,7 +775,7 @@ export default function Caja() {
         )}
 
         {!seleccionada ? (
-          <div className="grid h-full place-items-center rounded-xl border border-dashed border-borde bg-white/60">
+          <div className="grid place-items-center rounded-xl border border-dashed border-borde bg-white/60 py-10 lg:h-full lg:py-0">
             <p className="text-sm text-piedra-400">Elegí una venta de la cola para cobrarla.</p>
           </div>
         ) : venta.isPending ? (
