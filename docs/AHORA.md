@@ -79,9 +79,13 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 - **La respuesta perdida**: la factura B 0001-00000028 se dejó a mano como pendiente y sin CAE, y se reintentó. Una sola consulta a ARCA (148 ms) recuperó el mismo CAE y vencimiento, con el mismo número, sin pedir otro.
 - **El turno que no se libera**: con uno tomado a mano, el pedido esperó catorce segundos, contestó con el motivo, no llegó a ARCA y no dejó ningún intento anotado.
 
-🟡 **Falta:** ver en pantalla el texto nuevo del botón de la Caja (sale sólo mientras se cobra con factura) y **publicar la 0.16.2**. Y el caso «el número es de otra venta» se probó en las pruebas, no contra ARCA: armarlo pide un número ocupado en ARCA por otra cosa.
+✅ **El botón, visto en pantalla el 15/10**: se cobró en la Caja una venta de prueba con factura, y el botón pasó de *Cobrando…* (un segundo, mientras entraba la plata) a *Cobrada · facturando…* (cinco segundos, mientras se pedía el CAE) y terminó en *cobrada y facturada*. Después se la devolvió desde Facturación: la nota de crédito salió con CAE y el stock volvió.
 
-⚠️ **Datos de prueba que cambiaron:** la venta de prueba CAJA1-000011 quedó facturada en homologación, B 0001-00000029, con fecha del 15/10; la factura 28 volvió a quedar autorizada, con el mismo CAE.
+🟡 **Falta publicar la 0.16.2.** Y el caso «el número es de otra venta» se probó en las pruebas, no contra ARCA: armarlo pide un número ocupado en ARCA por otra cosa.
+
+⚠️ **Datos de prueba que cambiaron:** la venta de prueba CAJA1-000011 quedó facturada en homologación, B 0001-00000029, con fecha del 15/10; para eso, la alineación corrió al 37 la factura rechazada de *Granja Tres Colonias* (CAJA1-000010), que tenía el 29. La factura 28 volvió a quedar autorizada, con el mismo CAE. Y la venta **CAJA1-000033** (*PRUEBA boton facturando*, una unidad de PRUEBA-CHQ) quedó cobrada en la caja del servidor, facturada (B 0001-00000030) y devuelta (nota de crédito B 0001-00000004), todo en homologación.
+
+⚠️ **Visto de paso, sin tocar:** en Facturación, una factura **devuelta entera sigue ofreciendo *Devolver parte***. La devolución entera no anota qué mercadería volvió, y la vista calcula que todavía queda todo. **No hay riesgo**: la base lo frena con «La venta está anulada: no hay nada que devolver». Es un botón de más, y estaba así desde septiembre.
 
 ## Lo último que pasó — 14 de octubre
 
