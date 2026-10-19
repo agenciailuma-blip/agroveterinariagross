@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { alCambiarElServidor, supabase } from '@/lib/supabase'
 
 export type EstadoConexion = 'en_linea' | 'sin_conexion' | 'verificando'
 
@@ -10,8 +10,12 @@ export type EstadoConexion = 'en_linea' | 'sin_conexion' | 'verificando'
   conectada al router, aunque el router no llegue a internet. En Oberá
   eso es justamente el caso frecuente. Por eso además se consulta el
   servidor cada tanto.
+
+  Cada quince segundos y no treinta: la primera consulta que falla
+  después de un corte es la que espera los doce segundos, y conviene que
+  sea ésta, que no la espera nadie, y no la de alguien cobrando.
 */
-export function useConexion(intervaloMs = 30_000) {
+export function useConexion(intervaloMs = 15_000) {
   const [estado, setEstado] = useState<EstadoConexion>(
     navigator.onLine ? 'verificando' : 'sin_conexion',
   )
@@ -52,8 +56,15 @@ export function useConexion(intervaloMs = 30_000) {
     window.addEventListener('online', alConectar)
     window.addEventListener('offline', alDesconectar)
 
+    // Lo que descubre el cortacircuito se sabe en el acto, no a la próxima vuelta.
+    const dejarDeEscuchar = alCambiarElServidor((caido) => {
+      if (caido) setEstado('sin_conexion')
+      else verificar()
+    })
+
     return () => {
       vigente = false
+      dejarDeEscuchar()
       clearInterval(timer)
       window.removeEventListener('online', alConectar)
       window.removeEventListener('offline', alDesconectar)

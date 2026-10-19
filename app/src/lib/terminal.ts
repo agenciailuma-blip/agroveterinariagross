@@ -50,6 +50,8 @@ const CLAVE = 'gross.terminal'
   ─────────────────────────────────────────────────────────────
 */
 function leerGuardada(): Terminal | null {
+  // Fuera del navegador —en las pruebas— no hay dónde leer.
+  if (typeof localStorage === 'undefined') return null
   const crudo = localStorage.getItem(CLAVE)
   if (!crudo) return null
   try {
@@ -76,6 +78,24 @@ function suscribir(avisar: () => void) {
   return () => {
     oyentes.delete(avisar)
   }
+}
+
+/*
+  Qué queda guardado después de preguntarle al servidor.
+
+  Una lista vacía no es «tu terminal ya no existe»: es una consulta que
+  salió sin sesión —el servidor, por permisos, contesta que no hay
+  ninguna— o una base sin terminales. Olvidarla ahí deja a la PC
+  preguntando qué terminal es, y sin conexión no se puede elegir. Con la
+  lista de verdad, la que se dio de baja sí se olvida: las demás siguen
+  en la lista.
+*/
+export function revalidarTerminal(
+  guardada: Terminal | null,
+  lista: Terminal[],
+): Terminal | null | 'sin_cambios' {
+  if (!guardada || lista.length === 0) return 'sin_cambios'
+  return lista.find((t) => t.id === guardada.id) ?? null
 }
 
 /*
@@ -121,10 +141,8 @@ export function useTerminal() {
       // Con respuesta buena sí se revalida: si la terminal se dio de
       // baja, hay que volver a elegir en vez de operar con una
       // referencia muerta. Y se refrescan sus datos por si cambiaron.
-      if (actual) {
-        const encontrada = lista.find((t) => t.id === actual!.id)
-        publicar(encontrada ?? null)
-      }
+      const revalidada = revalidarTerminal(actual, lista)
+      if (revalidada !== 'sin_cambios') publicar(revalidada)
     }
 
     cargar()

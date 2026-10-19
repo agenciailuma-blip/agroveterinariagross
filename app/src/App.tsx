@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider, useAuth } from '@/auth/AuthProvider'
 import { SyncProvider } from '@/lib/local/SyncProvider'
+import { servidorCaido } from '@/lib/supabase'
 import { Dialogos } from '@/components/Dialogo'
 import Layout from '@/components/Layout'
 import Login from '@/pages/Login'
@@ -64,7 +65,9 @@ const queryClient = new QueryClient({
       // El mostrador tiene que ver datos frescos, pero sin castigar la
       // conexión: se revalida al volver a la pestaña, no cada segundo.
       staleTime: 30_000,
-      retry: 1,
+      // Un reintento, salvo con el servidor dado por caído: ahí fallaría
+      // igual y la pantalla esperaría un segundo más para leer lo local.
+      retry: (intentos) => intentos < 1 && !servidorCaido(),
       refetchOnWindowFocus: true,
     },
     mutations: {

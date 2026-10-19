@@ -48,8 +48,8 @@ function limitePara(entrada: RequestInfo | URL): number {
   Doce segundos por consulta está bien para la primera. Para la quinta
   seguida, con internet cortado, es un minuto de pantalla en blanco: es
   lo que pasó en el local el 17/09 al abrir la Caja. El cortacircuito
-  descarta en el acto las que vienen atrás de una que falló, y cada
-  quince segundos deja pasar una para ver si volvió.
+  descarta en el acto las que vienen atrás de una que falló, y una
+  prueba de fondo, cada diez segundos, se fija si volvió.
 
   El resultado que recibe quien llamó es el MISMO fallo de red de
   siempre, así que cada consulta sigue haciendo lo que ya hacía: leer la
@@ -59,6 +59,57 @@ const cortacircuito = new Cortacircuito()
 
 function fallaDeRed(motivo: string): TypeError {
   return new TypeError(`Failed to fetch: ${motivo}`)
+}
+
+/*
+  La prueba de si el servidor volvió, de fondo.
+
+  Una consulta propia, mínima y con espera corta: cualquier respuesta —aun
+  un error— quiere decir que hay servidor. Nadie la está esperando, así
+  que tarde lo que tarde no traba ninguna pantalla. Ver lib/cortacircuito.ts
+  para por qué no puede ser la consulta de alguien.
+*/
+const ESPERA_DE_LA_PRUEBA_MS = 6_000
+let probando = false
+
+export async function probarServidor(): Promise<boolean> {
+  if (probando) return false
+  probando = true
+  try {
+    await fetch(`${url}/auth/v1/health`, {
+      headers: { apikey: key },
+      signal: AbortSignal.timeout(ESPERA_DE_LA_PRUEBA_MS),
+      cache: 'no-store',
+    })
+    cortacircuito.anotarExito()
+    return true
+  } catch {
+    return false
+  } finally {
+    probando = false
+  }
+}
+
+/** Si el servidor está dado por caído ahora: reintentar una consulta no tiene sentido. */
+export function servidorCaido(): boolean {
+  return cortacircuito.abierto
+}
+
+/** Avisa cuando el servidor se da por caído (true) o vuelve (false). */
+export function alCambiarElServidor(oyente: (caido: boolean) => void): () => void {
+  return cortacircuito.alCambiar(oyente)
+}
+
+if (typeof window !== 'undefined') {
+  // Se pregunta seguido; el cortacircuito contesta que sí una vez por ventana.
+  setInterval(() => {
+    if (cortacircuito.tocaProbar()) void probarServidor()
+  }, 2_000)
+
+  // Cuando Windows sabe que no hay red —el cable de la PC, el wifi—, no hace
+  // falta esperar a que falle una consulta para enterarse.
+  window.addEventListener('offline', () => cortacircuito.anotarFalla())
+  window.addEventListener('online', () => void probarServidor())
 }
 
 function fetchConLimite(entrada: RequestInfo | URL, init?: RequestInit): Promise<Response> {
@@ -117,4 +168,18 @@ export const supabase = createClient(url, key, {
     autoRefreshToken: true,
   },
   global: { fetch: fetchConLimite },
+  /*
+    Sin reintentos de la biblioteca.
+
+    Desde la 2.x, supabase-js reintenta sola tres veces, con pausas, toda
+    consulta de lectura que falla por red: unos siete segundos antes de
+    devolver el error. Sin internet, el cortacircuito la corta en el acto
+    y la biblioteca igual espera y reintenta, así que cada pantalla que
+    lee algo tarda siete segundos en pasar a la copia local. Medido el
+    19/10: el Mostrador tardaba de siete a nueve segundos en aparecer sin
+    servidor, y ninguna consulta salía a la red. Con conexión, lo que
+    reintenta es el cortacircuito, de fondo; y cada consulta ya sabe qué
+    hacer cuando falla.
+  */
+  db: { retry: false },
 })

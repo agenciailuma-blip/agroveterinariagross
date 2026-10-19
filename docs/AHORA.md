@@ -1,5 +1,5 @@
 ---
-actualizado: 2026-10-15
+actualizado: 2026-10-19
 estado: en curso
 ---
 
@@ -11,6 +11,8 @@ estado: en curso
 ---
 
 ## Dónde está todo, hoy
+
+**Construida: 0.16.5** (19/10) — **falta publicarla**. **Sin internet, el sistema ya no se traba**: la venta llega a la caja enseguida y las pantallas aparecen al instante. Era lo que se vio en el local el 16/10 —la venta llegaba diez segundos tarde o más, abrir Caja o Mostrador tardaba, cobrar e imprimir también—. Ver *Lo último que pasó*. **624 pruebas verdes en la app.**
 
 **Publicada: 0.16.4** (15/10, 17:32), verificada en Cloudflare: `latest.json` dice 0.16.4. Es la 0.16.3 más **la Caja y el Mostrador que entran en un teléfono**. Hace falta porque la 0.16.3 **se publicó a las 17:14, mientras esos cambios estaban a medio hacer** en la carpeta: lo instalado no coincide con ningún commit. La 0.16.4 sale de `main` limpio.
 
@@ -68,6 +70,33 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 🟡 **Lo que la venta tardaba en llegar a la caja sin internet** — arreglado el 05/10 y publicado en la 0.13.4, **sin probar en el local**. El mostrador le pasaba las ventas a la caja una vez por minuto, y la caja miraba su cola cada ocho segundos: hasta 68 segundos con el cliente esperando. Y llegaba de a partes porque, mientras la cabecera intentaba subir al servidor —hasta doce segundos sin internet—, salían los renglones solos. Ahora la venta sale al segundo y medio de apretar *Enviar a caja* (y otra vez a los catorce, por si el intento de subir tardó), viaja entera o espera entera, y la caja la muestra apenas llega. Se comprueba en el próximo corte: la venta tiene que aparecer en la caja en un par de segundos y completa.
 
 ---
+
+## Lo último que pasó — 19 de octubre
+
+### Sin internet, nada espera al servidor
+
+**Lo que se vio en el local el 16/10**, con internet cortado: la venta llegaba a la caja **diez segundos tarde o más**, abrir *Caja* o *Mostrador* tardaba, y cobrar e imprimir también. Todo lo demás anduvo bien.
+
+> **Cómo se lo contás a Lucas:** cuando se cortaba internet, el sistema cada tanto volvía a probar si había vuelto, y lo probaba con lo que estuviera haciendo el vendedor o el cajero en ese momento: esa persona se quedaba esperando. Y además, cada pantalla insistía tres veces antes de leer lo que tiene guardado. Ahora la prueba la hace el sistema solo, de fondo, sin que nadie espere, y las pantallas leen lo guardado en el acto.
+
+Eran **dos causas**, las dos en cómo la app habla con el servidor:
+
+1. **El cortacircuito probaba con la consulta de alguien.** Desde el 17/09, después del primer fallo las consultas fallan en el acto y se lee la copia local. Pero cada quince segundos dejaba pasar la primera consulta que llegaba, para ver si internet había vuelto, y esa consulta esperaba hasta doce segundos. Si era la de mandar la venta, la venta recién salía en el segundo intento, a los catorce: es lo que se vio. **Ahora prueba una consulta propia, de fondo**, cada diez segundos y con seis de espera como máximo; mientras no vuelve, **ninguna consulta de la gente sale a la red**. Ver [`cortacircuito.ts`](../app/src/lib/cortacircuito.ts) y [`supabase.ts`](../app/src/lib/supabase.ts).
+2. **La biblioteca de Supabase reintentaba sola.** Cada lectura que fallaba por red se reintentaba tres veces, con pausas: unos siete segundos antes de pasar a la copia local, aunque el cortacircuito ya la hubiera cortado. **Apagado** (`db: { retry: false }`). Y el reintento propio de las pantallas (uno, a un segundo) se saltea con el servidor dado por caído.
+
+De paso, el aviso de conexión revisa cada quince segundos y no treinta —así el corte lo descubre él y no alguien cobrando— y se entera en el acto cuando el cortacircuito se abre o se cierra.
+
+**Verificado en el navegador**, simulando un corte como el del local: cada pedido al servidor quedaba colgado, como con el módem sin salida.
+- El sistema **descubrió el corte solo**, en 7 a 15 segundos, sin que nadie tocara nada; desde ahí **lo único que salió a la red fue la prueba de fondo**.
+- **Ir de *Inicio* a Mostrador, Caja, Productos y Stock**: antes del arreglo, el Mostrador tardaba **7 a 9 segundos** en aparecer sin servidor; con el primer arreglo, 1 segundo; con los dos, **30 milisegundos**, en las cuatro.
+- Al volver el servidor: a los 3 segundos estaba sincronizando y a los 7, *Al día*.
+- **8 pruebas** del cortacircuito, reescritas para lo nuevo; rota a propósito —volver a dejar pasar consultas de la gente— y atrapada.
+
+🟡 **No se pudo ver en el navegador**: la venta que viaja a la caja por la red del local, cobrar e imprimir, porque eso necesita el programa instalado. Se comprueba en el local con la 0.16.5: la venta tiene que llegar en un par de segundos y cobrar e imprimir no tienen que trabarse. **Lo que queda inevitable:** si se actúa en los primeros segundos después del corte, antes de que el sistema lo descubra, esa acción espera los doce segundos una vez.
+
+**Qué es «7 en espera»**, en el aviso de arriba sin internet: son las operaciones hechas sin conexión —ventas, cobros, facturas con CAEA— que esperan subir al servidor. Cuando vuelve internet suben solas y el número baja a cero.
+
+**Y un resguardo, visto de paso:** la PC no olvida su terminal si el servidor contesta con una lista vacía, que es lo que pasa con una consulta sin sesión. Una terminal dada de baja de verdad sí se olvida. 4 pruebas en [`terminal.prueba.ts`](../app/src/lib/terminal.prueba.ts), rota a propósito y atrapada.
 
 ## Lo último que pasó — 15 de octubre, a la tarde
 

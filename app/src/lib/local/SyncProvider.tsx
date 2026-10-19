@@ -332,10 +332,13 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       Y apenas el vendedor manda la venta, sin esperar al minuto.
 
       Dos intentos: al segundo y medio, que es lo normal, y a los
-      catorce. El segundo es para cuando internet está cortado pero la
-      red del local anda: el mostrador primero intenta subir la venta al
+      catorce. El segundo es para cuando internet se acaba de cortar y
+      todavía no se sabe: el mostrador primero intenta subir la venta al
       servidor, y ese intento puede tardar doce segundos en rendirse.
-      Mientras tanto la venta no sale, para que no viaje a medias.
+      Mientras tanto la venta no sale, para que no viaje a medias. Con el
+      corte ya conocido, ese intento falla en el acto (lib/cortacircuito.ts):
+      hasta el 16/10 cada quince segundos le tocaba a alguien esperar los
+      doce, y la venta llegaba a los catorce.
     */
     let pronto: ReturnType<typeof setTimeout> | undefined
     let despues: ReturnType<typeof setTimeout> | undefined
