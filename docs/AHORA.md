@@ -117,7 +117,10 @@ Y salieron dos cosas, arregladas:
 
 - 🟡 **Envío y descuentos**: pendiente, hasta saber cómo lo maneja Andreani.
 - 🟡 **La dirección desde la que sale el mail de la factura**: la consigue ILUMA.
-- 💡 **Lucas preguntó por traer las fotos solas de internet**, buscándolas por la descripción, para corregirlas antes de lanzar. Se puede sumar después, encima de lo que ya está: buscar por código de barras o nombre en un servicio pago de búsqueda de imágenes y que Lucas acepte o descarte cada una. Riesgos: fotos con derechos de otro y fotos parecidas que no son el producto.
+- 💡 **Lucas preguntó por traer las fotos solas de internet**, buscándolas por la descripción, para corregirlas antes de lanzar. **ILUMA le propuso tres pasos (19/10), y se espera su respuesta:**
+  1. **Que pase las fotos que tenga y se hace la primera carga** con *Subir fotos*, nombradas con el código o el código de barras. Es lo que ya está hecho y probado.
+  2. **Después, o como otro camino: que el sistema las busque.** Por código de barras o por nombre, en un servicio pago de búsqueda de imágenes; propone una o dos por producto, Lucas acepta o descarta cada una, y las aceptadas se guardan igual que una subida a mano. Riesgos: fotos parecidas que no son el producto —otra presentación, 7,5 kg contra 15 kg—, por eso la revisión de Lucas no se saltea; y fotos con derechos de otro comercio. No está construido.
+  3. **Más adelante, con el cerebro de Gross:** que el sistema busque, edite o cree las imágenes —el producto solo, o puesto en un contexto de uso—. Idea anotada; todavía no tiene alcance.
 
 ## Lo último que pasó — 19 de octubre, a la noche
 
@@ -1008,6 +1011,7 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 | Qué **columnas** quiere el contador en el Excel | Contador | 🟡 Ya se exporta con lo estándar |
 | **La dirección desde la que salen los mails** | ILUMA | 🟡 El servicio ya está elegido (Resend). La necesitan las facturas de la tienda y el pedido 17. Desde el 19/10 la gestiona ILUMA |
 | **Envío y descuentos de la tienda** | Zubu y Lucas | 🟡 Pendiente desde la reunión del 19/10, hasta saber cómo lo maneja Andreani |
+| **Las fotos de la tienda: con qué se arranca** | Lucas | 🟡 Propuesta del 19/10: primero las que tenga, después que el sistema las busque, y más adelante el cerebro de Gross. Ver *Lo último que pasó — 19 de octubre, a la noche* |
 
 → La lista completa está en [[Pendientes con terceros]].
 
