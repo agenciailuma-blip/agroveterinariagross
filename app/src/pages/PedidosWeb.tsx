@@ -14,6 +14,7 @@ import { cuitValido } from '@/lib/api/cheques'
 import {
   accionesPosibles,
   cancelar,
+  describirPago,
   esperaFactura,
   ETIQUETA_ESTADO,
   facturar,
@@ -244,7 +245,7 @@ function FilaPedido({ p, activo, onElegir }: { p: PedidoWeb; activo: boolean; on
         <span className="text-xs text-piedra-500">
           {p.entrega === 'envio' ? `Envío${p.localidad ? ` · ${p.localidad}` : ''}` : 'Retira en el local'}
         </span>
-        <span className="text-xs text-piedra-500">{p.pagado_en_la_web ? 'Pagó en la web' : 'Paga en el local'}</span>
+        <span className="text-xs text-piedra-500">{describirPago(p).corto}</span>
         <span className="font-medium tabular-nums text-tinta">{moneda.format(p.total)}</span>
         <Estado estado={p.estado} />
         <span className="flex w-full flex-wrap gap-1.5 empty:hidden">
@@ -471,13 +472,7 @@ function FichaPedido({
         </Dato>
         <Dato etiqueta="Contacto">{p.contacto ?? '—'}</Dato>
         <Dato etiqueta="Pago">
-          {p.pagado_en_la_web ? (
-            <>Pagó en la web{p.referencia_pago ? ` · ${p.referencia_pago}` : ''}</>
-          ) : p.venta_estado === 'cobrada' ? (
-            'Cobrado en la caja'
-          ) : (
-            'Paga en el local: se cobra y se factura en la caja'
-          )}
+          {describirPago(p).largo}
         </Dato>
         <Dato etiqueta="Factura">
           {p.comprobante ? (

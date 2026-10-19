@@ -40,6 +40,7 @@ export type CodigoDeError =
   | 'cantidad_invalida'
   | 'precio_invalido'
   | 'entrega_invalida'
+  | 'medio_pago_invalido'
   | 'falta_el_comprador'
   | 'pedido_invalido'
   | 'numero_invalido'
@@ -70,6 +71,7 @@ export const MENSAJES: Record<CodigoDeError, string> = {
   cantidad_invalida: 'Cada "cantidad" tiene que ser un número mayor que cero.',
   precio_invalido: 'Cada "precio" tiene que ser un número de cero para arriba, unitario y con impuestos incluidos.',
   entrega_invalida: 'El tipo de entrega tiene que ser "retira" o "envio".',
+  medio_pago_invalido: 'El medio de pago tiene que ser "mercado_pago", "transferencia", "efectivo" u "otro".',
   falta_el_comprador: 'Falta el nombre del comprador en "comprador.nombre".',
   pedido_invalido: 'El pedido está mal armado: revisá que los identificadores, las cantidades y los precios tengan el formato esperado.',
   numero_invalido: 'El número del pedido en el camino no se pudo leer. Mandalo codificado para URL, el mismo "numero" con el que se envió el pedido.',
@@ -93,6 +95,7 @@ const ESTADO: Record<CodigoDeError, number> = {
   cantidad_invalida: 400,
   precio_invalido: 400,
   entrega_invalida: 400,
+  medio_pago_invalido: 400,
   falta_el_comprador: 400,
   pedido_invalido: 400,
   numero_invalido: 400,
@@ -259,6 +262,7 @@ const ERRORES_DE_LA_BASE: CodigoDeError[] = [
   'cantidad_invalida',
   'precio_invalido',
   'entrega_invalida',
+  'medio_pago_invalido',
   'falta_el_comprador',
   'pedido_invalido',
 ]

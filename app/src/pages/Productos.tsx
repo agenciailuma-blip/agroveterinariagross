@@ -16,6 +16,7 @@ import {
 import type { FilaListado, Referencias } from '@/lib/api/catalogo'
 import { listarDepositos, stockPorDeposito } from '@/lib/api/depositos'
 import ProductoEditor from '@/components/ProductoEditor'
+import SubirFotos from '@/components/SubirFotos'
 import type { EstadoFormulario } from '@/components/ProductoEditor'
 import { ESTADO_STOCK, moneda, numero } from '@/lib/tipos'
 import { barraDeAvance, boton, campoDeFiltro } from '@/estilos'
@@ -23,6 +24,8 @@ import {
   cambiaLoQueVeLaTienda,
   definirVentaOnline,
   definirVentaOnlinePorClasificacion,
+  definirSoloConsultar,
+  definirSoloConsultarPorClasificacion,
   estadoEnTienda,
   normalizarColchon,
 } from '@/lib/api/ventaOnline'
@@ -48,12 +51,13 @@ const FORM_VACIO: EstadoFormulario = {
   // Ponerle uno propio es una decisión, no el estado inicial.
   umbral: { bajo: '', critico: '', propio: false },
   // Nada sale a la tienda hasta que alguien lo decide.
-  tienda: { vender: false, colchon: '' },
+  tienda: { vender: false, colchon: '', consultar: false },
 }
 
 function tiendaDelFormulario(e: EstadoEnTienda | null): EstadoFormulario['tienda'] {
   return {
     vender: e?.vender_online ?? false,
+    consultar: e?.solo_consultar ?? false,
     colchon: e?.colchon_propio === null || e?.colchon_propio === undefined ? '' : String(e.colchon_propio),
   }
 }
@@ -83,6 +87,7 @@ export default function Productos() {
   const [categoriaId, setCategoriaId] = useState<string | null>(null)
   const [marcaId, setMarcaId] = useState<string | null>(null)
   const [seleccionado, setSeleccionado] = useState<string | null>(null)
+  const [subiendoFotos, setSubiendoFotos] = useState(false)
   const [creando, setCreando] = useState(false)
   const [form, setForm] = useState<EstadoFormulario>(FORM_VACIO)
   const [errorGuardado, setErrorGuardado] = useState<string | null>(null)
@@ -175,6 +180,29 @@ export default function Productos() {
       qc.invalidateQueries({ queryKey: ['producto'] })
     },
     onError: (e) => setErrorLista(e instanceof Error ? e.message : 'No se pudo cambiar la venta online.'),
+  })
+
+  /*
+    «Sólo para consultar», a lo marcado o a una categoría entera —toda
+    Farmacia de una vez—. Como la venta online, la del grupo la hace la
+    base sobre todos y no sobre los 100 que muestra la lista.
+  */
+  const soloConsultar = useMutation({
+    mutationFn: ({ ids, consultar }: { ids: string[]; consultar: boolean }) =>
+      ids.length ? definirSoloConsultar(ids, consultar) : definirSoloConsultarPorClasificacion(categoriaId, marcaId, consultar),
+    onSuccess: (cambiados, { consultar }) => {
+      const cuantos = `${numero.format(cambiados)} ${cambiados === 1 ? 'producto' : 'productos'}`
+      avisar(
+        cambiados === 0
+          ? consultar ? 'Ya estaban todos como sólo para consultar.' : 'Ninguno estaba como sólo para consultar.'
+          : consultar
+            ? `${cuantos} quedaron sólo para consultar: la tienda los muestra con «Consultar» y no los vende.`
+            : `${cuantos} se pueden volver a comprar online.`,
+      )
+      refrescarListados()
+      qc.invalidateQueries({ queryKey: ['producto'] })
+    },
+    onError: (e) => setErrorLista(e instanceof Error ? e.message : 'No se pudo cambiar «sólo para consultar».'),
   })
 
   /*
@@ -302,12 +330,17 @@ export default function Productos() {
           : null,
         marcarRevisado,
         usuarioId: perfil!.id,
-        tienda: { vender: form.tienda.vender, colchon: normalizarColchon(form.tienda.colchon) },
+        tienda: {
+          vender: form.tienda.vender,
+          colchon: normalizarColchon(form.tienda.colchon),
+          consultar: form.tienda.consultar,
+        },
         tiendaAntes: creando
-          ? { vender: false, colchon: null }
+          ? { vender: false, colchon: null, consultar: false }
           : {
               vender: detalle.data?.tienda?.vender_online ?? false,
               colchon: detalle.data?.tienda?.colchon_propio ?? null,
+              consultar: detalle.data?.tienda?.solo_consultar ?? false,
             },
       }),
     onSuccess: (_id, variables) => {
@@ -442,6 +475,7 @@ export default function Productos() {
 
   return (
     <div className="flex h-full flex-col gap-4">
+      {subiendoFotos && <SubirFotos onCerrar={() => setSubiendoFotos(false)} />}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-xl font-semibold tracking-tight text-tinta">Productos</h1>
@@ -457,6 +491,9 @@ export default function Productos() {
             >
               Importar planilla
             </Link>
+            <button onClick={() => setSubiendoFotos(true)} className={boton.secundario}>
+              Subir fotos
+            </button>
             <button
               onClick={nuevo}
               className={boton.principal}
@@ -630,6 +667,21 @@ export default function Productos() {
             >
               Dejar de vender online
             </button>
+            <button
+              onClick={async () => {
+                const n = listado.data!.total
+                const sigue = await confirmar({
+                  titulo: `¿Dejar ${numero.format(n)} ${n === 1 ? 'producto' : 'productos'} sólo para consultar?`,
+                  detalle: `Todos los de ${nombreDelGrupo}. La tienda los muestra con «Consultar» por WhatsApp y no se pueden comprar. Para farmacia y lo restringido.`,
+                  aceptar: 'Sólo para consultar',
+                })
+                if (sigue) soloConsultar.mutate({ ids: [], consultar: true })
+              }}
+              disabled={soloConsultar.isPending}
+              className={boton.secundario}
+            >
+              Sólo para consultar
+            </button>
           </div>
         </div>
       )}
@@ -676,6 +728,20 @@ export default function Productos() {
                       className="rounded-lg px-3 py-1.5 text-sm text-white ring-1 ring-white/30 hover:bg-white/10 disabled:opacity-50"
                     >
                       Dejar de vender online
+                    </button>
+                    <button
+                      onClick={() => soloConsultar.mutate({ ids: [...marcados], consultar: true })}
+                      disabled={soloConsultar.isPending}
+                      className="rounded-lg px-3 py-1.5 text-sm text-white ring-1 ring-white/30 hover:bg-white/10 disabled:opacity-50"
+                    >
+                      Sólo para consultar
+                    </button>
+                    <button
+                      onClick={() => soloConsultar.mutate({ ids: [...marcados], consultar: false })}
+                      disabled={soloConsultar.isPending}
+                      className="rounded-lg px-3 py-1.5 text-sm text-white ring-1 ring-white/30 hover:bg-white/10 disabled:opacity-50"
+                    >
+                      Se puede comprar
                     </button>
                   </>
                 )}
@@ -962,14 +1028,20 @@ export default function Productos() {
 function MarcaWeb({ estado }: { estado: EstadoEnTienda | undefined }) {
   if (!estado?.vender_online) return null
   const sale = estado.motivo === null
+  // Sale, pero para consultar: otro color y otra palabra, que no se confunda con lo que se vende.
+  const consultar = sale && estado.solo_consultar
   return (
     <span
-      title={sale ? 'Se vende online' : `Prendido, pero no sale: ${estado.motivo}`}
+      title={consultar ? 'Se muestra para consultar: no se vende online' : sale ? 'Se vende online' : `Prendido, pero no sale: ${estado.motivo}`}
       className={`shrink-0 rounded-full px-1.5 py-px text-[10px] font-semibold tracking-wide uppercase ring-1 ${
-        sale ? 'bg-verde-50 text-verde-700 ring-verde-200' : 'bg-amber-50 text-amber-700 ring-amber-200'
+        consultar
+          ? 'bg-marca-50 text-marca-700 ring-marca-200'
+          : sale
+            ? 'bg-verde-50 text-verde-700 ring-verde-200'
+            : 'bg-amber-50 text-amber-700 ring-amber-200'
       }`}
     >
-      Web
+      {consultar ? 'Consultar' : 'Web'}
     </span>
   )
 }

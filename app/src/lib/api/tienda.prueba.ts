@@ -192,6 +192,7 @@ describe('los errores del pedido de compra que contesta la base', () => {
     'cantidad_invalida',
     'precio_invalido',
     'entrega_invalida',
+    'medio_pago_invalido',
     'falta_el_comprador',
     'pedido_invalido',
   ]

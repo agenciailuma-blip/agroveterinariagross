@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import type { EstadoStock } from '@/lib/tipos'
-import { definirColchonTienda, definirVentaOnline, estadoEnTienda } from '@/lib/api/ventaOnline'
+import { definirColchonTienda, definirSoloConsultar, definirVentaOnline, estadoEnTienda } from '@/lib/api/ventaOnline'
 import type { EstadoEnTienda } from '@/lib/api/ventaOnline'
 import { explicarErrorDeEnvase } from '@/lib/envases'
 import type { NivelDeCadena } from '@/lib/envases'
@@ -369,8 +369,8 @@ export interface DatosGuardado {
     cada escritura le mueve la fecha al producto, y eso se lo vuelve a
     mandar a la tienda y a las terminales.
   */
-  tienda: { vender: boolean; colchon: number | null }
-  tiendaAntes: { vender: boolean; colchon: number | null }
+  tienda: { vender: boolean; colchon: number | null; consultar: boolean }
+  tiendaAntes: { vender: boolean; colchon: number | null; consultar: boolean }
 }
 
 /*
@@ -516,6 +516,9 @@ export async function guardarProducto(datos: DatosGuardado): Promise<string> {
     }
     if (datos.tienda.vender !== datos.tiendaAntes.vender) {
       await definirVentaOnline([productoId], datos.tienda.vender)
+    }
+    if (datos.tienda.consultar !== datos.tiendaAntes.consultar) {
+      await definirSoloConsultar([productoId], datos.tienda.consultar)
     }
   } catch (e) {
     // El producto ya quedó guardado; lo que falló es sólo la tienda, y

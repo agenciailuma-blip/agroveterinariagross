@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { accionesPosibles, esperaFactura, pideRevision, textoEspera, type PedidoWeb } from '@/lib/api/pedidos'
+import { accionesPosibles, describirPago, esperaFactura, pideRevision, textoEspera, type PedidoWeb } from '@/lib/api/pedidos'
 import { diaDeObera, vaAlPanelRojo } from '@/lib/api/facturacion'
 
 /*
@@ -23,6 +23,7 @@ function pedido(cambios: Partial<PedidoWeb> = {}): PedidoWeb {
     numero: 'T-1',
     estado: 'recibido',
     pagado_en_la_web: true,
+    medio_pago: null,
     referencia_pago: null,
     entrega: 'retira',
     domicilio: null,
@@ -184,5 +185,39 @@ describe('el panel rojo de Facturación', () => {
 
   it('un pedido web que se pasó del día va, porque ya es un problema', () => {
     expect(vaAlPanelRojo({ id: 'v-web', ocurrido_en: '2026-09-24T20:00:00Z' }, pedidos, AHORA)).toBe(true)
+  })
+})
+
+describe('cómo se paga, en palabras del local', () => {
+  it('Mercado Pago llega pagado, con su referencia', () => {
+    const d = describirPago(pedido({ pagado_en_la_web: true, medio_pago: 'mercado_pago', referencia_pago: '183940665305' }))
+    expect(d.corto).toBe('Pagó con Mercado Pago')
+    expect(d.largo).toBe('Pagó con Mercado Pago · 183940665305')
+  })
+
+  it('una transferencia sin pagar se cobra en la caja cuando llega la plata', () => {
+    const d = describirPago(pedido({ pagado_en_la_web: false, medio_pago: 'transferencia', venta_estado: 'en_caja' }))
+    expect(d.corto).toBe('Paga con transferencia')
+    expect(d.largo).toMatch(/se cobra en la caja cuando llega la plata/)
+  })
+
+  it('el efectivo se cobra y se factura en la caja', () => {
+    const d = describirPago(pedido({ pagado_en_la_web: false, medio_pago: 'efectivo', venta_estado: 'en_caja' }))
+    expect(d.corto).toBe('Paga con efectivo')
+    expect(d.largo).toBe('Paga en efectivo: se cobra y se factura en la caja')
+  })
+
+  it('Mercado Pago sin pagar se avisa: no debería llegar así', () => {
+    const d = describirPago(pedido({ pagado_en_la_web: false, medio_pago: 'mercado_pago', venta_estado: 'en_caja' }))
+    expect(d.corto).toBe('Mercado Pago sin confirmar')
+  })
+
+  it('cobrado en la caja lo dice, sea cual sea el medio', () => {
+    expect(describirPago(pedido({ pagado_en_la_web: false, medio_pago: 'transferencia', venta_estado: 'cobrada' })).largo).toBe('Cobrado en la caja')
+  })
+
+  it('los pedidos de antes, sin medio, dicen lo de siempre', () => {
+    expect(describirPago(pedido({ pagado_en_la_web: true, medio_pago: null })).corto).toBe('Pagó en la web')
+    expect(describirPago(pedido({ pagado_en_la_web: false, medio_pago: null, venta_estado: 'en_caja' })).corto).toBe('Paga en el local')
   })
 })

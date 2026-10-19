@@ -8,6 +8,7 @@ import { boton } from '@/estilos'
 import { describirEnTienda } from '@/lib/api/ventaOnline'
 import type { EstadoEnTienda, TonoEnTienda } from '@/lib/api/ventaOnline'
 import HistorialDeCostos from '@/components/HistorialDeCostos'
+import FotosDelProducto from '@/components/FotosDelProducto'
 import CajaYSuelto from '@/components/CajaYSuelto'
 import HistorialDeStock from '@/components/HistorialDeStock'
 import { avanzarConEnter } from '@/lib/teclado'
@@ -34,7 +35,7 @@ export interface EstadoFormulario {
     texto porque vacío quiere decir «el de la tienda», que no es lo mismo
     que cero.
   */
-  tienda: { vender: boolean; colchon: string }
+  tienda: { vender: boolean; colchon: string; consultar: boolean }
 }
 
 interface Props {
@@ -385,6 +386,26 @@ export default function ProductoEditor({
               Vender online
             </button>
           </div>
+          {/*
+            Farmacia y lo restringido: la tienda lo muestra con «Consultar»
+            y deriva a WhatsApp, pero no se compra. Acordado con Zubu y Lucas
+            el 19/10. Se puede marcar aunque no esté a la venta online: es
+            una propiedad del producto, y queda para cuando se prenda.
+          */}
+          <label className="col-span-2 flex items-start gap-2 py-1 text-sm text-tinta sm:col-span-2">
+            <input
+              type="checkbox"
+              checked={estado.tienda.consultar}
+              onChange={(e) => setTienda({ consultar: e.target.checked })}
+              className="mt-0.5 size-4 rounded border-borde text-marca-700 focus:ring-marca-500"
+            />
+            <span>
+              Sólo para consultar
+              <span className="block text-xs text-piedra-500">
+                La tienda lo muestra con «Consultar» por WhatsApp y no se puede comprar. Para farmacia y lo restringido.
+              </span>
+            </span>
+          </label>
           <Campo
             etiqueta="Colchón"
             ancho="col-span-2"
@@ -405,6 +426,12 @@ export default function ProductoEditor({
           >
             {enLaTienda.texto}
           </p>
+          {/* Las fotos van con el producto ya guardado: se guardan en su carpeta. */}
+          {!esNuevo && estado.campos.id ? (
+            <FotosDelProducto productoId={estado.campos.id} />
+          ) : (
+            <p className="col-span-2 text-xs text-piedra-500 sm:col-span-4">Guardá el producto para sumarle fotos.</p>
+          )}
         </Seccion>
 
         <Seccion titulo="Impuestos">

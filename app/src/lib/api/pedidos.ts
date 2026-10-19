@@ -32,6 +32,8 @@ export interface PedidoWeb {
   numero: string
   estado: EstadoPedido
   pagado_en_la_web: boolean
+  /** Cómo dijo la tienda que se paga. null en los pedidos de antes del 19/10. */
+  medio_pago: MedioDelPedido | null
   referencia_pago: string | null
   entrega: 'retira' | 'envio'
   domicilio: string | null
@@ -60,6 +62,42 @@ export interface PedidoWeb {
   a_reintegrar: number
   devuelto: number
   lineas: LineaPedido[]
+}
+
+export type MedioDelPedido = 'mercado_pago' | 'transferencia' | 'efectivo' | 'otro'
+
+const NOMBRE_DEL_MEDIO: Record<MedioDelPedido, string> = {
+  mercado_pago: 'Mercado Pago',
+  transferencia: 'transferencia',
+  efectivo: 'efectivo',
+  otro: 'otro medio',
+}
+
+/*
+  Cómo se paga, en las palabras del local.
+
+  Lo de Mercado Pago llega pagado: la tienda lo manda cuando Mercado Pago
+  confirma. Una transferencia o el efectivo llegan sin pagar y se cobran
+  en la caja, que ya los tiene previstos. Los pedidos de antes del 19/10
+  no traen el medio y dicen lo de siempre.
+*/
+export function describirPago(
+  p: Pick<PedidoWeb, 'pagado_en_la_web' | 'medio_pago' | 'referencia_pago' | 'venta_estado'>,
+): { corto: string; largo: string } {
+  const medio = p.medio_pago ? NOMBRE_DEL_MEDIO[p.medio_pago] : null
+  if (p.pagado_en_la_web) {
+    const corto = medio ? `Pagó con ${medio}` : 'Pagó en la web'
+    return { corto, largo: p.referencia_pago ? `${corto} · ${p.referencia_pago}` : corto }
+  }
+  const corto = p.medio_pago === 'transferencia' || p.medio_pago === 'efectivo' ? `Paga con ${medio}` : 'Paga en el local'
+  if (p.venta_estado === 'cobrada') return { corto, largo: 'Cobrado en la caja' }
+  if (p.medio_pago === 'transferencia') {
+    return { corto, largo: 'Paga con transferencia: se cobra en la caja cuando llega la plata, y se factura ahí' }
+  }
+  if (p.medio_pago === 'mercado_pago') {
+    return { corto: 'Mercado Pago sin confirmar', largo: 'Dice Mercado Pago pero llegó sin pagar: confirmarlo con la tienda' }
+  }
+  return { corto, largo: `${medio === 'efectivo' ? 'Paga en efectivo' : 'Paga en el local'}: se cobra y se factura en la caja` }
 }
 
 export interface Reintegro {

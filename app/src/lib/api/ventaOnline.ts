@@ -17,6 +17,8 @@ import { moneda, numero } from '@/lib/tipos'
 export interface EstadoEnTienda {
   producto_id: string
   vender_online: boolean
+  /** Se publica, pero la tienda muestra «Consultar» y no lo vende: farmacia, lo restringido. */
+  solo_consultar: boolean
   /** El colchón puesto a este producto. null = usa el del canal. */
   colchon_propio: number | null
   colchon_canal: number
@@ -43,6 +45,7 @@ export async function estadoEnTienda(ids: string[]): Promise<Map<string, EstadoE
       {
         producto_id: f.producto_id as string,
         vender_online: !!f.vender_online,
+        solo_consultar: !!f.solo_consultar,
         colchon_propio: aNumero(f.colchon_propio),
         colchon_canal: Number(f.colchon_canal ?? 0),
         stock: Number(f.stock ?? 0),
@@ -81,6 +84,35 @@ export async function definirVentaOnlinePorClasificacion(
   if (error) throw new Error(error.message)
   const r = (data ?? {}) as { cambiados?: number; sin_salir?: number }
   return { cambiados: Number(r.cambiados ?? 0), sinSalir: Number(r.sin_salir ?? 0) }
+}
+
+/*
+  «Sólo para consultar»: sale en la tienda, pero con el botón «Consultar»
+  que manda a WhatsApp, y no se compra. Acordado con Zubu y Lucas el
+  19/10 para farmacia y lo restringido. La marca no publica: el producto
+  tiene que estar además a la venta online.
+*/
+export async function definirSoloConsultar(ids: string[], consultar: boolean): Promise<number> {
+  const { data, error } = await supabase.rpc('definir_solo_consultar', {
+    p_productos: ids,
+    p_consultar: consultar,
+  })
+  if (error) throw new Error(error.message)
+  return Number(data)
+}
+
+export async function definirSoloConsultarPorClasificacion(
+  categoriaId: string | null,
+  marcaId: string | null,
+  consultar: boolean,
+): Promise<number> {
+  const { data, error } = await supabase.rpc('definir_solo_consultar_por_clasificacion', {
+    p_categoria_id: categoriaId,
+    p_marca_id: marcaId,
+    p_consultar: consultar,
+  })
+  if (error) throw new Error(error.message)
+  return Number((data as { cambiados?: number } | null)?.cambiados ?? 0)
 }
 
 export async function definirColchonTienda(productoId: string, colchon: number | null) {
@@ -129,6 +161,12 @@ export function describirEnTienda(
   if (!estado) return { tono: 'apagado', texto: 'No se vende online.' }
   if (estado.motivo === null) {
     const cantidad = `${numero.format(estado.stock)} ${estado.stock === 1 ? unidad : plural(unidad)}`
+    if (estado.solo_consultar) {
+      return {
+        tono: 'sale',
+        texto: `Se muestra para consultar: la tienda lo ofrece con «Consultar» por WhatsApp y no lo vende (ve ${cantidad} a ${moneda.format(estado.precio)}).`,
+      }
+    }
     return {
       tono: 'sale',
       texto: `Se vende online: la tienda ve ${cantidad} a ${moneda.format(estado.precio)}.`,
@@ -155,6 +193,7 @@ function minusculaInicial(texto: string) {
 */
 export interface LoQueMiraLaTienda {
   vender: boolean
+  consultar: boolean
   colchon: string
   nombre_publico: string | null | undefined
   precio_venta: number | undefined
@@ -165,6 +204,7 @@ export interface LoQueMiraLaTienda {
 export function cambiaLoQueVeLaTienda(guardado: LoQueMiraLaTienda, formulario: LoQueMiraLaTienda) {
   return (
     guardado.vender !== formulario.vender ||
+    guardado.consultar !== formulario.consultar ||
     normalizarColchon(guardado.colchon) !== normalizarColchon(formulario.colchon) ||
     (guardado.nombre_publico ?? '').trim() !== (formulario.nombre_publico ?? '').trim() ||
     Number(guardado.precio_venta ?? 0) !== Number(formulario.precio_venta ?? 0) ||

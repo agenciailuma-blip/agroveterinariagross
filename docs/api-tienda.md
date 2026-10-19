@@ -61,6 +61,7 @@ Cualquier otro parámetro se rechaza con `400`: un `dsde` mal escrito devolverí
     {
       "id": "2d6034c0-a623-4226-8bd8-39ec535df2c7",
       "publicado": true,
+      "solo_consultar": false,
       "codigo": "DEMO-002",
       "codigos_barra": ["7790000000002"],
       "nombre": "Royal Canin Gato Adulto 7,5 kg",
@@ -74,6 +75,9 @@ Cualquier otro parámetro se rechaza con `400`: un `dsde` mal escrito devolverí
       "presentacion": "bolsa",
       "animales": [],
       "etapas_de_vida": [],
+      "imagenes": [
+        { "url": "https://ywggnhoifhtoncnxrodh.supabase.co/storage/v1/object/public/productos/2d6034c0-a623-4226-8bd8-39ec535df2c7/5f1c9e2a-7b3d-4c1e-9a8f-0d2e6b4c7a11.webp", "ancho": 1200, "alto": 1200 }
+      ],
       "actualizado_en": "2026-09-18T21:13:34.057949Z"
     },
     { "id": "7c1e9a04-5b2f-4d0e-9a51-2f6c3e8d1b77", "publicado": false, "actualizado_en": "2026-09-24T12:20:02.118300Z" }
@@ -88,7 +92,8 @@ Cualquier otro parámetro se rechaza con `400`: un `dsde` mal escrito devolverí
 | Campo | Tipo | Qué es |
 |---|---|---|
 | `id` | texto (UUID) | El identificador del producto, que no cambia nunca. Es la clave con la que conviene guardarlo en la tienda |
-| `publicado` | sí/no | `true`: está a la venta. `false`: hay que sacarlo de la tienda |
+| `publicado` | sí/no | `true`: se muestra en la tienda. `false`: hay que sacarlo de la tienda |
+| `solo_consultar` | sí/no | `true`: se muestra, pero **no se puede comprar online**. La tienda lo muestra con un botón «Consultar» que deriva a WhatsApp, en lugar de «Agregar al carrito». Es para farmacia y productos restringidos |
 | `codigo` | texto | El código interno del producto, el mismo que usa el mostrador |
 | `codigos_barra` | lista | Los códigos del envase (EAN). Es la forma más confiable de emparejar productos ya cargados en la tienda. Puede venir vacía |
 | `nombre` | texto | El nombre público. El sistema maneja además un nombre interno para el vendedor, que no se expone |
@@ -99,6 +104,7 @@ Cualquier otro parámetro se rechaza con `400`: un `dsde` mal escrito devolverí
 | `requiere_receta` | sí/no | Si el producto requiere receta veterinaria |
 | `categoria`, `marca`, `presentacion` | texto o `null` | El `slug` de cada una. Los nombres para mostrar están en `/clasificaciones` |
 | `animales`, `etapas_de_vida` | listas | `["perros"]`, `["adulto"]`. Un producto puede pertenecer a varios |
+| `imagenes` | lista | Las fotos del producto, la principal primero. Cada una con `url`, `ancho` y `alto` en píxeles. Son WebP, de hasta 1200 px del lado más largo, y se pueden mostrar directamente desde esa dirección. Puede venir vacía. Una foto nueva tiene una dirección nueva: la tienda no necesita borrar ninguna caché |
 | `actualizado_en` | fecha | Cuándo cambió por última vez algo de lo que la tienda ve de este producto |
 
 **Los productos despublicados llegan sólo con `id`, `publicado: false` y `actualizado_en`**, sin nombre ni precio: lo que no está a la venta no se expone. Ocurre cuando el producto se apaga para la web, se da de baja, o le falta el nombre público o el precio. Un `id` desconocido para la tienda se ignora.
@@ -150,6 +156,7 @@ curl -s -X POST "https://ywggnhoifhtoncnxrodh.supabase.co/functions/v1/api-tiend
   -d '{
     "numero": "1042",
     "pagado": true,
+    "medio_pago": "mercado_pago",
     "referencia_pago": "mp-8871234",
     "comprador": {
       "nombre": "María Gómez",
@@ -174,6 +181,7 @@ curl -s -X POST "https://ywggnhoifhtoncnxrodh.supabase.co/functions/v1/api-tiend
 | `productos` | **obligatorio** | Lista con al menos un producto. Cada uno con `id`, `cantidad` y `precio` |
 | `comprador.nombre` | **obligatorio** | Nombre y apellido, o razón social |
 | `pagado` | opcional | `true` si el comprador ya pagó en la web. Por omisión, `false` |
+| `medio_pago` | opcional | `mercado_pago`, `transferencia`, `efectivo` u `otro`. Con Mercado Pago, el pedido se envía **cuando Mercado Pago confirma el pago**, con `pagado: true`. Con transferencia o efectivo llega con `pagado: false`: el local lo cobra en su caja cuando llega la plata |
 | `referencia_pago` | opcional | El identificador del pago en la pasarela. Queda anotado en la venta |
 | `comprador.email` | opcional | A esa dirección se envía la factura |
 | `comprador.documento` | opcional | DNI o CUIT, sin puntos ni guiones. Permite reconocer al comprador si ya es cliente del local. Con un CUIT, el sistema trae de ARCA su nombre y su condición frente al IVA |
@@ -219,6 +227,20 @@ Cada producto lleva:
 `numero` identifica el pedido. Si se envía dos veces —porque se cortó la conexión y la tienda reintenta— el segundo envío **no crea otra venta**: responde `200` con `repetido: true` y el mismo número de venta que la primera vez.
 
 Reintentar es seguro y es lo recomendado ante un `500` o ante un corte de conexión. Lo que **no** hay que hacer es cambiar el `numero` al reintentar: eso sí duplica el pedido.
+
+### Cómo se paga
+
+| | `pagado` | `medio_pago` | Qué pasa en el sistema |
+|---|---|---|---|
+| Mercado Pago | `true` | `mercado_pago` | La venta queda cobrada y el stock se descuenta al registrarse. La tienda envía el pedido recién cuando Mercado Pago confirma el pago |
+| Transferencia | `false` | `transferencia` | Queda esperando en la caja del local, con la transferencia ya prevista. Se cobra cuando llega la plata |
+| Efectivo | `false` | `efectivo` | Queda esperando en la caja, con el efectivo previsto. Se cobra cuando el comprador paga |
+
+Un pedido con `mercado_pago` y `pagado: false` entra igual, pero queda marcado para revisar: el local lo confirma con la tienda antes de entregarlo.
+
+### Productos sólo para consultar
+
+Un producto con `solo_consultar: true` no debería llegar en un pedido: la tienda no ofrece comprarlo. Si llega, el pedido entra igual —puede estar pagado— y queda marcado para que el local lo resuelva con el comprador.
 
 ### El precio que manda es el de la tienda
 
@@ -269,6 +291,7 @@ curl -s "https://ywggnhoifhtoncnxrodh.supabase.co/functions/v1/api-tienda/pedido
   "estado": "entregado",
   "entrega": "envio",
   "pagado_en_la_web": true,
+  "medio_pago": "mercado_pago",
   "cobrado": true,
   "factura": "B 00003-00000123",
   "reintegros": [
@@ -284,6 +307,7 @@ curl -s "https://ywggnhoifhtoncnxrodh.supabase.co/functions/v1/api-tienda/pedido
 | `estado` | `recibido` → `preparado` → `entregado`, o `cancelado` |
 | `entrega` | `retira` o `envio`, como vino en el pedido |
 | `pagado_en_la_web` | Como vino en el pedido |
+| `medio_pago` | Como vino en el pedido, o `null` si no vino |
 | `cobrado` | Si el sistema ya registró el cobro. Un pedido a pagar en el local pasa a `true` cuando se cobra en la caja |
 | `factura` | La clase y el número del comprobante, con el punto de venta: `B 00003-00000123`. `null` mientras no esté autorizado por ARCA |
 | `reintegros` | Plata que hay que devolverle al comprador, si la hay. Ver abajo |
@@ -350,7 +374,7 @@ Tres comportamientos a tener en cuenta:
 
 - **Un producto puede llegar dos veces** en dos consultas seguidas. Es deliberado: el sistema prefiere repetir antes que perder un cambio que se estaba guardando en el momento de la consulta. Guardar por `id` lo resuelve.
 - **`siguiente` es opaco.** Se guarda y se devuelve tal cual. Un valor que no haya salido de la API se rechaza con `400`.
-- **Cuenta como un cambio:** el nombre, la descripción, el precio, las clasificaciones, los códigos de barra, el stock, la publicación y el margen de seguridad.
+- **Cuenta como un cambio:** el nombre, la descripción, el precio, las clasificaciones, los códigos de barra, el stock, la publicación, el margen de seguridad, si es sólo para consultar y las fotos.
 
 ---
 
@@ -383,6 +407,7 @@ Los de `POST /pedidos`:
 | `400` | `cantidad_invalida` | Una `cantidad` que no es un número mayor que cero |
 | `400` | `precio_invalido` | Un `precio` que no es un número de cero para arriba |
 | `400` | `entrega_invalida` | `entrega.tipo` no es `retira` ni `envio` |
+| `400` | `medio_pago_invalido` | `medio_pago` no es `mercado_pago`, `transferencia`, `efectivo` ni `otro` |
 | `400` | `pedido_invalido` | Algún valor no tiene el formato esperado: un `id` que no es un identificador, un número que vino como texto |
 | `413` | `cuerpo_demasiado_grande` | El pedido pasa de 200.000 caracteres |
 
@@ -401,5 +426,5 @@ La factura la emite el sistema de gestión ante ARCA y se envía por mail al com
 | Nombre y apellido, o razón social | Es el receptor del comprobante |
 | Email | A esa dirección se envía la factura |
 | DNI o CUIT | Identifica al receptor ante ARCA, y permite reconocer al comprador si ya es cliente del local. **Quien quiere factura A da su CUIT**: con él, el sistema trae de ARCA la condición frente al IVA y la clase de factura que corresponde, así que no hace falta preguntarla |
-| Forma de pago | Pagado en la web o a pagar en el local: determina si la venta queda cobrada o esperando en la caja |
+| Forma de pago | Mercado Pago, transferencia o efectivo: determina si la venta queda cobrada o esperando en la caja |
 | Entrega | Retiro en el local o envío, con el domicilio en ese caso |

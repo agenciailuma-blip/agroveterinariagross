@@ -12,6 +12,8 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
+**Lista para construir: 0.16.7** (19/10, a la noche) — **reemplaza a la 0.16.6, que no hace falta publicar**: lleva todo lo de la 0.16.6 más **lo que salió de la reunión con Zubu**: **cómo paga cada pedido de la tienda** (Mercado Pago, transferencia o efectivo), **los productos sólo para consultar** y **las fotos de los productos**, que se cargan en el sistema y la tienda toma de la API. El programa necesita la versión nueva para poder mostrar las fotos. Ver *Lo último que pasó*. **677 pruebas verdes en la app.** Lo que vive en la base y la API **ya está aplicado y andando**. ⚠️ **Antes de construirla:** en la carpeta hay cambios sin guardar de otra sesión en `app/src/lib/local/sync.ts` y `sync.prueba.ts` —*empezar de nuevo cuando el servidor lo pide*, para la limpieza de los datos de prueba—. El instalador sale de la carpeta tal como está: o se terminan y se guardan, o se apartan antes de construir.
+
 **Construida: 0.16.6** (19/10, a la tarde) — **falta publicarla**. **Facturas emitidas y Percepciones**, dos pestañas nuevas en Comprobantes para buscar por fecha, cliente y número, con el total al pie, el Excel y el listado impreso; **el ticket más corto** —el QR más chico y sin la leyenda de la agencia—; y **el importador que dice antes qué va a hacer** y deja elegir qué tocar. Ver *Lo último que pasó*. **653 pruebas verdes en la app.** Lo que vive en la base (la vista de búsqueda y la importación de clientes) **ya está aplicado y andando**.
 
 🔴 **Los Excel de OBTech llegaron** (19/10): 2.281 productos y 2.536 clientes. **El IVA de cada producto sale de la planilla** —trae el precio con y sin IVA—, así que el Excel con la columna de IVA ya no bloquea. Falta decidir **cuándo se limpian los datos de prueba** y se carga lo real: ver *Lo que sigue*, arriba de todo.
@@ -38,7 +40,7 @@ Antes, la **0.13.0** (01/10), con **los cheques y el calendario de recibos** —
 
 Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en pestañas y ninguna pantalla que se desplace hacia el costado; antes, ese mismo día, la 0.11.0 con **mover mercadería entre depósitos** y el stock de cada uno; antes, la 0.10.0 (28/09), con la importación de clientes con su saldo y de los saldos de proveedores; antes, la 0.9.0 ese mismo día, con *Factura después* y *Cajas y mostradores*; antes, la 0.8.0 ese mismo día, con la recepción de mercadería, las cuentas de proveedores y la percepción en la caja. Antes, la 0.7.0 (25/09), con **la pantalla Pedidos web**: preparar, facturar, entregar y cancelar lo que entra de la tienda. Antes, la 0.6.0 (24/09), con **«Vender online»** —qué productos salen a la tienda web se decide desde Productos— y con **el arreglo de la sincronización que impedía que el CAEA llegara a las máquinas**. Antes, la 0.5.0 con **la factura que sale sin internet** —la caja emite con CAEA y el ticket sale solo—. Antes, la 0.4.4 con la red del local que ahora **dice qué le pasa**, el cortacircuito que hace que la Caja abra rápido sin internet, y la cola de la caja que se actualiza al cambiar el medio de pago. Antes, ese mismo día, la 0.4.2 con el recargo por cuotas arreglado, los acentos del ticket y la impresión automática al cobrar. **La 0.4.1 quedó instalada en el local el 17/09, en todas menos la de Windows 7** — las versiones nuevas entran solas con *Actualizar ahora*. **470 pruebas verdes en la app y 11 en el programa**, 92 migraciones aplicadas.
 
-**Y la API de la tienda online.** Leer el catálogo desde el 18/09; **mandar pedidos desde el 24/09**; **preguntar en qué está cada pedido desde el 25/09**. Zubu ya tiene su clave y su documentación. Del lado del local, **la pantalla Pedidos web**, publicada en la 0.7.0 el 25/09. Ver abajo.
+**Y la API de la tienda online.** Leer el catálogo desde el 18/09; **mandar pedidos desde el 24/09**; **preguntar en qué está cada pedido desde el 25/09**. Zubu ya tiene su clave y su documentación, en la **versión 5** desde el 19/10: fotos, productos sólo para consultar y cómo paga cada pedido. Del lado del local, **la pantalla Pedidos web**, publicada en la 0.7.0 el 25/09. Ver abajo.
 
 ⚠️ **Lo que está construido pero NO verificado.** Un chat nuevo no puede darlo por probado:
 
@@ -74,6 +76,42 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 🟡 **Lo que la venta tardaba en llegar a la caja sin internet** — arreglado el 05/10 y publicado en la 0.13.4, **sin probar en el local**. El mostrador le pasaba las ventas a la caja una vez por minuto, y la caja miraba su cola cada ocho segundos: hasta 68 segundos con el cliente esperando. Y llegaba de a partes porque, mientras la cabecera intentaba subir al servidor —hasta doce segundos sin internet—, salían los renglones solos. Ahora la venta sale al segundo y medio de apretar *Enviar a caja* (y otra vez a los catorce, por si el intento de subir tardó), viaja entera o espera entera, y la caja la muestra apenas llega. Se comprueba en el próximo corte: la venta tiene que aparecer en la caja en un par de segundos y completa.
 
 ---
+
+## Lo último que pasó — 19 de octubre, a la noche: lo que salió de la reunión con Zubu
+
+**Tres cosas para la tienda, acordadas con Zubu y Lucas.** La página de la API para Zubu se publicó como **versión 5**, en la misma dirección de siempre (https://claude.ai/artifact/VXHehNGKU5HF9Ltbbe7LgB), y la copia del repositorio, [`api-tienda.md`](api-tienda.md), dice lo mismo. Los tres son agregados: lo que la tienda ya hacía sigue igual.
+
+### Cómo paga cada pedido
+
+> **Cómo se lo contás a Lucas:** cada pedido de la web ahora dice cómo se paga. En *Pedidos web* lo ves en la lista y en el detalle: *Pagó con Mercado Pago*, *Paga con transferencia*, *Paga en el local*. Si es transferencia o efectivo, el pedido llega a la caja con ese medio ya elegido: cuando entra la plata, se cobra sin buscar nada. Y si alguna vez llega uno que dice Mercado Pago pero sin pagar, queda marcado para que lo mires antes de entregarlo.
+
+- La tienda manda `medio_pago`: `mercado_pago`, `transferencia`, `efectivo` u `otro`. Uno que no sea esos se rechaza con `medio_pago_invalido`.
+- **Zubu ya sabe que el pedido de Mercado Pago se manda recién cuando Mercado Pago confirma el pago** (se lo dijo ILUMA en la reunión). Los pedidos WEB-000009 y 10 del 19/10 ya llegaron así, pagados.
+- La base: [`como_paga_y_que_es_para_consultar`](../supabase/migrations/20261019140000_como_paga_y_que_es_para_consultar.sql). La API, desplegada (versión 5 de la función).
+
+### Productos sólo para consultar
+
+> **Cómo se lo contás a Lucas:** hay productos que querés que se vean en la web pero que no se puedan comprar —farmacia, lo que lleva receta—. En la ficha, debajo de *Vender online*, tildás *Sólo para consultar*: la tienda lo muestra con un botón *Consultar* que manda a WhatsApp, en lugar de *Agregar al carrito*. También se puede hacer de a muchos, marcándolos en la lista o para toda una categoría o marca. En la lista aparece la marca *Consultar*.
+
+- Si igual llega un pedido con un producto así, **entra** —puede estar pagado— y queda marcado para revisar.
+
+### Las fotos de los productos
+
+> **Cómo se lo contás a Lucas:** las fotos de la tienda se cargan acá, en la ficha de cada producto, en *Tienda online* → *Sumar fotos*. Hasta ocho por producto; la primera es la que se ve en la lista de la tienda, y cualquiera se puede hacer principal. No importa el tamaño de la foto: el sistema la achica y la convierte al formato liviano de la web solo. Para cargar muchas de una, en Productos está *Subir fotos*: nombrás cada foto con el código del producto o el código de barras —*DEMO-002.jpg*— y el sistema te muestra a qué producto va cada una antes de subirlas.
+
+- **WebP de hasta 1200 px**, convertida en la computadora que la sube: una foto de celular de 4 MB queda en unos 100 KB. Mil productos con dos fotos entran holgados en el plan gratis.
+- Viven en el depósito público `productos` del servidor; la base anota cada una recién cuando el archivo está, y si la base no la acepta, el archivo se borra. **Necesita internet**: las fotos no bajan a la copia local.
+- La API las da en `imagenes`, la principal primero, con su ancho y alto. Cambiar las fotos cuenta como un cambio del producto: la tienda lo ve en la próxima consulta.
+- La base: [`las_imagenes_de_los_productos`](../supabase/migrations/20261019150000_las_imagenes_de_los_productos.sql). El código, en [`imagenes.ts`](../app/src/lib/api/imagenes.ts), [`FotosDelProducto.tsx`](../app/src/components/FotosDelProducto.tsx) y [`SubirFotos.tsx`](../app/src/components/SubirFotos.tsx).
+- 🔴 **El programa instalado no muestra las fotos hasta la 0.16.7**: la regla de seguridad del programa sólo dejaba ver imágenes propias. Se suben igual; se ven después de actualizar.
+
+**Verificado:** **20 comprobaciones** en [`como-paga-y-para-consultar.sql`](../supabase/pruebas/como-paga-y-para-consultar.sql) y **15** en [`imagenes-de-productos.sql`](../supabase/pruebas/imagenes-de-productos.sql), en seco con la migración, después de aplicar, y rotas a propósito —marcar sin el permiso, subir una foto sin el permiso— y atrapadas. En la app, pruebas nuevas de cómo se describe el pago (6), de la marca para consultar y de a qué producto va cada foto (10), rotas a propósito y atrapadas: **677 verdes**, y los tipos sin errores. La API publicada contesta 401 sin clave, como siempre. 🟡 **Falta verlo en pantalla**: la casilla, la marca *Consultar*, subir, ordenar y quitar fotos en un producto PRUEBA, la subida de a muchas, y todo a 375 px.
+
+### Lo que quedó de la reunión
+
+- 🟡 **Envío y descuentos**: pendiente, hasta saber cómo lo maneja Andreani.
+- 🟡 **La dirección desde la que sale el mail de la factura**: la consigue ILUMA.
+- 💡 **Lucas preguntó por traer las fotos solas de internet**, buscándolas por la descripción, para corregirlas antes de lanzar. Se puede sumar después, encima de lo que ya está: buscar por código de barras o nombre en un servicio pago de búsqueda de imágenes y que Lucas acepte o descarte cada una. Riesgos: fotos con derechos de otro y fotos parecidas que no son el producto.
 
 ## Lo último que pasó — 19 de octubre, a la tarde
 
@@ -895,7 +933,7 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 > - **Los atajos de teclado** se definen con Lucas la **primera semana de octubre**.
 > - **La capacitación ya se viene haciendo** en cada visita, fuera de horario, y Lucas y los empleados siguen el sistema al detalle. No es un pendiente.
 > - **La base de datos sigue en plan gratis, por decisión de Gross**, conociendo el riesgo: sin copias de seguridad recuperables. Se contrata más adelante. Dicho una vez y anotado.
-> - ~~**Lo que sigue: adelantar V1-B, empezando por la API para Zubu**~~ ✅ **Hecho.** El catálogo se publicó el 18/09, **«Vender online» el 24/09** (0.6.0) y **los pedidos el 24/09** y **la pantalla Pedidos web con la facturación el 25/09**. **Zubu ya tiene su clave y su documentación.** De la tienda queda el mail con la factura, que espera la dirección de correo de Gross.
+> - ~~**Lo que sigue: adelantar V1-B, empezando por la API para Zubu**~~ ✅ **Hecho.** El catálogo se publicó el 18/09, **«Vender online» el 24/09** (0.6.0) y **los pedidos el 24/09** y **la pantalla Pedidos web con la facturación el 25/09**. **Zubu ya tiene su clave y su documentación, en la **versión 5** desde el 19/10: fotos, productos sólo para consultar y cómo paga cada pedido.** De la tienda queda el mail con la factura, que espera la dirección de correo de Gross.
 
 0. 🔴 **Que la venta llegue a la caja sin internet.** Falló en el local el 17/09. **El sistema ya dice qué pasa** (0.4.3) — eso era lo que faltaba para poder arreglarlo. **Lo que sigue es una prueba de dos minutos en el local**, con las dos máquinas prendidas y el programa instalado en las dos: Configuración → La red del local → *Probar la conexión*, y después una venta con internet cortado.
    - Si dice **«no sé cuál es la caja»**: esa terminal no sincronizó desde que la caja se presentó. Se resuelve sincronizando una vez con internet.
@@ -946,7 +984,8 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 | ~~Las **fotos de cómo cargan facturas de compra**~~ | Lucas | ✅ Llegaron el 10/09, con tres audios. Análisis en [`compras-e-iva.md`](compras-e-iva.md) |
 | ~~**¿La cuenta corriente de proveedores entra al alcance?**~~ | — | ✅ **Sí, decidido y construido el 28/09.** Falta publicarla |
 | Qué **columnas** quiere el contador en el Excel | Contador | 🟡 Ya se exporta con lo estándar |
-| **La dirección desde la que salen los mails** | Lucas | 🟡 El servicio ya está elegido (Resend). La necesitan las facturas de la tienda y el pedido 17 |
+| **La dirección desde la que salen los mails** | ILUMA | 🟡 El servicio ya está elegido (Resend). La necesitan las facturas de la tienda y el pedido 17. Desde el 19/10 la gestiona ILUMA |
+| **Envío y descuentos de la tienda** | Zubu y Lucas | 🟡 Pendiente desde la reunión del 19/10, hasta saber cómo lo maneja Andreani |
 
 → La lista completa está en [[Pendientes con terceros]].
 

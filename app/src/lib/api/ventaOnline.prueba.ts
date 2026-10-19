@@ -23,6 +23,7 @@ import { moneda } from '@/lib/tipos'
 const SALE: EstadoEnTienda = {
   producto_id: 'p1',
   vender_online: true,
+  solo_consultar: false,
   colchon_propio: null,
   colchon_canal: 2,
   stock: 3,
@@ -74,6 +75,23 @@ describe('la línea de la ficha', () => {
     ).toEqual({ tono: 'pendiente', texto: 'Guardá para ver cómo queda en la tienda.' })
   })
 
+  /*
+    Farmacia y lo restringido salen, pero no se venden: la línea no
+    puede decir «se vende online» de algo que la tienda no deja comprar.
+  */
+  it('sólo para consultar dice que se muestra, no que se vende', () => {
+    const d = describirEnTienda({ ...SALE, solo_consultar: true }, opciones)
+    expect(d.tono).toBe('sale')
+    expect(d.texto).toMatch(/^Se muestra para consultar/)
+    expect(d.texto).not.toMatch(/Se vende online/)
+  })
+
+  it('marcado para consultar pero apagado, no se vende ni se muestra', () => {
+    expect(
+      describirEnTienda({ ...SALE, solo_consultar: true, vender_online: false, motivo: 'No está marcado para vender online' }, opciones),
+    ).toEqual({ tono: 'apagado', texto: 'No se vende online.' })
+  })
+
   it('un producto nuevo todavía no está en la tienda', () => {
     expect(describirEnTienda(null, { ...opciones, esNuevo: true }).tono).toBe('pendiente')
   })
@@ -82,6 +100,7 @@ describe('la línea de la ficha', () => {
 describe('qué cambios afectan a la tienda', () => {
   const guardado: LoQueMiraLaTienda = {
     vender: true,
+    consultar: false,
     colchon: '',
     nombre_publico: 'Comedero de acero 1 L',
     precio_venta: 6900,
@@ -96,6 +115,7 @@ describe('qué cambios afectan a la tienda', () => {
   it.each([
     ['el interruptor', { vender: false }],
     ['el colchón', { colchon: '4' }],
+    ['marcarlo sólo para consultar', { consultar: true }],
     ['el nombre público', { nombre_publico: 'Comedero 1 L' }],
     ['borrar el nombre público', { nombre_publico: null }],
     ['el precio', { precio_venta: 7200 }],
