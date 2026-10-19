@@ -421,8 +421,63 @@ async function rebajarLoQueCambio() {
   })
 }
 
+/*
+  ─────────────────────────────────────────────────────────────
+  Empezar de nuevo, cuando el servidor lo pide
+
+  La copia local baja lo que cambió, no lo que se borró. Para el día que
+  se limpian los datos de prueba —y cualquier otra limpieza de fondo—,
+  el servidor guarda un número en `copia_local.generacion`. Cuando no
+  coincide con el de esta PC, se vacía todo lo que vino del servidor y
+  se vuelve a bajar entero: los productos y clientes borrados dejan de
+  aparecer en el mostrador sin internet.
+
+  Nunca con algo por subir: lo que esta PC hizo sin conexión manda. Si
+  la cola de subida no está vacía, se espera a la vuelta siguiente.
+  ─────────────────────────────────────────────────────────────
+*/
+export const TABLAS_DEL_SERVIDOR = [
+  'producto', 'codigo_barra', 'saldo', 'umbral', 'cliente', 'lista_precio', 'medio_pago', 'cuota',
+  'configuracion', 'referencia', 'saldo_cuenta_corriente', 'venta', 'venta_linea', 'no_fiscal',
+  'no_fiscal_linea', 'punto_venta', 'caea', 'secuencia', 'comprobante', 'comprobante_alicuota',
+  'comprobante_tributo',
+] as const
+
+/** Lo que se hace con la copia local según la generación del servidor y la de esta PC. */
+export function queHacerConLaGeneracion(
+  servidor: string,
+  local: string,
+  pendientes: number,
+): 'nada' | 'esperar' | 'empezar_de_nuevo' {
+  if (servidor === local) return 'nada'
+  return pendientes > 0 ? 'esperar' : 'empezar_de_nuevo'
+}
+
+async function empezarDeNuevoSiHaceFalta() {
+  const { data, error } = await supabase
+    .from('configuracion')
+    .select('valor')
+    .eq('clave', 'copia_local.generacion')
+    .maybeSingle()
+  if (error) throw new Error(`generación de la copia local: ${error.message}`)
+
+  const servidor = data ? String(data.valor) : '0'
+  const local = (await db.cursor.get('generacion'))?.cursor ?? '0'
+  if (queHacerConLaGeneracion(servidor, local, await db.outbox.count()) !== 'empezar_de_nuevo') return
+
+  await db.transaction('rw', [db.cursor, ...TABLAS_DEL_SERVIDOR.map((t) => db.table(t))], async () => {
+    for (const t of TABLAS_DEL_SERVIDOR) await db.table(t).clear()
+    // Se olvidan todos los cursores menos la versión de columnas: lo que
+    // sigue es una bajada completa.
+    const cursores = (await db.cursor.toArray()).map((c) => c.tabla).filter((t) => t !== 'version_bajada')
+    await db.cursor.bulkDelete(cursores)
+    await db.cursor.put({ tabla: 'generacion', cursor: servidor, sincronizado_en: new Date().toISOString() })
+  })
+}
+
 export async function bajarCambios() {
   let total = 0
+  await empezarDeNuevoSiHaceFalta()
   await rebajarLoQueCambio()
   for (const def of MAESTROS) total += await bajarTabla(def)
   total += await bajarReferencias()

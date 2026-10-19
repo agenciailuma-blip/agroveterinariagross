@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { conciliarCola } from '@/lib/local/sync'
+import { conciliarCola, queHacerConLaGeneracion, TABLAS_DEL_SERVIDOR } from '@/lib/local/sync'
+import { db } from '@/lib/local/db'
 
 /*
   ─────────────────────────────────────────────────────────────
@@ -77,5 +78,32 @@ describe('limpieza de lo que ya no espera cobro', () => {
     const r = conciliarCola([], [enCaja('v1'), enCaja('v2')], new Set())
     expect(r.aBorrar).toEqual(['v1', 'v2'])
     expect(r.idsAGuardar.size).toBe(0)
+  })
+})
+
+/*
+  El día que se limpian los datos de prueba, el servidor cambia la
+  generación y cada PC vacía su copia y la baja de nuevo. Nunca con algo
+  por subir: lo hecho sin conexión manda.
+*/
+describe('empezar de nuevo cuando el servidor lo pide', () => {
+  it('con la misma generación no hace nada', () => {
+    expect(queHacerConLaGeneracion('1', '1', 0)).toBe('nada')
+  })
+
+  it('con otra generación y nada por subir, vacía y baja de nuevo', () => {
+    expect(queHacerConLaGeneracion('1', '0', 0)).toBe('empezar_de_nuevo')
+  })
+
+  it('con algo por subir, espera', () => {
+    expect(queHacerConLaGeneracion('1', '0', 3)).toBe('esperar')
+  })
+
+  it('vacía sólo tablas que existen, y nunca la cola de subida ni la seguridad', () => {
+    const existentes = new Set(db.tables.map((t) => t.name))
+    for (const t of TABLAS_DEL_SERVIDOR) expect(existentes.has(t)).toBe(true)
+    for (const nunca of ['outbox', 'seguridad', 'contador', 'cursor']) {
+      expect(TABLAS_DEL_SERVIDOR as readonly string[]).not.toContain(nunca)
+    }
   })
 })

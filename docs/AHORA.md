@@ -12,11 +12,11 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Lista para construir: 0.16.7** (19/10, a la noche) — **reemplaza a la 0.16.6, que no hace falta publicar**: lleva todo lo de la 0.16.6 más **lo que salió de la reunión con Zubu**: **cómo paga cada pedido de la tienda** (Mercado Pago, transferencia o efectivo), **los productos sólo para consultar** y **las fotos de los productos**, que se cargan en el sistema y la tienda toma de la API. El programa necesita la versión nueva para poder mostrar las fotos. Ver *Lo último que pasó*. **677 pruebas verdes en la app.** Lo que vive en la base y la API **ya está aplicado y andando**. ⚠️ **Antes de construirla:** en la carpeta hay cambios sin guardar de otra sesión en `app/src/lib/local/sync.ts` y `sync.prueba.ts` —*empezar de nuevo cuando el servidor lo pide*, para la limpieza de los datos de prueba—. El instalador sale de la carpeta tal como está: o se terminan y se guardan, o se apartan antes de construir.
+**Publicada: 0.16.7** (19/10, 17:52), verificada en Cloudflare: `latest.json` dice 0.16.7. **Reemplaza a la 0.16.6, que no se publicó**: lleva todo lo de la 0.16.6 más **lo que salió de la reunión con Zubu** —**cómo paga cada pedido de la tienda** (Mercado Pago, transferencia o efectivo), **los productos sólo para consultar** y **las fotos de los productos**— y el arreglo de la foto quitada. **También lleva *empezar de nuevo cuando el servidor lo pide*** ([`sync.ts`](../app/src/lib/local/sync.ts)), que estaba sin guardar en la carpeta cuando se construyó: se guardó después, en un commit aparte, y **`main` quedó igual a lo publicado**. Ver *Lo último que pasó*. **677 pruebas verdes en la app.**
 
 **Construida: 0.16.6** (19/10, a la tarde) — **falta publicarla**. **Facturas emitidas y Percepciones**, dos pestañas nuevas en Comprobantes para buscar por fecha, cliente y número, con el total al pie, el Excel y el listado impreso; **el ticket más corto** —el QR más chico y sin la leyenda de la agencia—; y **el importador que dice antes qué va a hacer** y deja elegir qué tocar. Ver *Lo último que pasó*. **653 pruebas verdes en la app.** Lo que vive en la base (la vista de búsqueda y la importación de clientes) **ya está aplicado y andando**.
 
-🔴 **Los Excel de OBTech llegaron** (19/10): 2.281 productos y 2.536 clientes. **El IVA de cada producto sale de la planilla** —trae el precio con y sin IVA—, así que el Excel con la columna de IVA ya no bloquea. Falta decidir **cuándo se limpian los datos de prueba** y se carga lo real: ver *Lo que sigue*, arriba de todo.
+✅ **Productos y clientes reales, cargados** (19/10, a la noche): **2.281 productos y 2.494 clientes de OBTech**, con el importador nuevo. Los de prueba quedaron **dados de baja**, no borrados: las ventas y facturas de prueba siguen ahí hasta la limpieza completa, que se hace en otro momento. Ver *Lo último que pasó* y *Lo que sigue*.
 
 **Publicada: 0.16.5** (19/10, 10:17), verificada en Cloudflare: `latest.json` dice 0.16.5. **Sin internet, el sistema ya no se traba**: la venta llega a la caja enseguida y las pantallas aparecen al instante. Era lo que se vio en el local el 16/10 —la venta llegaba diez segundos tarde o más, abrir Caja o Mostrador tardaba, cobrar e imprimir también—. Ver *Lo último que pasó*. **624 pruebas verdes en la app.**
 
@@ -118,6 +118,22 @@ Y salieron dos cosas, arregladas:
 - 🟡 **Envío y descuentos**: pendiente, hasta saber cómo lo maneja Andreani.
 - 🟡 **La dirección desde la que sale el mail de la factura**: la consigue ILUMA.
 - 💡 **Lucas preguntó por traer las fotos solas de internet**, buscándolas por la descripción, para corregirlas antes de lanzar. Se puede sumar después, encima de lo que ya está: buscar por código de barras o nombre en un servicio pago de búsqueda de imágenes y que Lucas acepte o descarte cada una. Riesgos: fotos con derechos de otro y fotos parecidas que no son el producto.
+
+## Lo último que pasó — 19 de octubre, a la noche
+
+### Productos y clientes reales, cargados
+
+**Con los dos Excel de OBTech y el importador de la 0.16.6.** Lo demás de la limpieza —ventas, facturas de homologación, stock, cuentas corrientes, cheques— queda para otro momento, por decisión de la persona.
+
+> **Cómo se lo contás a Lucas:** ya están en el sistema todos los productos y todos los clientes que exportaste de OBTech. Los de prueba no aparecen más. Los precios son los de la lista 1, con IVA; la de tarjeta la calcula el sistema. Quedaron 41 clientes afuera porque en OBTech comparten el CUIT con otro cliente —te paso la lista—: decime en cada caso si son el mismo o si hay un CUIT mal escrito.
+
+- **Antes, un respaldo**: `respaldo_20261019.producto` y `respaldo_20261019.cliente`, un esquema aparte en la misma base que la app no ve. Se puede borrar cuando la carga esté mirada.
+- **Los de prueba, dados de baja y no borrados**: 38 productos (con `dar_de_baja_productos`, la misma que usa la app) y 16 clientes; queda *Consumidor Final*. La baja **llega sola a las PC** —sube la fecha de cambio— y **libera los códigos y CUIT**, que sólo valen entre los que no están de baja. Borrarlos de verdad no se podía sin borrar antes las ventas que los usan, y lo borrado no llega a las PC.
+- **Productos: 2.281, todos al 21 %**, sin errores. **40 tienen precio $0**: OBTech no les tiene *Precio 1*. **17 empiezan con «zz»**: en OBTech suele ser lo discontinuado; entraron igual, se dan de baja desde Productos si no van. Sin categoría ni marca: el Excel no las trae.
+- **Clientes: 2.494** —1.056 inscriptos, 55 monotributistas, 93 exentos y 1.291 consumidores finales; 1.211 con CUIT— más el genérico, que no se importó. **41 filas frenadas, todas por CUIT repetido**: entró el primero de cada CUIT y los demás no. La lista, con quién quedó y quién no, está en `D:\Descargas\clientes-frenados-obtech.csv` (afuera del repositorio: tiene datos de clientes).
+- **Visto en la base después de cargar**: los totales de arriba, el IVA de cada producto, y dos ejemplos de cada lado con sus datos completos.
+
+⚠️ **Lo que queda a la vista hasta la limpieza completa:** **4 ventas de prueba en la cola de la caja**, con productos ya dados de baja —no cobrarlas—, la caja abierta desde el 13/08 y los comprobantes de homologación en Facturación.
 
 ## Lo último que pasó — 19 de octubre, a la tarde
 
@@ -925,8 +941,8 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 
 ## Lo que sigue, en orden
 
-> 🔴 **19/10 — Limpiar los datos de prueba y cargar lo real.** Los Excel de OBTech ya se leen enteros (ver *Lo último que pasó*). Antes de limpiar hay tres cosas que decidir o cuidar, y por eso no se hizo todavía:
-> 1. **Las PC del local no se enteran de lo que se borra.** La copia local baja lo que cambió, no lo borrado (lo mismo que pasó con los avisos de stock el 09/10). Los productos y clientes de prueba se dan de baja con la marca que viaja, o se fuerza que cada PC vuelva a bajar todo una vez.
+> 🔴 **19/10 — Terminar la limpieza de los datos de prueba.** ✅ **Productos y clientes ya están** (los reales cargados, los de prueba de baja: ver *Lo último que pasó*). Falta lo demás —ventas, comprobantes, stock, cuentas corrientes, cheques, compras, la caja abierta—, y para eso hay tres cosas que cuidar:
+> 1. **Las PC del local no se enteran de lo que se borra.** La copia local baja lo que cambió, no lo borrado. **Resuelto en la 0.16.7**: al terminar la limpieza se pone `copia_local.generacion` en `configuracion` (por ejemplo, `1`) y cada PC vacía su copia y la vuelve a bajar entera, sólo si no tiene nada por subir. Antes de borrar, el respaldo en otro esquema, como el 19/10. **Las preguntas que quedaron abiertas**: si Marcela Duarte, Diego Fernández y Silvina Rojas son usuarios reales; qué hacer con las 6 categorías y las 13 marcas de ejemplo; y cuándo borrar los 10 pedidos web de prueba sin cortarle la prueba a Zubu.
 > 2. **Las facturas de homologación ocupan números.** Hay 50 comprobantes de prueba en el punto de venta 1. El día que se pase a producción, ARCA arranca en el 1 y el sistema no deja dos comprobantes con el mismo número: hay que sacarlos antes del cambio, junto con sus ventas, pagos, movimientos de stock y de cuenta corriente.
 > 3. **Cuándo.** Después de limpiar ya no se puede probar con lo de prueba. Lo natural es hacerlo junto con el cambio a producción, contra el 26/10.
 
