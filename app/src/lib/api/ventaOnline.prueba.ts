@@ -86,10 +86,12 @@ describe('la línea de la ficha', () => {
     expect(d.texto).not.toMatch(/Se vende online/)
   })
 
-  it('marcado para consultar pero apagado, no se vende ni se muestra', () => {
+  // Sin «Vender online» la tienda no lo ve: la ficha dice qué falta,
+  // para que no se crea que tildar «Consultar» alcanza.
+  it('marcado para consultar pero apagado, dice que falta prender Vender online', () => {
     expect(
       describirEnTienda({ ...SALE, solo_consultar: true, vender_online: false, motivo: 'No está marcado para vender online' }, opciones),
-    ).toEqual({ tono: 'apagado', texto: 'No se vende online.' })
+    ).toEqual({ tono: 'no_sale', texto: 'Marcado para consultar, pero no se muestra: falta prender «Vender online».' })
   })
 
   it('un producto nuevo todavía no está en la tienda', () => {

@@ -78,7 +78,6 @@ begin
   perform pg_temp.comprobar(rechazado, 'se anotó una foto cuyo archivo no está');
 
   -- 8. Fuera de la carpeta del producto, tampoco.
-  -- Sin «returning»: leer el almacenamiento no está permitido a propósito, las fotos se leen por su dirección pública.
   v_ruta := gen_random_uuid() || '/ajena.webp';
   insert into storage.objects (bucket_id, name) values ('productos', v_ruta);
   begin
@@ -112,9 +111,18 @@ begin
   -- 11. Quitar devuelve la ruta, para borrar el archivo.
   perform pg_temp.comprobar(public.quitar_imagen_producto(v_i1) = v_p || '/a.webp', 'quitar no devolvió la ruta del archivo');
 
+  -- 12. Y el archivo se borra. Para borrar, el almacenamiento tiene que
+  -- poder ver el archivo: sin eso, el borrado no encontraba nada y no
+  -- avisaba, y la foto quitada quedaba ocupando lugar.
+  -- El almacenamiento borra con este permiso; directo, no deja.
+  perform set_config('storage.allow_delete_query', 'true', true);
+  delete from storage.objects where bucket_id = 'productos' and name = v_p || '/a.webp';
+  get diagnostics i = row_count;
+  perform pg_temp.comprobar(i = 1, format('el archivo de la foto quitada no se pudo borrar del depósito (borró %s)', i));
+
   perform set_config('role', 'postgres', true);
 
-  -- 12 a 14. El catálogo de la tienda las manda, con su dirección, la principal primero y sin la quitada.
+  -- 13 a 15. El catálogo de la tienda las manda, con su dirección, la principal primero y sin la quitada.
   v_catalogo := app.catalogo_de_canal(v_canal, null, 1000, clock_timestamp() + interval '1 second');
   select e -> 'imagenes' into v_fotos from json_array_elements(v_catalogo -> 'productos') e where e ->> 'id' = v_p::text;
   perform pg_temp.comprobar(json_array_length(v_fotos) = 7, format('el catálogo tenía que mandar 7 fotos y manda %s', json_array_length(v_fotos)));

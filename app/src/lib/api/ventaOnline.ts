@@ -172,6 +172,9 @@ export function describirEnTienda(
       texto: `Se vende online: la tienda ve ${cantidad} a ${moneda.format(estado.precio)}.`,
     }
   }
+  if (!estado.vender_online && estado.solo_consultar) {
+    return { tono: 'no_sale', texto: 'Marcado para consultar, pero no se muestra: falta prender «Vender online».' }
+  }
   if (!estado.vender_online) return { tono: 'apagado', texto: 'No se vende online.' }
   return { tono: 'no_sale', texto: `Prendido, pero no sale: ${minusculaInicial(estado.motivo)}.` }
 }
