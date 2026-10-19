@@ -244,7 +244,9 @@ function armarCsv<T>(filas: T[], columnas: { clave: keyof T; titulo: string }[])
 
   const encabezado = columnas.map((c) => c.titulo).join(';')
   const cuerpo = filas.map((f) => columnas.map((c) => escapar(f[c.clave])).join(';'))
-  return [encabezado, ...cuerpo].join('\n')
+  // El BOM lo decía este comentario desde septiembre, pero no estaba: los
+  // títulos con acento («Alícuota %», «Número») abrían rotos. Visto el 19/10.
+  return '﻿' + [encabezado, ...cuerpo].join('\n')
 }
 
 export function aCsv(filas: FilaLibroIva[]): string {

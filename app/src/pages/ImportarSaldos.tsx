@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/auth/AuthProvider'
 import { Dato, ElegirArchivo, Mapeo } from '@/components/importacion/Piezas'
 import { leerArchivo } from '@/lib/importacion/archivo'
@@ -8,7 +8,18 @@ import type { HojaLeida } from '@/lib/importacion/archivo'
 import { CLIENTES, SALDOS_PROVEEDORES } from '@/lib/importacion/definiciones'
 import { codigosDuplicados, detectarEncabezado, elegirHoja, prepararFilas, proponerMapeo } from '@/lib/importacion/planilla'
 import type { DefinicionPlanilla, FilaImportada } from '@/lib/importacion/planilla'
-import { aFilasDelArchivo, importarClientes, importarSaldosProveedores } from '@/lib/api/importacion'
+import { aFilasDelArchivo, clientesActuales, importarClientes, importarSaldosProveedores } from '@/lib/api/importacion'
+import {
+  aOpciones,
+  armarEnvio,
+  clasificar,
+  opcionesIniciales,
+  type Clasificacion,
+  type EstadoOpciones,
+} from '@/lib/importacion/comparar'
+import { COMPARADOR_CLIENTES } from '@/lib/importacion/comparadores'
+import type { CampoCliente } from '@/lib/importacion/definiciones'
+import OpcionesDeImportacion from '@/components/importacion/OpcionesDeImportacion'
 import type { ResumenImportacion, ResultadoFila } from '@/lib/api/importacion'
 import { moneda, numero } from '@/lib/tipos'
 import { barraDeAvance, boton, campo, tarjeta } from '@/estilos'
@@ -97,6 +108,7 @@ export default function ImportarSaldos({ tipo }: { tipo: Tipo }) {
   const [error, setError] = useState<string | null>(null)
   const [avance, setAvance] = useState<{ hechas: number; total: number } | null>(null)
   const [resumen, setResumen] = useState<ResumenImportacion | null>(null)
+  const [opciones, setOpciones] = useState<EstadoOpciones>(opcionesIniciales)
 
   function tomarHoja(leidas: HojaLeida[], indice: number, encabezado?: number) {
     const filas = leidas[indice]?.filas ?? []
@@ -122,6 +134,7 @@ export default function ImportarSaldos({ tipo }: { tipo: Tipo }) {
       tomarHoja(leidas, elegida.indice, elegida.encabezado)
       setResumen(null)
       setError(null)
+      setOpciones(opcionesIniciales())
     },
     onError: (e) => setError(e instanceof Error ? `No se pudo leer el archivo: ${e.message}` : 'No se pudo leer el archivo.'),
   })
@@ -132,20 +145,47 @@ export default function ImportarSaldos({ tipo }: { tipo: Tipo }) {
   const faltan = c.def.obligatorios.filter((o) => !Object.values(mapeo).includes(o))
   const conSaldo = Object.values(mapeo).includes('saldo')
 
+  /*
+    Con los clientes se dice antes qué es nuevo y qué cambia, y se elige
+    qué tocar, como con los productos. Los saldos de proveedores no: son
+    un número por proveedor, y la base ya lo deja igual al de la planilla.
+  */
+  const conOpciones = tipo === 'clientes'
+  const actuales = useQuery({
+    queryKey: ['clientes-actuales', archivo?.name, archivo?.lastModified],
+    queryFn: clientesActuales,
+    enabled: conOpciones && !!archivo,
+    staleTime: 0,
+  })
+  const clasificacion: Clasificacion<CampoCliente> | null =
+    conOpciones && actuales.data
+      ? clasificar(validas as FilaImportada<CampoCliente>[], actuales.data, COMPARADOR_CLIENTES)
+      : null
+  const aMandar: FilaImportada<string>[] = !conOpciones
+    ? validas
+    : clasificacion
+      ? armarEnvio(clasificacion, aOpciones(opciones), COMPARADOR_CLIENTES)
+      : []
+  const faltaElegir =
+    !!clasificacion &&
+    clasificacion.existentes.some((e) => e.cambios.length > 0) &&
+    opciones.actualizarExistentes === null
+
   const importar = useMutation({
     mutationFn: () => {
-      setAvance({ hechas: 0, total: validas.length })
+      setAvance({ hechas: 0, total: aMandar.length })
       return c.importar(
-        validas.map((f) => f.datos as Record<string, string>),
+        aMandar.map((f) => f.datos as Record<string, string>),
         fecha,
         (hechas, total) => setAvance({ hechas, total }),
       )
     },
     onSuccess: (r) => {
-      setResumen(aFilasDelArchivo(r, validas.map((f) => f.linea)))
+      setResumen(aFilasDelArchivo(r, aMandar.map((f) => f.linea)))
       setAvance(null)
       qc.invalidateQueries({ queryKey: ['clientes'] })
       qc.invalidateQueries({ queryKey: ['saldos-proveedores'] })
+      qc.invalidateQueries({ queryKey: ['clientes-actuales'] })
     },
     onError: (e) => {
       setAvance(null)
@@ -241,6 +281,28 @@ export default function ImportarSaldos({ tipo }: { tipo: Tipo }) {
             <Revision
               c={c}
               validas={validas}
+              aMandar={aMandar.length}
+              listo={!conOpciones || (!!clasificacion && !faltaElegir)}
+              opcionesDeImportacion={
+                !conOpciones ? null : actuales.isPending ? (
+                  <p className="text-sm text-piedra-500">Comparando con los clientes que ya están cargados…</p>
+                ) : actuales.error ? (
+                  <p role="alert" className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 ring-1 ring-red-200">
+                    {(actuales.error as Error).message} Sin eso no se puede decir qué es nuevo y qué cambia, así
+                    que no se importa.
+                  </p>
+                ) : (
+                  clasificacion && (
+                    <OpcionesDeImportacion
+                      clasificacion={clasificacion}
+                      comparador={COMPARADOR_CLIENTES}
+                      opciones={opciones}
+                      onCambio={setOpciones}
+                      sustantivo={['cliente', 'clientes']}
+                    />
+                  )
+                )
+              }
               conError={conError}
               conSaldo={conSaldo}
               fecha={fecha}
@@ -259,6 +321,9 @@ export default function ImportarSaldos({ tipo }: { tipo: Tipo }) {
 function Revision({
   c,
   validas,
+  aMandar,
+  listo,
+  opcionesDeImportacion,
   conError,
   conSaldo,
   fecha,
@@ -269,6 +334,9 @@ function Revision({
 }: {
   c: Configuracion
   validas: FilaImportada<string>[]
+  aMandar: number
+  listo: boolean
+  opcionesDeImportacion: React.ReactNode
   conError: FilaImportada<string>[]
   conSaldo: boolean
   fecha: string
@@ -292,7 +360,7 @@ function Revision({
   return (
     <div className={`${tarjeta} space-y-4 p-5`}>
       <div className="flex flex-wrap gap-6">
-        <Dato valor={numero.format(validas.length)} etiqueta={`${c.sustantivo[1]} se van a importar`} tono="bien" />
+        <Dato valor={numero.format(validas.length)} etiqueta="filas que se pueden importar" tono="bien" />
         {conError.length > 0 && <Dato valor={numero.format(conError.length)} etiqueta="se saltean por error" tono="mal" />}
         {conSaldo && <Dato valor={moneda.format(deuda)} etiqueta={`suma de los saldos · ${conDeuda} con saldo`} tono="bien" />}
         {conSaldo && aFavor < 0 && <Dato valor={moneda.format(aFavor)} etiqueta="a favor" tono="aviso" />}
@@ -315,7 +383,9 @@ function Revision({
       {repetidos.map(({ clave, dup }) => (
         <div key={clave} className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900 ring-1 ring-amber-200">
           <p className="font-medium">
-            Hay {c.def.campos[clave].toLowerCase()} que aparecen más de una vez. Se importan todas y manda la última.
+            {clave === 'documento' && c.sustantivo[0] === 'cliente'
+              ? 'Hay CUIT o DNI que aparecen en más de un cliente. El sistema no puede tener dos clientes con el mismo documento: entra el primero, y los demás quedan frenados con el motivo, para que decidas si son el mismo o hay un documento mal escrito.'
+              : `Hay ${c.def.campos[clave].toLowerCase()} que aparecen más de una vez. Se importan todas y manda la última.`}
           </p>
           <ul className="mt-2 space-y-0.5 text-xs">
             {[...dup].slice(0, 5).map(([valor, lineas]) => (
@@ -346,6 +416,8 @@ function Revision({
         </div>
       )}
 
+      {opcionesDeImportacion}
+
       {avance && (
         <div>
           <div className="mb-1 flex justify-between text-xs text-piedra-500">
@@ -363,8 +435,12 @@ function Revision({
         </div>
       )}
 
-      <button onClick={onImportar} disabled={validas.length === 0 || importando || !fecha} className={boton.principal}>
-        {importando ? 'Importando…' : `Importar ${numero.format(validas.length)} ${validas.length === 1 ? c.sustantivo[0] : c.sustantivo[1]}`}
+      <button onClick={onImportar} disabled={aMandar === 0 || importando || !fecha || !listo} className={boton.principal}>
+        {importando
+          ? 'Importando…'
+          : aMandar === 0
+            ? 'No hay nada para importar con lo elegido'
+            : `Importar ${numero.format(aMandar)} ${aMandar === 1 ? c.sustantivo[0] : c.sustantivo[1]}`}
       </button>
     </div>
   )

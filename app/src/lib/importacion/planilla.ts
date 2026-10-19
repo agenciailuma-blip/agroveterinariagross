@@ -21,6 +21,7 @@ export const CAMPOS = {
   nombre_interno: 'Nombre',
   nombre_publico: 'Nombre público',
   precio_venta: 'Precio de venta',
+  precio_sin_iva: 'Precio sin IVA (para saber el IVA)',
   costo: 'Costo',
   categoria: 'Rubro',
   subrubro: 'Subrubro',
@@ -46,7 +47,7 @@ export type Campo = keyof typeof CAMPOS
 export const OBLIGATORIOS: Campo[] = ['codigo', 'nombre_interno']
 
 export const NUMERICOS: Campo[] = [
-  'precio_venta', 'costo', 'alicuota_porcentaje', 'stock_bajo', 'stock_critico', 'cantidad_por_envase',
+  'precio_venta', 'precio_sin_iva', 'costo', 'alicuota_porcentaje', 'stock_bajo', 'stock_critico', 'cantidad_por_envase',
   'peso_kg', 'unidades_por_bulto',
 ]
 
@@ -66,7 +67,19 @@ const SINONIMOS: Record<Campo, string[]> = {
     // Gross cotiza dos precios: el de contado es el que manda, y el de
     // tarjeta lo calcula la lista de precios a partir de él.
     'precio contado', 'precio de contado', 'contado',
+    /*
+      El listado de precios de OBTech trae tres listas, cada una con y
+      sin IVA. La 1 es la de contado; la 2 es la de tarjeta, que acá la
+      calcula la lista de precios. El precio de venta es el final, con IVA.
+    */
+    'precio 1 c iva', 'precio 1 con iva', 'precio c iva', 'precio con iva', 'precio final',
   ],
+  /*
+    No se guarda: sirve para saber el IVA de cada producto cuando la
+    planilla no lo trae, comparándolo con el precio con IVA. Es el caso
+    del listado de OBTech.
+  */
+  precio_sin_iva: ['precio 1 s iva', 'precio 1 sin iva', 'precio s iva', 'precio sin iva', 'precio neto', 'neto'],
   costo: ['costo', 'precio costo', 'costo unitario', 'precio de costo', 'compra'],
   categoria: ['rubro', 'categoria', 'familia'],
   subrubro: ['subrubro', 'sub rubro', 'subfamilia', 'sub familia'],
@@ -142,6 +155,43 @@ export interface DefinicionPlanilla<C extends string = string> {
     Devuelve los errores; vacío si está bien.
   */
   validar?: (datos: Partial<Record<C, string>>) => string[]
+  /**
+    Lo que se deduce de la fila antes de revisarla, o lo que se limpia
+    porque la planilla lo usa para decir «no hay»: el IVA a partir del
+    precio con y sin IVA, el CUIT en cero de OBTech. Cambia `datos` y
+    devuelve los errores; vacío si está bien.
+  */
+  completar?: (datos: Partial<Record<C, string>>) => string[]
+}
+
+/** Las alícuotas que acepta ARCA, en porcentaje. */
+export const ALICUOTAS_ARCA = [0, 2.5, 5, 10.5, 21, 27]
+
+/*
+  El IVA de un producto, a partir de su precio con y sin IVA.
+
+  Se redondea a la alícuota de ARCA más cercana, con un punto de margen:
+  en un precio de $1 el sin IVA queda en $0,83 y la cuenta da 20,5 %, que
+  es el 21 redondeado a centavos. Más lejos que eso no se adivina: la
+  fila se frena y se dice qué da la cuenta.
+*/
+export function alicuotaDesdePrecios(conIva: number, sinIva: number): number | null {
+  if (!(conIva > 0) || !(sinIva > 0)) return null
+  const cuenta = (conIva / sinIva - 1) * 100
+  const cercana = ALICUOTAS_ARCA.reduce((a, b) => (Math.abs(b - cuenta) < Math.abs(a - cuenta) ? b : a))
+  return Math.abs(cercana - cuenta) <= 1 ? cercana : NaN
+}
+
+function completarProducto(datos: Partial<Record<Campo, string>>): string[] {
+  if (datos.alicuota_porcentaje !== undefined || !datos.precio_sin_iva || !datos.precio_venta) return []
+  const alicuota = alicuotaDesdePrecios(Number(datos.precio_venta), Number(datos.precio_sin_iva))
+  if (alicuota === null) return []
+  if (Number.isNaN(alicuota)) {
+    const cuenta = ((Number(datos.precio_venta) / Number(datos.precio_sin_iva) - 1) * 100).toFixed(1)
+    return [`El precio con IVA y el sin IVA no dan un IVA de ARCA (la cuenta da ${cuenta.replace('.', ',')} %).`]
+  }
+  datos.alicuota_porcentaje = String(alicuota)
+  return []
 }
 
 /*
@@ -188,6 +238,7 @@ export const PRODUCTOS: DefinicionPlanilla<Campo> = {
   sinonimos: SINONIMOS,
   clave: 'codigo',
   validar: validarProducto,
+  completar: completarProducto,
 }
 
 function normalizar(texto: string): string {
@@ -205,16 +256,25 @@ export function proponerMapeo<C extends string = Campo>(
   def: DefinicionPlanilla<C> = PRODUCTOS as unknown as DefinicionPlanilla<C>,
 ): Record<number, C | null> {
   const mapeo: Record<number, C | null> = {}
-  const usados = new Set<C>()
+  const limpios = encabezados.map((e) => normalizar(e ?? ''))
+  limpios.forEach((_, i) => (mapeo[i] = null))
 
-  encabezados.forEach((encabezado, i) => {
-    const limpio = normalizar(encabezado ?? '')
-    const campo = (Object.keys(def.sinonimos) as C[]).find(
-      (c) => !usados.has(c) && def.sinonimos[c].includes(limpio),
-    )
-    if (campo) usados.add(campo)
-    mapeo[i] = campo ?? null
-  })
+  /*
+    Cada campo se queda con la columna que mejor lo nombra: los
+    sinónimos van en orden de preferencia. El listado de clientes de
+    OBTech trae «Localidad» —un número— y «Nombre Localidad» —el
+    nombre—; quedarse con la primera que aparece cargaba la localidad
+    «1». Entre dos columnas igual de buenas, gana la de la izquierda.
+  */
+  for (const campo of Object.keys(def.sinonimos) as C[]) {
+    let mejor: { columna: number; rango: number } | null = null
+    limpios.forEach((limpio, columna) => {
+      if (mapeo[columna]) return
+      const rango = def.sinonimos[campo].indexOf(limpio)
+      if (rango >= 0 && (!mejor || rango < mejor.rango)) mejor = { columna, rango }
+    })
+    if (mejor) mapeo[(mejor as { columna: number }).columna] = campo
+  }
 
   return mapeo
 }
@@ -351,6 +411,9 @@ export function prepararFilas<C extends string = Campo>(
     */
     if (/^\(.*\)$/.test(datos[def.clave]?.trim() ?? '')) return
 
+    if (def.completar) errores.push(...def.completar(datos))
+    if (Object.keys(datos).length === 0) return
+
     for (const obligatorio of def.obligatorios) {
       if (!datos[obligatorio]) errores.push(`Falta ${def.campos[obligatorio].toLowerCase()}.`)
     }
@@ -486,7 +549,8 @@ export function aPayloadImportacion(
   const payload: Record<string, unknown> = {}
 
   for (const [campo, valor] of Object.entries(datos)) {
-    if (NIVELES_CATEGORIA.includes(campo as Campo)) continue
+    // El precio sin IVA ya se usó para saber el IVA: no se guarda.
+    if (NIVELES_CATEGORIA.includes(campo as Campo) || campo === 'precio_sin_iva') continue
     payload[campo] = valor
   }
 

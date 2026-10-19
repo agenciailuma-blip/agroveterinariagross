@@ -12,7 +12,11 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Construida: 0.16.5** (19/10) — **falta publicarla**. **Sin internet, el sistema ya no se traba**: la venta llega a la caja enseguida y las pantallas aparecen al instante. Era lo que se vio en el local el 16/10 —la venta llegaba diez segundos tarde o más, abrir Caja o Mostrador tardaba, cobrar e imprimir también—. Ver *Lo último que pasó*. **624 pruebas verdes en la app.**
+**Construida: 0.16.6** (19/10, a la tarde) — **falta publicarla**. **Facturas emitidas y Percepciones**, dos pestañas nuevas en Comprobantes para buscar por fecha, cliente y número, con el total al pie, el Excel y el listado impreso; **el ticket más corto** —el QR más chico y sin la leyenda de la agencia—; y **el importador que dice antes qué va a hacer** y deja elegir qué tocar. Ver *Lo último que pasó*. **653 pruebas verdes en la app.** Lo que vive en la base (la vista de búsqueda y la importación de clientes) **ya está aplicado y andando**.
+
+🔴 **Los Excel de OBTech llegaron** (19/10): 2.281 productos y 2.536 clientes. **El IVA de cada producto sale de la planilla** —trae el precio con y sin IVA—, así que el Excel con la columna de IVA ya no bloquea. Falta decidir **cuándo se limpian los datos de prueba** y se carga lo real: ver *Lo que sigue*, arriba de todo.
+
+**Publicada: 0.16.5** (19/10, 10:17), verificada en Cloudflare: `latest.json` dice 0.16.5. **Sin internet, el sistema ya no se traba**: la venta llega a la caja enseguida y las pantallas aparecen al instante. Era lo que se vio en el local el 16/10 —la venta llegaba diez segundos tarde o más, abrir Caja o Mostrador tardaba, cobrar e imprimir también—. Ver *Lo último que pasó*. **624 pruebas verdes en la app.**
 
 **Publicada: 0.16.4** (15/10, 17:32), verificada en Cloudflare: `latest.json` dice 0.16.4. Es la 0.16.3 más **la Caja y el Mostrador que entran en un teléfono**. Hace falta porque la 0.16.3 **se publicó a las 17:14, mientras esos cambios estaban a medio hacer** en la carpeta: lo instalado no coincide con ningún commit. La 0.16.4 sale de `main` limpio.
 
@@ -70,6 +74,43 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 🟡 **Lo que la venta tardaba en llegar a la caja sin internet** — arreglado el 05/10 y publicado en la 0.13.4, **sin probar en el local**. El mostrador le pasaba las ventas a la caja una vez por minuto, y la caja miraba su cola cada ocho segundos: hasta 68 segundos con el cliente esperando. Y llegaba de a partes porque, mientras la cabecera intentaba subir al servidor —hasta doce segundos sin internet—, salían los renglones solos. Ahora la venta sale al segundo y medio de apretar *Enviar a caja* (y otra vez a los catorce, por si el intento de subir tardó), viaja entera o espera entera, y la caja la muestra apenas llega. Se comprueba en el próximo corte: la venta tiene que aparecer en la caja en un par de segundos y completa.
 
 ---
+
+## Lo último que pasó — 19 de octubre, a la tarde
+
+**Cuatro pedidos de Lucas, con la pantalla de Proformas de OBTech y una factura con percepción como ejemplo.** El código, en [`buscarComprobantes.ts`](../app/src/lib/api/buscarComprobantes.ts), [`BuscadorDeComprobantes.tsx`](../app/src/components/BuscadorDeComprobantes.tsx) y [`comparar.ts`](../app/src/lib/importacion/comparar.ts).
+
+### «Comprobantes de percepción»: era una pantalla
+
+✅ **Respondida la pregunta abierta desde el 03/09.** Lo que Lucas quiere es ver las facturas que llevaron percepción, con el total percibido, por mes, por semana o entre dos fechas, y por cliente; reimprimirlas, bajarlas, y exportar número, neto, IVA y percepción con la fila del total.
+
+> **Cómo se lo contás a Lucas:** en Comprobantes hay dos pestañas nuevas. *Percepciones* muestra sólo las facturas que llevaron percepción, con el neto, el IVA y lo percibido, y abajo el total. Elegís el mes, la semana o las fechas que quieras, y si querés, el cliente o el número. *Clasificar* las separa por semana o por mes, cada una con su subtotal. *Bajar Excel* te da lo mismo para el contador, con los totales; *Imprimir el listado* lo saca en una hoja. Y *Ver* abre la factura para reimprimirla o bajarla en PDF. *Facturas emitidas* es lo mismo con todas las facturas y notas de crédito, y con más filtros: tipo, letra y estado.
+
+- **Los filtros se combinan** —en OBTech eran pestañas, una búsqueda por vez—: las facturas de HIMPA de agosto se buscan de una. El número se escribe como sale impreso o como se dice: *29*, *1-29* o *0001-00000029*.
+- **Las notas de crédito restan**, también la percepción que devuelven. Es la misma regla que el archivo del contador.
+- **Los filtros quedan en la dirección de la página**: al abrir una factura y volver, la búsqueda sigue igual.
+- **Bajar PDF**, en la factura: el diálogo de imprimir con *Guardar como PDF*, con el nombre del comprobante como nombre del archivo. No cuenta como impresión.
+- Es una vista aparte, [`vista_comprobante_busqueda`](../supabase/migrations/20261019120000_buscar_comprobantes.sql), y no la de Facturación: aquella calcula renglón por renglón los intentos a ARCA y lo devuelto, que para recorrer un mes entero no hace falta.
+- **De paso:** los tres archivos del contador (ventas, percepciones y compras) **no llevaban el BOM** que hace que Excel lea los acentos; el comentario decía que sí. «Alícuota %» abría rota. Corregido.
+
+**Verificado:** **9 comprobaciones** en [`buscar-comprobantes.sql`](../supabase/pruebas/buscar-comprobantes.sql), en seco y después de aplicar, rota a propósito —las notas de crédito con signo +1— y atrapada. **12 pruebas** de períodos, número, totales, grupos y archivo, rotas a propósito dos veces —la semana empezando el domingo y la percepción sin signo— y atrapadas. En pantalla, con los datos de prueba: Percepciones de todo el año (4, que se compensan con sus notas de crédito), Facturas emitidas filtrada por cliente y por mes, el listado impreso con su subtotal, y la factura abierta desde la búsqueda vuelve a la búsqueda. **A 375 px, nada se desplaza hacia el costado.**
+
+### El ticket, más corto
+
+El QR pasa de unos 43 mm a unos **28 mm** (el punto de la impresora, de 6 a 4) y **sale la leyenda** *«Esta Agencia no se responsabiliza…»*, en el ticket que imprime la caja, en el de 80 mm del navegador y en la hoja A4. Una prueba nueva lo controla, rota a propósito y atrapada. 🟡 **Falta ver en papel que el QR chico se lea con el celular**: en la pantalla mide 26 mm.
+
+### El importador dice antes qué va a hacer
+
+> **Cómo se lo contás a Lucas:** cuando subís una planilla, antes de importar el sistema te dice cuántos productos son nuevos, cuántos ya están y cambian, y cuántos están iguales. De los que cambian te muestra qué: *Precio de venta: $98.000 → $104.000*. Vos elegís con casillas: crear los nuevos o no, y con los que ya están, no tocarlos o actualizar sólo lo que tildes —por ejemplo, sólo el precio—. Nada se borra nunca: lo que no está en la planilla queda como está, y una celda vacía no borra nada. Así se puede exportar, corregir en Excel y volver a subir sin miedo.
+
+- **Con los que ya están no hay respuesta por defecto**: hay que elegir *Actualizar* o *No tocarlos*, o el botón no anda.
+- **Los iguales no viajan**, y de los que cambian viaja **sólo lo elegido**: la base no toca lo que no viene.
+- **Productos y clientes.** Los saldos de proveedores siguen como estaban: es un número por proveedor y la base ya lo deja igual al de la planilla.
+- **Lee los listados de OBTech sin mapear nada a mano**: *Precio 1 C/IVA* es el precio de venta, y con *Precio 1 S/IVA* al lado **saca el IVA de cada producto**, redondeado a la alícuota de ARCA más cercana (en un precio de $1, la cuenta da 20,5 %). Del de clientes toma *Nombre Localidad* y no el número de *Localidad*, *Condición de Iva* y *Tel/Fax*, y deja afuera el CUIT 0, el teléfono de ceros, el «n/n» y el *Consumidor final* genérico.
+- **Para clientes, la base cambió dos veces** ([`importar_clientes_sin_pisar_el_nombre`](../supabase/migrations/20261019130000_importar_clientes_sin_pisar_el_nombre.sql) y [`un_cuit_un_cliente`](../supabase/migrations/20261019131000_un_cuit_un_cliente.sql)): el nombre hace falta para crear un cliente, no para actualizarlo; y 🔴 **encontrado con el Excel real: un CUIT repetido fundía dos clientes en uno.** OBTech tiene **36 CUIT en dos o más clientes** —cinco dependencias de la Universidad, el mismo cliente cargado dos veces, un CUIT mal tipeado—. El sistema no admite dos clientes con el mismo documento, y la importación encontraba al primero por el CUIT y le pisaba el código y el nombre. Ahora el segundo se frena y dice de quién es el CUIT; la pantalla lo avisa antes de importar.
+
+**Verificado:** **10 comprobaciones** en [`importar-sin-pisar-el-nombre.sql`](../supabase/pruebas/importar-sin-pisar-el-nombre.sql): **contra la función vieja fallaban** —«Falta el nombre» y el cliente A convertido en B—, en seco con la nueva anduvieron, y después se aplicó. La parte de clientes de [`importar-clientes-y-saldos.sql`](../supabase/pruebas/importar-clientes-y-saldos.sql) (19) anduvo con la función nueva aplicada. **15 pruebas** del comparador y de la lectura de los listados de OBTech, rotas a propósito dos veces y atrapadas; **una encontró que *Condición de Iva* no se reconocía**. Los dos Excel reales leídos con el código del importador: **2.281 productos sin errores** —2.241 con IVA 21 % deducido; 40 no tienen precio 1 y entran al 21 %— y **2.535 clientes**, más el genérico frenado. En pantalla, sin importar: el Excel de productos (2.281 nuevos), el de clientes (los 36 CUIT avisados) y una planilla chica con dos productos que ya estaban, que mostró el precio, el nombre y el IVA que cambiaban.
+
+⚠️ **Todo OBTech está al 21 %.** Incluso *ALIM BAL ROYAL GATO*, que en el sistema estaba al 10,5 %. Si algo lleva 10,5 % —alimento para ganado, por ejemplo—, conviene que el contador lo confirme antes de cargar.
 
 ## Lo último que pasó — 19 de octubre
 
@@ -840,6 +881,11 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 
 ## Lo que sigue, en orden
 
+> 🔴 **19/10 — Limpiar los datos de prueba y cargar lo real.** Los Excel de OBTech ya se leen enteros (ver *Lo último que pasó*). Antes de limpiar hay tres cosas que decidir o cuidar, y por eso no se hizo todavía:
+> 1. **Las PC del local no se enteran de lo que se borra.** La copia local baja lo que cambió, no lo borrado (lo mismo que pasó con los avisos de stock el 09/10). Los productos y clientes de prueba se dan de baja con la marca que viaja, o se fuerza que cada PC vuelva a bajar todo una vez.
+> 2. **Las facturas de homologación ocupan números.** Hay 50 comprobantes de prueba en el punto de venta 1. El día que se pase a producción, ARCA arranca en el 1 y el sistema no deja dos comprobantes con el mismo número: hay que sacarlos antes del cambio, junto con sus ventas, pagos, movimientos de stock y de cuenta corriente.
+> 3. **Cuándo.** Después de limpiar ya no se puede probar con lo de prueba. Lo natural es hacerlo junto con el cambio a producción, contra el 26/10.
+
 > 🔴 **Revisado el 18/09 contra la definición de terminado de V1-A, y lo más grande que falta no estaba en esta lista: los datos reales.** Hoy la base tiene 35 productos y 8 clientes, todos de prueba, y el punto 12 del alcance dice *"todos los productos, clientes y saldos están cargados y verificados"*. La importación del catálogo está construida y espera **el Excel de Lucas con la columna de IVA**. Los clientes y sus saldos de cuenta corriente no tienen importación masiva todavía. Y **antes de cargar nada real, la base tiene que pasar a plan pago** —sin eso no hay copias de seguridad—, que no consta que se haya hecho. Es trabajo de semanas del personal de Gross, y quedan cinco hasta el 26/10.
 >
 > Lo demás que bloquea el corte depende de Lucas y está en la tabla de abajo: **dónde se cobra la percepción de IIBB** —hoy la factura a un mayorista grande suma la percepción pero la caja no la cobra— y **los atajos de teclado**. Y falta poner fecha a **la capacitación y la semana en paralelo** con OBTech.
@@ -890,11 +936,11 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 
 | Qué | Quién | |
 |---|---|---|
-| El **Excel con la columna de IVA** por producto | Lucas | 🔴 Lo que más bloquea |
+| ~~El **Excel con la columna de IVA** por producto~~ | — | ✅ **Llegó el listado de OBTech el 19/10**, con el precio con y sin IVA: el IVA sale de ahí. Todo al 21 % |
 | ~~**Alta del punto de venta CAEA** en ARCA~~ | — | ✅ **El 00009, alta del 11/09.** Cargado en el sistema el 16/09 |
 | **Certificado de producción** de ARCA | Lucas | 🔴 Ahora bloquea también la última prueba del CAEA. **El pedido está armado**; el trámite, paso a paso: [`certificado-produccion.md`](certificado-produccion.md) |
 | ~~**Dónde se cobra la percepción de IIBB**~~ | — | ✅ **Resuelto y construido el 28/09**: va con la factura, a donde vaya la plata. Falta publicarlo |
-| Qué es un **"comprobante de percepción"** | Lucas | 🟡 Sin definir desde el 03/09 |
+| ~~Qué es un **"comprobante de percepción"**~~ | — | ✅ **Respondido el 19/10**: una pantalla para ver y exportar las facturas con percepción. Construida en la 0.16.6 |
 | ~~¿Reciben cheques? ¿Los depositan o endosan? ¿Emiten propios? ¿Hay diferidos?~~ | — | ✅ **Contestadas el 30/09 y construido ese día**: [`cheques.md`](cheques.md) |
 | **¿Cómo se llama el segundo local?** | Lucas | 🟢 Se carga en Configuración → Depósitos cuando abra. Los cinco de OBTech quedaron descartados como referencia |
 | ~~Las **fotos de cómo cargan facturas de compra**~~ | Lucas | ✅ Llegaron el 10/09, con tres audios. Análisis en [`compras-e-iva.md`](compras-e-iva.md) |

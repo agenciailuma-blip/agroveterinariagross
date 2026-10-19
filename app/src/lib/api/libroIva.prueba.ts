@@ -112,6 +112,12 @@ describe('el archivo que abre en Excel', () => {
     expect(csv.split('\n')[0]).toContain(';')
   })
 
+  it('empieza con el BOM, para que Excel lea bien los acentos', () => {
+    const csv = percepcionesACsv([fila()])
+    expect(csv.startsWith('﻿')).toBe(true)
+    expect(csv).toContain('Alícuota %')
+  })
+
   it('un mes sin percepciones sale con encabezado y sin filas', () => {
     expect(percepcionesACsv([]).split('\n')).toHaveLength(1)
   })

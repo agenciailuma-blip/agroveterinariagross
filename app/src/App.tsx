@@ -31,6 +31,8 @@ import Usuarios from '@/pages/Usuarios'
 import Configuracion from '@/pages/Configuracion'
 import Facturacion from '@/pages/Facturacion'
 import ComprobanteImprimible from '@/pages/ComprobanteImprimible'
+import ComprobantesEmitidos from '@/pages/ComprobantesEmitidos'
+import ListadoDeComprobantesImprimible from '@/pages/ListadoDeComprobantesImprimible'
 import Remitos from '@/pages/Remitos'
 import NoFiscales from '@/pages/NoFiscales'
 import NoFiscalImprimible from '@/pages/NoFiscalImprimible'
@@ -151,6 +153,8 @@ function Rutas() {
         <Route path="usuarios" element={<Usuarios />} />
         <Route path="configuracion" element={<Configuracion />} />
         <Route path="facturacion" element={<Facturacion />} />
+        <Route path="facturacion/emitidas" element={<ComprobantesEmitidos modo="facturas" />} />
+        <Route path="facturacion/percepciones" element={<ComprobantesEmitidos modo="percepciones" />} />
         <Route path="remitos" element={<Remitos />} />
         <Route path="no-fiscales" element={<NoFiscales />} />
         <Route path="reportes" element={<Reportes />} />
@@ -162,6 +166,7 @@ function Rutas() {
         tiene que salir con el menú lateral pegado al costado.
       */}
       <Route path="comprobante/:id" element={<ComprobanteImprimible />} />
+      <Route path="comprobantes/listado" element={<ListadoDeComprobantesImprimible />} />
       <Route path="no-fiscal/:id" element={<NoFiscalImprimible />} />
       <Route path="orden-interna/:id" element={<OrdenInternaImprimible />} />
       <Route path="pedido-proveedor/:id" element={<PedidoProveedorImprimible />} />

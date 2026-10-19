@@ -92,13 +92,11 @@ V1-B arranca al día siguiente del corte. **No es alcance nuevo: ya estaba firma
 
 ---
 
-## ❓ Lo único que sigue sin respuesta — 1 punto
+## ✅ Lo que seguía sin respuesta — respondido el 19/10
 
 ### 9 · "Comprobantes de percepción"
 
-**Hay que aclarar qué es en su cabeza.** Si la percepción va en la factura, la factura *es* el comprobante. Lo más probable es que esté pidiendo **un listado para el contador**.
-
-Lucas quedó en consultarlo el 03/09 y todavía no volvió con la respuesta. **Conviene preguntarlo de nuevo en la próxima reunión** — es de las pocas cosas que no se pueden estimar sin saber qué son.
+✅ **Respondido el 19/10 y construido en la 0.16.6.** Era una pantalla: ver las facturas que llevaron percepción, con el total, por mes, semana o fechas y por cliente; reimprimirlas, bajarlas y exportar número, neto, IVA y percepción con la fila del total. Es la pestaña **Comprobantes → Percepciones**; al lado, **Facturas emitidas** hace lo mismo con todas las facturas. Ver [`AHORA.md`](AHORA.md), 19 de octubre a la tarde.
 
 ---
 

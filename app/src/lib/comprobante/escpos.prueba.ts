@@ -224,6 +224,19 @@ describe('el ticket que sale por la impresora', () => {
     expect(tiene(sin)).toBe(false)
   })
 
+  /*
+    Gross pidió gastar menos papel el 19/10: el QR más chico y sin la
+    leyenda de la agencia al pie.
+  */
+  it('dibuja el QR con el punto chico y no lleva la leyenda de la agencia', () => {
+    const b = ticketEscPos(comprobante(), 'https://www.arca.gob.ar/fe/qr/?p=abc')
+    // GS ( k 3 0 1 C n — n es el tamaño del punto
+    const tamano = [0x1d, 0x28, 0x6b, 3, 0, 0x31, 0x43]
+    const i = [...b].findIndex((_, k) => tamano.every((c, j) => b[k + j] === c))
+    expect(b[i + tamano.length]).toBe(4)
+    expect(comoTexto(b)).not.toContain('Agencia')
+  })
+
   it('termina cortando el papel, después de avanzarlo', () => {
     // Sin el avance, el corte cae sobre la última línea y el total sale
     // partido al medio — que es justo lo que el cliente mira.

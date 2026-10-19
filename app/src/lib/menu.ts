@@ -137,6 +137,9 @@ export const SECCIONES: Seccion[] = [
     icono: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.6L19 9.4V19a2 2 0 01-2 2z',
     pestanas: [
       { a: '/facturacion', etiqueta: 'Facturación', permiso: 'facturacion.ver' },
+      // Buscar, reimprimir y bajar: todas, por fecha, cliente o número.
+      { a: '/facturacion/emitidas', etiqueta: 'Facturas emitidas', permiso: 'facturacion.ver' },
+      { a: '/facturacion/percepciones', etiqueta: 'Percepciones', permiso: 'facturacion.ver' },
       { a: '/remitos', etiqueta: 'Remitos', permiso: 'facturacion.no_fiscal_ver' },
       { a: '/no-fiscales', etiqueta: 'Presupuestos', permiso: 'facturacion.no_fiscal_ver' },
     ],

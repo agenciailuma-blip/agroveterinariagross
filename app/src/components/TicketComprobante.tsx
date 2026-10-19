@@ -145,11 +145,7 @@ export default function TicketComprobante({
         </p>
       )}
 
-      {qr && <img src={qr} alt="Código QR del comprobante" className="mx-auto mt-2 w-[38mm]" />}
-
-      <p className="mt-2 text-center text-[7.5px]">
-        Esta Agencia no se responsabiliza por los datos ingresados en el detalle de la operación.
-      </p>
+      {qr && <img src={qr} alt="Código QR del comprobante" className="mx-auto mt-2 w-[26mm]" />}
     </div>
   )
 }

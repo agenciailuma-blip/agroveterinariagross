@@ -152,3 +152,48 @@ export function importarSaldosProveedores(
     onAvance,
   )
 }
+
+/*
+  ─────────────────────────────────────────────────────────────
+  Lo que ya está, para comparar antes de importar
+
+  Se trae entero —son unos miles de renglones cortos— y se compara en la
+  pantalla. Pedirlo por los códigos de la planilla obligaría a mandar
+  miles de códigos en la consulta, que no entra en una dirección.
+  ─────────────────────────────────────────────────────────────
+*/
+
+async function todos(
+  tabla: 'producto' | 'cliente',
+  columnas: string,
+): Promise<Record<string, unknown>[]> {
+  const filas: Record<string, unknown>[] = []
+  for (let desde = 0; ; desde += 1000) {
+    const { data, error } = await supabase
+      .from(tabla)
+      .select(columnas)
+      .is('eliminado_en', null)
+      .order('id')
+      .range(desde, desde + 999)
+    if (error) throw new Error(`No se pudo leer lo que ya está cargado: ${error.message}`)
+    filas.push(...((data ?? []) as unknown as Record<string, unknown>[]))
+    if (!data || data.length < 1000) return filas
+  }
+}
+
+export function productosActuales() {
+  return todos(
+    'producto',
+    `codigo, nombre_interno, nombre_publico, precio_venta, costo, unidad_medida, peso_kg,
+     unidades_por_bulto, es_producto_veterinario, requiere_receta, es_fitosanitario,
+     alicuota:alicuota_iva_id(porcentaje), marca:marca_id(nombre), categoria:categoria_id(nombre)`,
+  )
+}
+
+export function clientesActuales() {
+  return todos(
+    'cliente',
+    `codigo, nombre, condicion_iva_id, numero_documento, calle, localidad, provincia, codigo_postal,
+     telefono, email, cuenta_corriente, limite_credito, dias_vencimiento`,
+  )
+}

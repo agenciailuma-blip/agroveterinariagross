@@ -34,6 +34,26 @@ export const CAMPOS_CLIENTE = {
 
 export type CampoCliente = keyof typeof CAMPOS_CLIENTE
 
+/*
+  Lo que el listado de OBTech usa para decir «no hay».
+
+  CUIT 0, teléfono «(00000) 00000000» y domicilio «n/n». Si entraran como
+  datos, el CUIT 0 frenaría la fila —no es un CUIT ni un DNI— y el
+  teléfono de ceros aparecería en la ficha como si fuera uno.
+*/
+function limpiarCliente(datos: Partial<Record<CampoCliente, string>>): string[] {
+  if (datos.documento !== undefined && /^[0\s.-]*$/.test(datos.documento)) delete datos.documento
+  if (datos.telefono !== undefined && !/[1-9]/.test(datos.telefono)) delete datos.telefono
+  if (datos.domicilio !== undefined && /^[sn]\s*\/\s*n$/i.test(datos.domicilio.trim())) delete datos.domicilio
+  if (
+    !datos.documento &&
+    datos.nombre?.normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase() === 'consumidor final'
+  ) {
+    return ['Es el consumidor final genérico: el sistema ya tiene el suyo.']
+  }
+  return []
+}
+
 export const CLIENTES: DefinicionPlanilla<CampoCliente> = {
   campos: CAMPOS_CLIENTE,
   obligatorios: ['nombre'],
@@ -42,6 +62,7 @@ export const CLIENTES: DefinicionPlanilla<CampoCliente> = {
   // una nota de crédito sin usar.
   negativos: ['saldo'],
   clave: 'codigo',
+  completar: limpiarCliente,
   sinonimos: {
     codigo: ['codigo', 'cod', 'codigo cliente', 'cod cliente', 'nro cliente', 'numero cliente', 'n cliente', 'id'],
     nombre: [
@@ -49,7 +70,7 @@ export const CLIENTES: DefinicionPlanilla<CampoCliente> = {
       'nombre cliente', 'titular',
     ],
     condicion_iva: [
-      'condicion iva', 'condicion frente al iva', 'iva', 'condicion', 'cond iva', 'situacion iva',
+      'condicion iva', 'condicion de iva', 'condicion frente al iva', 'iva', 'condicion', 'cond iva', 'situacion iva',
       'categoria iva', 'tipo iva', 'responsabilidad iva',
     ],
     documento: [
@@ -57,10 +78,11 @@ export const CLIENTES: DefinicionPlanilla<CampoCliente> = {
       'nro doc', 'cuit cuil', 'cuil', 'doc', 'c u i t', 'd n i',
     ],
     domicilio: ['domicilio', 'direccion', 'calle', 'domicilio fiscal'],
-    localidad: ['localidad', 'ciudad', 'pueblo'],
+    // OBTech trae «Localidad» con un número y «Nombre Localidad» con el nombre.
+    localidad: ['nombre localidad', 'localidad', 'ciudad', 'pueblo'],
     provincia: ['provincia', 'prov'],
     codigo_postal: ['codigo postal', 'cp', 'c p', 'cod postal'],
-    telefono: ['telefono', 'tel', 'telefonos', 'celular', 'cel', 'whatsapp', 'movil'],
+    telefono: ['telefono', 'tel', 'tel fax', 'telefono fax', 'telefonos', 'celular', 'cel', 'whatsapp', 'movil'],
     email: ['email', 'mail', 'correo', 'e mail', 'correo electronico'],
     cuenta_corriente: ['cuenta corriente', 'cta cte', 'cc', 'tiene cuenta corriente', 'cuenta', 'habilitado cta cte'],
     limite_credito: ['limite', 'limite de credito', 'limite credito', 'credito', 'tope'],

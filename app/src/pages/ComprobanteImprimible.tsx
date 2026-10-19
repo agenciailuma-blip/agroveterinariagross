@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useLocation, useParams } from 'react-router-dom'
 import QRCode from 'qrcode'
 import { obtenerComprobanteCompleto, registrarImpresion } from '@/lib/api/comprobante'
 import type { ComprobanteCompleto } from '@/lib/api/comprobante'
@@ -47,6 +47,9 @@ function formatoGuardado(): Formato {
 */
 export default function ComprobanteImprimible() {
   const { id } = useParams<{ id: string }>()
+  // Se vuelve a donde se vino: Facturación, o la búsqueda de Facturas
+  // emitidas o Percepciones con sus filtros puestos.
+  const volver = (useLocation().state as { volver?: string } | null)?.volver ?? '/facturacion'
   const qc = useQueryClient()
   // La impresora del mostrador es de la máquina, así que viaja con la
   // terminal. Se lee de lo guardado localmente: acá no hace falta pedirle
@@ -129,6 +132,22 @@ export default function ComprobanteImprimible() {
     marcarImpreso.mutate()
   }
 
+  /*
+    Bajar la factura en PDF.
+
+    Es el mismo diálogo de imprimir, donde se elige «Guardar como PDF»:
+    el navegador lo hace mejor que cualquier armado propio y sale igual
+    que en papel. El título es el nombre que propone para el archivo. No
+    cuenta como impresión: no salió papel para el cliente.
+  */
+  function guardarPdf() {
+    if (!c) return
+    const anterior = document.title
+    document.title = `${c.tipo_descripcion} ${String(c.punto_venta).padStart(4, '0')}-${String(c.numero).padStart(8, '0')}`
+    window.print()
+    document.title = anterior
+  }
+
   if (comprobante.isPending) return <p className="p-8 text-sm text-piedra-500">Cargando…</p>
   if (comprobante.isError || !c)
     return (
@@ -136,8 +155,8 @@ export default function ComprobanteImprimible() {
         <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 ring-1 ring-red-200">
           No se pudo cargar el comprobante.
         </p>
-        <Link to="/facturacion" className="mt-3 inline-block text-sm text-marca-700 underline">
-          Volver a Facturación
+        <Link to={volver} className="mt-3 inline-block text-sm text-marca-700 underline">
+          Volver
         </Link>
       </div>
     )
@@ -152,11 +171,11 @@ export default function ComprobanteImprimible() {
   return (
     <div className="min-h-full bg-piedra-100 py-6 print:bg-white print:py-0">
       {/* Barra de acciones: no sale impresa */}
-      <div className="mx-auto mb-4 flex max-w-[21cm] items-center justify-between gap-3 px-4 print:hidden">
-        <Link to="/facturacion" className="text-sm text-marca-700 hover:underline">
-          ← Volver a Facturación
+      <div className="mx-auto mb-4 flex max-w-[21cm] flex-wrap items-center justify-between gap-3 px-4 print:hidden">
+        <Link to={volver} className="text-sm text-marca-700 hover:underline">
+          ← {volver === '/facturacion' ? 'Volver a Facturación' : 'Volver'}
         </Link>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center justify-end gap-3">
           <div className="flex gap-1 rounded-lg bg-piedra-100 p-1">
             <button
               onClick={() => elegirFormato('ticket')}
@@ -189,6 +208,14 @@ export default function ComprobanteImprimible() {
               {imprimirDirecto.isPending ? 'Imprimiendo…' : 'Imprimir en el mostrador'}
             </button>
           )}
+          <button
+            onClick={guardarPdf}
+            disabled={!c.cae}
+            title="En el diálogo, elegí «Guardar como PDF»"
+            className="rounded-lg px-4 py-2 text-sm font-medium text-marca-700 ring-1 ring-borde hover:bg-marca-50 disabled:opacity-40"
+          >
+            Bajar PDF
+          </button>
           <button
             onClick={imprimir}
             disabled={!c.cae}
@@ -395,9 +422,6 @@ function Hoja({ c, qr }: { c: ComprobanteCompleto; qr: string | null }) {
         )}
         <div className="flex-1">
           <p className="font-bold">ARCA — Comprobante Autorizado</p>
-          <p className="text-[9px] text-piedra-500">
-            Esta Agencia no se responsabiliza por los datos ingresados en el detalle de la operación.
-          </p>
         </div>
         <div className="text-right">
           <p className="font-semibold">

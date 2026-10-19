@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/auth/AuthProvider'
 import { leerArchivo } from '@/lib/importacion/archivo'
 import type { HojaLeida } from '@/lib/importacion/archivo'
@@ -15,7 +15,17 @@ import {
   proponerMapeo,
 } from '@/lib/importacion/planilla'
 import type { Campo, FilaImportada } from '@/lib/importacion/planilla'
-import { aFilasDelArchivo, importarProductos } from '@/lib/api/importacion'
+import { aFilasDelArchivo, importarProductos, productosActuales } from '@/lib/api/importacion'
+import {
+  aOpciones,
+  armarEnvio,
+  clasificar,
+  opcionesIniciales,
+  type Clasificacion,
+  type EstadoOpciones,
+} from '@/lib/importacion/comparar'
+import { COMPARADOR_PRODUCTOS } from '@/lib/importacion/comparadores'
+import OpcionesDeImportacion from '@/components/importacion/OpcionesDeImportacion'
 import type { ResumenImportacion } from '@/lib/api/importacion'
 import { numero } from '@/lib/tipos'
 import { barraDeAvance } from '@/estilos'
@@ -44,6 +54,7 @@ export default function ImportarProductos() {
   const [error, setError] = useState<string | null>(null)
   const [avance, setAvance] = useState<{ hechas: number; total: number } | null>(null)
   const [resumen, setResumen] = useState<ResumenImportacion | null>(null)
+  const [opciones, setOpciones] = useState<EstadoOpciones>(opcionesIniciales)
 
   const puedeImportar = tienePermiso('productos.crear')
 
@@ -78,6 +89,7 @@ export default function ImportarProductos() {
       tomarHoja(leidas, elegida.indice, elegida.encabezado)
       setResumen(null)
       setError(null)
+      setOpciones(opcionesIniciales())
     },
     onError: (e) =>
       setError(
@@ -98,11 +110,27 @@ export default function ImportarProductos() {
   const faltanObligatorios = OBLIGATORIOS.filter((c) => !campoMapeado(c))
 
   /*
+    Lo que ya está, para decir antes qué es nuevo y qué cambia. Se vuelve
+    a leer con cada archivo: entre una planilla y otra pudo cambiar.
+  */
+  const actuales = useQuery({
+    queryKey: ['productos-actuales', archivo?.name, archivo?.lastModified],
+    queryFn: productosActuales,
+    enabled: !!archivo,
+    staleTime: 0,
+  })
+  const clasificacion: Clasificacion<Campo> | null = actuales.data
+    ? clasificar(validas, actuales.data, COMPARADOR_PRODUCTOS)
+    : null
+
+  /*
     Las cajas viajan antes que sus sueltas: la base ata la suelta a un
     envase que ya exista. El informe vuelve en este orden, y por eso
     las filas del Excel se toman de acá y no de `validas`.
   */
-  const aMandar = ordenarPorEnvase(validas)
+  const aMandar = clasificacion
+    ? ordenarPorEnvase(armarEnvio(clasificacion, aOpciones(opciones), COMPARADOR_PRODUCTOS))
+    : []
 
   const importar = useMutation({
     mutationFn: () => {
@@ -119,6 +147,7 @@ export default function ImportarProductos() {
       qc.invalidateQueries({ queryKey: ['productos'] })
       qc.invalidateQueries({ queryKey: ['avance-carga'] })
       qc.invalidateQueries({ queryKey: ['referencias'] })
+      qc.invalidateQueries({ queryKey: ['productos-actuales'] })
     },
     onError: (e) => {
       setAvance(null)
@@ -225,6 +254,12 @@ export default function ImportarProductos() {
           {faltanObligatorios.length === 0 && (
             <Revision
               validas={validas.length}
+              aMandar={aMandar.length}
+              clasificacion={clasificacion}
+              leyendoActuales={actuales.isPending}
+              errorActuales={actuales.error ? (actuales.error as Error).message : null}
+              opciones={opciones}
+              onOpciones={setOpciones}
               conError={conError}
               duplicados={duplicados}
               crearReferencias={crearReferencias}
@@ -242,6 +277,12 @@ export default function ImportarProductos() {
 
 function Revision({
   validas,
+  aMandar,
+  clasificacion,
+  leyendoActuales,
+  errorActuales,
+  opciones,
+  onOpciones,
   conError,
   duplicados,
   crearReferencias,
@@ -251,6 +292,12 @@ function Revision({
   onImportar,
 }: {
   validas: number
+  aMandar: number
+  clasificacion: Clasificacion<Campo> | null
+  leyendoActuales: boolean
+  errorActuales: string | null
+  opciones: EstadoOpciones
+  onOpciones: (o: EstadoOpciones) => void
   conError: FilaImportada[]
   duplicados: Map<string, number[]>
   crearReferencias: boolean
@@ -261,11 +308,16 @@ function Revision({
 }) {
   const [verTodos, setVerTodos] = useState(false)
   const aMostrar = verTodos ? conError : conError.slice(0, 10)
+    // Con productos que ya están y cambian, hay que decir qué hacer con ellos.
+  const faltaElegir =
+    !!clasificacion &&
+    clasificacion.existentes.some((e) => e.cambios.length > 0) &&
+    opciones.actualizarExistentes === null
 
   return (
     <div className="space-y-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-borde">
       <div className="flex flex-wrap gap-6">
-        <Dato valor={numero.format(validas)} etiqueta="se van a importar" tono="bien" />
+        <Dato valor={numero.format(validas)} etiqueta="filas que se pueden importar" tono="bien" />
         {conError.length > 0 && (
           <Dato valor={numero.format(conError.length)} etiqueta="se saltean por error" tono="mal" />
         )}
@@ -313,6 +365,24 @@ function Revision({
         </div>
       )}
 
+      {leyendoActuales ? (
+        <p className="text-sm text-piedra-500">Comparando con los productos que ya están cargados…</p>
+      ) : errorActuales ? (
+        <p role="alert" className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 ring-1 ring-red-200">
+          {errorActuales} Sin eso no se puede decir qué es nuevo y qué cambia, así que no se importa.
+        </p>
+      ) : (
+        clasificacion && (
+          <OpcionesDeImportacion
+            clasificacion={clasificacion}
+            comparador={COMPARADOR_PRODUCTOS}
+            opciones={opciones}
+            onCambio={onOpciones}
+            sustantivo={['producto', 'productos']}
+          />
+        )
+      )}
+
       <label className="flex items-start gap-2 text-sm text-tinta">
         <input
           type="checkbox"
@@ -348,12 +418,14 @@ function Revision({
 
       <button
         onClick={onImportar}
-        disabled={validas === 0 || importando}
+        disabled={aMandar === 0 || importando || faltaElegir || !clasificacion}
         className="rounded-lg bg-marca-700 px-5 py-2.5 font-medium text-white hover:bg-marca-600 disabled:opacity-40"
       >
         {importando
           ? 'Importando…'
-          : `Importar ${numero.format(validas)} ${validas === 1 ? 'producto' : 'productos'}`}
+          : aMandar === 0
+            ? 'No hay nada para importar con lo elegido'
+            : `Importar ${numero.format(aMandar)} ${aMandar === 1 ? 'producto' : 'productos'}`}
       </button>
     </div>
   )

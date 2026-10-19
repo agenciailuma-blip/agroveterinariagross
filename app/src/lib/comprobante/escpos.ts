@@ -163,7 +163,9 @@ export class Cinta {
     const largo = datos.length + 3
 
     this.crudo(GS, 0x28, 0x6b, 4, 0, 0x31, 0x41, 0x32, 0x00) // modelo 2
-    this.crudo(GS, 0x28, 0x6b, 3, 0, 0x31, 0x43, 6) // tamaño del punto
+    // Tamaño del punto: 4 deja el QR de unos 28 mm. Con 6 medía más de
+    // 40 y Gross pidió gastar menos papel; 4 se sigue leyendo bien.
+    this.crudo(GS, 0x28, 0x6b, 3, 0, 0x31, 0x43, 4)
     this.crudo(GS, 0x28, 0x6b, 3, 0, 0x31, 0x45, 0x31) // corrección M
     this.crudo(GS, 0x28, 0x6b, largo & 0xff, (largo >> 8) & 0xff, 0x31, 0x50, 0x30)
     this.partes.push(...datos)
@@ -289,13 +291,6 @@ export function ticketEscPos(comp: ComprobanteCompleto, urlQr: string | null): U
     c.linea()
     c.alinear(1).qr(urlQr).alinear(0)
   }
-
-  c.linea()
-  c.alinear(1)
-  c.linea('Esta Agencia no se responsabiliza por')
-  c.linea('los datos ingresados en el detalle de')
-  c.linea('la operación.')
-  c.alinear(0)
 
   c.cortar()
   return c.bytes()
