@@ -12,6 +12,8 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
+**Lista para construir: 0.16.8** (20/10) — **el Responsable Inscripto también puede salir con comprobante interno** en la Caja, pedido de Lucas. La base ya lo acepta; la Caja instalada no muestra la opción hasta la 0.16.8. Ver *Lo último que pasó*. **677 pruebas verdes en la app.** 🟡 Falta verlo en pantalla (pide iniciar sesión).
+
 **Publicada: 0.16.7** (19/10, 17:52), verificada en Cloudflare: `latest.json` dice 0.16.7. **Reemplaza a la 0.16.6, que no se publicó**: lleva todo lo de la 0.16.6 más **lo que salió de la reunión con Zubu** —**cómo paga cada pedido de la tienda** (Mercado Pago, transferencia o efectivo), **los productos sólo para consultar** y **las fotos de los productos**— y el arreglo de la foto quitada. **También lleva *empezar de nuevo cuando el servidor lo pide*** ([`sync.ts`](../app/src/lib/local/sync.ts)), que estaba sin guardar en la carpeta cuando se construyó: se guardó después, en un commit aparte, y **`main` quedó igual a lo publicado**. Ver *Lo último que pasó*. **677 pruebas verdes en la app.**
 
 **Construida: 0.16.6** (19/10, a la tarde) — **falta publicarla**. **Facturas emitidas y Percepciones**, dos pestañas nuevas en Comprobantes para buscar por fecha, cliente y número, con el total al pie, el Excel y el listado impreso; **el ticket más corto** —el QR más chico y sin la leyenda de la agencia—; y **el importador que dice antes qué va a hacer** y deja elegir qué tocar. Ver *Lo último que pasó*. **653 pruebas verdes en la app.** Lo que vive en la base (la vista de búsqueda y la importación de clientes) **ya está aplicado y andando**.
@@ -76,6 +78,30 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 🟡 **Lo que la venta tardaba en llegar a la caja sin internet** — arreglado el 05/10 y publicado en la 0.13.4, **sin probar en el local**. El mostrador le pasaba las ventas a la caja una vez por minuto, y la caja miraba su cola cada ocho segundos: hasta 68 segundos con el cliente esperando. Y llegaba de a partes porque, mientras la cabecera intentaba subir al servidor —hasta doce segundos sin internet—, salían los renglones solos. Ahora la venta sale al segundo y medio de apretar *Enviar a caja* (y otra vez a los catorce, por si el intento de subir tardó), viaja entera o espera entera, y la caja la muestra apenas llega. Se comprueba en el próximo corte: la venta tiene que aparecer en la caja en un par de segundos y completa.
 
 ---
+
+## Lo último que pasó — 20 de octubre
+
+### El inscripto también puede llevarse comprobante interno
+
+**Pedido de Lucas del 20/10:** en la caja tienen que estar siempre las dos opciones, factura o comprobante interno, también para un Responsable Inscripto. Hasta acá, a un inscripto le salía siempre Factura A y la base rechazaba «sin factura».
+
+> **Cómo se lo contás a Lucas:** cuando cobrás a un inscripto, ahora aparecen *Con factura* y *Sin factura*, igual que con cualquier cliente —y *Factura después*, si tiene cuenta corriente—. Sin factura sale el comprobante interno, **sin percepción** y sin IVA para descargar: la caja te lo recuerda. Sigue haciendo falta el permiso de vender sin factura, que no tienen ni el cajero ni el vendedor.
+
+- La base: [`el_inscripto_tambien_sin_factura`](../supabase/migrations/20261020120000_el_inscripto_tambien_sin_factura.sql), aplicada. Lo único que se sacó es el rechazo al inscripto; el permiso y la regla de *Factura después* siguen igual.
+- **Verificado:** **6 comprobaciones** en [`inscripto-sin-factura.sql`](../supabase/pruebas/inscripto-sin-factura.sql) —el inscripto se marca sin factura y se cobra por el total, sin percepción; con factura sigue igual; sin permiso, no—. **Antes del cambio fallaba** con *«le corresponde Factura A»*; después, anda. La app: **677 pruebas verdes** y los tipos sin errores. La guía de pantallas y el manual en PDF, al día. 🟡 **Falta verlo en pantalla.**
+
+### Los servicios para buscar las fotos (Lucas eligió el 20/10 que el sistema las busque)
+
+Precios de octubre de 2026, de los sitios de cada servicio y de comparativas; **confirmar en la página de cada uno antes de contratar**. Para unos 2.300 productos, una búsqueda por producto:
+
+| Servicio | Qué es | Precio | Para 2.300 productos |
+|---|---|---|---|
+| **Serper** | Búsqueda de Google Imágenes | Unos USD 1 cada 1.000, en recargas desde USD 50; 2.500 gratis al empezar, una sola vez | **Entra en lo gratis** |
+| **Brave Search** | Buscador propio, con imágenes | USD 5 cada 1.000; trae USD 5 gratis por mes | Unos USD 12, o gratis en tres meses |
+| **SerpApi** | Google Imágenes | Desde USD 25 por mes; 250 gratis por mes | Un mes de plan |
+| **Go-UPC / UPCitemdb** | Por código de barras: devuelven la ficha y una foto | Desde USD 75 por 5.000, o USD 99 por mes | Uno de esos planes |
+
+**La recomendación:** buscar por **código de barras y nombre en Google Imágenes con Serper**. Las bases de códigos de barras cubren poco lo veterinario y lo argentino; Google encuentra la foto del fabricante o de otro comercio. La primera carga entera entra en lo gratis, y después cada producto nuevo cuesta menos de un peso. Falta que Gross cree la cuenta y se carga la clave en el servidor.
 
 ## Lo último que pasó — 19 de octubre, a la noche: lo que salió de la reunión con Zubu
 
@@ -577,7 +603,7 @@ Verificado contra la base real: **16 comprobaciones** en [`supabase/pruebas/alta
 - **La percepción queda guardada en la venta, aparte del total.** Los reportes y las métricas siguen mostrando lo vendido: la percepción es plata de Rentas, no venta.
 - **La factura dice lo que se cobró**, aunque cambie la alícuota en Configuración entre el cobro y la factura.
 - **El cobro acepta también el total sin percepción.** Lo usan los pedidos web pagados en la tienda —ahí sigue el freno antes de facturar— y las cajas que todavía tienen la versión anterior. Una caja con la versión nueva siempre la cobra.
-- ⚠️ **Para confirmar con Lucas:** a un Responsable Inscripto la caja no le ofrece «sin factura»: sale siempre Factura A, y con ella la percepción. Si imaginaba que el mayorista pudiera decir «factura después», hoy eso no existe.
+- ~~⚠️ **Para confirmar con Lucas:** a un Responsable Inscripto la caja no le ofrece «sin factura»~~ ✅ **Contestado el 20/10: tiene que poder.** Construido ese día, va en la 0.16.8.
 - ✅ **La cola de la izquierda de la Caja también muestra el total con la percepción**, con la leyenda *con percepción IIBB* (corregido antes de publicar la 0.8.0).
 
 Verificado contra la base real: **14 comprobaciones** en [`supabase/pruebas/percepcion-en-la-caja.sql`](../supabase/pruebas/percepcion-en-la-caja.sql), como usuario; se rompió a propósito que la factura use la percepción cobrada y la prueba lo atrapó. **429 pruebas** en la app, con 6 nuevas del cálculo sin internet. **Y en la aplicación de verdad, contra ARCA de homologación:** una venta de $1.960.000 a un mayorista en cuenta corriente mostró $53.616,53 de percepción; se cobró $2.013.616,53, la deuda quedó por lo mismo, salió la Factura A con CAE por lo mismo, y al devolverla la Nota de Crédito A devolvió la percepción entera y la cuenta volvió a cero.

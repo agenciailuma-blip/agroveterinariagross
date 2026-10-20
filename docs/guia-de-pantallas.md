@@ -181,7 +181,7 @@ Cobra lo que el mostrador armó, y cierra el turno.
 **Lo que hay que saber:**
 
 - **Al cobrar se factura solo.** Si ARCA falla, **la venta queda cobrada igual** y el comprobante espera en la cola: hacer fallar el cobro por una caída de ARCA dejaría al cliente parado con la mercadería en la mano. El cajero ve un aviso ámbar con enlace a Facturación.
-- **"Sin factura" tiene permiso propio**, que no tienen ni el Cajero ni el Vendedor. Y **a un Responsable Inscripto no se le ofrece**: compra para descargar IVA.
+- **"Sin factura" tiene permiso propio**, que no tienen ni el Cajero ni el Vendedor. Se ofrece a cualquier cliente, **también a un Responsable Inscripto**: sin factura no lleva percepción y él no puede descargar el IVA de esa compra.
 - **Se cobra sin internet.** Lo que sí necesita conexión es **abrir** y **cerrar** la caja — arquear con la mitad de las ventas sin registrar produce una diferencia que no existe y que después alguien tiene que explicar.
 - **Con cheque**, se escriben banco, número, fecha de pago y quién lo firmó; se pueden cargar varios para una misma compra. **El cheque no entra al arqueo**: va a la cartera de Tesorería, y al cerrar la caja se listan los cheques del turno para entregarlos. Funciona sin internet.
 

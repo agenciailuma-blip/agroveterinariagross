@@ -292,11 +292,11 @@ export default function Caja() {
       /*
         La marca va ANTES del cobro, y es a propósito.
 
-        Los dos candados —el permiso y que a un Responsable Inscripto le
-        corresponde Factura A— los verifica la base. Si esta venta no
-        podía cobrarse sin factura, tiene que fallar ahora, con el
-        cliente todavía sin pagar; no después, con la plata adentro y un
-        documento que no se puede emitir.
+        Los candados —el permiso, y la cuenta corriente para facturar
+        después— los verifica la base. Si esta venta no podía cobrarse
+        así, tiene que fallar ahora, con el cliente todavía sin pagar; no
+        después, con la plata adentro y un documento que no se puede
+        emitir.
       */
       if (sinFactura) await marcarDocumentacion(seleccionada!, documentacion)
 
@@ -1008,15 +1008,16 @@ function PanelCobro({
   /*
     Con qué documento puede salir la venta.
 
-    · Sin factura: con permiso, y nunca a un Responsable Inscripto —
-      compra para descargar el IVA—. La base rechaza lo mismo.
+    · Sin factura: con permiso, a cualquier cliente. También a un
+      Responsable Inscripto: Lucas pidió el 20/10 que en la caja estén
+      siempre las dos opciones. La base pide el mismo permiso.
     · A cuenta, factura después: a quien tiene cuenta corriente, también
       a un Responsable Inscripto. La factura sale igual, más tarde
       (pedido del 28/09).
   */
   const opciones: [Documentacion, string, string][] = [
     ['fiscal', 'Con factura', 'Factura de ARCA con CAE'],
-    ...(puedeVenderSinFactura && !esResponsableInscripto
+    ...(puedeVenderSinFactura
       ? [['no_fiscal', 'Sin factura', 'Comprobante interno'] as [Documentacion, string, string]]
       : []),
     ...(venta.cliente?.cuenta_corriente
@@ -1424,10 +1425,8 @@ function PanelCobro({
 
           Sólo aparece si el permiso lo habilita: emitir un presupuesto o
           un remito es operación diaria, pero decidir que una venta no
-          lleve factura es una decisión del dueño. A un Responsable
-          Inscripto no se le ofrece — compra para descargar el IVA, y
-          entregarle otra cosa es un problema para él. La base rechaza
-          las dos cosas igual; esto sólo evita ofrecer lo que va a fallar.
+          lleve factura es una decisión del dueño. La base pide el mismo
+          permiso; esto sólo evita ofrecer lo que va a fallar.
         */}
         {opciones.length > 1 && (
           <div className="mt-4 rounded-lg border border-borde p-1">
@@ -1473,6 +1472,8 @@ function PanelCobro({
               <p className="px-3 pb-1.5 pt-2 text-[11px] leading-snug text-piedra-500">
                 No es una factura, no tiene CAE y no se puede entregar como tal. La venta se
                 registra igual: descuenta stock, queda en la cuenta del cliente y lleva tu nombre.
+                {esResponsableInscripto &&
+                  ' Sin factura no hay percepción de IIBB, y el cliente no puede descargar el IVA de esta compra.'}
               </p>
             )}
             {enLinea && documentacion === 'a_facturar' && (

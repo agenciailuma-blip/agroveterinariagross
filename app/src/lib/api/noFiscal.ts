@@ -312,10 +312,10 @@ export async function noFiscalesDeVenta(ventaId: string): Promise<ResumenNoFisca
 /*
   Marca si la venta se cobra con factura o sin ella.
 
-  Los dos candados —el permiso propio y que a un Responsable Inscripto no
-  se le entregue otra cosa— los verifica la base. Acá no se repiten: una
-  regla escrita en dos lugares se separa con el tiempo, y el día que se
-  separe nadie sabe cuál tiene razón.
+  El candado —el permiso propio— lo verifica la base. Acá no se repite:
+  una regla escrita en dos lugares se separa con el tiempo, y el día que
+  se separe nadie sabe cuál tiene razón. Desde el 20/10 vale para
+  cualquier cliente, también un Responsable Inscripto.
 */
 export async function marcarDocumentacion(
   ventaId: string,
