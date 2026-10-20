@@ -12,7 +12,7 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Lista para construir: 0.16.8** (20/10) — **el Responsable Inscripto también puede salir con comprobante interno** en la Caja, pedido de Lucas. La base ya lo acepta; la Caja instalada no muestra la opción hasta la 0.16.8. Ver *Lo último que pasó*. **677 pruebas verdes en la app.** 🟡 Falta verlo en pantalla (pide iniciar sesión).
+**Lista para construir: 0.16.8** (20/10) — **el Responsable Inscripto también puede salir con comprobante interno** en la Caja, pedido de Lucas. La base ya lo acepta; la Caja instalada no muestra la opción hasta la 0.16.8. Ver *Lo último que pasó*. **677 pruebas verdes en la app.** ✅ Visto en pantalla.
 
 **Publicada: 0.16.7** (19/10, 17:52), verificada en Cloudflare: `latest.json` dice 0.16.7. **Reemplaza a la 0.16.6, que no se publicó**: lleva todo lo de la 0.16.6 más **lo que salió de la reunión con Zubu** —**cómo paga cada pedido de la tienda** (Mercado Pago, transferencia o efectivo), **los productos sólo para consultar** y **las fotos de los productos**— y el arreglo de la foto quitada. **También lleva *empezar de nuevo cuando el servidor lo pide*** ([`sync.ts`](../app/src/lib/local/sync.ts)), que estaba sin guardar en la carpeta cuando se construyó: se guardó después, en un commit aparte, y **`main` quedó igual a lo publicado**. Ver *Lo último que pasó*. **677 pruebas verdes en la app.**
 
@@ -88,7 +88,7 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 > **Cómo se lo contás a Lucas:** cuando cobrás a un inscripto, ahora aparecen *Con factura* y *Sin factura*, igual que con cualquier cliente —y *Factura después*, si tiene cuenta corriente—. Sin factura sale el comprobante interno, **sin percepción** y sin IVA para descargar: la caja te lo recuerda. Sigue haciendo falta el permiso de vender sin factura, que no tienen ni el cajero ni el vendedor.
 
 - La base: [`el_inscripto_tambien_sin_factura`](../supabase/migrations/20261020120000_el_inscripto_tambien_sin_factura.sql), aplicada. Lo único que se sacó es el rechazo al inscripto; el permiso y la regla de *Factura después* siguen igual.
-- **Verificado:** **6 comprobaciones** en [`inscripto-sin-factura.sql`](../supabase/pruebas/inscripto-sin-factura.sql) —el inscripto se marca sin factura y se cobra por el total, sin percepción; con factura sigue igual; sin permiso, no—. **Antes del cambio fallaba** con *«le corresponde Factura A»*; después, anda. La app: **677 pruebas verdes** y los tipos sin errores. La guía de pantallas y el manual en PDF, al día. 🟡 **Falta verlo en pantalla.**
+- **Verificado:** **6 comprobaciones** en [`inscripto-sin-factura.sql`](../supabase/pruebas/inscripto-sin-factura.sql) —el inscripto se marca sin factura y se cobra por el total, sin percepción; con factura sigue igual; sin permiso, no—. **Antes del cambio fallaba** con *«le corresponde Factura A»*; después, anda. La app: **677 pruebas verdes** y los tipos sin errores. La guía de pantallas y el manual en PDF, al día. **Visto en pantalla**, también a 375 px: con un cliente de prueba puesto como inscripto un momento, la Caja ofreció *Con factura* y *Sin factura*, y al elegir la segunda dijo que no hay percepción ni IVA para descargar. No se cobró nada, y el cliente volvió a como estaba.
 
 ### Los servicios para buscar las fotos (Lucas eligió el 20/10 que el sistema las busque)
 
