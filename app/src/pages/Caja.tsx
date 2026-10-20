@@ -1468,14 +1468,6 @@ function PanelCobro({
                 emite sola cuando vuelva internet.
               </p>
             )}
-            {enLinea && documentacion === 'no_fiscal' && (
-              <p className="px-3 pb-1.5 pt-2 text-[11px] leading-snug text-piedra-500">
-                No es una factura, no tiene CAE y no se puede entregar como tal. La venta se
-                registra igual: descuenta stock, queda en la cuenta del cliente y lleva tu nombre.
-                {esResponsableInscripto &&
-                  ' Sin factura no hay percepción de IIBB, y el cliente no puede descargar el IVA de esta compra.'}
-              </p>
-            )}
             {enLinea && documentacion === 'a_facturar' && (
               <p className="px-3 pb-1.5 pt-2 text-[11px] leading-snug text-piedra-500">
                 Va entera a la cuenta corriente y sale un comprobante interno. La factura la emite
