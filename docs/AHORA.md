@@ -117,9 +117,9 @@ Y salieron dos cosas, arregladas:
 
 - 🟡 **Envío y descuentos**: pendiente, hasta saber cómo lo maneja Andreani.
 - 🟡 **La dirección desde la que sale el mail de la factura**: la consigue ILUMA.
-- 💡 **Lucas preguntó por traer las fotos solas de internet**, buscándolas por la descripción, para corregirlas antes de lanzar. **ILUMA le propuso tres pasos (19/10), y se espera su respuesta:**
+- 💡 **Lucas preguntó por traer las fotos solas de internet**, buscándolas por la descripción, para corregirlas antes de lanzar. **ILUMA le propuso tres pasos (19/10). ✅ Lucas eligió el 2 (20/10): que el sistema las busque.**
   1. **Que pase las fotos que tenga y se hace la primera carga** con *Subir fotos*, nombradas con el código o el código de barras. Es lo que ya está hecho y probado.
-  2. **Después, o como otro camino: que el sistema las busque.** Por código de barras o por nombre, en un servicio pago de búsqueda de imágenes; propone una o dos por producto, Lucas acepta o descarta cada una, y las aceptadas se guardan igual que una subida a mano. Riesgos: fotos parecidas que no son el producto —otra presentación, 7,5 kg contra 15 kg—, por eso la revisión de Lucas no se saltea; y fotos con derechos de otro comercio. No está construido.
+  2. **Después, o como otro camino: que el sistema las busque.** Por código de barras o por nombre, en un servicio pago de búsqueda de imágenes; propone una o dos por producto, Lucas acepta o descarta cada una, y las aceptadas se guardan igual que una subida a mano. Riesgos: fotos parecidas que no son el producto —otra presentación, 7,5 kg contra 15 kg—, por eso la revisión de Lucas no se saltea; y fotos con derechos de otro comercio. No está construido. **Es lo próximo de la tienda.** Antes de construir hay que elegir el servicio de búsqueda —tiene costo por consulta y cuenta propia de Gross—.
   3. **Más adelante, con el cerebro de Gross:** que el sistema busque, edite o cree las imágenes —el producto solo, o puesto en un contexto de uso—. Idea anotada; todavía no tiene alcance.
 
 ## Lo último que pasó — 19 de octubre, a la noche
@@ -1011,7 +1011,8 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 | Qué **columnas** quiere el contador en el Excel | Contador | 🟡 Ya se exporta con lo estándar |
 | **La dirección desde la que salen los mails** | ILUMA | 🟡 El servicio ya está elegido (Resend). La necesitan las facturas de la tienda y el pedido 17. Desde el 19/10 la gestiona ILUMA |
 | **Envío y descuentos de la tienda** | Zubu y Lucas | 🟡 Pendiente desde la reunión del 19/10, hasta saber cómo lo maneja Andreani |
-| **Las fotos de la tienda: con qué se arranca** | Lucas | 🟡 Propuesta del 19/10: primero las que tenga, después que el sistema las busque, y más adelante el cerebro de Gross. Ver *Lo último que pasó — 19 de octubre, a la noche* |
+| ~~**Las fotos de la tienda: con qué se arranca**~~ | — | ✅ **Lucas eligió el 20/10 que el sistema las busque** y él acepte o descarte cada una. Falta elegir el servicio de búsqueda |
+| **Qué clientes no llevan percepción de IIBB** (certificado de exclusión de la DGR) | Lucas | 🟡 Los 2.494 clientes de OBTech entraron **sin ninguno marcado**: a todos los inscriptos que pasen el mínimo se les va a percibir. Se marca en la ficha de cada uno |
 
 → La lista completa está en [[Pendientes con terceros]].
 
