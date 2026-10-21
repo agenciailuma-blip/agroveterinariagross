@@ -12,7 +12,9 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Lista para construir: 0.16.9** (21/10, a la tarde) — **«Descargar planilla» en Productos, Clientes y Proveedores**: lo que hay hoy, en Excel, con las mismas columnas que lee «Importar planilla»; y **la importación de la ficha de los proveedores**, que no existía. Lo de la base ya está aplicado. Ver *Lo último que pasó*. **706 pruebas verdes en la app.**
+**Lista para construir: 0.17.0** (21/10, a la noche) — **la factura por mail**: el botón *Mandar por mail* en la factura y el envío solo al facturar un pedido de la tienda, con la factura en PDF. Lo del servidor ya está andando; **a los clientes empieza a llegar cuando se verifique el dominio en Resend** (ver *Lo último que pasó*). **717 pruebas verdes en la app.**
+
+**Publicada: 0.16.9** (21/10, 17:36), verificada en Cloudflare. *Descargar planilla* en Productos, Clientes y Proveedores, y la importación de la ficha de proveedores.
 
 **Publicada: 0.16.8** (21/10, 16:49), verificada en Cloudflare: `latest.json` dice 0.16.8. **El inscripto también puede salir con comprobante interno** en la Caja, y **Productos → *Buscar fotos***. ✅ Visto en pantalla.
 
@@ -80,6 +82,20 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 🟡 **Lo que la venta tardaba en llegar a la caja sin internet** — arreglado el 05/10 y publicado en la 0.13.4, **sin probar en el local**. El mostrador le pasaba las ventas a la caja una vez por minuto, y la caja miraba su cola cada ocho segundos: hasta 68 segundos con el cliente esperando. Y llegaba de a partes porque, mientras la cabecera intentaba subir al servidor —hasta doce segundos sin internet—, salían los renglones solos. Ahora la venta sale al segundo y medio de apretar *Enviar a caja* (y otra vez a los catorce, por si el intento de subir tardó), viaja entera o espera entera, y la caja la muestra apenas llega. Se comprueba en el próximo corte: la venta tiene que aparecer en la caja en un par de segundos y completa.
 
 ---
+
+## Lo último que pasó — 21 de octubre, a la noche: la factura por mail
+
+**El pedido 17 de Lucas, decidido el 21/10.** El servicio es **Resend**; la clave está en los secretos del servidor (`RESEND_API_KEY`, la cargó ILUMA).
+
+> **Cómo se lo contás a Lucas:** en cada factura hay un botón *Mandar por mail*. Propone el mail del cliente —o el que dejó en la tienda— y lo podés cambiar. Le llega un mail corto con la factura en PDF, igual a la que imprimís en A4. Abajo del botón queda a quién se mandó y cuándo. Los pedidos de la tienda no hace falta mandarlos: al facturarlos, la factura le llega sola al comprador.
+
+- **El PDF lo arma la app**, con los mismos datos y las mismas cuentas que la hoja A4 ([`pdf.ts`](../app/src/lib/comprobante/pdf.ts)): letra, encabezado, receptor, detalle —con más hojas si hacen falta—, IVA discriminado en la A, percepción, transparencia fiscal en la B, QR de ARCA y CAE.
+- **Lo manda el servidor** ([`enviar-factura`](../supabase/functions/enviar-factura/index.ts)): sólo una factura que existe y tiene CAE, sólo quien ve la facturación, con el asunto y el nombre del archivo sacados de la factura. **Cada envío queda anotado** —a quién, cuándo, quién, si salió— en `comprobante_envio` ([migración](../supabase/migrations/20261021140000_la_factura_por_mail.sql)).
+- **Pedidos web:** al facturar, si el comprador dejó mail, se le manda solo. Si el mail no sale, el pedido igual queda facturado y se dice por qué.
+- 🟡 **A los clientes todavía no les llega.** Mientras el dominio no esté verificado en Resend, el remitente es el de prueba de Resend (`onboarding@resend.dev`), que **sólo llega a la casilla de la cuenta de Resend**; a cualquier otro, Resend lo frena y la factura lo dice. **El día de la transferencia del dominio:** se agrega `agroveterinariagross.com.ar` en Resend, se cargan en Cloudflare los registros que Resend indica, y se cambia `correo.remitente` en la configuración a `Agroveterinaria Gross <facturas@agroveterinariagross.com.ar>` (y `correo.responder_a`, a la casilla del local). **No hace falta publicar nada.**
+- 💡 **El subdominio del sistema:** `empresa.agroveterinariagross.com.ar`, para la versión web —la del celular—. Se configura en Cloudflare Pages el mismo día, y se agrega en la configuración de acceso de Supabase.
+
+**Verificado:** **11 pruebas** del PDF y del mail —una hoja; más hojas con 90 líneas; Factura A con percepción; un emoji en una descripción no la rompe (roto a propósito: falló); el mail dice qué es, de cuánto y de quién, sin dejar pasar HTML; lo que contesta Resend, en palabras—. **5 comprobaciones** en [`factura-por-mail.sql`](../supabase/pruebas/factura-por-mail.sql): el registro lo escribe sólo el servidor y lo ve sólo quien ve la facturación. **717 verdes.** **De punta a punta, con Resend de verdad, sin mandarle nada a nadie:** desde una factura de homologación, a una dirección inventada: Resend aceptó la clave y el PDF y frenó el destinatario por el dominio sin verificar; la factura mostró el motivo y el intento quedó anotado con quién lo hizo (después se borraron esos intentos). La factura propuso sola el mail del cliente. El PDF, mirado como imagen: la A y la B, bien. A 375 px, nada se desplaza. 🟡 **Falta un envío que llegue**: a la casilla de la cuenta de Resend, para ver el mail recibido.
 
 ## Lo último que pasó — 21 de octubre, a la tarde: bajar la planilla y volver a subirla
 
@@ -1069,7 +1085,7 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 | ~~Las **fotos de cómo cargan facturas de compra**~~ | Lucas | ✅ Llegaron el 10/09, con tres audios. Análisis en [`compras-e-iva.md`](compras-e-iva.md) |
 | ~~**¿La cuenta corriente de proveedores entra al alcance?**~~ | — | ✅ **Sí, decidido y construido el 28/09.** Falta publicarla |
 | Qué **columnas** quiere el contador en el Excel | Contador | 🟡 Ya se exporta con lo estándar |
-| **La dirección desde la que salen los mails** | ILUMA | 🟡 El servicio ya está elegido (Resend). La necesitan las facturas de la tienda y el pedido 17. Desde el 19/10 la gestiona ILUMA |
+| **El dominio para los mails y el sistema** (`agroveterinariagross.com.ar`) | ILUMA | 🟡 **La factura por mail está construida (21/10)** y espera la transferencia del dominio, hoy en un Cloudflare de terceros: ese día se verifica en Resend y se cambia el remitente. Ver *Lo último que pasó — 21 de octubre, a la noche* |
 | **Envío y descuentos de la tienda** | Zubu y Lucas | 🟡 Pendiente desde la reunión del 19/10, hasta saber cómo lo maneja Andreani |
 | ~~**Las fotos de la tienda: con qué se arranca**~~ | — | ✅ **Lucas eligió el 20/10 que el sistema las busque** y él acepte o descarte cada una. **Construido el 21/10**, con Serper |
 | **Qué clientes no llevan percepción de IIBB** (certificado de exclusión de la DGR) | Lucas | 🟡 Los 2.494 clientes de OBTech entraron **sin ninguno marcado**: a todos los inscriptos que pasen el mínimo se les va a percibir. Se marca en la ficha de cada uno |

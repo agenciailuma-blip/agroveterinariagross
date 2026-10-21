@@ -26,6 +26,8 @@ export interface TributoComprobante {
 
 export interface ComprobanteCompleto {
   id: string
+  /** La venta que factura, si es una sola: de ahí sale a quién mandarle el mail. */
+  venta_id?: string | null
   estado: string
   tipo_comprobante_id: number
   tipo_descripcion: string
@@ -168,6 +170,7 @@ async function desdeElServidor(id: string): Promise<ComprobanteCompleto> {
 
   return {
     id: c.id as string,
+    venta_id: (c.venta_id as string | null) ?? null,
     estado: c.estado as string,
     tipo_comprobante_id: c.tipo_comprobante_id as number,
     tipo_descripcion: tipo?.descripcion ?? '',

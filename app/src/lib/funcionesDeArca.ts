@@ -45,6 +45,8 @@ const FUNCIONES_DE_ARCA = new Set([
     seis y ocho segundos por búsqueda, demasiado cerca de los doce.
   */
   'buscar-fotos',
+  // Arma el mail y espera a Resend, que puede tardar con el PDF adjunto.
+  'enviar-factura',
 ])
 
 /** Si el pedido va a una función del servidor que espera a ARCA. */

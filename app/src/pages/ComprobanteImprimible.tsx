@@ -6,6 +6,7 @@ import { obtenerComprobanteCompleto, registrarImpresion } from '@/lib/api/compro
 import type { ComprobanteCompleto } from '@/lib/api/comprobante'
 import { urlQrDe } from '@/lib/comprobante/imprimirDirecto'
 import TicketComprobante from '@/components/TicketComprobante'
+import MandarPorMail from '@/components/MandarPorMail'
 import { ticketEscPos } from '@/lib/comprobante/escpos'
 import { destinoDeImpresion } from '@/lib/comprobante/destino'
 import { enEscritorio, imprimirTicket } from '@/lib/escritorio'
@@ -225,6 +226,9 @@ export default function ComprobanteImprimible() {
           </button>
         </div>
       </div>
+
+      {/* Para el cliente de cuenta corriente, y lo que se mandó antes. */}
+      {c.cae && <MandarPorMail c={c} />}
 
       {errorImpresora && (
         <div className="mx-auto mb-4 max-w-[21cm] px-4 print:hidden">

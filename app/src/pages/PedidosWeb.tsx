@@ -11,6 +11,8 @@ import { moneda, numero } from '@/lib/tipos'
 import { boton, botonChico, tarjeta } from '@/estilos'
 import { cambiosDesdeArca, clientePorCuit, consultarCuitEnArca, guardarCliente, referenciasFiscales } from '@/lib/api/clientes'
 import { cuitValido } from '@/lib/api/cheques'
+import { enviarFacturaPorMail } from '@/lib/api/facturaPorMail'
+import { obtenerComprobanteCompleto } from '@/lib/api/comprobante'
 import {
   accionesPosibles,
   cancelar,
@@ -335,8 +337,22 @@ function FichaPedido({
         )
         return null
       }
+      /*
+        La factura le llega sola al comprador, al mail que dejó en la
+        tienda. Si no sale, el pedido igual quedó facturado: se dice por
+        qué, y se manda desde la factura con «Mandar por mail».
+      */
+      let mail = ''
+      if (p.email) {
+        try {
+          await enviarFacturaPorMail(await obtenerComprobanteCompleto(r.comprobanteId), p.email, true)
+          mail = ` Se la mandamos por mail a ${p.email}.`
+        } catch (e) {
+          mail = ` El mail no salió: ${enCastellano(e)} Se manda desde la factura.`
+        }
+      }
       abrirComprobante(r.comprobanteId)
-      return `Pedido ${p.numero}: facturado. La factura quedó abierta para imprimir o guardar en PDF.`
+      return `Pedido ${p.numero}: facturado.${mail}`
     })
   }
 
