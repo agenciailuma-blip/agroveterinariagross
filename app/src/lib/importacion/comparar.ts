@@ -38,6 +38,12 @@ export interface GrupoDeDatos<C extends string> {
   nuevo?: (datos: Partial<Record<C, string>>) => string | null
   /** Cómo se muestra. Por defecto, tal cual. */
   mostrar?: (valor: string) => string
+  /*
+    Para los datos que son una lista y la planilla trae uno: el código de
+    barra se agrega, así que uno que el producto ya tiene —aunque no sea
+    el principal— no es un cambio.
+  */
+  yaTiene?: (registro: Registro, valor: string) => boolean
 }
 
 export type Registro = Record<string, unknown>
@@ -105,7 +111,7 @@ export function clasificar<C extends string>(
       }
       const antes = g.actual(registro)
       const despues = g.nuevo(fila.datos)
-      if (despues === null || despues === antes) continue
+      if (despues === null || despues === antes || g.yaTiene?.(registro, despues)) continue
       const ver = g.mostrar ?? ((v: string) => v)
       cambios.push({
         grupo: g.id,

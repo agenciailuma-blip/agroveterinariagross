@@ -12,7 +12,9 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Lista para construir: 0.16.8** (20 y 21/10) — **el Responsable Inscripto también puede salir con comprobante interno** en la Caja, y **Productos → *Buscar fotos***: el sistema busca las fotos en internet y Lucas elige. Lo del servidor ya está andando; las pantallas llegan con la 0.16.8. Ver *Lo último que pasó*. **694 pruebas verdes en la app.** ✅ Visto en pantalla.
+**Lista para construir: 0.16.9** (21/10, a la tarde) — **«Descargar planilla» en Productos, Clientes y Proveedores**: lo que hay hoy, en Excel, con las mismas columnas que lee «Importar planilla»; y **la importación de la ficha de los proveedores**, que no existía. Lo de la base ya está aplicado. Ver *Lo último que pasó*. **706 pruebas verdes en la app.**
+
+**Publicada: 0.16.8** (21/10, 16:49), verificada en Cloudflare: `latest.json` dice 0.16.8. **El inscripto también puede salir con comprobante interno** en la Caja, y **Productos → *Buscar fotos***. ✅ Visto en pantalla.
 
 **Publicada: 0.16.7** (19/10, 17:52), verificada en Cloudflare: `latest.json` dice 0.16.7. **Reemplaza a la 0.16.6, que no se publicó**: lleva todo lo de la 0.16.6 más **lo que salió de la reunión con Zubu** —**cómo paga cada pedido de la tienda** (Mercado Pago, transferencia o efectivo), **los productos sólo para consultar** y **las fotos de los productos**— y el arreglo de la foto quitada. **También lleva *empezar de nuevo cuando el servidor lo pide*** ([`sync.ts`](../app/src/lib/local/sync.ts)), que estaba sin guardar en la carpeta cuando se construyó: se guardó después, en un commit aparte, y **`main` quedó igual a lo publicado**. Ver *Lo último que pasó*. **677 pruebas verdes en la app.**
 
@@ -78,6 +80,22 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 🟡 **Lo que la venta tardaba en llegar a la caja sin internet** — arreglado el 05/10 y publicado en la 0.13.4, **sin probar en el local**. El mostrador le pasaba las ventas a la caja una vez por minuto, y la caja miraba su cola cada ocho segundos: hasta 68 segundos con el cliente esperando. Y llegaba de a partes porque, mientras la cabecera intentaba subir al servidor —hasta doce segundos sin internet—, salían los renglones solos. Ahora la venta sale al segundo y medio de apretar *Enviar a caja* (y otra vez a los catorce, por si el intento de subir tardó), viaja entera o espera entera, y la caja la muestra apenas llega. Se comprueba en el próximo corte: la venta tiene que aparecer en la caja en un par de segundos y completa.
 
 ---
+
+## Lo último que pasó — 21 de octubre, a la tarde: bajar la planilla y volver a subirla
+
+**La idea, dicha por ILUMA:** cada pantalla deja ver, hacer y exportar, y lo que se exporta de un maestro sirve también para importar. **Vale para los maestros** —productos, clientes, proveedores—: se baja, se corrige en Excel y se sube. **No para los movimientos** —ventas, facturas, cobros, cheques, compras—: esos se bajan para mirar o para el contador, pero no se vuelven a subir, porque cada uno pasa por sus reglas (ARCA, stock, caja) y una planilla se las saltearía.
+
+> **Cómo se lo contás a Lucas:** en Productos, Clientes y Proveedores hay un botón *Descargar planilla*. Te baja un Excel con todo lo que hay hoy. Cambiás lo que quieras —precios, teléfonos, el mínimo de un proveedor— y lo subís con *Importar planilla*. El sistema te dice antes qué cambia, renglón por renglón, y elegís qué actualizar. Si la subís sin tocar nada, te dice que está todo igual. Nada se borra: lo que borres del Excel queda como estaba.
+
+- **Productos:** código, nombre, nombre público, precio, costo, IVA, rubro con su rama entera, marca, unidad, código de barra principal, si es veterinario, receta o fitosanitario, aviso de stock propio, de qué envase sale, peso y bulto. **El stock no va**: cambia sólo por movimientos, para que cada unidad tenga su historia.
+- **Clientes:** la ficha con la condición frente al IVA en palabras, la cuenta corriente, el límite y los días. **El saldo no va**: tiene su importación, con su fecha. Tampoco el *Consumidor Final* del sistema.
+- **Proveedores, nuevo entero:** no había forma de subir la ficha; sólo el saldo. Ahora **Proveedores → *Importar planilla*** trae código, nombre y de fantasía, condición, CUIT, domicilio, teléfono, mail, contacto, CBU o alias, el mínimo de compra y observaciones, con la misma comparación que clientes. Se reconoce por código, por CUIT o por nombre; un CUIT de otro proveedor frena la fila. La base: [`importar_proveedores`](../supabase/migrations/20261021120000_importar_proveedores.sql). **Hoy hay 3 proveedores cargados: los de OBTech todavía no entraron**, y esto sirve también para eso.
+- **Es un Excel de verdad (.xlsx), no un CSV:** así los números viajan como números.
+- **Dos arreglos al importador que encontró la prueba de ida y vuelta:**
+  - 🔴 **Un número con tres decimales de un Excel entraba mil veces más grande:** un peso de 0,125 kg se leía como 125, porque el importador lo pasaba a texto y el punto parecía de miles. Pasaba con cualquier Excel. Ahora un número de Excel se usa tal cual.
+  - **El código de barra, el aviso de stock y el envase se cuentan como cambio sólo si cambian.** Antes, si venían en la planilla, salían como cambio siempre: subir la planilla bajada habría dicho que cambiaron los 2.281 productos.
+
+**Verificado:** **la ida y vuelta con los datos reales**: los 2.281 productos y los 2.495 clientes, armados en Excel, leídos por el importador y comparados con la base: **cero cambios y cero errores** (salvo el *Consumidor Final* del sistema, que después se sacó de la planilla). **12 pruebas nuevas** de ida y vuelta para los tres y de la comparación, con un Excel de verdad para el caso del 0,125; se rompió a propósito el reconocimiento de las columnas y fallaron seis. **10 comprobaciones** en [`importar-proveedores.sql`](../supabase/pruebas/importar-proveedores.sql), en seco y después de aplicar —la del código en minúsculas falló antes de arreglarlo—. **706 verdes** y los tipos sin errores. **En pantalla:** la planilla de proveedores subida sin tocar dijo *3 ya están, iguales*; con el contacto de Bagó cambiado, *1 cambia: Contacto*. No se importó nada. A 375 px, nada se desplaza.
 
 ## Lo último que pasó — 21 de octubre
 

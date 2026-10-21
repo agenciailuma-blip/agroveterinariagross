@@ -268,9 +268,17 @@ export function proponerMapeo<C extends string = Campo>(
   */
   for (const campo of Object.keys(def.sinonimos) as C[]) {
     let mejor: { columna: number; rango: number } | null = null
+    /*
+      El nombre del campo tal cual —el encabezado de la planilla que baja
+      el sistema— también vale, pero último: en el listado de clientes de
+      OBTech «Localidad» es un número y el nombre está en «Nombre
+      Localidad», que es un sinónimo y tiene que ganar.
+    */
+    const propio = normalizar(def.campos[campo])
     limpios.forEach((limpio, columna) => {
       if (mapeo[columna]) return
-      const rango = def.sinonimos[campo].indexOf(limpio)
+      const sinonimo = def.sinonimos[campo].indexOf(limpio)
+      const rango = sinonimo >= 0 ? sinonimo : limpio === propio ? 1000 : -1
       if (rango >= 0 && (!mejor || rango < mejor.rango)) mejor = { columna, rango }
     })
     if (mejor) mapeo[(mejor as { columna: number }).columna] = campo
@@ -382,7 +390,12 @@ export function prepararFilas<C extends string = Campo>(
       if (!texto) continue
 
       if (def.numericos.includes(campo)) {
-        const numero = aNumero(texto)
+        /*
+          Un número que viene de una celda numérica de Excel se usa tal
+          cual. Pasarlo a texto y releerlo convertía 0,125 en 125: con tres
+          decimales, el punto parece de miles.
+        */
+        const numero = typeof crudo === 'number' ? (Number.isFinite(crudo) ? crudo : null) : aNumero(texto)
         if (numero === null) {
           errores.push(`${def.campos[campo]}: no se entiende el número “${texto}”.`)
           continue

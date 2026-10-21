@@ -98,7 +98,7 @@ export async function importarProductos(
 */
 
 async function importarEnTandas(
-  funcion: 'importar_clientes' | 'importar_saldos_proveedores',
+  funcion: 'importar_clientes' | 'importar_saldos_proveedores' | 'importar_proveedores',
   parametros: (tanda: Record<string, string>[]) => Record<string, unknown>,
   filas: Record<string, string>[],
   onAvance?: (procesadas: number, total: number) => void,
@@ -153,6 +153,15 @@ export function importarSaldosProveedores(
   )
 }
 
+/** La ficha de los proveedores (sin el saldo, que tiene su planilla). */
+export function importarProveedores(
+  filas: Record<string, string>[],
+  _fecha: string,
+  onAvance?: (procesadas: number, total: number) => void,
+): Promise<ResumenImportacion> {
+  return importarEnTandas('importar_proveedores', (tanda) => ({ p_filas: tanda }), filas, onAvance)
+}
+
 /*
   ─────────────────────────────────────────────────────────────
   Lo que ya está, para comparar antes de importar
@@ -164,15 +173,13 @@ export function importarSaldosProveedores(
 */
 
 async function todos(
-  tabla: 'producto' | 'cliente',
+  tabla: 'producto' | 'cliente' | 'proveedor',
   columnas: string,
+  filtrar: <Q extends { is: (c: string, v: null) => Q; eq: (c: string, v: string) => Q }>(q: Q) => Q = (q) => q,
 ): Promise<Record<string, unknown>[]> {
   const filas: Record<string, unknown>[] = []
   for (let desde = 0; ; desde += 1000) {
-    const { data, error } = await supabase
-      .from(tabla)
-      .select(columnas)
-      .is('eliminado_en', null)
+    const { data, error } = await filtrar(supabase.from(tabla).select(columnas).is('eliminado_en', null))
       .order('id')
       .range(desde, desde + 999)
     if (error) throw new Error(`No se pudo leer lo que ya está cargado: ${error.message}`)
@@ -181,12 +188,21 @@ async function todos(
   }
 }
 
+/*
+  Con lo que vive en otras tablas —los códigos de barra, el aviso de
+  stock propio, el envase del que sale— para poder compararlo y para
+  bajarlo en la planilla.
+*/
 export function productosActuales() {
   return todos(
     'producto',
     `codigo, nombre_interno, nombre_publico, precio_venta, costo, unidad_medida, peso_kg,
-     unidades_por_bulto, es_producto_veterinario, requiere_receta, es_fitosanitario,
-     alicuota:alicuota_iva_id(porcentaje), marca:marca_id(nombre), categoria:categoria_id(nombre)`,
+     unidades_por_bulto, es_producto_veterinario, requiere_receta, es_fitosanitario, categoria_id,
+     cantidad_por_envase, alicuota:alicuota_iva_id(porcentaje), marca:marca_id(nombre),
+     categoria:categoria_id(nombre), envase:envase_id(codigo),
+     codigos:producto_codigo_barra(codigo, es_principal, eliminado_en),
+     umbral:umbral_stock(bajo, critico, ambito, eliminado_en)`,
+    (q) => q.eq('umbral.ambito', 'producto').is('umbral.eliminado_en', null),
   )
 }
 
@@ -195,5 +211,13 @@ export function clientesActuales() {
     'cliente',
     `codigo, nombre, condicion_iva_id, numero_documento, calle, localidad, provincia, codigo_postal,
      telefono, email, cuenta_corriente, limite_credito, dias_vencimiento`,
+  )
+}
+
+export function proveedoresActuales() {
+  return todos(
+    'proveedor',
+    `codigo, nombre, nombre_fantasia, condicion_iva_id, numero_documento, domicilio, localidad, provincia,
+     telefono, email, contacto, cbu, alias, minimo_tipo, minimo_valor, observaciones`,
   )
 }

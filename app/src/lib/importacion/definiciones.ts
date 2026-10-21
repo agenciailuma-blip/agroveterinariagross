@@ -118,3 +118,57 @@ export const SALDOS_PROVEEDORES: DefinicionPlanilla<CampoProveedor> = {
     detalle: ['detalle', 'observaciones', 'observacion', 'concepto', 'nota'],
   },
 }
+
+/*
+  ─────────────────────────────────────────────────────────────
+  La ficha de los proveedores (21/10)
+
+  Para bajar y volver a subir, como productos y clientes. El saldo no va
+  acá: tiene su planilla, con su fecha (SALDOS_PROVEEDORES).
+  ─────────────────────────────────────────────────────────────
+*/
+export const CAMPOS_FICHA_PROVEEDOR = {
+  codigo: 'Código',
+  nombre: 'Proveedor',
+  nombre_fantasia: 'Nombre de fantasía',
+  condicion_iva: 'Condición frente al IVA',
+  documento: 'CUIT',
+  domicilio: 'Domicilio',
+  localidad: 'Localidad',
+  provincia: 'Provincia',
+  telefono: 'Teléfono',
+  email: 'Email',
+  contacto: 'Contacto',
+  cbu: 'CBU o CVU',
+  alias: 'Alias',
+  minimo_tipo: 'Mínimo de compra en (monto, bultos o kilos)',
+  minimo_valor: 'Mínimo de compra',
+  observaciones: 'Observaciones',
+} as const
+
+export type CampoFichaProveedor = keyof typeof CAMPOS_FICHA_PROVEEDOR
+
+export const PROVEEDORES: DefinicionPlanilla<CampoFichaProveedor> = {
+  campos: CAMPOS_FICHA_PROVEEDOR,
+  obligatorios: ['nombre'],
+  numericos: ['minimo_valor'],
+  clave: 'nombre',
+  sinonimos: {
+    codigo: ['codigo', 'cod', 'codigo proveedor', 'nro proveedor'],
+    nombre: ['proveedor', 'nombre', 'razon social', 'denominacion', 'nombre proveedor', 'laboratorio'],
+    nombre_fantasia: ['nombre de fantasia', 'fantasia', 'nombre fantasia', 'nombre comercial'],
+    condicion_iva: ['condicion frente al iva', 'condicion iva', 'condicion de iva', 'iva', 'situacion iva'],
+    documento: ['cuit', 'c u i t', 'documento', 'nro cuit', 'cuit proveedor'],
+    domicilio: ['domicilio', 'direccion', 'calle'],
+    localidad: ['nombre localidad', 'localidad', 'ciudad'],
+    provincia: ['provincia'],
+    telefono: ['telefono', 'tel', 'celular', 'whatsapp', 'tel fax'],
+    email: ['email', 'mail', 'correo', 'e mail'],
+    contacto: ['contacto', 'vendedor', 'persona de contacto', 'atiende'],
+    cbu: ['cbu', 'cvu', 'cbu o cvu', 'cbu cvu'],
+    alias: ['alias', 'alias cbu'],
+    minimo_tipo: ['minimo en', 'tipo de minimo', 'minimo tipo', 'minimo de compra en'],
+    minimo_valor: ['minimo', 'minimo de compra', 'pedido minimo', 'compra minima'],
+    observaciones: ['observaciones', 'observacion', 'notas', 'nota', 'comentarios'],
+  },
+}

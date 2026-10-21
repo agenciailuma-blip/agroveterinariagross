@@ -1,5 +1,5 @@
 import type { Campo } from '@/lib/importacion/planilla'
-import type { CampoCliente } from '@/lib/importacion/definiciones'
+import type { CampoCliente, CampoFichaProveedor } from '@/lib/importacion/definiciones'
 import {
   importe,
   mostrarNumero,
@@ -29,6 +29,15 @@ const comoNombre = (v: unknown): string | null => {
 }
 
 const NIVELES: Campo[] = ['categoria', 'subrubro', 'grupo', 'subgrupo']
+
+/** Los códigos de barra vigentes del producto, el principal primero. */
+export function codigosDe(r: Registro): string[] {
+  const lista = (r.codigos as { codigo: string; es_principal: boolean; eliminado_en?: string | null }[] | null) ?? []
+  return lista
+    .filter((c) => !c.eliminado_en)
+    .sort((a, b) => Number(b.es_principal) - Number(a.es_principal))
+    .map((c) => c.codigo)
+}
 
 export const COMPARADOR_PRODUCTOS: Comparador<Campo> = {
   claves: ['codigo'],
@@ -99,10 +108,41 @@ export const COMPARADOR_PRODUCTOS: Comparador<Campo> = {
       id: 'bulto', etiqueta: 'Unidades por bulto', campos: ['unidades_por_bulto'],
       actual: (r) => importe(r.unidades_por_bulto), nuevo: (d) => importe(d.unidades_por_bulto), mostrar: mostrarNumero,
     },
-    // Estos viven en otras tablas: no se comparan, se mandan si se eligen.
-    { id: 'codigo_barra', etiqueta: 'Código de barra (se agrega)', campos: ['codigo_barra'] },
-    { id: 'aviso', etiqueta: 'Aviso de stock', campos: ['stock_bajo', 'stock_critico'] },
-    { id: 'suelta', etiqueta: 'De qué envase sale', campos: ['sale_de', 'cantidad_por_envase'] },
+    /*
+      Estos viven en otras tablas y se traen con el producto
+      (productosActuales). Se comparan para que una planilla bajada del
+      sistema y subida sin tocar diga «todos iguales».
+    */
+    {
+      id: 'codigo_barra', etiqueta: 'Código de barra (se agrega)', campos: ['codigo_barra'],
+      actual: (r) => codigosDe(r)[0] ?? null,
+      nuevo: (d) => texto(d.codigo_barra),
+      yaTiene: (r, v) => codigosDe(r).includes(v),
+    },
+    {
+      id: 'aviso', etiqueta: 'Aviso de stock', campos: ['stock_bajo', 'stock_critico'],
+      actual: (r) => {
+        const u = uno(r.umbral as { bajo: unknown; critico: unknown } | { bajo: unknown; critico: unknown }[] | null)
+        return u ? `${importe(u.bajo)}|${importe(u.critico)}` : null
+      },
+      nuevo: (d) => (d.stock_bajo || d.stock_critico ? `${importe(d.stock_bajo)}|${importe(d.stock_critico)}` : null),
+      mostrar: (v) => {
+        const [bajo, critico] = v.split('|')
+        return `bajo ${bajo === 'null' ? '—' : mostrarNumero(bajo)} · crítico ${critico === 'null' ? '—' : mostrarNumero(critico)}`
+      },
+    },
+    {
+      id: 'suelta', etiqueta: 'De qué envase sale', campos: ['sale_de', 'cantidad_por_envase'],
+      actual: (r) => {
+        const envase = uno(r.envase as { codigo: string } | null)?.codigo
+        return envase ? `${envase.toUpperCase()}|${importe(r.cantidad_por_envase)}` : null
+      },
+      nuevo: (d) => (d.sale_de ? `${d.sale_de.toUpperCase()}|${importe(d.cantidad_por_envase)}` : null),
+      mostrar: (v) => {
+        const [envase, cuantas] = v.split('|')
+        return `${envase}, trae ${cuantas === 'null' ? '—' : mostrarNumero(cuantas)}`
+      },
+    },
   ],
 }
 
@@ -126,7 +166,7 @@ export function condicionDesdeTexto(v: string | undefined): number | null {
   return null
 }
 
-const CONDICIONES: Record<string, string> = {
+export const CONDICIONES: Record<string, string> = {
   1: 'Responsable Inscripto',
   4: 'Exento',
   5: 'Consumidor Final',
@@ -201,6 +241,87 @@ export const COMPARADOR_CLIENTES: Comparador<CampoCliente> = {
     },
     // El saldo lo deja igual al de la planilla la base, sin sumar: se manda si se elige.
     { id: 'saldo', etiqueta: 'Saldo de cuenta corriente', campos: ['saldo'] },
+  ],
+}
+
+const MINIMOS: Record<string, string> = { monto: 'Monto', bultos: 'Bultos', kilos: 'Kilos' }
+export const NOMBRE_DEL_MINIMO = MINIMOS
+
+/** El mínimo como lo escribe una persona, igual que la base (app.minimo_desde_texto). */
+export function minimoDesdeTexto(v: string | undefined): string | null {
+  const t = (v ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase()
+  if (['monto', 'pesos', 'importe', 'plata', '$'].includes(t)) return 'monto'
+  if (['bultos', 'bulto', 'cajas', 'caja'].includes(t)) return 'bultos'
+  if (['kilos', 'kilo', 'kg', 'kgs'].includes(t)) return 'kilos'
+  return null
+}
+
+export const COMPARADOR_PROVEEDORES: Comparador<CampoFichaProveedor> = {
+  claves: ['codigo', 'documento', 'nombre'],
+  nombre: (r) => `${r.codigo ?? r.numero_documento ?? ''} · ${r.nombre}`,
+  indexar: (registros) => {
+    const i: Indice = new Map()
+    for (const r of registros) {
+      if (r.codigo) i.set(`c:${String(r.codigo).toUpperCase()}`, r)
+      if (r.numero_documento) i.set(`d:${r.numero_documento}`, r)
+      i.set(`n:${comoNombre(r.nombre)}`, r)
+    }
+    return i
+  },
+  // Igual que la base: código, CUIT, y si no, el nombre.
+  buscar: (d, i) => {
+    const porCodigo = d.codigo ? i.get(`c:${d.codigo.toUpperCase()}`) : undefined
+    if (porCodigo) return porCodigo
+    const doc = digitos(d.documento)
+    const porDoc = doc ? i.get(`d:${doc}`) : undefined
+    if (porDoc && d.codigo && porDoc.codigo && String(porDoc.codigo).toUpperCase() !== d.codigo.toUpperCase()) return null
+    if (porDoc) return porDoc
+    return d.nombre ? (i.get(`n:${comoNombre(d.nombre)}`) ?? null) : null
+  },
+  grupos: [
+    { id: 'nombre', etiqueta: 'Nombre', campos: ['nombre'], actual: (r) => texto(r.nombre), nuevo: (d) => texto(d.nombre) },
+    {
+      id: 'fantasia', etiqueta: 'Nombre de fantasía', campos: ['nombre_fantasia'],
+      actual: (r) => texto(r.nombre_fantasia), nuevo: (d) => texto(d.nombre_fantasia),
+    },
+    {
+      id: 'condicion', etiqueta: 'Condición frente al IVA', campos: ['condicion_iva'],
+      actual: (r) => (r.condicion_iva_id == null ? null : String(r.condicion_iva_id)),
+      nuevo: (d) => {
+        const c = condicionDesdeTexto(d.condicion_iva)
+        return c === null ? null : String(c)
+      },
+      mostrar: (v) => CONDICIONES[v] ?? v,
+    },
+    {
+      id: 'documento', etiqueta: 'CUIT', campos: ['documento'],
+      actual: (r) => digitos(r.numero_documento), nuevo: (d) => digitos(d.documento),
+    },
+    { id: 'domicilio', etiqueta: 'Domicilio', campos: ['domicilio'], actual: (r) => texto(r.domicilio), nuevo: (d) => texto(d.domicilio) },
+    { id: 'localidad', etiqueta: 'Localidad', campos: ['localidad'], actual: (r) => texto(r.localidad), nuevo: (d) => texto(d.localidad) },
+    { id: 'provincia', etiqueta: 'Provincia', campos: ['provincia'], actual: (r) => texto(r.provincia), nuevo: (d) => texto(d.provincia) },
+    { id: 'telefono', etiqueta: 'Teléfono', campos: ['telefono'], actual: (r) => texto(r.telefono), nuevo: (d) => texto(d.telefono) },
+    { id: 'email', etiqueta: 'Email', campos: ['email'], actual: (r) => texto(r.email), nuevo: (d) => texto(d.email) },
+    { id: 'contacto', etiqueta: 'Contacto', campos: ['contacto'], actual: (r) => texto(r.contacto), nuevo: (d) => texto(d.contacto) },
+    {
+      id: 'banco', etiqueta: 'CBU y alias', campos: ['cbu', 'alias'],
+      actual: (r) => (r.cbu || r.alias ? `${digitos(r.cbu) ?? ''}|${texto(r.alias) ?? ''}` : null),
+      nuevo: (d) => (d.cbu || d.alias ? `${digitos(d.cbu) ?? ''}|${texto(d.alias) ?? ''}` : null),
+      mostrar: (v) => v.split('|').filter(Boolean).join(' · '),
+    },
+    {
+      id: 'minimo', etiqueta: 'Mínimo de compra', campos: ['minimo_tipo', 'minimo_valor'],
+      actual: (r) => (r.minimo_tipo ? `${r.minimo_tipo}|${importe(r.minimo_valor)}` : null),
+      nuevo: (d) => (d.minimo_tipo || d.minimo_valor ? `${minimoDesdeTexto(d.minimo_tipo)}|${importe(d.minimo_valor)}` : null),
+      mostrar: (v) => {
+        const [tipo, valor] = v.split('|')
+        return `${MINIMOS[tipo] ?? '—'} ${valor === 'null' ? '—' : tipo === 'monto' ? mostrarPesos(valor) : mostrarNumero(valor)}`
+      },
+    },
+    {
+      id: 'observaciones', etiqueta: 'Observaciones', campos: ['observaciones'],
+      actual: (r) => texto(r.observaciones), nuevo: (d) => texto(d.observaciones),
+    },
   ],
 }
 

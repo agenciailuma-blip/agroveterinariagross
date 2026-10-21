@@ -5,20 +5,28 @@ import { useAuth } from '@/auth/AuthProvider'
 import { Dato, ElegirArchivo, Mapeo } from '@/components/importacion/Piezas'
 import { leerArchivo } from '@/lib/importacion/archivo'
 import type { HojaLeida } from '@/lib/importacion/archivo'
-import { CLIENTES, SALDOS_PROVEEDORES } from '@/lib/importacion/definiciones'
+import { CLIENTES, PROVEEDORES, SALDOS_PROVEEDORES } from '@/lib/importacion/definiciones'
 import { codigosDuplicados, detectarEncabezado, elegirHoja, prepararFilas, proponerMapeo } from '@/lib/importacion/planilla'
 import type { DefinicionPlanilla, FilaImportada } from '@/lib/importacion/planilla'
-import { aFilasDelArchivo, clientesActuales, importarClientes, importarSaldosProveedores } from '@/lib/api/importacion'
+import {
+  aFilasDelArchivo,
+  clientesActuales,
+  importarClientes,
+  importarProveedores,
+  importarSaldosProveedores,
+  proveedoresActuales,
+} from '@/lib/api/importacion'
 import {
   aOpciones,
   armarEnvio,
   clasificar,
   opcionesIniciales,
   type Clasificacion,
+  type Comparador,
   type EstadoOpciones,
+  type Registro,
 } from '@/lib/importacion/comparar'
-import { COMPARADOR_CLIENTES } from '@/lib/importacion/comparadores'
-import type { CampoCliente } from '@/lib/importacion/definiciones'
+import { COMPARADOR_CLIENTES, COMPARADOR_PROVEEDORES } from '@/lib/importacion/comparadores'
 import OpcionesDeImportacion from '@/components/importacion/OpcionesDeImportacion'
 import type { ResumenImportacion, ResultadoFila } from '@/lib/api/importacion'
 import { moneda, numero } from '@/lib/tipos'
@@ -28,10 +36,11 @@ import { barraDeAvance, boton, campo, tarjeta } from '@/estilos'
   ─────────────────────────────────────────────────────────────
   Importar las planillas del día del corte
 
-  Una sola pantalla para dos planillas: los clientes con lo que debe cada
-  uno, y lo que Gross le debe a cada proveedor. Las dos se traen de
-  OBTech el día que se deja de usar, y las dos tienen lo mismo que
-  cuidar: que los saldos entren completos y una sola vez.
+  Una sola pantalla para tres planillas: los clientes con lo que debe
+  cada uno, lo que Gross le debe a cada proveedor y, desde el 21/10, la
+  ficha de los proveedores —la que baja «Descargar planilla» en
+  Proveedores—. Las de saldos se traen de OBTech el día que se deja de
+  usar, y tienen lo mismo que cuidar: que entren completas y una sola vez.
 
   Por eso, antes de importar, la pantalla muestra LA SUMA de los saldos:
   es el número que hay que comparar con el total que muestra OBTech. Si
@@ -40,7 +49,7 @@ import { barraDeAvance, boton, campo, tarjeta } from '@/estilos'
   ─────────────────────────────────────────────────────────────
 */
 
-type Tipo = 'clientes' | 'proveedores'
+type Tipo = 'clientes' | 'proveedores' | 'fichas_proveedores'
 
 interface Configuracion {
   titulo: string
@@ -54,6 +63,13 @@ interface Configuracion {
   claves: string[]
   importar: (filas: Record<string, string>[], fecha: string, avance: (h: number, t: number) => void) => Promise<ResumenImportacion>
   explicacionSaldo: string
+  sinPermiso: string
+  /*
+    Con qué se compara antes de importar, para decir qué es nuevo y qué
+    cambia, y elegir qué tocar. Los saldos de proveedores no: son un
+    número por proveedor, y la base ya lo deja igual al de la planilla.
+  */
+  comparar?: { actuales: () => Promise<Registro[]>; comparador: Comparador<string> }
 }
 
 const CONFIGURACION: Record<Tipo, Configuracion> = {
@@ -70,6 +86,8 @@ const CONFIGURACION: Record<Tipo, Configuracion> = {
     importar: importarClientes,
     explicacionSaldo:
       'Cada saldo entra en la cuenta corriente del cliente a esta fecha, y vence a los días de plazo de ese cliente (30 si la planilla no dice). Un saldo negativo es plata a favor del cliente.',
+    sinPermiso: 'No tenés permiso para importar clientes con sus saldos.',
+    comparar: { actuales: clientesActuales, comparador: COMPARADOR_CLIENTES as unknown as Comparador<string> },
   },
   proveedores: {
     titulo: 'Importar saldos de proveedores',
@@ -84,6 +102,22 @@ const CONFIGURACION: Record<Tipo, Configuracion> = {
     importar: importarSaldosProveedores,
     explicacionSaldo:
       'Cada saldo queda como el saldo inicial de ese proveedor a esta fecha, y se le pueden imputar pagos como a una factura. Las facturas de antes de esta fecha no se cargan: ya están adentro del saldo.',
+    sinPermiso: 'No tenés permiso para importar los saldos de los proveedores.',
+  },
+  fichas_proveedores: {
+    titulo: 'Importar proveedores',
+    bajada:
+      'La ficha de cada proveedor, desde una planilla de Excel o CSV: la que baja «Descargar planilla», u otra. Se reconocen por su código, su CUIT o su nombre. Una celda vacía no borra nada. El saldo va por su lado, en Cuentas de proveedores.',
+    def: PROVEEDORES as unknown as DefinicionPlanilla,
+    permisos: ['proveedores.gestionar'],
+    volverA: '/proveedores',
+    volverTexto: 'Proveedores',
+    sustantivo: ['proveedor', 'proveedores'],
+    claves: ['codigo', 'documento'],
+    importar: importarProveedores,
+    explicacionSaldo: '',
+    sinPermiso: 'No tenés permiso para importar proveedores.',
+    comparar: { actuales: proveedoresActuales, comparador: COMPARADOR_PROVEEDORES as unknown as Comparador<string> },
   },
 }
 
@@ -145,26 +179,21 @@ export default function ImportarSaldos({ tipo }: { tipo: Tipo }) {
   const faltan = c.def.obligatorios.filter((o) => !Object.values(mapeo).includes(o))
   const conSaldo = Object.values(mapeo).includes('saldo')
 
-  /*
-    Con los clientes se dice antes qué es nuevo y qué cambia, y se elige
-    qué tocar, como con los productos. Los saldos de proveedores no: son
-    un número por proveedor, y la base ya lo deja igual al de la planilla.
-  */
-  const conOpciones = tipo === 'clientes'
+  // Se dice antes qué es nuevo y qué cambia, y se elige qué tocar, como con los productos.
+  const comparar = c.comparar
+  const conOpciones = !!comparar
   const actuales = useQuery({
-    queryKey: ['clientes-actuales', archivo?.name, archivo?.lastModified],
-    queryFn: clientesActuales,
+    queryKey: [`${tipo}-actuales`, archivo?.name, archivo?.lastModified],
+    queryFn: () => comparar!.actuales(),
     enabled: conOpciones && !!archivo,
     staleTime: 0,
   })
-  const clasificacion: Clasificacion<CampoCliente> | null =
-    conOpciones && actuales.data
-      ? clasificar(validas as FilaImportada<CampoCliente>[], actuales.data, COMPARADOR_CLIENTES)
-      : null
-  const aMandar: FilaImportada<string>[] = !conOpciones
+  const clasificacion: Clasificacion<string> | null =
+    comparar && actuales.data ? clasificar(validas, actuales.data, comparar.comparador) : null
+  const aMandar: FilaImportada<string>[] = !comparar
     ? validas
     : clasificacion
-      ? armarEnvio(clasificacion, aOpciones(opciones), COMPARADOR_CLIENTES)
+      ? armarEnvio(clasificacion, aOpciones(opciones), comparar.comparador)
       : []
   const faltaElegir =
     !!clasificacion &&
@@ -185,7 +214,8 @@ export default function ImportarSaldos({ tipo }: { tipo: Tipo }) {
       setAvance(null)
       qc.invalidateQueries({ queryKey: ['clientes'] })
       qc.invalidateQueries({ queryKey: ['saldos-proveedores'] })
-      qc.invalidateQueries({ queryKey: ['clientes-actuales'] })
+      qc.invalidateQueries({ queryKey: [`${tipo}-actuales`] })
+      qc.invalidateQueries({ queryKey: ['proveedores'] })
     },
     onError: (e) => {
       setAvance(null)
@@ -205,7 +235,7 @@ export default function ImportarSaldos({ tipo }: { tipo: Tipo }) {
   if (!c.permisos.every((p) => tienePermiso(p))) {
     return (
       <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800 ring-1 ring-amber-200">
-        No tenés permiso para importar {c.sustantivo[1]} con sus saldos.
+        {c.sinPermiso}
       </p>
     )
   }
@@ -285,20 +315,21 @@ export default function ImportarSaldos({ tipo }: { tipo: Tipo }) {
               listo={!conOpciones || (!!clasificacion && !faltaElegir)}
               opcionesDeImportacion={
                 !conOpciones ? null : actuales.isPending ? (
-                  <p className="text-sm text-piedra-500">Comparando con los clientes que ya están cargados…</p>
+                  <p className="text-sm text-piedra-500">Comparando con los {c.sustantivo[1]} que ya están cargados…</p>
                 ) : actuales.error ? (
                   <p role="alert" className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 ring-1 ring-red-200">
                     {(actuales.error as Error).message} Sin eso no se puede decir qué es nuevo y qué cambia, así
                     que no se importa.
                   </p>
                 ) : (
-                  clasificacion && (
+                  clasificacion &&
+                  comparar && (
                     <OpcionesDeImportacion
                       clasificacion={clasificacion}
-                      comparador={COMPARADOR_CLIENTES}
+                      comparador={comparar.comparador}
                       opciones={opciones}
                       onCambio={setOpciones}
-                      sustantivo={['cliente', 'clientes']}
+                      sustantivo={c.sustantivo}
                     />
                   )
                 )
@@ -383,8 +414,8 @@ function Revision({
       {repetidos.map(({ clave, dup }) => (
         <div key={clave} className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900 ring-1 ring-amber-200">
           <p className="font-medium">
-            {clave === 'documento' && c.sustantivo[0] === 'cliente'
-              ? 'Hay CUIT o DNI que aparecen en más de un cliente. El sistema no puede tener dos clientes con el mismo documento: entra el primero, y los demás quedan frenados con el motivo, para que decidas si son el mismo o hay un documento mal escrito.'
+            {clave === 'documento' && c.comparar
+              ? `Hay documentos que aparecen en más de un ${c.sustantivo[0]}. El sistema no puede tener dos ${c.sustantivo[1]} con el mismo documento: entra el primero, y los demás quedan frenados con el motivo, para que decidas si son el mismo o hay un documento mal escrito.`
               : `Hay ${c.def.campos[clave].toLowerCase()} que aparecen más de una vez. Se importan todas y manda la última.`}
           </p>
           <ul className="mt-2 space-y-0.5 text-xs">

@@ -15,6 +15,8 @@ import CuentaCorriente from '@/components/CuentaCorriente'
 import { moneda, numero } from '@/lib/tipos'
 import { useBotonConAtajo } from '@/lib/atajos'
 import { TeclaAtajo } from '@/components/Atajos'
+import BotonBajarPlanilla from '@/components/BotonBajarPlanilla'
+import { bajarPlanillaDeClientes } from '@/lib/api/planillas'
 
 type Pestania = 'datos' | 'cuenta'
 
@@ -120,6 +122,8 @@ export default function Clientes() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {/* Para mirar y de plantilla: se cambia en Excel y se sube con «Importar planilla». */}
+          <BotonBajarPlanilla bajar={bajarPlanillaDeClientes} />
           {/* La planilla del día del corte: clientes con lo que debe cada uno. */}
           {puedeEditar && tienePermiso('cuentacorriente.limite') && (
             <Link

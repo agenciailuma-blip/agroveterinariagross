@@ -16,6 +16,10 @@ import { numero } from '@/lib/tipos'
 import { avanzarConEnter } from '@/lib/teclado'
 import { useBotonConAtajo } from '@/lib/atajos'
 import { TeclaAtajo } from '@/components/Atajos'
+import BotonBajarPlanilla from '@/components/BotonBajarPlanilla'
+import { bajarPlanillaDeProveedores } from '@/lib/api/planillas'
+import { Link } from 'react-router-dom'
+import { boton } from '@/estilos'
 
 /*
   Proveedores — puntos 5 y 4 de Lucas.
@@ -113,7 +117,14 @@ export default function Proveedores() {
             A quién se le compra cada producto. Es lo que permite ajustar precios de una.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          {/* Para mirar y de plantilla: se cambia en Excel y se sube con «Importar planilla». */}
+          <BotonBajarPlanilla bajar={bajarPlanillaDeProveedores} />
+          {puedeGestionar && (
+            <Link to="/proveedores/importar" className={boton.secundario}>
+              Importar planilla
+            </Link>
+          )}
           {puedeAumentar && (
             <button
               onClick={() => setAumentando(true)}

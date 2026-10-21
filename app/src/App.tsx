@@ -144,6 +144,7 @@ function Rutas() {
         <Route path="compras/costos" element={<Costos />} />
         <Route path="proveedores/cuentas" element={<CuentaProveedores />} />
         <Route path="proveedores/cuentas/importar" element={<ImportarSaldos tipo="proveedores" />} />
+        <Route path="proveedores/importar" element={<ImportarSaldos tipo="fichas_proveedores" />} />
         <Route path="ventas" element={<PuntoDeVenta />} />
         <Route path="caja" element={<Caja />} />
         <Route path="pedidos" element={<PedidosWeb />} />

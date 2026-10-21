@@ -18,6 +18,8 @@ import { listarDepositos, stockPorDeposito } from '@/lib/api/depositos'
 import ProductoEditor from '@/components/ProductoEditor'
 import SubirFotos from '@/components/SubirFotos'
 import BuscarFotos from '@/components/BuscarFotos'
+import BotonBajarPlanilla from '@/components/BotonBajarPlanilla'
+import { bajarPlanillaDeProductos } from '@/lib/api/planillas'
 import type { EstadoFormulario } from '@/components/ProductoEditor'
 import { ESTADO_STOCK, moneda, numero } from '@/lib/tipos'
 import { barraDeAvance, boton, campoDeFiltro } from '@/estilos'
@@ -486,28 +488,32 @@ export default function Productos() {
             {listado.data ? `${numero.format(listado.data.total)} en el catálogo` : 'Cargando…'}
           </p>
         </div>
-        {puedeCrear && (
-          <div className="flex gap-2">
-            <Link
-              to="/productos/importar"
-              className={boton.secundario}
-            >
-              Importar planilla
-            </Link>
-            <button onClick={() => setSubiendoFotos(true)} className={boton.secundario}>
-              Subir fotos
-            </button>
-            <button onClick={() => setBuscandoFotos(true)} className={boton.secundario}>
-              Buscar fotos
-            </button>
-            <button
-              onClick={nuevo}
-              className={boton.principal}
-            >
-              Nuevo producto
-            </button>
-          </div>
-        )}
+        <div className="flex flex-wrap gap-2">
+          {/* Para mirar y de plantilla: se cambia en Excel y se sube con «Importar planilla». */}
+          <BotonBajarPlanilla bajar={bajarPlanillaDeProductos} />
+          {puedeCrear && (
+            <>
+              <Link
+                to="/productos/importar"
+                className={boton.secundario}
+              >
+                Importar planilla
+              </Link>
+              <button onClick={() => setSubiendoFotos(true)} className={boton.secundario}>
+                Subir fotos
+              </button>
+              <button onClick={() => setBuscandoFotos(true)} className={boton.secundario}>
+                Buscar fotos
+              </button>
+              <button
+                onClick={nuevo}
+                className={boton.principal}
+              >
+                Nuevo producto
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {/*

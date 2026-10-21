@@ -65,11 +65,24 @@ describe('qué es nuevo y qué ya está', () => {
     expect(envio.map((f) => f.datos)).toEqual([{ codigo: 'abc', nombre_interno: 'Pipeta x 3' }])
   })
 
-  it('lo que no se puede comparar se avisa como que se manda', () => {
+  /*
+    Desde el 21/10 el aviso, el código de barra y el envase se comparan
+    también: vienen con el producto. Un aviso que el producto no tenía
+    es un cambio que se ve.
+  */
+  it('el aviso de stock se compara con el que ya tiene', () => {
     const conAviso = clasificar([producto(3, { codigo: '1950', stock_critico: '2' })], EN_LA_BASE, COMPARADOR_PRODUCTOS)
     expect(conAviso.existentes[0].cambios).toEqual([
-      { grupo: 'aviso', etiqueta: 'Aviso de stock', antes: null, despues: null, comparado: false },
+      { grupo: 'aviso', etiqueta: 'Aviso de stock', antes: null, despues: 'bajo — · crítico 2', comparado: true },
     ])
+  })
+
+  it('un código de barra que el producto ya tiene, aunque no sea el principal, no es un cambio', () => {
+    const base = [{ ...EN_LA_BASE[0], codigos: [{ codigo: '779A', es_principal: true }, { codigo: '779B', es_principal: false }] }]
+    const fila = producto(3, { codigo: String(EN_LA_BASE[0].codigo), codigo_barra: '779B' })
+    expect(clasificar([fila], base, COMPARADOR_PRODUCTOS).existentes[0].cambios).toEqual([])
+    const otra = producto(3, { codigo: String(EN_LA_BASE[0].codigo), codigo_barra: '779C' })
+    expect(clasificar([otra], base, COMPARADOR_PRODUCTOS).existentes[0].cambios.map((c) => c.grupo)).toEqual(['codigo_barra'])
   })
 })
 
