@@ -177,23 +177,42 @@ export function emparejarArchivos(nombres: string[], productos: ProductoParaFoto
   })
 }
 
+/*
+  Todas las filas, de a mil: el servidor nunca entrega más de mil por
+  pedido, y con el catálogo real (2.281 productos) una consulta sola
+  dejaba afuera más de la mitad sin avisar.
+*/
+export async function todasLasFilas<T>(
+  pedir: (desde: number, hasta: number) => PromiseLike<{ data: unknown[] | null; error: { message: string } | null }>,
+): Promise<T[]> {
+  const filas: T[] = []
+  for (let desde = 0; ; desde += 1000) {
+    const { data, error } = await pedir(desde, desde + 999)
+    if (error) throw new Error(error.message)
+    filas.push(...((data ?? []) as T[]))
+    if (!data || data.length < 1000) return filas
+  }
+}
+
 export async function productosParaFotos(): Promise<ProductoParaFotos[]> {
   const [productos, codigos] = await Promise.all([
-    supabase.from('producto').select('id, codigo, nombre_interno').is('eliminado_en', null),
-    supabase.from('producto_codigo_barra').select('producto_id, codigo').is('eliminado_en', null),
+    todasLasFilas<{ id: string; codigo: string; nombre_interno: string }>((desde, hasta) =>
+      supabase.from('producto').select('id, codigo, nombre_interno').is('eliminado_en', null).order('id').range(desde, hasta),
+    ),
+    todasLasFilas<{ producto_id: string; codigo: string }>((desde, hasta) =>
+      supabase.from('producto_codigo_barra').select('producto_id, codigo').is('eliminado_en', null).order('id').range(desde, hasta),
+    ),
   ])
-  if (productos.error) throw new Error(productos.error.message)
-  if (codigos.error) throw new Error(codigos.error.message)
   const barras = new Map<string, string[]>()
-  for (const c of codigos.data ?? []) {
-    const lista = barras.get(c.producto_id as string) ?? []
-    lista.push(c.codigo as string)
-    barras.set(c.producto_id as string, lista)
+  for (const c of codigos) {
+    const lista = barras.get(c.producto_id) ?? []
+    lista.push(c.codigo)
+    barras.set(c.producto_id, lista)
   }
-  return (productos.data ?? []).map((p) => ({
-    id: p.id as string,
-    codigo: p.codigo as string,
-    nombre: p.nombre_interno as string,
-    codigos_barra: barras.get(p.id as string) ?? [],
+  return productos.map((p) => ({
+    id: p.id,
+    codigo: p.codigo,
+    nombre: p.nombre_interno,
+    codigos_barra: barras.get(p.id) ?? [],
   }))
 }

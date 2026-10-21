@@ -13,6 +13,10 @@ describe('las funciones que esperan a ARCA', () => {
     expect(esFuncionDeArca(`${SERVIDOR}/functions/v1/arca-wsfe-solicitar-cae`)).toBe(true)
   })
 
+  it('la búsqueda de fotos también: espera al buscador', () => {
+    expect(esFuncionDeArca(`${SERVIDOR}/functions/v1/buscar-fotos`)).toBe(true)
+  })
+
   it('la contingencia y la consulta de CUIT también', () => {
     expect(esFuncionDeArca(`${SERVIDOR}/functions/v1/arca-wsfe-caea`)).toBe(true)
     expect(esFuncionDeArca(`${SERVIDOR}/functions/v1/arca-constancia`)).toBe(true)

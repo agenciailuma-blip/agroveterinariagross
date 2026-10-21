@@ -39,6 +39,12 @@ const FUNCIONES_DE_ARCA = new Set([
   'arca-constancia',
   'arca-wsfe-solicitar-cae',
   'arca-wsfe-caea',
+  /*
+    No es de ARCA pero espera igual a otro servidor: el buscador de
+    fotos y los sitios de donde baja cada una. Medido el 21/10: entre
+    seis y ocho segundos por búsqueda, demasiado cerca de los doce.
+  */
+  'buscar-fotos',
 ])
 
 /** Si el pedido va a una función del servidor que espera a ARCA. */

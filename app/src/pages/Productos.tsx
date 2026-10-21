@@ -17,6 +17,7 @@ import type { FilaListado, Referencias } from '@/lib/api/catalogo'
 import { listarDepositos, stockPorDeposito } from '@/lib/api/depositos'
 import ProductoEditor from '@/components/ProductoEditor'
 import SubirFotos from '@/components/SubirFotos'
+import BuscarFotos from '@/components/BuscarFotos'
 import type { EstadoFormulario } from '@/components/ProductoEditor'
 import { ESTADO_STOCK, moneda, numero } from '@/lib/tipos'
 import { barraDeAvance, boton, campoDeFiltro } from '@/estilos'
@@ -88,6 +89,7 @@ export default function Productos() {
   const [marcaId, setMarcaId] = useState<string | null>(null)
   const [seleccionado, setSeleccionado] = useState<string | null>(null)
   const [subiendoFotos, setSubiendoFotos] = useState(false)
+  const [buscandoFotos, setBuscandoFotos] = useState(false)
   const [creando, setCreando] = useState(false)
   const [form, setForm] = useState<EstadoFormulario>(FORM_VACIO)
   const [errorGuardado, setErrorGuardado] = useState<string | null>(null)
@@ -476,6 +478,7 @@ export default function Productos() {
   return (
     <div className="flex h-full flex-col gap-4">
       {subiendoFotos && <SubirFotos onCerrar={() => setSubiendoFotos(false)} />}
+      {buscandoFotos && <BuscarFotos onCerrar={() => setBuscandoFotos(false)} />}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-xl font-semibold tracking-tight text-tinta">Productos</h1>
@@ -493,6 +496,9 @@ export default function Productos() {
             </Link>
             <button onClick={() => setSubiendoFotos(true)} className={boton.secundario}>
               Subir fotos
+            </button>
+            <button onClick={() => setBuscandoFotos(true)} className={boton.secundario}>
+              Buscar fotos
             </button>
             <button
               onClick={nuevo}

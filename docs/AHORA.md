@@ -12,7 +12,7 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Lista para construir: 0.16.8** (20/10) — **el Responsable Inscripto también puede salir con comprobante interno** en la Caja, pedido de Lucas. La base ya lo acepta; la Caja instalada no muestra la opción hasta la 0.16.8. Ver *Lo último que pasó*. **677 pruebas verdes en la app.** ✅ Visto en pantalla.
+**Lista para construir: 0.16.8** (20 y 21/10) — **el Responsable Inscripto también puede salir con comprobante interno** en la Caja, y **Productos → *Buscar fotos***: el sistema busca las fotos en internet y Lucas elige. Lo del servidor ya está andando; las pantallas llegan con la 0.16.8. Ver *Lo último que pasó*. **694 pruebas verdes en la app.** ✅ Visto en pantalla.
 
 **Publicada: 0.16.7** (19/10, 17:52), verificada en Cloudflare: `latest.json` dice 0.16.7. **Reemplaza a la 0.16.6, que no se publicó**: lleva todo lo de la 0.16.6 más **lo que salió de la reunión con Zubu** —**cómo paga cada pedido de la tienda** (Mercado Pago, transferencia o efectivo), **los productos sólo para consultar** y **las fotos de los productos**— y el arreglo de la foto quitada. **También lleva *empezar de nuevo cuando el servidor lo pide*** ([`sync.ts`](../app/src/lib/local/sync.ts)), que estaba sin guardar en la carpeta cuando se construyó: se guardó después, en un commit aparte, y **`main` quedó igual a lo publicado**. Ver *Lo último que pasó*. **677 pruebas verdes en la app.**
 
@@ -78,6 +78,22 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 🟡 **Lo que la venta tardaba en llegar a la caja sin internet** — arreglado el 05/10 y publicado en la 0.13.4, **sin probar en el local**. El mostrador le pasaba las ventas a la caja una vez por minuto, y la caja miraba su cola cada ocho segundos: hasta 68 segundos con el cliente esperando. Y llegaba de a partes porque, mientras la cabecera intentaba subir al servidor —hasta doce segundos sin internet—, salían los renglones solos. Ahora la venta sale al segundo y medio de apretar *Enviar a caja* (y otra vez a los catorce, por si el intento de subir tardó), viaja entera o espera entera, y la caja la muestra apenas llega. Se comprueba en el próximo corte: la venta tiene que aparecer en la caja en un par de segundos y completa.
 
 ---
+
+## Lo último que pasó — 21 de octubre
+
+### Buscar las fotos en internet
+
+**Lo que eligió Lucas el 20/10, con Serper** —la cuenta es de Gross y la clave quedó en los secretos del servidor, `SERPER_API_KEY`—. Y lo que pidió el 21/10: **que no vengan con marca de agua ni publicidad de otro comercio, y en lo posible con fondo blanco.**
+
+> **Cómo se lo contás a Lucas:** en Productos hay un botón nuevo, *Buscar fotos*. Te muestra los productos que todavía no tienen foto, de a cinco, y para cada uno el sistema busca en internet y te propone cuatro, primero las de fondo blanco. Tocás las que sirven —la primera que tocás queda de principal— y *Guardar y seguir*: se achican, se convierten al formato de la web y quedan en el producto, igual que si las hubieras subido vos. Si el nombre no ayuda —los de OBTech son cortos—, cambiás el texto y *Buscar* otra vez. Arriba podés filtrar, por ejemplo *ROYAL* o *PIPETA*, para trabajar por marca. Mirá bien la presentación: a veces trae el mismo producto en otro tamaño.
+
+- **El fondo blanco:** se le pide a Google con su filtro de color blanco, y además la pantalla mide el borde de cada foto y pone adelante las de fondo blanco, con la marca *Fondo blanco*. Si con el filtro no encuentra nada, busca sin él.
+- **Sin marca de agua:** se descartan los bancos de imágenes —que la ponen siempre— y las redes sociales. **La marca de agua chica o el logo de otro comercio dentro de la foto no se detectan solos:** los ve Lucas, y cada foto dice de qué sitio sale.
+- **El servidor busca y baja; la app achica y sube.** La función [`buscar-fotos`](../supabase/functions/buscar-fotos/index.ts) sólo la puede usar quien edita productos, baja sólo fotos de sitios comunes —nada de direcciones internas, ni siquiera siguiendo una redirección— y de hasta 10 MB. Las vistas previas viajan adentro de la respuesta, porque el programa instalado sólo deja mostrar imágenes del servidor de Gross.
+- **Cuánto cuesta:** una búsqueda por producto, a veces dos. Las primeras 2.500 son gratis; después, unos USD 1 cada 1.000. **Una búsqueda tarda de seis a ocho segundos**, medido: la app le da el mismo margen que a las funciones de ARCA, para no creer que se cortó internet.
+- **De paso, arreglado: *Subir fotos* de a muchas leía sólo los primeros 1.000 productos.** El servidor entrega mil filas por pedido y con el catálogo real son 2.281: una foto con el código de un producto de los otros 1.281 decía *«no hay ningún producto»*. Ahora lee de a mil hasta el final.
+
+**Verificado:** **13 pruebas nuevas** de qué fotos se proponen, qué sitios se descartan, adónde puede ir el servidor, el fondo blanco y el filtro; la de las direcciones internas se rompió a propósito y la atrapó. **694 verdes** y los tipos sin errores. **Con productos reales**, en pantalla: los primeros cinco del catálogo —con nombres como *12 P 15*, que traen cualquier cosa: para eso está el texto que se cambia— y con *ROYAL*, 75 productos sin foto con fotos de Royal Canin que coinciden. Tocar dos fotos marcó *Principal* y *2ª*; no se guardó nada en productos reales. **Bajar, convertir y subir** se probó en el producto PRUEBA: la foto bajó por el servidor, se convirtió y subió; la base la rechazó por estar dado de baja, y el archivo se borró solo. **A 375 px**, nada se desplaza, y los cuatro botones de Productos entran.
 
 ## Lo último que pasó — 20 de octubre
 
@@ -145,7 +161,7 @@ Y salieron dos cosas, arregladas:
 - 🟡 **La dirección desde la que sale el mail de la factura**: la consigue ILUMA.
 - 💡 **Lucas preguntó por traer las fotos solas de internet**, buscándolas por la descripción, para corregirlas antes de lanzar. **ILUMA le propuso tres pasos (19/10). ✅ Lucas eligió el 2 (20/10): que el sistema las busque.**
   1. **Que pase las fotos que tenga y se hace la primera carga** con *Subir fotos*, nombradas con el código o el código de barras. Es lo que ya está hecho y probado.
-  2. **Después, o como otro camino: que el sistema las busque.** Por código de barras o por nombre, en un servicio pago de búsqueda de imágenes; propone una o dos por producto, Lucas acepta o descarta cada una, y las aceptadas se guardan igual que una subida a mano. Riesgos: fotos parecidas que no son el producto —otra presentación, 7,5 kg contra 15 kg—, por eso la revisión de Lucas no se saltea; y fotos con derechos de otro comercio. No está construido. **Es lo próximo de la tienda.** Antes de construir hay que elegir el servicio de búsqueda —tiene costo por consulta y cuenta propia de Gross—.
+  2. **Después, o como otro camino: que el sistema las busque.** Por código de barras o por nombre, en un servicio pago de búsqueda de imágenes; propone una o dos por producto, Lucas acepta o descarta cada una, y las aceptadas se guardan igual que una subida a mano. Riesgos: fotos parecidas que no son el producto —otra presentación, 7,5 kg contra 15 kg—, por eso la revisión de Lucas no se saltea; y fotos con derechos de otro comercio. ✅ **Construido el 21/10, con Serper**: ver *Lo último que pasó — 21 de octubre*.
   3. **Más adelante, con el cerebro de Gross:** que el sistema busque, edite o cree las imágenes —el producto solo, o puesto en un contexto de uso—. Idea anotada; todavía no tiene alcance.
 
 ## Lo último que pasó — 19 de octubre, a la noche
@@ -1037,7 +1053,7 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 | Qué **columnas** quiere el contador en el Excel | Contador | 🟡 Ya se exporta con lo estándar |
 | **La dirección desde la que salen los mails** | ILUMA | 🟡 El servicio ya está elegido (Resend). La necesitan las facturas de la tienda y el pedido 17. Desde el 19/10 la gestiona ILUMA |
 | **Envío y descuentos de la tienda** | Zubu y Lucas | 🟡 Pendiente desde la reunión del 19/10, hasta saber cómo lo maneja Andreani |
-| ~~**Las fotos de la tienda: con qué se arranca**~~ | — | ✅ **Lucas eligió el 20/10 que el sistema las busque** y él acepte o descarte cada una. Falta elegir el servicio de búsqueda |
+| ~~**Las fotos de la tienda: con qué se arranca**~~ | — | ✅ **Lucas eligió el 20/10 que el sistema las busque** y él acepte o descarte cada una. **Construido el 21/10**, con Serper |
 | **Qué clientes no llevan percepción de IIBB** (certificado de exclusión de la DGR) | Lucas | 🟡 Los 2.494 clientes de OBTech entraron **sin ninguno marcado**: a todos los inscriptos que pasen el mínimo se les va a percibir. Se marca en la ficha de cada uno |
 
 → La lista completa está en [[Pendientes con terceros]].
