@@ -78,6 +78,12 @@ describe('el PDF de la factura', () => {
   })
 })
 
+const MAIL = {
+  tipo: 'Factura B', numero: '0001-00000123', fecha: '2026-10-16', total: 62300, receptor: 'María Gómez',
+  comercio: 'Agroveterinaria Gross', domicilio: 'Av. Libertad 315, Oberá', telefono: '3755-421829',
+  logo: 'https://gross-sistema.pages.dev/marca/correo-isotipo-blanco.png', respondible: false,
+}
+
 describe('el mail', () => {
   it('una dirección que vale la pena intentar', () => {
     expect(correoValido('maria@ejemplo.com')).toBe(true)
@@ -88,22 +94,26 @@ describe('el mail', () => {
   })
 
   it('dice qué es, de cuánto y de quién viene', () => {
-    const m = armarMail({
-      tipo: 'Factura B', numero: '0001-00000123', total: 62300, receptor: 'María Gómez',
-      comercio: 'Agroveterinaria Gross', domicilio: 'Av. Libertad 315, Oberá', telefono: '3755-421829',
-    })
+    const m = armarMail({ ...MAIL, receptor: 'María Gómez' })
     expect(m.asunto).toBe('Factura B 0001-00000123 · Agroveterinaria Gross')
     expect(m.texto).toContain('Hola, María Gómez:')
     expect(m.texto).toContain('$ 62.300,00')
+    expect(m.html).toContain('16/10/2026')
+    expect(m.html).toContain('#8d0b7b')
+    expect(m.html).toContain('https://gross-sistema.pages.dev/marca/correo-isotipo-blanco.png')
     expect(m.html).not.toContain('<script')
   })
 
   it('al consumidor final no lo saluda por ese nombre, y no deja pasar HTML', () => {
-    const m = armarMail({
-      tipo: 'Factura B', numero: '1', total: 1, receptor: 'Consumidor Final', comercio: '<b>X</b>', domicilio: '', telefono: '',
-    })
+    const m = armarMail({ ...MAIL, receptor: 'Consumidor Final', comercio: '<b>X</b>' })
     expect(m.texto.startsWith('Hola:')).toBe(true)
     expect(m.html).toContain('&lt;b&gt;X&lt;/b&gt;')
+  })
+
+  // «Respondé este mail» sólo si hay una casilla del local que lo reciba.
+  it('invita a responder sólo si alguien va a leer la respuesta', () => {
+    expect(armarMail({ ...MAIL, respondible: false }).texto).not.toContain('respondé')
+    expect(armarMail({ ...MAIL, respondible: true }).texto).toContain('respondé este mail')
   })
 
   it('el archivo se llama como la factura', () => {

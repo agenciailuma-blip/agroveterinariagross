@@ -72,7 +72,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: c } = await servidor
       .from("comprobante")
-      .select(`id, numero, total, cae, receptor_nombre,
+      .select(`id, numero, fecha, total, cae, receptor_nombre,
                tipo:tipo_comprobante_id(descripcion), pv:punto_venta_id(numero)`)
       .eq("id", comprobanteId)
       .maybeSingle();
@@ -87,22 +87,27 @@ Deno.serve(async (req: Request) => {
     const { data: config } = await servidor
       .from("configuracion")
       .select("clave, valor")
-      .in("clave", ["correo.remitente", "correo.responder_a", "comercio.nombre_fantasia", "comercio.razon_social",
+      .in("clave", ["correo.remitente", "correo.responder_a", "correo.logo", "comercio.nombre_fantasia", "comercio.razon_social",
         "comercio.domicilio", "comercio.localidad", "comercio.telefono"]);
     const valor = (k: string) => String(config?.find((x) => x.clave === k)?.valor ?? "").trim();
 
     const tipo = (uno(c.tipo as never) as { descripcion: string } | null)?.descripcion ?? "Factura";
     const numero = `${String((uno(c.pv as never) as { numero: number } | null)?.numero ?? 0).padStart(4, "0")}-${String(c.numero).padStart(8, "0")}`;
+    const responderA = valor("correo.responder_a");
     const mail = armarMail({
       tipo,
       numero,
+      fecha: String(c.fecha ?? ""),
       total: Number(c.total),
       receptor: String(c.receptor_nombre ?? ""),
       comercio: valor("comercio.nombre_fantasia") || valor("comercio.razon_social") || "Agroveterinaria Gross",
       domicilio: [valor("comercio.domicilio"), valor("comercio.localidad")].filter(Boolean).join(", "),
       telefono: valor("comercio.telefono"),
+      // El isotipo en blanco, publicado con la web de la app. Se puede
+      // cambiar en la configuración (correo.logo) el día del dominio propio.
+      logo: valor("correo.logo") || "https://gross-sistema.pages.dev/marca/correo-isotipo-blanco.png",
+      respondible: !!responderA,
     });
-    const responderA = valor("correo.responder_a");
 
     const r = await fetch(RESEND, {
       method: "POST",

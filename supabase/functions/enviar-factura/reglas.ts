@@ -12,14 +12,24 @@ export function correoValido(correo: string): boolean {
 export interface DatosDelMail {
   tipo: string; // «Factura B»
   numero: string; // «0001-00000123»
+  fecha: string; // «2026-10-16»
   total: number;
   receptor: string;
   comercio: string; // nombre de fantasía
   domicilio: string;
   telefono: string;
+  /** El isotipo en blanco, publicado con la web: los correos no muestran SVG. */
+  logo: string;
+  /** Si hay una casilla del local para las respuestas. */
+  respondible: boolean;
 }
 
 const pesos = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" });
+const importe = (n: number) => pesos.format(n).replace(/\u00a0/g, " ");
+const fechaCorta = (iso: string) => {
+  const [a, m, d] = iso.split("-");
+  return d && m && a ? `${d}/${m}/${a}` : iso;
+};
 
 function escapar(t: string): string {
   return t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -31,22 +41,76 @@ export function nombreDelPdf(d: Pick<DatosDelMail, "tipo" | "numero">): string {
 }
 
 /*
-  El mail: corto, con lo que el cliente busca —qué es, de cuánto— y de
-  quién viene. La factura va adjunta; el cuerpo no la repite.
+  El mail, con la marca de Gross —pedido del 21/10: «se ve muy plano»—.
+
+  Hecho como se hacen los mails: tablas y estilos escritos en cada
+  elemento, porque Gmail, Outlook y los celulares ignoran casi todo lo
+  demás. La banda magenta con el isotipo y el nombre, la línea verde de
+  la marca, y el resumen de la factura —qué es, de qué día, cuánto— en
+  un recuadro, con el total en grande. La factura va adjunta; el mail no
+  la repite.
+
+  Si el isotipo no se ve —un correo que bloquea imágenes—, queda el
+  nombre escrito, que es texto.
 */
 export function armarMail(d: DatosDelMail): { asunto: string; html: string; texto: string } {
   const asunto = `${d.tipo} ${d.numero} · ${d.comercio}`;
-  const saludo = d.receptor && !/consumidor final/i.test(d.receptor) ? `Hola, ${d.receptor}:` : "Hola:";
-  const cuerpo = `Te mandamos tu ${d.tipo} ${d.numero} por ${pesos.format(d.total).replace(/ /g, " ")}. La encontrás adjunta en PDF.`;
+  const nombre = d.receptor && !/consumidor final/i.test(d.receptor) ? d.receptor.trim() : "";
+  const saludo = nombre ? `Hola, ${nombre}:` : "Hola:";
+  const cuerpo = `Te mandamos tu ${d.tipo} ${d.numero} por ${importe(d.total)}. La encontrás adjunta en PDF.`;
   const pie = [d.comercio, d.domicilio, d.telefono ? `Tel. ${d.telefono}` : ""].filter(Boolean).join(" · ");
+  const consulta = d.respondible ? "Si tenés alguna consulta, respondé este mail." : "";
 
-  const texto = `${saludo}\n\n${cuerpo}\n\nGracias por tu compra.\n\n${pie}\n`;
-  const html = `<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#1f2021;line-height:1.5">
-<p>${escapar(saludo)}</p>
-<p>${escapar(cuerpo)}</p>
-<p>Gracias por tu compra.</p>
-<p style="color:#6b6870;font-size:13px;margin-top:24px">${escapar(pie)}</p>
-</div>`;
+  const texto = [saludo, "", cuerpo, "", "Gracias por tu compra.", "", pie, ...(consulta ? [consulta] : []), ""].join("\n");
+
+  const f = "font-family:Ubuntu,'Segoe UI',Arial,Helvetica,sans-serif";
+  const fila = (k: string, v: string) =>
+    `<tr><td style="${f};font-size:13px;color:#554f59;padding:6px 0">${escapar(k)}</td>` +
+    `<td align="right" style="${f};font-size:14px;color:#1f2021;padding:6px 0;font-weight:bold">${escapar(v)}</td></tr>`;
+
+  const html = `<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light only"><meta name="supported-color-schemes" content="light only">
+<title>${escapar(asunto)}</title></head>
+<body style="margin:0;padding:0;background:#f0f5f7">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0">${escapar(`Tu ${d.tipo} por ${importe(d.total)}, en PDF.`)}</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f0f5f7">
+<tr><td align="center" style="padding:28px 12px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;background:#ffffff;border:1px solid #d1e2e8;border-radius:14px;overflow:hidden">
+<tr><td style="background:#8d0b7b;padding:22px 28px">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+<td style="vertical-align:middle"><img src="${escapar(d.logo)}" width="44" height="44" alt="" style="display:block;border:0"></td>
+<td style="vertical-align:middle;padding-left:14px;${f};color:#ffffff">
+<div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#f3d6ee">Agroveterinaria</div>
+<div style="font-size:24px;line-height:1.1;font-weight:bold;letter-spacing:2px;color:#ffffff">GROSS</div>
+</td></tr></table>
+</td></tr>
+<tr><td style="background:#64b32e;height:4px;line-height:4px;font-size:0">&nbsp;</td></tr>
+<tr><td style="padding:30px 28px 6px;${f};font-size:15px;line-height:1.6;color:#1f2021">
+<p style="margin:0 0 10px">${escapar(saludo)}</p>
+<p style="margin:0 0 22px">Te mandamos tu factura. La encontrás adjunta en PDF.</p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f0f5f7;border:1px solid #d1e2e8;border-radius:10px">
+<tr><td style="padding:14px 18px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+${fila("Comprobante", `${d.tipo} ${d.numero}`)}
+${fila("Fecha", fechaCorta(d.fecha))}
+<tr><td colspan="2" style="border-top:1px solid #d1e2e8;font-size:0;line-height:0;padding-top:8px">&nbsp;</td></tr>
+<tr><td style="${f};font-size:13px;color:#554f59">Total</td>
+<td align="right" style="${f};font-size:26px;font-weight:bold;color:#8d0b7b;white-space:nowrap">${escapar(importe(d.total))}</td></tr>
+</table>
+</td></tr></table>
+<p style="margin:24px 0 0">Gracias por tu compra.</p>
+</td></tr>
+<tr><td style="padding:22px 28px 26px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+<td style="border-top:1px solid #d1e2e8;padding-top:16px;${f};font-size:12px;line-height:1.6;color:#554f59">
+<strong style="color:#8d0b7b">${escapar(d.comercio)}</strong><br>
+${[d.domicilio ? escapar(d.domicilio) : "", d.telefono ? `<span style="white-space:nowrap">Tel. ${escapar(d.telefono)}</span>` : "", consulta ? escapar(consulta) : ""].filter(Boolean).join("<br>")}
+</td></tr></table>
+</td></tr>
+</table>
+</td></tr></table>
+</body></html>`;
   return { asunto, html, texto };
 }
 
