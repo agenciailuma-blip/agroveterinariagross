@@ -59,7 +59,7 @@ export default function SubirFotos({ onCerrar }: { onCerrar: () => void }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 grid place-items-center bg-tinta/40 p-4 backdrop-blur-[2px]"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-tinta/40 p-4 backdrop-blur-[2px]"
       role="dialog"
       aria-modal="true"
       aria-labelledby="subir-fotos-titulo"

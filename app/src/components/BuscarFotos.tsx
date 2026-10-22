@@ -137,9 +137,15 @@ export default function BuscarFotos({ onCerrar }: { onCerrar: () => void }) {
     if (fallas === 0 && hayMas) setDesde((d) => d + TANDA)
   }
 
+  /*
+    Flex y no grid para centrar: en una grilla, el max-h-full de la
+    ventana no se aplica —la fila crece con el contenido— y con muchas
+    fotos la ventana pasaba el alto de la pantalla sin poder bajar
+    (visto en el local el 22/10). En flex, la lista de abajo se desplaza.
+  */
   return (
     <div
-      className="fixed inset-0 z-50 grid place-items-center bg-tinta/40 p-2 backdrop-blur-[2px] sm:p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-tinta/40 p-2 backdrop-blur-[2px] sm:p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="buscar-fotos-titulo"
