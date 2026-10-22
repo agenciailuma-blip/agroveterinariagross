@@ -12,7 +12,7 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-🔴 **Lista para construir y publicar ya: 0.17.1** (22/10) — **a las PC del local les faltaban 351 productos y 384 clientes**, y por eso el mostrador no encontraba Credelio. Con internet o sin él, el mostrador busca en la copia de la PC, y la sincronización perdía filas que habían cambiado en el mismo instante. Arreglado; **al actualizarse, cada PC vuelve a bajar el catálogo y los clientes enteros, sola**. Ver *Lo último que pasó*. **722 pruebas verdes en la app.**
+**Publicada: 0.17.1** (22/10, 10:34), verificada en Cloudflare: `latest.json` dice 0.17.1. 🟡 **Falta que cada PC del local se actualice** con *Actualizar ahora* y buscar «cred» en el Mostrador — **a las PC del local les faltaban 351 productos y 384 clientes**, y por eso el mostrador no encontraba Credelio. Con internet o sin él, el mostrador busca en la copia de la PC, y la sincronización perdía filas que habían cambiado en el mismo instante. Arreglado; **al actualizarse, cada PC vuelve a bajar el catálogo y los clientes enteros, sola**. Ver *Lo último que pasó*. **722 pruebas verdes en la app.**
 
 **Publicada: 0.17.0** (21/10, a la noche), verificada en Cloudflare: `latest.json` dice 0.17.0 y el isotipo del mail está publicado. **La factura por mail**: el botón *Mandar por mail* en la factura y el envío solo al facturar un pedido de la tienda, con la factura en PDF y el mail con la marca. **A los clientes empieza a llegar cuando se verifique el dominio en Resend** (ver *Lo último que pasó*). **718 pruebas verdes en la app.**
 
