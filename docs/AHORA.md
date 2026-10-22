@@ -12,6 +12,8 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
+🔴 **Lista para construir y publicar ya: 0.17.1** (22/10) — **a las PC del local les faltaban 351 productos y 384 clientes**, y por eso el mostrador no encontraba Credelio. Con internet o sin él, el mostrador busca en la copia de la PC, y la sincronización perdía filas que habían cambiado en el mismo instante. Arreglado; **al actualizarse, cada PC vuelve a bajar el catálogo y los clientes enteros, sola**. Ver *Lo último que pasó*. **722 pruebas verdes en la app.**
+
 **Publicada: 0.17.0** (21/10, a la noche), verificada en Cloudflare: `latest.json` dice 0.17.0 y el isotipo del mail está publicado. **La factura por mail**: el botón *Mandar por mail* en la factura y el envío solo al facturar un pedido de la tienda, con la factura en PDF y el mail con la marca. **A los clientes empieza a llegar cuando se verifique el dominio en Resend** (ver *Lo último que pasó*). **718 pruebas verdes en la app.**
 
 **Publicada: 0.16.9** (21/10, 17:36), verificada en Cloudflare. *Descargar planilla* en Productos, Clientes y Proveedores, y la importación de la ficha de proveedores.
@@ -82,6 +84,19 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 🟡 **Lo que la venta tardaba en llegar a la caja sin internet** — arreglado el 05/10 y publicado en la 0.13.4, **sin probar en el local**. El mostrador le pasaba las ventas a la caja una vez por minuto, y la caja miraba su cola cada ocho segundos: hasta 68 segundos con el cliente esperando. Y llegaba de a partes porque, mientras la cabecera intentaba subir al servidor —hasta doce segundos sin internet—, salían los renglones solos. Ahora la venta sale al segundo y medio de apretar *Enviar a caja* (y otra vez a los catorce, por si el intento de subir tardó), viaja entera o espera entera, y la caja la muestra apenas llega. Se comprueba en el próximo corte: la venta tiene que aparecer en la caja en un par de segundos y completa.
 
 ---
+
+## Lo último que pasó — 22 de octubre: el mostrador no encontraba Credelio
+
+**Lo que vio Lucas:** en el Mostrador, buscando «cred», *Sin resultados*, con la 0.17.0 instalada. Credelio está en la base: 11 productos, activos y con precio, cargados el 19/10 con el Excel de OBTech.
+
+> **Cómo se lo contás a Lucas:** a las computadoras del local les faltaba una parte del catálogo y de los clientes desde que cargamos lo de OBTech. No era Credelio solo: eran 351 productos y 384 clientes. Ya está arreglado: cuando se actualiza el programa a la 0.17.1, cada computadora vuelve a bajar todo sola, en un par de minutos, y desde ahí los encuentra.
+
+- **La causa:** el mostrador busca en la copia de la PC, tenga o no internet. Esa copia se baja de a 500 filas, ordenadas por la hora del último cambio, y cada tanda pide «lo que cambió después de la última». La importación del 19/10 guardó los productos y los clientes **de a 200 con exactamente la misma hora**: cuando una tanda de 500 cortaba un grupo por la mitad, el resto del grupo tenía la misma hora que la última fila bajada, y «después» no lo traía nunca.
+- **Medido contra la base, con las mismas consultas:** con la forma de bajar de hasta la 0.17.0 llegaban **1.981 de 2.332 productos —ningún Credelio— y 2.136 de 2.520 clientes**. Con el arreglo, **todos**. Los códigos de barra, el stock y los avisos estaban completos: son pocas filas.
+- **El arreglo** ([`recorrerPorFecha`](../app/src/lib/local/sync.ts)): cuando una tanda llega llena, antes de seguir se bajan enteras las filas de esa misma hora, de a 500 y ordenadas por su clave, aunque sean miles. Vale para todas las tablas que bajan por fecha y para las clasificaciones.
+- **Las PC que ya están mal se arreglan solas:** la 0.17.1 sube el número de la bajada (`VERSION_BAJADA` 4) y vuelve a bajar todo lo que viene por fecha, sin tocar lo que la PC tenga por subir. **Hasta que se actualicen, les siguen faltando esos productos y clientes**; mientras tanto se encuentran en Productos y Clientes, que leen del servidor, pero el mostrador no los vende.
+
+**Verificado:** **4 pruebas nuevas** con un servidor de mentira armado como el de verdad —2.281 productos de a 200 con la misma hora, y 1.700 en un mismo instante—: bajan enteros; con la forma vieja se pierden filas, y rompiendo el arreglo a propósito fallan las dos que importan. **722 verdes** y los tipos sin errores. **Contra la base real**, la misma bajada en SQL: 1.981 contra 2.332 productos y 0 contra 11 Credelio. 🟡 **Falta verlo en una PC del local** después de actualizar: buscar «cred» en el Mostrador.
 
 ## Lo último que pasó — 21 de octubre, a la noche: la factura por mail
 

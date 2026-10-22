@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { conciliarCola, queHacerConLaGeneracion, TABLAS_DEL_SERVIDOR } from '@/lib/local/sync'
+import { conciliarCola, queHacerConLaGeneracion, recorrerPorFecha, TABLAS_DEL_SERVIDOR, type Fila } from '@/lib/local/sync'
 import { db } from '@/lib/local/db'
 
 /*
@@ -105,5 +105,59 @@ describe('empezar de nuevo cuando el servidor lo pide', () => {
     for (const nunca of ['outbox', 'seguridad', 'contador', 'cursor']) {
       expect(TABLAS_DEL_SERVIDOR as readonly string[]).not.toContain(nunca)
     }
+  })
+})
+
+/*
+  El 22/10 el mostrador no encontraba Credelio: los 2.281 productos de
+  OBTech entraron de a 200 con la misma hora, y las tandas de 500 que
+  cortaban un grupo por la mitad dejaban afuera el resto para siempre.
+  Acá, un servidor de mentira con las mismas consultas que el de verdad.
+*/
+describe('bajar por fecha sin perder filas', () => {
+  const servidor = (filas: Fila[]) => ({
+    despuesDe: async (cursor: string) =>
+      filas.filter((f) => String(f.actualizado_en) > cursor).slice(0, 500),
+    enElInstante: async (fecha: string, desde: number) =>
+      filas.filter((f) => f.actualizado_en === fecha).slice(desde, desde + 500),
+  })
+  const enGrupos = (total: number, porGrupo: number): Fila[] =>
+    Array.from({ length: total }, (_, i) => ({
+      id: String(i).padStart(5, '0'),
+      actualizado_en: `2026-10-19T21:57:${String(10 + Math.floor(i / porGrupo)).padStart(2, '0')}.000000+00:00`,
+    }))
+
+  async function bajar(filas: Fila[], conEmpates = true) {
+    const s = servidor(filas)
+    const vistas = new Set<string>()
+    const r = await recorrerPorFecha(
+      '1970-01-01T00:00:00Z',
+      s.despuesDe,
+      conEmpates ? s.enElInstante : async () => [],
+      async (lote) => lote.forEach((f) => vistas.add(String(f.id))),
+    )
+    return { vistas, cursor: r.cursor }
+  }
+
+  it('el catálogo de OBTech, de a 200 con la misma hora, baja entero', async () => {
+    const filas = enGrupos(2281, 200)
+    const { vistas, cursor } = await bajar(filas)
+    expect(vistas.size).toBe(2281)
+    expect(cursor).toBe(filas[filas.length - 1].actualizado_en)
+  })
+
+  it('aunque sean miles en el mismo instante', async () => {
+    const { vistas } = await bajar(enGrupos(1700, 5000))
+    expect(vistas.size).toBe(1700)
+  })
+
+  it('sin bajar los empates, como hasta la 0.17.0, se perdían filas', async () => {
+    const { vistas } = await bajar(enGrupos(2281, 200), false)
+    expect(vistas.size).toBeLessThan(2281)
+  })
+
+  it('una tabla chica sigue igual: una consulta y listo', async () => {
+    const { vistas } = await bajar(enGrupos(30, 1))
+    expect(vistas.size).toBe(30)
   })
 })

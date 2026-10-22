@@ -36,6 +36,11 @@ interface Definicion {
   origen: string
   columnas: string
   clave?: string
+  /**
+    Lo que identifica cada fila en el servidor, para ordenar las que
+    cambiaron en el mismo instante (ver recorrerPorFecha). Por omisión, id.
+  */
+  orden?: string[]
   /** Adapta la fila del servidor a la forma local. Puede cifrar, por eso es asíncrona. */
   mapear?: (fila: Record<string, unknown>) => Record<string, unknown> | Promise<Record<string, unknown>>
 }
@@ -56,7 +61,7 @@ const MAESTROS: Definicion[] = [
     origen: 'producto_codigo_barra',
     columnas: 'id, producto_id, codigo, eliminado_en, actualizado_en',
   },
-  { tabla: 'saldo', origen: 'stock_saldo', columnas: 'producto_id, cantidad, actualizado_en' },
+  { tabla: 'saldo', origen: 'stock_saldo', columnas: 'producto_id, cantidad, actualizado_en', orden: ['producto_id'] },
   {
     tabla: 'umbral',
     origen: 'umbral_stock',
@@ -113,9 +118,10 @@ const MAESTROS: Definicion[] = [
     tabla: 'cuota',
     origen: 'medio_pago_cuota',
     columnas: 'medio_pago_id, cuotas, recargo_porcentaje, activo, actualizado_en',
+    orden: ['medio_pago_id', 'cuotas'],
     mapear: (f) => ({ ...f, clave: `${f.medio_pago_id}-${f.cuotas}` }),
   },
-  { tabla: 'configuracion', origen: 'configuracion', columnas: 'clave, valor, actualizado_en' },
+  { tabla: 'configuracion', origen: 'configuracion', columnas: 'clave, valor, actualizado_en', orden: ['clave'] },
   {
     tabla: 'punto_venta',
     origen: 'punto_venta',
@@ -140,6 +146,7 @@ const MAESTROS: Definicion[] = [
     tabla: 'saldo_cuenta_corriente',
     origen: 'cuenta_corriente_saldo',
     columnas: 'cliente_id, saldo, actualizado_en',
+    orden: ['cliente_id'],
   },
   /*
     Hasta dónde llegó la numeración de cada serie.
@@ -153,6 +160,7 @@ const MAESTROS: Definicion[] = [
     tabla: 'secuencia',
     origen: 'secuencia_comprobante',
     columnas: 'punto_venta_id, tipo_comprobante_id, ultimo_numero, actualizado_en',
+    orden: ['punto_venta_id', 'tipo_comprobante_id'],
     mapear: (f) => ({ ...f, clave: `${f.punto_venta_id}-${f.tipo_comprobante_id}` }),
   },
 ]
@@ -175,35 +183,99 @@ async function guardarCursor(tabla: string, cursor: string) {
   await db.cursor.put({ tabla, cursor, sincronizado_en: new Date().toISOString() })
 }
 
-async function bajarTabla(def: Definicion) {
-  const desde = await leerCursor(def.tabla)
+/*
+  ─────────────────────────────────────────────────────────────
+  Recorrer una tabla por fecha de cambio, sin perder filas
+
+  Se pide de a LOTE, ordenado por actualizado_en, y la tanda siguiente
+  arranca después de la última fecha. El problema son los empates: si
+  muchas filas cambiaron en el mismo instante —una importación las
+  guarda de a 200 con la misma hora— y la tanda se corta en el medio de
+  ese grupo, las que quedaron afuera tienen la misma fecha que el
+  cursor, y «después de» no las vuelve a traer nunca.
+
+  Pasó de verdad: el 22/10 el mostrador no encontraba Credelio. Los
+  2.281 productos de OBTech entraron el 19/10 de a 200 con la misma
+  hora, las tandas de 500 cortaban grupos por la mitad, y a las PC les
+  faltaba buena parte del catálogo. Con internet no se notaba: busca en
+  el servidor.
+
+  Por eso, cuando una tanda llega llena, antes de seguir se bajan
+  enteras las filas de la última fecha —de a LOTE, ordenadas por lo que
+  las identifica, para que ninguna se repita ni se saltee—, y recién
+  entonces se sigue después de esa fecha. Funciona aunque sean miles en
+  el mismo instante.
+
+  Las dos consultas llegan como funciones para poder probarlo sin red
+  (sync.prueba.ts).
+  ─────────────────────────────────────────────────────────────
+*/
+export type Fila = Record<string, unknown>
+
+export async function recorrerPorFecha(
+  desde: string,
+  despuesDe: (cursor: string) => Promise<Fila[]>,
+  enElInstante: (fecha: string, desdeFila: number) => Promise<Fila[]>,
+  guardar: (filas: Fila[]) => Promise<void>,
+  lote = LOTE,
+): Promise<{ cursor: string; total: number }> {
   let cursor = desde
   let total = 0
+  for (;;) {
+    const filas = await despuesDe(cursor)
+    if (!filas.length) break
+    await guardar(filas)
+    total += filas.length
+    const ultima = String(filas[filas.length - 1].actualizado_en)
+
+    if (filas.length < lote) {
+      cursor = ultima
+      break
+    }
+    // Tanda llena: puede haber más filas en el mismo instante que la última.
+    for (let i = 0; ; i += lote) {
+      const empatadas = await enElInstante(ultima, i)
+      if (empatadas.length) await guardar(empatadas)
+      if (empatadas.length < lote) break
+    }
+    cursor = ultima
+  }
+  return { cursor, total }
+}
+
+async function bajarTabla(def: Definicion) {
+  const desde = await leerCursor(def.tabla)
+  const orden = def.orden ?? ['id']
+
+  // Se adapta —y se cifra— antes de escribir: esperar el cifrado con la
+  // escritura ya empezada es lo que cierra las transacciones de IndexedDB.
+  const guardar = async (filas: Fila[]) => {
+    const listas = await Promise.all(filas.map((f) => (def.mapear ? def.mapear(f) : f)))
+    await db.table(def.tabla).bulkPut(listas)
+  }
 
   // Se pagina por cursor y no por offset: si algo cambia mientras se
   // baja, offset saltea filas y el cursor no.
-  for (;;) {
+  const despuesDe = async (cursor: string) => {
     const { data, error } = await supabase
       .from(def.origen)
       .select(def.columnas)
       .gt('actualizado_en', cursor)
       .order('actualizado_en')
       .limit(LOTE)
-
     if (error) throw new Error(`${def.origen}: ${error.message}`)
-    const filas = (data ?? []) as unknown as Record<string, unknown>[]
-    if (!filas.length) break
-
-    // Se adapta —y se cifra— antes de escribir: esperar el cifrado con la
-    // escritura ya empezada es lo que cierra las transacciones de IndexedDB.
-    const listas = await Promise.all(filas.map((f) => (def.mapear ? def.mapear(f) : f)))
-    await db.table(def.tabla).bulkPut(listas)
-
-    cursor = String(filas[filas.length - 1].actualizado_en)
-    total += filas.length
-    if (filas.length < LOTE) break
+    return (data ?? []) as unknown as Fila[]
   }
 
+  const enElInstante = async (fecha: string, desdeFila: number) => {
+    let q = supabase.from(def.origen).select(def.columnas).eq('actualizado_en', fecha)
+    for (const c of orden) q = q.order(c)
+    const { data, error } = await q.range(desdeFila, desdeFila + LOTE - 1)
+    if (error) throw new Error(`${def.origen}: ${error.message}`)
+    return (data ?? []) as unknown as Fila[]
+  }
+
+  const { cursor, total } = await recorrerPorFecha(desde, despuesDe, enElInstante, guardar)
   if (total) await guardarCursor(def.tabla, cursor)
   return total
 }
@@ -251,20 +323,32 @@ async function bajarReferencias() {
   for (const tipo of REFERENCIAS) {
     const clave = `referencia:${tipo}`
     const desde = await leerCursor(clave)
-    const { data, error } = await supabase
-      .from(tipo)
-      .select('id, nombre, actualizado_en, eliminado_en')
-      .gt('actualizado_en', desde)
-      .order('actualizado_en')
-      .limit(LOTE)
-
-    if (error) throw new Error(`${tipo}: ${error.message}`)
-    const filas = (data ?? []) as Record<string, unknown>[]
-    if (!filas.length) continue
-
-    await db.referencia.bulkPut(filas.map((f) => ({ ...f, tipo })) as never)
-    await guardarCursor(clave, String(filas[filas.length - 1].actualizado_en))
-    total += filas.length
+    const despuesDe = async (cursor: string) => {
+      const { data, error } = await supabase
+        .from(tipo)
+        .select('id, nombre, actualizado_en, eliminado_en')
+        .gt('actualizado_en', cursor)
+        .order('actualizado_en')
+        .limit(LOTE)
+      if (error) throw new Error(`${tipo}: ${error.message}`)
+      return (data ?? []) as Fila[]
+    }
+    const enElInstante = async (fecha: string, desdeFila: number) => {
+      const { data, error } = await supabase
+        .from(tipo)
+        .select('id, nombre, actualizado_en, eliminado_en')
+        .eq('actualizado_en', fecha)
+        .order('id')
+        .range(desdeFila, desdeFila + LOTE - 1)
+      if (error) throw new Error(`${tipo}: ${error.message}`)
+      return (data ?? []) as Fila[]
+    }
+    const guardar = async (filas: Fila[]) => {
+      await db.referencia.bulkPut(filas.map((f) => ({ ...f, tipo })) as never)
+    }
+    const r = await recorrerPorFecha(desde, despuesDe, enElInstante, guardar)
+    if (r.total) await guardarCursor(clave, r.cursor)
+    total += r.total
   }
   return total
 }
@@ -398,10 +482,15 @@ async function bajarColaCaja() {
       el aviso de stock suma `eliminado_en`. Los avisos además se
       vacían antes de bajarlos: hasta hoy quitar uno lo borraba, y lo
       borrado nunca llegó a las PC.
+  4 — 22/10: no cambian las columnas, cambia cómo se baja. Hasta la
+      0.17.0 las filas que cambiaban en el mismo instante podían quedar
+      afuera (ver recorrerPorFecha), y a las PC les faltaban productos
+      de OBTech. Se vuelve a bajar todo lo que viene por cursor.
 */
-const VERSION_BAJADA = 3
+const VERSION_BAJADA = 4
 const TABLAS_DE_LA_VERSION_2 = ['cliente']
 const TABLAS_DE_LA_VERSION_3 = ['producto', 'umbral']
+const TABLAS_DE_LA_VERSION_4 = [...MAESTROS.map((m) => m.tabla), ...REFERENCIAS.map((r) => `referencia:${r}`)]
 
 async function rebajarLoQueCambio() {
   const marca = await db.cursor.get('version_bajada')
@@ -413,6 +502,7 @@ async function rebajarLoQueCambio() {
     await db.cursor.bulkDelete(TABLAS_DE_LA_VERSION_3)
     await db.umbral.clear()
   }
+  if (guardada < 4) await db.cursor.bulkDelete(TABLAS_DE_LA_VERSION_4)
 
   await db.cursor.put({
     tabla: 'version_bajada',
