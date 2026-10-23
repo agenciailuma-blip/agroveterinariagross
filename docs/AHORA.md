@@ -87,6 +87,16 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 
 ---
 
+## Lo último que pasó — 23 de octubre: el dominio, en la cuenta de Cloudflare de Gross
+
+**El dominio `agroveterinariagross.com.ar` pasó a la cuenta de Cloudflare que ILUMA le armó a Lucas.** Estaba en la cuenta del desarrollador de la web anterior.
+
+- **La página de siempre sigue en Vercel** (hecha en Next por ese desarrollador). Al mudar, Cloudflare copió como registros las direcciones de su propio proxy y aparecía el *Error 1000*. Quedaron dos registros, en *Solo DNS*: `A @ → 76.76.21.21` y `CNAME www → cname.vercel-dns.com`. **Verificado el 23/10:** la página carga, con certificado válido. El dominio sin «www» redirige a `www.` (lo hace Vercel).
+- **Sin mails del dominio:** se borraron los MX y el SPF del reenvío de Cloudflare de la cuenta anterior, y el comodín `*`.
+- **Resend, verificado** (23/10). **El remitente del sistema es `Agroveterinaria Gross <notificaciones@agroveterinariagross.com.ar>`** —«notificaciones» y no «facturas», porque va a mandar más que facturas—: desde ahora las facturas por mail **les llegan a los clientes**. Falta `correo.responder_a`: la casilla del local para cuando un cliente contesta.
+- 🟡 **`empresa.agroveterinariagross.com.ar`**, para la versión web del sistema: libre, se conecta desde el proyecto `gross-sistema` de Cloudflare Pages (*Custom domains*). El sistema no manda enlaces por mail, así que no hay que tocar nada en Supabase.
+- 🟡 **La cuenta vieja de Cloudflare** le factura a Lucas 5 US$ por mes de Cloudflare Images. Conviene pedirle al desarrollador que lo cancele.
+
 ## Lo último que pasó — 22 de octubre: el mostrador no encontraba Credelio
 
 **Lo que vio Lucas:** en el Mostrador, buscando «cred», *Sin resultados*, con la 0.17.0 instalada. Credelio está en la base: 11 productos, activos y con precio, cargados el 19/10 con el Excel de OBTech.
@@ -1104,7 +1114,7 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 | ~~Las **fotos de cómo cargan facturas de compra**~~ | Lucas | ✅ Llegaron el 10/09, con tres audios. Análisis en [`compras-e-iva.md`](compras-e-iva.md) |
 | ~~**¿La cuenta corriente de proveedores entra al alcance?**~~ | — | ✅ **Sí, decidido y construido el 28/09.** Falta publicarla |
 | Qué **columnas** quiere el contador en el Excel | Contador | 🟡 Ya se exporta con lo estándar |
-| **El dominio para los mails y el sistema** (`agroveterinariagross.com.ar`) | ILUMA | 🟡 **La factura por mail está construida (21/10)** y espera la transferencia del dominio, hoy en un Cloudflare de terceros: ese día se verifica en Resend y se cambia el remitente. Ver *Lo último que pasó — 21 de octubre, a la noche* |
+| ~~**El dominio para los mails y el sistema**~~ | — | ✅ **Mudado y verificado en Resend el 23/10.** Las facturas salen de `notificaciones@agroveterinariagross.com.ar`. Falta conectar `empresa.` y la casilla de «responder a» |
 | **Envío y descuentos de la tienda** | Zubu y Lucas | 🟡 Pendiente desde la reunión del 19/10, hasta saber cómo lo maneja Andreani |
 | ~~**Las fotos de la tienda: con qué se arranca**~~ | — | ✅ **Lucas eligió el 20/10 que el sistema las busque** y él acepte o descarte cada una. **Construido el 21/10**, con Serper |
 | **Qué clientes no llevan percepción de IIBB** (certificado de exclusión de la DGR) | Lucas | 🟡 Los 2.494 clientes de OBTech entraron **sin ninguno marcado**: a todos los inscriptos que pasen el mínimo se les va a percibir. Se marca en la ficha de cada uno |
