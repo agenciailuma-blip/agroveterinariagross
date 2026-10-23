@@ -288,7 +288,7 @@ Desde la 0.4.0 los datos de clientes que guarda cada PC —nombre, documento, do
 
 ### Paso 10 · En el celular — para Lucas, o quien lo quiera
 
-No se instala nada desde una tienda: es la misma dirección web, agregada a la pantalla de inicio. Sirve para lo que se prometió en la primera reunión —**consultar stock, ver reportes, pasar un precio desde el depósito**—. Vender sigue siendo en la PC con el lector.
+No se instala nada desde una tienda: es la dirección web del sistema, **`https://empresa.agroveterinariagross.com.ar`**, agregada a la pantalla de inicio. Sirve para lo que se prometió en la primera reunión —**consultar stock, ver reportes, pasar un precio desde el depósito**—. Vender sigue siendo en la PC con el lector.
 
 - **Android (Chrome):** entrar a la dirección del sistema → menú de los tres puntos → **Instalar aplicación** (o *Agregar a la pantalla de inicio*).
 - **iPhone (Safari):** entrar a la dirección → botón **Compartir** → **Agregar a inicio**.
