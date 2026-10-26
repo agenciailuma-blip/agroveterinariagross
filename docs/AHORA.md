@@ -1,12 +1,12 @@
 ---
-actualizado: 2026-10-19
+actualizado: 2026-10-26
 estado: en curso
 ---
 
 # AHORA
 
 > **Empezá por acá.** Una página. Todo lo demás se lee **sólo si hace falta**, siguiendo un enlace.
-> Corte comprometido: **26 de octubre de 2026**, el día que Gross deja OBTech.
+> Corte: **el 26/10 no se llegó**; se pidió **una semana más** (hasta el **2 de noviembre**) para practicar y terminar el proceso. **En noviembre se pasa a soporte**, y en paralelo la **Fase 01 B**, que se cobra aparte: [`fase-01b.md`](fase-01b.md).
 
 ---
 
@@ -86,6 +86,23 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 🟡 **Lo que la venta tardaba en llegar a la caja sin internet** — arreglado el 05/10 y publicado en la 0.13.4, **sin probar en el local**. El mostrador le pasaba las ventas a la caja una vez por minuto, y la caja miraba su cola cada ocho segundos: hasta 68 segundos con el cliente esperando. Y llegaba de a partes porque, mientras la cabecera intentaba subir al servidor —hasta doce segundos sin internet—, salían los renglones solos. Ahora la venta sale al segundo y medio de apretar *Enviar a caja* (y otra vez a los catorce, por si el intento de subir tardó), viaja entera o espera entera, y la caja la muestra apenas llega. Se comprueba en el próximo corte: la venta tiene que aparecer en la caja en un par de segundos y completa.
 
 ---
+
+## Lo último que pasó — 26 de octubre: el corte se corre una semana, y la Fase 01 B
+
+**El corte no se logró el 26/10.** En el local se están dando cuenta de cosas para hacer, desarrollar o definir —no tantas—. Se pidió **una semana más**: esta semana se practica, se avanza con algunas funciones y se termina el proceso. **En noviembre se pasa a soporte**, aunque Lucas puede contratar más desarrollo.
+
+Lucas trajo **ocho pedidos nuevos**, en su cuaderno y explicados en dos audios: venta en cuenta corriente especial con **remito interno** (precios después), **productos asociados** a una factura, **tres tipos de remito** —el logístico con CAI—, **venta mayorista** para el vendedor de calle, **orden de traslado**, **fiado**, la **proforma que se factura desde la misma pantalla** y los **mensajes masivos por WhatsApp**. Pasados en limpio no entran en una semana: van en la **Fase 01 B**, como un mes más que se cobra aparte.
+
+**El análisis, el diseño, las preguntas para Lucas y el orden de construcción:** [`fase-01b.md`](fase-01b.md). Lo central:
+- **Nada es un sistema aparte.** Lo que Lucas llama «módulo» es una sección del menú con alguien que entra sólo ahí: *Mayorista* (con un rol nuevo para el vendedor de calle) y *Fiados*. Lo demás son funciones de pantallas que ya existen.
+- **El remito logístico lleva CAI, no CAE.** Imprenta con talonario o autoimpresor: lo elige Armando.
+- **Las listas de precios ya admiten un precio fijo por producto** —no sólo porcentaje, como se dijo en el audio—. Falta la pantalla para cargarlo.
+- ⚠️ **Los productos asociados** hacen una factura que describe otra cosa de la que salió. Avisado una vez en el documento; conviene que lo mire Armando.
+- **Los mensajes masivos van en la fase siguiente**, con el CRM.
+
+**Anotado para hacer aparte: la auditoría de integralidad.** Lucas quiere menos saltos entre pantallas —el pedido llega, depósito da el ok, un clic arma el remito, otro factura, todo en el mismo lugar— y que lo hecho igual se vea desde Remitos o Comprobantes. Pide recorrer el sistema entero con esa vara; está descripto al final de [`fase-01b.md`](fase-01b.md).
+
+Las fotos, las láminas y la transcripción: [`referencias/pedidos-lucas-2026-10-26/`](referencias/pedidos-lucas-2026-10-26/).
 
 ## Lo último que pasó — 23 de octubre: el dominio, en la cuenta de Cloudflare de Gross
 
@@ -1048,6 +1065,8 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
 > 📋 **Para la reunión hay un plan aparte de toda la sección Compras**, con lo que falta, cuánto cuesta cada pieza y qué pasa si no entra: [`plan-compras.md`](plan-compras.md).
 
 ## Lo que sigue, en orden
+
+> 🔴 **26/10 — Hasta el 2/11: terminar el corte.** Práctica en el local y cerrar lo que vayan encontrando. **Después, la Fase 01 B** en el orden de [`fase-01b.md`](fase-01b.md) —empieza por el recibo numerado y el remito interno—, con las ocho preguntas para Lucas contestadas o con la opción por defecto que dice el documento. **Y la auditoría de integralidad**, como trabajo propio.
 
 > 🔴 **19/10 — Terminar la limpieza de los datos de prueba.** ✅ **Productos y clientes ya están** (los reales cargados, los de prueba de baja: ver *Lo último que pasó*). Falta lo demás —ventas, comprobantes, stock, cuentas corrientes, cheques, compras, la caja abierta—, y para eso hay tres cosas que cuidar:
 > 1. **Las PC del local no se enteran de lo que se borra.** La copia local baja lo que cambió, no lo borrado. **Resuelto en la 0.16.7**: al terminar la limpieza se pone `copia_local.generacion` en `configuracion` (por ejemplo, `1`) y cada PC vacía su copia y la vuelve a bajar entera, sólo si no tiene nada por subir. Antes de borrar, el respaldo en otro esquema, como el 19/10. **Las preguntas que quedaron abiertas**: si Marcela Duarte, Diego Fernández y Silvina Rojas son usuarios reales; qué hacer con las 6 categorías y las 13 marcas de ejemplo; y cuándo borrar los 10 pedidos web de prueba sin cortarle la prueba a Zubu.

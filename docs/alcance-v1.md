@@ -173,6 +173,8 @@ Un producto puede pertenecer a varios ejes a la vez. Esto es lo que después hab
 
 *Arranca al día siguiente del corte. Entrega estimada: ~5 semanas después.*
 
+> **Ampliada el 26/10 como «Fase 01 B»**, con los pedidos que Lucas trajo ese día —remito interno, productos asociados, tres tipos de remito, venta mayorista, orden de traslado, fiado y proforma que se factura—, como un mes más que se acuerda aparte. Diseño y orden: [`fase-01b.md`](fase-01b.md).
+
 ## 11. Compras a proveedores
 
 - Ficha de proveedor → ✅ **hecha el 09/09, en V1-A** (entró por los puntos 4 y 5 de Lucas)
