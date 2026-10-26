@@ -1,6 +1,6 @@
 ---
 actualizado: 2026-10-26
-estado: diseño — falta que Lucas conteste las preguntas del final
+estado: diseño — contestadas siete de las ocho preguntas; falta la de los conceptos fijos
 ---
 
 # Fase 01 B — lo que pidió Lucas el 26/10
@@ -24,7 +24,7 @@ La frase para la reunión: **«Es una sección nueva del mismo sistema, no un si
 | **3. Productos asociados** | Función | Mostrador y Caja | El producto comodín | Mediano |
 | **4. Tres tipos de remito** | Funciones | Remitos | El de entrega | Mediano |
 | **5. Venta mayorista** | **Sección nueva** + un rol | Menú → *Mayorista* | Clientes, listas, facturación | **Grande** |
-| **6. Orden de traslado** | Función | Remitos (o Reparto) | Nada | Mediano |
+| **6. Orden de traslado** (de animales) | Función | Pantalla propia, *Traslados* | Nada | Mediano |
 | **7. Fiado** | **Sección nueva** | Menú → *Fiados* | Nada | Mediano |
 | **8. Proforma que se factura desde la misma pantalla** | Función | Comprobantes | El comprobante interno | Chico |
 | **9. Mensajes masivos por WhatsApp** | **CRM** — fase siguiente | — | — | — |
@@ -47,7 +47,7 @@ El cliente de siempre: la persona que lleva el alimento del perro, la oficina. S
 | ④ Factura por mail automática | 🟡 Hoy hay botón *Mandar por mail*, y el envío solo es sólo para la tienda | **Que salga sola al facturar a cuenta corriente**, si el cliente tiene mail |
 | ④ ¿Adjuntar el remito firmado? | ❌ | **Subir la foto del remito firmado** al remito (desde el celular o la PC), y que quede a la vista en la venta y en la cuenta corriente. Esa es la trazabilidad: quién firmó, cuándo. No va en el mail de la factura, porque la factura sale antes de que firmen |
 | ⑤ Resumen de vencidos por cliente | 🟡 Está la deuda por antigüedad; no hay un listado de «qué comprobantes vencieron, de quién» | **Pestaña *Vencidos*** en Clientes, por cliente, con total y días |
-| ⑤ Alerta al vender a quien debe | ❌ | **Aviso en el mostrador y en la caja** al elegir un cliente con comprobantes vencidos. Ver la pregunta 7 |
+| ⑤ Alerta al vender a quien debe | ❌ | **Aviso y freno** en el mostrador y en la caja al elegir un cliente con comprobantes vencidos: la venta a cuenta corriente **no avanza hasta que un encargado la autoriza con su PIN**, y queda anotado quién la dejó pasar. Respuesta 7 |
 
 > Nota sobre el orden de Lucas: en su lámina la factura «acredita la venta pero no descarga stock» y el stock baja en el paso siguiente. En el sistema pasa todo en el mismo momento, al cobrar a cuenta corriente, y es mejor así: no hay un rato en el que la mercadería salió y el stock no lo sabe.
 
@@ -63,7 +63,7 @@ El cliente de siempre: la persona que lleva el alimento del perro, la oficina. S
 
 1. **Sale la mercadería con un remito interno (Xi).** Descuenta stock. Lleva cliente, productos y cantidades; **los precios quedan para después**. Se imprime y el cliente firma.
 2. **Queda en una pestaña nueva, *Pendientes de facturar*.** Es un registro provisorio en la cuenta corriente: se ve que el cliente se llevó eso, todavía sin importe.
-3. **El hijo entra, pone los precios y aprieta *Facturar*.** Sale la factura (o el comprobante interno) a la cuenta corriente, con su vencimiento —suele ser 30 días—. **No vuelve a descontar stock**: ya lo descontó el remito. El remito pasa a *Facturado*.
+3. **El hijo entra, pone los precios y aprieta *Facturar*.** Sale la factura **o el comprobante interno** —las dos, según el cliente— a la cuenta corriente, con su vencimiento —suele ser 30 días—. **Se puede facturar un remito solo o juntar varios del mismo cliente** en un comprobante: depende de cuántos pedidos haya hecho. **No vuelve a descontar stock**: ya lo descontó el remito. Cada remito pasa a *Facturado* y queda asociado a su comprobante.
 4. Mail automático y vencidos, igual que el punto 1.
 
 **Cómo se construye, en criollo:** el sistema ya sabe hacer la mitad. Hoy un remito sobre una venta todavía sin cobrar **descuenta stock, y cuando se cobra la venta no vuelve a descontar** (está probado desde el 04/09). El remito interno es eso mismo con dos cosas nuevas: **la venta queda esperando precios** en vez de ir a la caja, y **una pantalla para ponerlos de una vez** —una grilla con el producto, la cantidad, el precio de lista sugerido y el casillero para el precio de verdad—.
@@ -105,18 +105,15 @@ El cliente de siempre: la persona que lleva el alimento del perro, la oficina. S
 | **Autorización fiscal** | No (documento interno) | No (documento interno) | **Sí, con CAI** |
 | **Hoy** | ✅ Es el remito que ya existe | Nuevo (punto 2) | Nuevo |
 
-### El remito logístico: es CAI, no CAE
+### El remito logístico: es CAI, no CAE — y sin imprenta
 
-Lucas habló de un «talonario con CAE». **Para remitos lo que existe es el CAI** —el Código de Autorización de Impresión—, que ARCA le da a la imprenta o a quien imprime sus propios comprobantes. El CAE es sólo para facturas electrónicas. Por eso Armando le dijo lo de la imprenta: es correcto.
+Lucas habló de un «talonario con CAE». **Para remitos lo que existe es el CAI** —el Código de Autorización de Impresión—. El CAE es sólo para facturas electrónicas, y **ARCA no autoriza remitos uno por uno** (sólo tiene remito electrónico para carne y harina). Por eso Armando le habló de la imprenta.
 
-Hay **dos caminos**, y conviene que Armando elija:
+**Decidido el 26/10: sin talonarios de imprenta.** Gross pide el CAI en ARCA **una vez**, para un punto de venta exclusivo de remitos y una cantidad de números, y **el sistema imprime el remito entero** —en hoja en blanco o en PDF al celular, que la RG 5678/2025 permite desde 2025—. Es como lo hacen sus proveedores. El paso a paso para Lucas y Armando está en [`tramite-remito-r.md`](tramite-remito-r.md).
 
-| | **Talonario de la imprenta** (lo que dijo Armando) | **Autoimpresor** |
-|---|---|---|
-| Cómo | La imprenta de Tucumán imprime 200 remitos en blanco con el CAI; el sistema imprime adentro de los recuadros | Gross se inscribe como autoimpresor y saca el CAI para un punto de venta; **el sistema imprime el remito entero**, y desde 2025 puede ser digital, mostrado en el celular (RG 5678/2025) |
-| Lo que hacemos nosotros | **Una plantilla que encaje en el papel preimpreso** —hay que tener el talonario en la mano para medirlo— | El remito completo, con el CAI y la numeración |
-| Ventaja | Rápido de arrancar | Sin papel especial ni encuadrar. Es como lo hacen sus proveedores |
-| Contra | Si la impresora corre un milímetro, sale fuera del recuadro | Trámite en ARCA; Armando tiene que confirmar que Gross cumple los requisitos |
+**Lo que hacemos nosotros:** en Configuración se cargan el CAI, su vencimiento, el punto de venta y el rango de números. Cada remito R sale con el número siguiente, la letra R, el CAI y su vencimiento, *Documento no válido como factura*, los domicilios de origen y destino, quién lleva la carga y la factura o proforma asociada. **El sistema no deja pasar del último número ni de la fecha de vencimiento**, y avisa antes, para pedir el CAI siguiente a tiempo.
+
+**Falta que Armando confirme la modalidad del punto de venta** —autoimpresor o la que corresponda a Gross—. Es la primera pregunta del paso a paso.
 
 ### ¿Cuándo baja el stock? — la regla, para que no cambie según el caso
 
@@ -132,7 +129,18 @@ Ya funciona así desde el 04/09 para el remito de entrega. Sirve también para e
 
 *Láminas 03 y 07. Lo usa **Facundo**, el vendedor de calle.*
 
-Lucas la pidió como módulo aparte **porque quiere que Facundo entre sólo ahí**. Eso se resuelve con **un rol nuevo, *Vendedor de calle***, que al entrar ve únicamente la sección *Mayorista*, desde el celular. Facundo ya está armando algo propio con una IA gratuita; Lucas quiere que **los datos queden en el sistema y no en lo de Facundo**.
+Lucas la pidió como módulo aparte **porque quiere que Facundo entre sólo ahí**. Eso se resuelve con **un rol nuevo, *Vendedor de calle***, que al entrar ve únicamente la sección *Mayorista*, desde el celular.
+
+**Qué ve y qué puede hacer Facundo lo decide Lucas desde Configuración** (respuesta 5), con los mismos permisos por rol que ya tiene el sistema. Arranca con un punto medio:
+
+| Permiso | Arranca |
+|---|---|
+| Ver el stock disponible | ✅ Sí |
+| Ver el saldo y los vencidos del cliente | ✅ Sí |
+| Ver el costo de los productos | ❌ No |
+| Cambiar el precio de la lista | ❌ No |
+| Ver clientes que no son mayoristas | ❌ No |
+| Armar pedidos y órdenes de recibo | ✅ Sí — siempre sujetos a confirmación del local | Facundo ya está armando algo propio con una IA gratuita; Lucas quiere que **los datos queden en el sistema y no en lo de Facundo**.
 
 ### 5.1 El cliente mayorista
 
@@ -184,17 +192,21 @@ Lucas lo dijo claro: si el vendedor puede bajar deuda, el día que es amigo del 
 
 ---
 
-## 6. Orden de traslado
+## 6. Orden de traslado — de animales
 
-*Lámina 04. No la explicó en el audio.*
+*Lámina 04. No la explicó en el audio; aclarado el 26/10 (respuesta 6).*
 
-Un papel para cada salida: **fecha, hora, motivo, dirección, nombre completo, teléfono, descripción, monto total, facturas y remito asociados**. Con:
+**No es el reparto de mercadería: es ir a buscar o llevar un animal**, vivo o muerto —para una eutanasia, para una operación—. Es un servicio del consultorio, con su propia pantalla, *Traslados*.
+
+Cada orden lleva **fecha, hora, motivo** (eutanasia, cirugía, retiro, devolución…), **dirección, nombre completo y teléfono** del dueño, **descripción** —el animal: especie, tamaño, si está vivo—, **monto total** y **las facturas asociadas**. Con:
 
 - **Estados**: pendiente, en camino, finalizada. **Se puede modificar** mientras no esté finalizada.
-- **Resumen de órdenes**, imprimible: lo que sale hoy, para el que maneja.
+- **El cobro va por la caja**, como un servicio más (un producto *Traslado* sin stock), y la factura queda asociada a la orden.
+- **Resumen de órdenes**, imprimible: lo que hay que buscar hoy, para el que maneja.
 - **Estadísticas de distancias, costos y tiempo de viaje.** En esta fase se cargan a mano al finalizar (kilómetros, costo, cuánto tardó) y se suman. Calcular la distancia sola desde el mapa va después.
+- **La dirección se abre en el mapa del celular** con un toque, para el que maneja.
 
-Vive al lado de Remitos: hoy esa pantalla ya contesta «qué sale hoy». Ver la pregunta 6.
+Quién la carga: cualquiera con el permiso; arranca con encargados y consultorio.
 
 ---
 
@@ -204,10 +216,12 @@ Vive al lado de Remitos: hoy esa pantalla ya contesta «qué sale hoy». Ver la 
 
 **No es cuenta corriente, y Lucas insiste por algo concreto:** si lo carga como cuenta corriente, el listado de cuentas se le llena de gente que vino una vez con el perro chocado y no tiene nada que ver con los clientes de cuenta. **Es otro registro, con su propia pantalla.** Tampoco da de alta un cliente.
 
+**Pasa por la caja** (respuesta 4): se vende como cualquier venta —ticket, stock, todo— y se cobra con un medio de pago nuevo, **Fiado**, que pide el DNI. La deuda no va a la cuenta corriente: va a *Fiados*, que es **la cuenta de cada persona**, con todas sus ventas fiadas y sus pagos parciales. Cuando paga, el cobro entra a la caja del día.
+
 | Pidió | Cómo queda |
 |---|---|
 | Nombre, DNI, domicilio, teléfono | La ficha del fiado, buscada **por DNI** |
-| Descripción, cantidad, precio | Los renglones —ver la pregunta 4— |
+| Descripción, cantidad, precio | Los renglones de la venta que pasó por la caja |
 | Fecha de pago, modificable | Sí, con historia de los cambios |
 | **Más de una fecha de cobro** | Un cronograma: «el 15 una entrega, el 18 otra» |
 | Cronograma de vencimientos | La pantalla ordena por la próxima fecha, con lo vencido arriba |
@@ -235,18 +249,20 @@ Eso pide **recorrer el sistema entero** con esa vara —cada circuito de punta a
 
 ---
 
-## Las preguntas para Lucas
+## Las preguntas, contestadas el 26/10
 
-Cambian el diseño; sin respuesta se construye con la opción que va primero.
+| # | Pregunta | Respuesta | Dónde cambió el diseño |
+|---|---|---|---|
+| 1 | Remito interno: ¿cada remito por separado o varios juntos? | **Las dos**, según cuántos pedidos haya | Punto 2 |
+| 2 | Remito interno: ¿factura o comprobante interno? | **Las dos** | Punto 2 |
+| 3 | Remito logístico: ¿imprenta o autoimpresor? | **Sin imprenta**: Gross pide el CAI en ARCA y el sistema imprime el remito entero | Punto 4 y [`tramite-remito-r.md`](tramite-remito-r.md) |
+| 4 | Fiado: ¿pasa por la caja? | **Sí**, y la deuda va a *Fiados*: la cuenta de cada persona, con pagos parciales | Punto 7 |
+| 5 | ¿Qué ve Facundo? | **Un punto medio, y Lucas lo ajusta desde Configuración** | Punto 5 |
+| 6 | Orden de traslado: ¿qué es? | **Traslado de animales**, vivos o muertos: eutanasia, operación | Punto 6 |
+| 7 | Cliente con vencidos: ¿avisa o frena? | **Avisa y frena**; el encargado autoriza con su PIN | Punto 1 |
+| 8 | Productos asociados: ¿qué conceptos fijos? | 🟡 **Pendiente**: Francisco se lo pregunta en detalle | Punto 3 — no frena el resto; los conceptos se cargan como productos y se pueden sumar después |
 
-1. **Remito interno:** a la municipalidad, ¿se le factura **cada remito por separado o varios juntos** en una factura a fin de mes? *(Se construye para poder juntar varios.)*
-2. **Remito interno:** al poner precios, ¿sale **siempre factura**, o a veces comprobante interno? *(Las dos.)*
-3. **Remito logístico:** ¿**talonario de la imprenta o autoimpresor**? Es para Armando. *(Hasta que conteste, se arranca por la plantilla del talonario: hace falta uno en la mano para medirlo.)*
-4. **Fiado:** lo que se lleva, ¿**sale por la caja** como cualquier venta —con su ticket y descontando stock— y la deuda queda en Fiados? ¿O es sólo una anotación, por ejemplo una cirugía? *(Por la caja, con un medio de pago *Fiado*: si no, el stock y la caja no cierran.)*
-5. **Facundo**, en el celular: ¿ve el **stock**? ¿Ve **la deuda** del cliente? ¿Puede **ofrecer otro precio** o sólo el de la lista? *(Ve stock y deuda; precio sólo el de la lista.)*
-6. **Orden de traslado:** ¿es **el reparto propio** del local, o también otros viajes (ir a buscar mercadería, trámites)? ¿Quién la carga?
-7. **Cliente con vencidos:** el aviso al venderle, ¿**sólo avisa o frena** la venta hasta que alguien con permiso la deje pasar? *(Avisa; el encargado puede frenar.)*
-8. **Productos asociados:** ¿cuáles son los **conceptos fijos**? Dijo Repuestos pulverizadora, Fumigación, Veneno «y algo más».
+**Quedan dos cosas abiertas:** la 8, y que **Armando confirme la modalidad del punto de venta de remitos** (primer paso de [`tramite-remito-r.md`](tramite-remito-r.md)).
 
 ---
 
@@ -263,8 +279,8 @@ Por lo que se usa todos los días primero, y por lo que una pieza le presta a la
 | 5 | **Proforma → factura** | Chico, y lo usa el mayorista |
 | 6 | **Fiados** | Independiente; usa el recibo |
 | 7 | **Mayorista**: cliente con ruta y mapa, lista con precios fijos, rol de Facundo, pedido, orden de recibo | El más grande; usa todo lo anterior |
-| 8 | **Remito logístico** | Espera la respuesta de Armando y el talonario |
-| 9 | **Orden de traslado** | Espera la pregunta 6 |
+| 8 | **Remito logístico** | Espera el CAI: lo pide Gross en ARCA. Se puede construir antes con un CAI de prueba |
+| 9 | **Traslados de animales** | Independiente; usa la caja como cualquier servicio |
 | 10 | **Estadísticas** de mayorista, fiado y traslados | Necesitan datos cargados para tener sentido |
 
 ### Si el mes no alcanza

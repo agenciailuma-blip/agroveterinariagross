@@ -95,7 +95,8 @@ Lucas trajo **ocho pedidos nuevos**, en su cuaderno y explicados en dos audios: 
 
 **El análisis, el diseño, las preguntas para Lucas y el orden de construcción:** [`fase-01b.md`](fase-01b.md). Lo central:
 - **Nada es un sistema aparte.** Lo que Lucas llama «módulo» es una sección del menú con alguien que entra sólo ahí: *Mayorista* (con un rol nuevo para el vendedor de calle) y *Fiados*. Lo demás son funciones de pantallas que ya existen.
-- **El remito logístico lleva CAI, no CAE.** Imprenta con talonario o autoimpresor: lo elige Armando.
+- **El remito logístico lleva CAI, no CAE.** Decidido el 26/10: **sin talonarios de imprenta**; Gross pide el CAI en ARCA y el sistema imprime el remito entero. El paso a paso para Lucas y Armando: [`tramite-remito-r.md`](tramite-remito-r.md).
+- **Siete de las ocho preguntas, contestadas el 26/10** (están en el documento). Falta qué conceptos fijos llevan los productos asociados, y que Armando confirme la modalidad del punto de venta de remitos.
 - **Las listas de precios ya admiten un precio fijo por producto** —no sólo porcentaje, como se dijo en el audio—. Falta la pantalla para cargarlo.
 - ⚠️ **Los productos asociados** hacen una factura que describe otra cosa de la que salió. Avisado una vez en el documento; conviene que lo mire Armando.
 - **Los mensajes masivos van en la fase siguiente**, con el CRM.
