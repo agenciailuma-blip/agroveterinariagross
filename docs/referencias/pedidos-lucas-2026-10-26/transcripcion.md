@@ -2,7 +2,7 @@
 
 > Grabados en el local mientras Lucas explicaba el cuaderno a Francisco. Transcripción automática, limpiada para leerla: se sacaron muletillas y asentimientos, y se corrigieron los nombres que se oyeron mal («Oclader» y «Clader» son Octaderm, «libra» es Livra, «Arca» es ARCA). La lámina 01, cuenta corriente normal, no se grabó.
 >
-> El análisis está en [`../../fase-01b.md`](../../fase-01b.md).
+> El análisis está en [`../../fase-03.md`](../../fase-03.md).
 
 ## Audio 01 — cuenta corriente especial, productos asociados, mayorista y remitos
 

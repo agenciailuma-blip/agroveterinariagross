@@ -1,10 +1,12 @@
 ---
 actualizado: 2026-10-26
-estado: diseño — contestadas siete de las ocho preguntas; falta la de los conceptos fijos
+estado: en construcción, empezando por Mayorista — contestadas siete de las ocho preguntas; falta la de los conceptos fijos
 ---
 
-# Fase 01 B — lo que pidió Lucas el 26/10
+# Fase 03 — lo que pidió Lucas el 26/10
 
+> **Fase 03** (decidido el 28/10): las fases 1 y 2 son lo ya construido —el sistema y la tienda online—, que en noviembre pasan a soporte. Esta fase se desarrolla en paralelo, **empezando por Mayorista**: Facundo sale a la calle la semana del 2/11. Lo que antes era V2, V3 y cumplimiento normativo queda como **fases futuras, sin número**, para diciembre o enero.
+>
 > Lo que salió de la visita al local del **26 de octubre**, el día que tenía que ser el corte. No se llegó: se pidió **una semana más** y en noviembre se pasa a soporte. Lo que sigue **se cobra aparte, como un mes más de desarrollo**, para que el sistema les quede completo.
 >
 > Fuentes: el cuaderno de Lucas, las láminas pasadas en limpio y dos audios en [`referencias/pedidos-lucas-2026-10-26/`](referencias/pedidos-lucas-2026-10-26/). La transcripción está en [`transcripcion.md`](referencias/pedidos-lucas-2026-10-26/transcripcion.md).
@@ -27,9 +29,9 @@ La frase para la reunión: **«Es una sección nueva del mismo sistema, no un si
 | **6. Orden de traslado** (de animales) | Función | Pantalla propia, *Traslados* | Nada | Mediano |
 | **7. Fiado** | **Sección nueva** | Menú → *Fiados* | Nada | Mediano |
 | **8. Proforma que se factura desde la misma pantalla** | Función | Comprobantes | El comprobante interno | Chico |
-| **9. Mensajes masivos por WhatsApp** | **CRM** — fase siguiente | — | — | — |
+| **9. Mensajes masivos por WhatsApp** | **CRM** — fases futuras | — | — | — |
 
-> 📏 **Chico** son días, **mediano** una semana, **grande** más de una. Sumado da **más de un mes**. Si hay que entrar en el mes, lo que se puede pasar a la fase siguiente sin dejar nada a medias está al final, en *Si el mes no alcanza*.
+> 📏 **Chico** son días, **mediano** una semana, **grande** más de una. Sumado da **más de un mes**. Si hay que entrar en el mes, lo que se puede pasar a las fases futuras sin dejar nada a medias está al final, en *Si el mes no alcanza*.
 
 ---
 
@@ -184,11 +186,11 @@ Lucas lo dijo claro: si el vendedor puede bajar deuda, el día que es amigo del 
 
 - **Avisos de vencimiento** de la cuenta corriente: el mismo listado de vencidos del punto 1, filtrado por mayoristas y por ruta.
 - **Estadísticas**: comprobantes vencidos, porcentaje cobrado, último pedido, ventas totales, cantidades, más vendidos — **por cliente, ciudad, ruta y zona**. Lucas: «estadística de todo, no te preocupes ahora, lo vamos viendo». En esta fase va un tablero con esos cortes; los cruces más finos van después.
-- **Calendario de visitas**: va en la fase siguiente, junto con lo de CRM.
+- **Calendario de visitas**: va en las fases futuras, junto con lo de CRM.
 
-### 5.6 Mensajes masivos por WhatsApp → fase siguiente
+### 5.6 Mensajes masivos por WhatsApp → fases futuras
 
-**Va con el CRM** (fase siguiente, *Campañas y comunicaciones* en el alcance). Mandar a muchos por WhatsApp de verdad necesita la API oficial, que **cobra por mensaje y pide aprobar cada plantilla**; hacerlo «a mano» desde un número común termina con el número bloqueado. Para esta fase alcanza con el aviso manual del fiado (punto 7), que sirve igual para un mayorista: un botón que abre WhatsApp con el mensaje escrito.
+**Va con el CRM** (una fase futura, *Campañas y comunicaciones* en el alcance). Mandar a muchos por WhatsApp de verdad necesita la API oficial, que **cobra por mensaje y pide aprobar cada plantilla**; hacerlo «a mano» desde un número común termina con el número bloqueado. Para esta fase alcanza con el aviso manual del fiado (punto 7), que sirve igual para un mayorista: un botón que abre WhatsApp con el mensaje escrito.
 
 ---
 
@@ -285,9 +287,9 @@ Por lo que se usa todos los días primero, y por lo que una pieza le presta a la
 
 ### Si el mes no alcanza
 
-Lo que se puede pasar a la fase siguiente **sin dejar nada a medias**: las **estadísticas** (10), la **orden de traslado** (9) y el **mapa** del mayorista —la ruta y la ciudad sí, el pin después—. Lo que **no conviene partir** es el circuito del mayorista: un pedido que no se puede facturar desde donde llega no le sirve a nadie.
+Lo que se puede pasar a las fases futuras **sin dejar nada a medias**: las **estadísticas** (10), la **orden de traslado** (9) y el **mapa** del mayorista —la ruta y la ciudad sí, el pin después—. Lo que **no conviene partir** es el circuito del mayorista: un pedido que no se puede facturar desde donde llega no le sirve a nadie.
 
-## Lo que va en la fase siguiente
+## Lo que va en las fases futuras
 
 - **Mensajes masivos por WhatsApp**, con ofertas, imágenes y videos — CRM.
 - **Calendario de visitas** de Facundo — CRM.

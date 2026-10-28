@@ -173,7 +173,7 @@ Un producto puede pertenecer a varios ejes a la vez. Esto es lo que después hab
 
 *Arranca al día siguiente del corte. Entrega estimada: ~5 semanas después.*
 
-> **Ampliada el 26/10 como «Fase 01 B»**, con los pedidos que Lucas trajo ese día —remito interno, productos asociados, tres tipos de remito, venta mayorista, orden de traslado, fiado y proforma que se factura—, como un mes más que se acuerda aparte. Diseño y orden: [`fase-01b.md`](fase-01b.md).
+> **Cómo se llaman las fases desde el 28/10:** V1-A es la **Fase 1** y V1-B la **Fase 2** (con la tienda online); en noviembre las dos pasan a soporte. Los pedidos que Lucas trajo el 26/10 —venta mayorista, remito interno, productos asociados, tres tipos de remito, traslados, fiado y proforma que se factura— son la **Fase 3**, que se acuerda aparte y se desarrolla en paralelo, empezando por Mayorista: [`fase-03.md`](fase-03.md). Lo que en el backlog de abajo figuraba como V2, V3 y Vc queda como **fases futuras, sin número**.
 
 ## 11. Compras a proveedores
 
@@ -281,7 +281,7 @@ Un producto puede pertenecer a varios ejes a la vez. Esto es lo que después hab
 
 ---
 
-# BACKLOG — VERSIONES SIGUIENTES
+# BACKLOG — FASES FUTURAS
 
 ## ~~V2 — Historial de costos por proveedor~~ ✅ *construido el 30/09* *(pedido de Lucas, 14/08)*
 
@@ -299,7 +299,7 @@ compra vino más cara o más barata que la anterior, ni de quién.
 > como subproducto en vez de ser una función aparte. Conviene hacerlo ahí y no
 > antes.
 
-## V2 — Comercial y clientes
+## Fase futura — Comercial y clientes
 - CRM de tareas diarias por usuario
 - ~~Calendario de recibos completo~~ ✅ *construido el 30/09 con los cheques: Tesorería → Calendario. Lucas confirmó que era esto.*
 - Historial y perfil de compra del cliente
@@ -307,14 +307,14 @@ compra vino más cara o más barata que la anterior, ni de quién.
 - **Integración con MercadoLibre** — se enchufa como un canal más al esquema ya construido
 - Reportes avanzados y exportaciones
 
-## V3 — Inteligencia
+## Fase futura — Inteligencia
 - Sugerencia automática de reposición según ventas históricas y estacionalidad
 - Predicción de quiebre de stock
 - Detección de anomalías en ventas, ajustes y márgenes
 - Asistente de búsqueda de productos en lenguaje natural
 - Sugerencia de productos relacionados en el mostrador
 
-## Vc — Cumplimiento normativo
+## Fase futura — Cumplimiento normativo
 *No tiene fecha propia: se activa cuando la norma lo exija. Su momento lo definen SENASA y la Provincia, no el proyecto.*
 
 - **SIGTRAZAVET**: reporte de movimientos de productos veterinarios y receta electrónica *(la base ya queda preparada en V1)*
