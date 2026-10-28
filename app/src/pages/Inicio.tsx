@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { Navigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/auth/AuthProvider'
 import { Pendientes } from '@/components/Pendientes'
@@ -186,8 +187,14 @@ function Ventas() {
 }
 
 export default function Inicio() {
-  const { perfil } = useAuth()
-  const { data } = useQuery({ queryKey: ['resumen'], queryFn: cargarResumen })
+  const { perfil, tienePermiso } = useAuth()
+  /*
+    El vendedor de calle no vende en el mostrador ni mira el tablero del
+    local: entra directo a sus pedidos.
+  */
+  const soloCalle = tienePermiso('mayorista.vender') && !tienePermiso('ventas.crear')
+  const { data } = useQuery({ queryKey: ['resumen'], queryFn: cargarResumen, enabled: !soloCalle })
+  if (soloCalle) return <Navigate to="/mayorista" replace />
 
   const hora = new Date().getHours()
   const saludo = hora < 13 ? 'Buen día' : hora < 20 ? 'Buenas tardes' : 'Buenas noches'

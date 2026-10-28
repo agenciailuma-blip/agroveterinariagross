@@ -21,9 +21,10 @@
 export interface Pestana {
   a: string
   etiqueta: string
-  permiso?: string
+  /* Con varios, alcanza con uno: el vendedor de calle y el local ven la misma pestaña. */
+  permiso?: string | string[]
   /* Un número al lado: cuánto espera que alguien haga algo. */
-  contador?: 'pedidos'
+  contador?: 'pedidos' | 'mayorista'
   /* Sólo tiene sentido con más de un depósito activo. */
   conVariosDepositos?: boolean
 }
@@ -62,6 +63,28 @@ export const SECCIONES: Seccion[] = [
         la sección, así no hace falta estar en Ventas para enterarse.
       */
       { a: '/pedidos', etiqueta: 'Pedidos web', permiso: 'tienda.pedidos', contador: 'pedidos' },
+    ],
+  },
+  {
+    /*
+      El vendedor de calle (Fase 03, pedido del 26/10). Facundo sólo ve
+      esta sección: arma los pedidos en el teléfono y el local los
+      atiende desde la misma pantalla. No es un sistema aparte: los
+      clientes son los de siempre con una marca, y el pedido facturado es
+      una venta más.
+    */
+    id: 'mayorista',
+    etiqueta: 'Mayorista',
+    icono: 'M3 7h11v8H3zM14 10h4l3 3v2h-7M7.5 18.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM17.5 18.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3z',
+    pestanas: [
+      {
+        a: '/mayorista',
+        etiqueta: 'Pedidos',
+        permiso: ['mayorista.vender', 'mayorista.atender'],
+        contador: 'mayorista',
+      },
+      { a: '/mayorista/clientes', etiqueta: 'Clientes', permiso: ['mayorista.vender', 'mayorista.atender'] },
+      { a: '/mayorista/lista', etiqueta: 'Lista de precios', permiso: 'productos.editar_precio' },
     ],
   },
   {
@@ -170,8 +193,13 @@ export interface Contexto {
 /** Las pestañas de una sección que esta persona puede ver, hoy. */
 export function pestanasVisibles(s: Seccion, c: Contexto): Pestana[] {
   return s.pestanas.filter(
-    (p) => (!p.permiso || c.tienePermiso(p.permiso)) && (!p.conVariosDepositos || c.variosDepositos),
+    (p) => puedeAbrir(p, c) && (!p.conVariosDepositos || c.variosDepositos),
   )
+}
+
+function puedeAbrir(p: Pestana, c: Contexto): boolean {
+  if (!p.permiso) return true
+  return (Array.isArray(p.permiso) ? p.permiso : [p.permiso]).some((x) => c.tienePermiso(x))
 }
 
 /*

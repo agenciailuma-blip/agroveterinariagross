@@ -87,6 +87,26 @@ describe('las pestañas que se ven', () => {
     expect(seccionDe('/calendario')?.seccion.id).toBe('tesoreria')
   })
 
+  it('Mayorista: el vendedor de calle ve pedidos y clientes, no la lista de precios', () => {
+    const vendedorDeCalle = con(['mayorista.vender', 'mayorista.clientes', 'mayorista.ver_stock'])
+    expect(pestanasVisibles(seccion('mayorista'), vendedorDeCalle).map((p) => p.etiqueta)).toEqual([
+      'Pedidos',
+      'Clientes',
+    ])
+    // Y ninguna otra sección, salvo el inicio.
+    const otras = SECCIONES.filter((s) => s.id !== 'mayorista' && s.id !== 'inicio')
+    expect(otras.flatMap((s) => pestanasVisibles(s, vendedorDeCalle))).toEqual([])
+  })
+
+  it('Mayorista: el local la ve con atender, sin ser vendedor de calle', () => {
+    expect(pestanasVisibles(seccion('mayorista'), con(['mayorista.atender'])).map((p) => p.etiqueta)).toEqual([
+      'Pedidos',
+      'Clientes',
+    ])
+    expect(seccionDe('/mayorista/lista')?.pestana.etiqueta).toBe('Lista de precios')
+    expect(seccionDe('/mayorista')?.pestana.etiqueta).toBe('Pedidos')
+  })
+
   it('sin ningún permiso de la sección, la sección no tiene pestañas', () => {
     expect(pestanasVisibles(seccion('administracion'), con(['ventas.crear']))).toEqual([])
   })

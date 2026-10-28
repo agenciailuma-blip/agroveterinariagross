@@ -1,16 +1,18 @@
 ---
-actualizado: 2026-10-26
+actualizado: 2026-10-28
 estado: en curso
 ---
 
 # AHORA
 
 > **Empezá por acá.** Una página. Todo lo demás se lee **sólo si hace falta**, siguiendo un enlace.
-> Corte: **el 26/10 no se llegó**; se pidió **una semana más** (hasta el **2 de noviembre**) para practicar y terminar el proceso. **En noviembre se pasa a soporte**, y en paralelo la **Fase 01 B**, que se cobra aparte: [`fase-03.md`](fase-03.md).
+> Corte: **el 26/10 no se llegó**; se pidió **una semana más** (hasta el **2 de noviembre**) para practicar y terminar el proceso. **En noviembre se pasa a soporte** de las fases 1 y 2, y en paralelo la **Fase 03**, que se cobra aparte y **empieza por Mayorista**: [`fase-03.md`](fase-03.md).
 
 ---
 
 ## Dónde está todo, hoy
+
+**Lista para construir: 0.18.0** (28/10) — **Mayorista, la primera entrega**, para que Facundo salga a la calle la semana del 2/11: el rol *Vendedor de calle*, los clientes mayoristas por ruta, la lista de precios mayorista y el pedido que se arma en el teléfono —también sin señal— y en el local se corrobora, se factura o sale con comprobante interno, y se remite. Lleva también lo de la 0.17.2, que no se publicó. **La base ya está aplicada**, y la consulta de CUIT a ARCA ya deja entrar al vendedor de calle; la app **falta construirla y publicarla**. Ver *Lo último que pasó*. **736 pruebas verdes en la app.**
 
 **Lista para construir: 0.17.2** (22/10) — **la ventana de *Buscar fotos* ya se desplaza**. Visto en el local: con diez fotos por producto la ventana pasaba el alto de la pantalla y no había forma de bajar ni de llegar a *Guardar*. Era cómo se centraba —una grilla, donde el alto máximo no se aplica—; ahora se centra con flex y la lista se desplaza. *Subir fotos* estaba armada igual y quedó igual de arreglada. Medido: en una pantalla de 768 px la ventana medía 1.802; ahora 752, con los botones a la vista, y a 375 px también.
 
@@ -87,11 +89,25 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 
 ---
 
+## Lo último que pasó — 28 de octubre: Mayorista, la primera entrega
+
+**Se decidió el nombre de las fases:** las fases 1 y 2 son lo construido —el sistema y la tienda online— y en noviembre pasan a soporte. Lo que pidió Lucas el 26/10 es la **Fase 03**. Lo que era V2, V3 y cumplimiento normativo queda como **fases futuras, sin número**, para diciembre o enero. Lucas pidió **empezar urgente por Mayorista**: Facundo es nuevo y sale a vender la semana del 2/11.
+
+**Lo que se construyó** (detalle en [`fase-03.md`](fase-03.md), *Lo que ya está*):
+- **La base** ([`20261028120000_mayorista.sql`](../supabase/migrations/20261028120000_mayorista.sql)): seis permisos, el rol *Vendedor de calle*, la marca de mayorista con ruta, zona y ubicación en el cliente, la lista *Mayorista* y el pedido. **Facturar un pedido es la venta de siempre**, cobrada a cuenta corriente con `cobrar_venta()`: no hay una segunda manera de vender.
+- **La sección *Mayorista*** con Pedidos, Clientes y Lista de precios. Facundo ve sólo las dos primeras.
+- **Probado contra la base, como usuario**: el vendedor no carga precios, no confirma ni ve otros clientes; el pedido mandado dos veces no se duplica; un precio que no puede cambiar se ignora; corroborar con una cantidad corregida; facturar sin factura —la deuda vence a 30 días y el stock baja— y con factura; un pedido facturado no se cancela. Salió un caso real: **un pedido con otro precio no se podía facturar** (la venta exige quién cambió el precio); arreglado. Lo de prueba no quedó grabado y la numeración arranca en 1.
+- **Las pantallas, vistas a 375 px** con datos inventados (no se pudo entrar con un usuario real desde acá): nada se desplaza hacia el costado.
+
+🟡 **Para que Facundo arranque:** publicar la 0.18.0; en *Usuarios*, crearle el usuario con el rol *Vendedor de calle*; **cargar la lista mayorista** (*Mayorista → Lista de precios*), y **marcar a los clientes mayoristas** en su ficha (*Venta mayorista*) o que Facundo los dé de alta desde la ruta. Sin precios en la lista, Facundo no ve productos.
+
+**Lo que falta del mayorista:** la orden de recibo con el recibo numerado (la próxima entrega), el mail del pedido al cliente, frenar al que tiene vencido con la autorización del encargado, el mapa con todos los pines y las estadísticas.
+
 ## Lo último que pasó — 26 de octubre: el corte se corre una semana, y la Fase 03
 
 **El corte no se logró el 26/10.** En el local se están dando cuenta de cosas para hacer, desarrollar o definir —no tantas—. Se pidió **una semana más**: esta semana se practica, se avanza con algunas funciones y se termina el proceso. **En noviembre se pasa a soporte**, aunque Lucas puede contratar más desarrollo.
 
-Lucas trajo **ocho pedidos nuevos**, en su cuaderno y explicados en dos audios: venta en cuenta corriente especial con **remito interno** (precios después), **productos asociados** a una factura, **tres tipos de remito** —el logístico con CAI—, **venta mayorista** para el vendedor de calle, **orden de traslado**, **fiado**, la **proforma que se factura desde la misma pantalla** y los **mensajes masivos por WhatsApp**. Pasados en limpio no entran en una semana: van en la **Fase 01 B**, como un mes más que se cobra aparte.
+Lucas trajo **ocho pedidos nuevos**, en su cuaderno y explicados en dos audios: venta en cuenta corriente especial con **remito interno** (precios después), **productos asociados** a una factura, **tres tipos de remito** —el logístico con CAI—, **venta mayorista** para el vendedor de calle, **orden de traslado**, **fiado**, la **proforma que se factura desde la misma pantalla** y los **mensajes masivos por WhatsApp**. Pasados en limpio no entran en una semana: van en la **Fase 03** (entonces se llamó *Fase 01 B*), como un mes más que se cobra aparte.
 
 **El análisis, el diseño, las preguntas para Lucas y el orden de construcción:** [`fase-03.md`](fase-03.md). Lo central:
 - **Nada es un sistema aparte.** Lo que Lucas llama «módulo» es una sección del menú con alguien que entra sólo ahí: *Mayorista* (con un rol nuevo para el vendedor de calle) y *Fiados*. Lo demás son funciones de pantallas que ya existen.

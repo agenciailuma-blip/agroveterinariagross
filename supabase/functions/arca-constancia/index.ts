@@ -205,18 +205,20 @@ Deno.serve(async (req: Request) => {
     /*
       Puede consultar quien puede dar de alta o editar un cliente: todos
       los roles, incluido el vendedor, que es el que tiene al cliente
-      adelante cuando dice «factura A».
+      adelante cuando dice «factura A». También el vendedor de calle,
+      que da de alta a los mayoristas desde la ruta.
     */
     const comoUsuario = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } } },
     );
-    const [crear, editar] = await Promise.all([
+    const [crear, editar, mayorista] = await Promise.all([
       comoUsuario.rpc("tiene_permiso", { p_clave: "clientes.crear" }),
       comoUsuario.rpc("tiene_permiso", { p_clave: "clientes.editar" }),
+      comoUsuario.rpc("tiene_permiso", { p_clave: "mayorista.clientes" }),
     ]);
-    if (!crear.data && !editar.data) {
+    if (!crear.data && !editar.data && !mayorista.data) {
       return responder({ ok: false, motivo: "sin_permiso", error: "No tenés permiso para cargar clientes." }, 403);
     }
 

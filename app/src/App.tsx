@@ -41,6 +41,9 @@ import ResumenCuentaCorriente from '@/pages/ResumenCuentaCorriente'
 import Cheques from '@/pages/Cheques'
 import Calendario from '@/pages/Calendario'
 import Costos from '@/pages/Costos'
+import Mayorista from '@/pages/Mayorista'
+import MayoristaClientes from '@/pages/MayoristaClientes'
+import MayoristaLista from '@/pages/MayoristaLista'
 
 /*
   networkMode: 'always' es lo más importante de esta configuración.
@@ -148,6 +151,9 @@ function Rutas() {
         <Route path="ventas" element={<PuntoDeVenta />} />
         <Route path="caja" element={<Caja />} />
         <Route path="pedidos" element={<PedidosWeb />} />
+        <Route path="mayorista" element={<Mayorista />} />
+        <Route path="mayorista/clientes" element={<MayoristaClientes />} />
+        <Route path="mayorista/lista" element={<MayoristaLista />} />
         <Route path="clientes" element={<Clientes />} />
         <Route path="clientes/importar" element={<ImportarSaldos tipo="clientes" />} />
         <Route path="clientes/verificar" element={<VerificarClientesArca />} />

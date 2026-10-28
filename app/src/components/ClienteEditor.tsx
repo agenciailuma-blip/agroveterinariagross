@@ -363,6 +363,40 @@ export default function ClienteEditor({
         )}
       </Seccion>
 
+      <Seccion titulo="Venta mayorista">
+        <label className="col-span-2 sm:col-span-4 flex items-center gap-2 text-sm text-tinta">
+          <input
+            type="checkbox"
+            checked={datos.mayorista ?? false}
+            disabled={!puedeEditar}
+            onChange={(e) => set({ mayorista: e.target.checked })}
+            className="size-4 rounded border-borde text-marca-700 focus:ring-marca-500"
+          />
+          Lo atiende el vendedor de calle
+        </label>
+
+        {datos.mayorista && (
+          <>
+            <Campo etiqueta="Ruta" ancho="col-span-2" ayuda="Por dónde se pasa: «Ruta 14»">
+              <input
+                value={datos.ruta ?? ''}
+                disabled={!puedeEditar}
+                onChange={(e) => set({ ruta: e.target.value })}
+                className={claseInput}
+              />
+            </Campo>
+            <Campo etiqueta="Zona" ancho="col-span-2">
+              <input
+                value={datos.zona ?? ''}
+                disabled={!puedeEditar}
+                onChange={(e) => set({ zona: e.target.value })}
+                className={claseInput}
+              />
+            </Campo>
+          </>
+        )}
+      </Seccion>
+
       <Seccion titulo="Otros">
         <Campo etiqueta="Observaciones" ancho="col-span-2 sm:col-span-4">
           <textarea

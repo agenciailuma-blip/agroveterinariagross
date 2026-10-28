@@ -1,6 +1,6 @@
 ---
-actualizado: 2026-10-26
-estado: en construcción, empezando por Mayorista — contestadas siete de las ocho preguntas; falta la de los conceptos fijos
+actualizado: 2026-10-28
+estado: en construcción — Mayorista, primera entrega hecha el 28/10; contestadas siete de las ocho preguntas, falta la de los conceptos fijos
 ---
 
 # Fase 03 — lo que pidió Lucas el 26/10
@@ -144,6 +144,24 @@ Lucas la pidió como módulo aparte **porque quiere que Facundo entre sólo ahí
 | Ver clientes que no son mayoristas | ❌ No |
 | Armar pedidos y órdenes de recibo | ✅ Sí — siempre sujetos a confirmación del local | Facundo ya está armando algo propio con una IA gratuita; Lucas quiere que **los datos queden en el sistema y no en lo de Facundo**.
 
+### Lo que ya está — primera entrega, 28/10
+
+Para que Facundo salga a la calle la semana del 2/11. Va en la **0.18.0**.
+
+- **El rol *Vendedor de calle*** y seis permisos que Lucas tilda desde *Usuarios → Roles y permisos*: armar pedidos, cargar clientes, ver el stock, ver la deuda, pedir a otro precio, y atender los pedidos (el del local). El rol arranca con los cuatro primeros. Encargado y Administrador tienen todos.
+- **La sección *Mayorista***, con tres pestañas: **Pedidos**, **Clientes** y **Lista de precios**. Facundo ve sólo las dos primeras; al entrar, va directo a Pedidos.
+- **El cliente mayorista**: la misma ficha, con la marca *Lo atiende el vendedor de calle*, la ruta y la zona (en *Clientes*, sección *Venta mayorista*). Desde el teléfono, Facundo da de alta clientes —con el CUIT trae los datos de ARCA, y si el documento ya estaba no lo duplica: le pone la marca— y guarda **la ubicación parado en el local del cliente**. Un cliente nuevo nace con cuenta corriente a 30 días y la lista mayorista. **De uno que ya existe, Facundo sólo toca el contacto y la ubicación**: los datos fiscales se corrigen en el local.
+- **Los clientes, por ruta**: con lo vencido y desde cuándo, el último pedido, y botones para **llamar, escribir por WhatsApp y abrir el mapa** («Cómo llegar»).
+- **La lista de precios mayorista**: precio fijo por producto, se carga en *Mayorista → Lista de precios*. Facundo ve sólo esos productos.
+- **El pedido**: Facundo elige el cliente, busca los productos y manda. **Sin señal, el pedido queda en el teléfono y sale solo cuando vuelve**, sin duplicarse. En el local, el número de pedidos esperando se ve en el menú. Depósito corrige lo que falte y lo marca **corroborado**; después **Facturar** o **Sin factura** (comprobante interno), a la cuenta corriente —es la venta de siempre: baja el stock, anota la deuda con su vencimiento y controla el límite de crédito—. La factura sale por mail al cliente si tiene mail. Después, **Remito**.
+
+**Lo que falta del mayorista**, en este orden:
+1. **La orden de recibo y el recibo numerado** (5.4) — la próxima entrega.
+2. **El mail del pedido al cliente** al armarlo (hoy le llega la factura).
+3. **Frenar al vender a quien tiene vencido** y que el encargado autorice (respuesta 7): hoy Facundo y el local **ven** el vencido; lo que frena es el límite de crédito, como en la caja.
+4. **El pin en el mapa** con todos los clientes (hoy cada uno tiene su «Cómo llegar») y **las estadísticas** (5.5).
+5. **La planilla** para cargar la lista mayorista de a muchos.
+
 ### 5.1 El cliente mayorista
 
 **Recomendación: la misma lista de clientes, con una marca *Mayorista*. No una lista aparte.** Lucas dio el ejemplo en contra de partirla: el cliente que tiene una empresa de fumigación y a la vez le compra Livra. Con dos listas sería dos clientes, con dos deudas que nadie suma.
@@ -157,7 +175,7 @@ Lo nuevo de la ficha, sólo para los mayoristas:
 
 Lucas quiere que Facundo pida «tres bolsas de cachorro» y que al llegar **el precio ya esté**, sin preguntar. Francisco le propuso **una tercera lista, *Mayorista***, y él aceptó probarlo.
 
-**Un dato para corregir lo que se dijo en el audio:** las listas **no son sólo por porcentaje**. La base guarda desde agosto **un precio fijo por producto en cada lista**, que le gana al porcentaje. **Lo que falta es la pantalla** para cargarlo —y la planilla para cargarlo de a muchos—. Son pocos productos (Livra, por ahora), así que alcanza con eso. **Facundo sólo ve y elige los productos que tienen precio en esa lista.**
+**Un dato para corregir lo que se dijo en el audio:** las listas **no son sólo por porcentaje**. La base guarda desde agosto **un precio fijo por producto en cada lista**, que le gana al porcentaje. **La pantalla ya está** (*Mayorista → Lista de precios*); falta la planilla para cargarlo de a muchos. Son pocos productos (Livra, por ahora), así que alcanza con eso. **Facundo sólo ve y elige los productos que tienen precio en esa lista.**
 
 ### 5.3 La orden de pedido
 
@@ -270,7 +288,7 @@ Eso pide **recorrer el sistema entero** con esa vara —cada circuito de punta a
 
 ## El orden de construcción
 
-Por lo que se usa todos los días primero, y por lo que una pieza le presta a la siguiente:
+Por lo que se usa todos los días primero, y por lo que una pieza le presta a la siguiente. **Mayorista se adelantó** (28/10): Facundo arranca la semana del 2/11, así que su circuito —sin la orden de recibo— salió primero.
 
 | # | Qué | Por qué en este lugar |
 |---|---|---|

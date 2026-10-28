@@ -150,28 +150,43 @@ export async function emitirNoFiscal(
   El número sale igual del contador de la terminal, para que no choque
   con los remitos que esta misma máquina emite sin conexión.
 */
-export async function emitirRemitoDePedido(
+export function emitirRemitoDePedido(
   ventaId: string,
   terminalId: string | null,
   opciones: { serie?: string | null; observaciones?: string | null; entrega: DatosEntrega },
 ): Promise<{ id: string; serie: string; numero: number }> {
-  if (!navigator.onLine) throw new Error('Hace falta conexión para emitir el remito de un pedido web.')
+  return emitirEnServidor(ventaId, 'remito', terminalId, opciones)
+}
+
+/*
+  Lo mismo, para cualquier venta que nació en el servidor: los pedidos
+  mayoristas también se facturan allá, y su remito o su comprobante
+  interno salen por acá por la misma razón.
+*/
+export async function emitirEnServidor(
+  ventaId: string,
+  tipo: 'remito' | 'comprobante_interno',
+  terminalId: string | null,
+  opciones: { serie?: string | null; observaciones?: string | null; entrega?: DatosEntrega },
+): Promise<{ id: string; serie: string; numero: number }> {
+  if (!navigator.onLine) throw new Error(`Hace falta conexión para emitir este ${ETIQUETA_NO_FISCAL[tipo].toLowerCase()}.`)
 
   const serie = (opciones.serie ?? '').trim() || 'T'
   const id = crypto.randomUUID()
-  const numero = await reservarNumeroNoFiscal('remito', serie)
+  const numero = await reservarNumeroNoFiscal(tipo, serie)
+  const entrega = tipo === 'remito' ? opciones.entrega : undefined
 
   const { error } = await supabase.rpc('emitir_comprobante_no_fiscal', {
     p_venta_id: ventaId,
-    p_tipo_clave: 'remito',
+    p_tipo_clave: tipo,
     p_terminal_id: terminalId,
     p_lineas: null,
     p_observaciones: opciones.observaciones ?? null,
     p_valido_hasta: null,
-    p_entrega_domicilio: opciones.entrega.domicilio ?? null,
-    p_entrega_localidad: opciones.entrega.localidad ?? null,
-    p_entrega_contacto: opciones.entrega.contacto ?? null,
-    p_transportista: opciones.entrega.transportista ?? null,
+    p_entrega_domicilio: entrega?.domicilio ?? null,
+    p_entrega_localidad: entrega?.localidad ?? null,
+    p_entrega_contacto: entrega?.contacto ?? null,
+    p_transportista: entrega?.transportista ?? null,
     p_id: id,
     p_serie: serie,
     p_numero: numero,

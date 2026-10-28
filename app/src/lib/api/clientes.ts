@@ -38,6 +38,12 @@ export interface Cliente {
   iibb_certificado_vigencia_hasta: string | null
   observaciones: string | null
   activo: boolean
+  /** Lo atiende el vendedor de calle. */
+  mayorista: boolean
+  zona: string | null
+  ruta: string | null
+  latitud: number | null
+  longitud: number | null
 }
 
 export interface MovimientoCC {

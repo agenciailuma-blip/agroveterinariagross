@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { listarDepositos } from '@/lib/api/depositos'
 import { contarPedidosPendientes } from '@/lib/api/pedidos'
+import { contarPedidosPendientes as contarMayoristasPendientes } from '@/lib/api/mayorista'
 import AvisoDeActualizacion from '@/components/AvisoDeActualizacion'
 import AvisoBaseBloqueada from '@/components/AvisoBaseBloqueada'
 import { useAuth } from '@/auth/AuthProvider'
@@ -46,7 +47,15 @@ function useContadores(): Record<NonNullable<Pestana['contador']>, number> {
     // Sin conexión no hay número: mejor nada que uno viejo.
     retry: false,
   })
-  return { pedidos: pedidosPendientes.data ?? 0 }
+  // Lo que mandó el vendedor de calle y el depósito todavía no corroboró.
+  const mayoristas = useQuery({
+    queryKey: ['mayorista-pendientes'],
+    queryFn: contarMayoristasPendientes,
+    enabled: tienePermiso('mayorista.atender') && navigator.onLine,
+    refetchInterval: 60_000,
+    retry: false,
+  })
+  return { pedidos: pedidosPendientes.data ?? 0, mayorista: mayoristas.data ?? 0 }
 }
 
 /*
