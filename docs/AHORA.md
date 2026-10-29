@@ -12,7 +12,7 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Lista para publicar: 0.19.5.** **La foto del remito firmado**: se sube desde Remitos, con el celular o la PC, y queda a la vista en el remito y en la cuenta corriente del cliente, con quién firmó y cuándo. Con esto queda completo el punto 1 de la fase-03. Ver *Lo último que pasó*. **772 pruebas verdes en la app.**
+**Publicada: 0.19.5** (29/10, 16:31), verificada en Cloudflare: `latest.json` dice 0.19.5, el instalador está publicado y la versión web ya trae la foto del remito firmado. **La foto del remito firmado**: se sube desde Remitos, con el celular o la PC, y queda a la vista en el remito y en la cuenta corriente del cliente, con quién firmó y cuándo. Con esto queda completo el punto 1 de la fase-03. Ver *Lo último que pasó*. **772 pruebas verdes en la app.**
 
 **Publicada: 0.19.4** (29/10, 15:55), verificada en Cloudflare: `latest.json` dice 0.19.4, el instalador está publicado y la versión web ya trae el envío solo. **La factura a cuenta corriente sale sola por mail**, si el cliente tiene mail: desde la caja, desde Facturación y desde *Por facturar*. Ver *Lo último que pasó*. **770 pruebas verdes en la app.**
 
@@ -103,7 +103,7 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 
 ## Lo último que pasó — 29 de octubre: la foto del remito firmado
 
-**Fase-03, punto 1, ④** —el último que faltaba del punto 1—. Va en la 0.19.5.
+**Fase-03, punto 1, ④** —el último que faltaba del punto 1—. Publicada en la 0.19.5.
 
 - **En Remitos**, al lado de *Imprimir*, cada remito tiene **Subir firmado**. Se elige la foto —en el celular deja sacarla en el momento o buscarla en la galería—, se anota quién firmó (si se sabe) y cuándo, y se guarda. Desde ahí dice **Firmado**, y al tocarlo se ve la foto con quién firmó, cuándo, y quién la subió.
 - **En la cuenta corriente del cliente**, debajo de la venta, aparece «Remito R … · Firmado», que abre la misma foto.
