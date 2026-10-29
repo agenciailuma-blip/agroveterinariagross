@@ -12,6 +12,8 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
+**Construida: 0.19.10 — falta publicarla.** **Traslados**: las órdenes para ir a buscar o llevar un animal, en una pestaña nueva de Ventas, con sus estados, el mapa, el cobro por la caja, la hoja del día para el que maneja y las estadísticas de kilómetros, costo y tiempo. **La base ya está aplicada.** Ver *Lo último que pasó*. **799 pruebas verdes en la app.**
+
 **Publicada: 0.19.9** (29/10, 18:38), verificada en Cloudflare: `latest.json` dice 0.19.9, el instalador está publicado y la versión web ya trae Fiados. **Fiados**: un medio de pago nuevo en la caja que pide el DNI, y una sección propia en el menú con la cuenta de cada persona, sus fechas de pago, los cobros con recibo y el aviso por WhatsApp. **La base ya está aplicada.** Ver *Lo último que pasó*. **788 pruebas verdes en la app.**
 
 **Publicada: 0.19.8** (29/10, 18:07), verificada en Cloudflare: `latest.json` dice 0.19.8, el instalador está publicado y la versión web ya trae el botón. **El comprobante interno se factura con un botón**: en *Comprobantes no fiscales*, *Facturar* saca la factura de esa venta con fecha de hoy, sin rehacerla y sin tocar stock ni caja. **La base ya está aplicada.** Ver *Lo último que pasó*. **778 pruebas verdes en la app.**
@@ -108,6 +110,23 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 🟡 **Lo que la venta tardaba en llegar a la caja sin internet** — arreglado el 05/10 y publicado en la 0.13.4, **sin probar en el local**. El mostrador le pasaba las ventas a la caja una vez por minuto, y la caja miraba su cola cada ocho segundos: hasta 68 segundos con el cliente esperando. Y llegaba de a partes porque, mientras la cabecera intentaba subir al servidor —hasta doce segundos sin internet—, salían los renglones solos. Ahora la venta sale al segundo y medio de apretar *Enviar a caja* (y otra vez a los catorce, por si el intento de subir tardó), viaja entera o espera entera, y la caja la muestra apenas llega. Se comprueba en el próximo corte: la venta tiene que aparecer en la caja en un par de segundos y completa.
 
 ---
+
+## Lo último que pasó — 29 de octubre: los traslados
+
+**Fase-03, punto 6.** Construida en la 0.19.10, falta publicarla.
+
+- **Una pestaña nueva, *Traslados*, en Ventas** —termina en la caja, como los pedidos—, y no una sección más en el menú.
+- **La orden** lleva fecha, hora, motivo (eutanasia, cirugía, retiro, devolución u otro), dirección y localidad, nombre completo y teléfono del dueño, el animal, el monto y observaciones. Cada una tiene su número.
+- **La lista** muestra por defecto lo que hay por hacer, por día y por hora, con **los atrasados arriba, en rojo**; *Hechas* y *Todas* para mirar atrás. Se busca por dueño, dirección, animal o número.
+- **Los estados:** pendiente → *Salió* (en camino) → *Finalizar*. Se corrige mientras no esté finalizada. *Cancelar* pide el motivo.
+- **Al finalizar** se anotan los kilómetros, el costo y el tiempo (se escribe «1:15» o «75»); lo que no se sepa puede quedar vacío. Arriba de la pantalla, lo del mes: cuántos traslados, lo cobrado, los kilómetros, el costo y el tiempo, con el promedio.
+- **El cobro, por la caja:** *Mandar a caja* deja una venta en la cola —`TRA-` y el número de la orden— con un renglón «Traslado · motivo · animal» por el monto, a Consumidor Final; si el dueño quiere la factura a su nombre se elige en la caja. Un servicio no tiene stock: el renglón no lleva producto. Una sola vez por orden, salvo que esa venta se anule; con la venta en la caja ya no se cambia el monto ni se cancela la orden. Cobrada, la orden muestra su factura o su comprobante interno, y tocarla lo abre.
+- **El mapa:** el botón *Mapa* abre la dirección en Google Maps —en el teléfono, en la aplicación de mapas—; sin localidad se busca en Oberá. El teléfono del dueño se toca para llamar. En el programa instalado el mapa abre el navegador de la PC: el permiso que abría sólo WhatsApp ahora abre también el mapa de Google, y nada más.
+- **La hoja del día**, imprimible en A4: las órdenes de un día por hora, con la dirección, el dueño y su teléfono, el animal, las observaciones y renglones para anotar kilómetros, costo y horas de salida y vuelta. Se elige el día arriba.
+- **Necesita conexión**, como Fiados: no se carga en el mostrador con la fila esperando.
+- **Permisos nuevos:** *ver los traslados* y *cargarlos, finalizarlos y mandarlos a la caja*, para administrador y encargado. No hay un rol de consultorio: si alguien del consultorio los carga, se le dan desde *Usuarios*.
+- **La base** ([`20261030130000_los_traslados.sql`](../supabase/migrations/20261030130000_los_traslados.sql), aplicada). **Probada como usuario** con una orden inventada, con todo deshecho al final: sin dirección → no; cargar y corregir; *Mandar a caja* arma la venta en la cola con el renglón sin producto por el monto; mandarla dos veces → no; cambiar el monto o cancelar con la venta en la caja → no; en camino y finalizada con 18,4 km, $9.000 y 75 minutos; corregir una finalizada → no; la lista y las estadísticas dan lo cargado.
+- **Vista en la app con sesión iniciada**, a 375 px, con órdenes simuladas en el navegador —sin guardar nada en la base—: la lista por día, los atrasados, una orden en la caja y otra cobrada con su factura, una cancelada, *Finalizar*, el formulario y la hoja del día entran sin desplazarse hacia el costado. **Sin probar** el cobro de punta a punta en la caja ni el botón del mapa en el programa instalado. **799 verdes** y los tipos sin errores.
 
 ## Lo último que pasó — 29 de octubre: los fiados
 

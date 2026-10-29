@@ -98,12 +98,24 @@ export interface RespuestaDelLocal {
   del programa, el navegador de la PC: una pestaña ahí no existe.
 */
 export async function abrirWhatsapp(url: string): Promise<void> {
+  return abrirEnlace(url)
+}
+
+/*
+  La dirección de un traslado en el mapa. En el teléfono, el enlace abre
+  la aplicación de mapas; en el programa, el navegador de la PC.
+*/
+export async function abrirMapa(url: string): Promise<void> {
+  return abrirEnlace(url)
+}
+
+async function abrirEnlace(url: string): Promise<void> {
   if (!enEscritorio) {
     window.open(url, '_blank', 'noreferrer')
     return
   }
   const { invoke } = await import('@tauri-apps/api/core')
-  await invoke('abrir_whatsapp', { url })
+  await invoke('abrir_enlace', { url })
 }
 
 /** Cómo se llama esta computadora en la red. Vacío en el navegador. */

@@ -63,6 +63,11 @@ export const SECCIONES: Seccion[] = [
         la sección, así no hace falta estar en Ventas para enterarse.
       */
       { a: '/pedidos', etiqueta: 'Pedidos web', permiso: 'tienda.pedidos', contador: 'pedidos' },
+      /*
+        Fase 03, punto 6. Ir a buscar o llevar un animal. Va acá y no en
+        una sección propia: termina en la caja, como los pedidos.
+      */
+      { a: '/traslados', etiqueta: 'Traslados', permiso: 'traslados.ver' },
     ],
   },
   {

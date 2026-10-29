@@ -49,6 +49,8 @@ import Recibos from '@/pages/Recibos'
 import Fiados from '@/pages/Fiados'
 import FiadoFicha from '@/pages/FiadoFicha'
 import ReciboImprimible from '@/pages/ReciboImprimible'
+import Traslados from '@/pages/Traslados'
+import TrasladosHoja from '@/pages/TrasladosHoja'
 
 /*
   networkMode: 'always' es lo más importante de esta configuración.
@@ -156,6 +158,7 @@ function Rutas() {
         <Route path="ventas" element={<PuntoDeVenta />} />
         <Route path="caja" element={<Caja />} />
         <Route path="pedidos" element={<PedidosWeb />} />
+        <Route path="traslados" element={<Traslados />} />
         <Route path="mayorista" element={<Mayorista />} />
         <Route path="mayorista/clientes" element={<MayoristaClientes />} />
         <Route path="mayorista/lista" element={<MayoristaLista />} />
@@ -185,6 +188,7 @@ function Rutas() {
       <Route path="comprobantes/listado" element={<ListadoDeComprobantesImprimible />} />
       <Route path="no-fiscal/:id" element={<NoFiscalImprimible />} />
       <Route path="recibo/:id" element={<ReciboImprimible />} />
+      <Route path="traslados/hoja" element={<TrasladosHoja />} />
       <Route path="orden-interna/:id" element={<OrdenInternaImprimible />} />
       <Route path="pedido-proveedor/:id" element={<PedidoProveedorImprimible />} />
       <Route path="cuenta-corriente/:clienteId" element={<ResumenCuentaCorriente />} />

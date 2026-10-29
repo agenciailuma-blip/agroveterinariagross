@@ -247,6 +247,8 @@ Cada orden lleva **fecha, hora, motivo** (eutanasia, cirugía, retiro, devoluci�
 
 Quién la carga: cualquiera con el permiso; arranca con encargados y consultorio.
 
+**Ya está (29/10):** la pestaña **Traslados** en Ventas. La orden con fecha, hora, motivo, dirección, dueño y teléfono, el animal y el monto; los estados pendiente, en camino y finalizada, y se corrige hasta finalizarla. **Mandar a caja** deja la venta en la cola con un renglón *Traslado* sin stock, y la orden muestra la factura cuando se cobra. **Mapa** abre la dirección en Google Maps. La **hoja del día** se imprime para el que maneja. Al finalizar se anotan kilómetros, costo y tiempo, y arriba salen los totales del mes con el promedio. Los permisos van a administrador y encargado; no hay un rol de consultorio, se dan desde *Usuarios*.
+
 ---
 
 ## 7. Fiado — la sección *Fiados*
