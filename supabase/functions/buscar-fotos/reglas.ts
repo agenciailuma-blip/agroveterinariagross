@@ -130,3 +130,12 @@ export function tipoDeFotoAceptado(tipo: string | null): boolean {
   const t = (tipo ?? "").split(";")[0].trim().toLowerCase();
   return ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif", "image/avif", "image/bmp"].includes(t);
 }
+
+/*
+  Si Serper se quedó sin búsquedas. Avisa con 402 o 429, pero cuando el
+  saldo llega a cero contesta 400 con «Not enough credits» (27/10).
+*/
+export function sinCreditos(status: number, texto: string): boolean {
+  if (status === 402 || status === 429) return true;
+  return status === 400 && /credit/i.test(texto);
+}

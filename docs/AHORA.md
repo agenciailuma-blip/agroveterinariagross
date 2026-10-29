@@ -1,5 +1,5 @@
 ---
-actualizado: 2026-10-28
+actualizado: 2026-10-29
 estado: en curso
 ---
 
@@ -88,6 +88,15 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 🟡 **Lo que la venta tardaba en llegar a la caja sin internet** — arreglado el 05/10 y publicado en la 0.13.4, **sin probar en el local**. El mostrador le pasaba las ventas a la caja una vez por minuto, y la caja miraba su cola cada ocho segundos: hasta 68 segundos con el cliente esperando. Y llegaba de a partes porque, mientras la cabecera intentaba subir al servidor —hasta doce segundos sin internet—, salían los renglones solos. Ahora la venta sale al segundo y medio de apretar *Enviar a caja* (y otra vez a los catorce, por si el intento de subir tardó), viaja entera o espera entera, y la caja la muestra apenas llega. Se comprueba en el próximo corte: la venta tiene que aparecer en la caja en un par de segundos y completa.
 
 ---
+
+## Lo último que pasó — 29 de octubre: Buscar fotos decía «El buscador contestó 400»
+
+**Se terminaron las 2.500 búsquedas gratis de Serper.** El 27/10 Lucas cargó fotos de punta a punta y la última búsqueda buena fue a las 12:01; desde ahí fallaron todas. La cuenta de Serper muestra **−6 créditos**. Para que vuelva a andar, **Gross tiene que cargar saldo en Serper** (recargas desde unos USD 50, unas 50.000 búsquedas): anda sola, sin actualizar nada.
+
+> **Cómo se lo contás a Lucas:** se usaron todas las búsquedas gratis que traía la cuenta. Hay que cargarle saldo a Serper y vuelve a andar igual que antes.
+
+- **El aviso, corregido** ([`buscar-fotos`](../supabase/functions/buscar-fotos/index.ts), versión 3 en el servidor): Serper avisa la falta de saldo con un **400 y «Not enough credits»**, no con el 402 o el 429 que se esperaban. Ahora la pantalla dice *Se terminaron las búsquedas de Serper: hay que cargar más.* Y si contesta otro error, lo que dijo queda en el registro del servidor.
+- **Verificado:** **2 pruebas nuevas** en [`buscarFotos.prueba.ts`](../app/src/lib/api/buscarFotos.prueba.ts); rota la regla a propósito, falló. **738 verdes** y los tipos sin errores. La función publicada arranca y contesta. **Falta ver el aviso nuevo con una búsqueda de verdad**: la primera que haga Lucas sin saldo lo muestra, o deja en el registro qué contestó Serper.
 
 ## Lo último que pasó — 28 de octubre: Mayorista, la primera entrega
 

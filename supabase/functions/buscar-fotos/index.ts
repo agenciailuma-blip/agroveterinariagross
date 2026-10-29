@@ -1,6 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { encodeBase64 } from "jsr:@std/encoding@1/base64";
-import { type ImagenDeSerper, direccionPermitida, elegirCandidatas, tipoDeFotoAceptado } from "./reglas.ts";
+import { type ImagenDeSerper, direccionPermitida, elegirCandidatas, sinCreditos, tipoDeFotoAceptado } from "./reglas.ts";
 
 // ═══════════════════════════════════════════════════════════════
 // Buscar fotos de los productos en internet
@@ -152,10 +152,13 @@ Deno.serve(async (req: Request) => {
       if (r.status === 401 || r.status === 403) {
         return responder({ ok: false, motivo: "clave_rechazada", error: "Serper no aceptó la clave: revisá la que está cargada." }, 503);
       }
-      if (r.status === 429 || r.status === 402) {
-        return responder({ ok: false, motivo: "sin_creditos", error: "Se terminaron las búsquedas de Serper: hay que cargar más." }, 503);
-      }
       if (!r.ok) {
+        const texto = await r.text().catch(() => "");
+        if (sinCreditos(r.status, texto)) {
+          return responder({ ok: false, motivo: "sin_creditos", error: "Se terminaron las búsquedas de Serper: hay que cargar más." }, 503);
+        }
+        // Lo que contestó queda en el registro del servidor, para saber qué pasó.
+        console.error(`Serper contestó ${r.status}: ${texto.slice(0, 300)}`);
         return responder({ ok: false, motivo: "serper_fallo", error: `El buscador contestó ${r.status}. Probá de nuevo.` }, 502);
       }
       const datos = await r.json();

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   direccionPermitida,
   elegirCandidatas,
+  sinCreditos,
   tipoDeFotoAceptado,
   type ImagenDeSerper,
 } from '../../../../supabase/functions/buscar-fotos/reglas.ts'
@@ -162,5 +163,18 @@ describe('filtrar para trabajar por marca o por tipo', () => {
 
   it('vacío, todos', () => {
     expect(filtrarPorNombre(lista, '  ')).toHaveLength(3)
+  })
+})
+
+describe('cuando Serper se queda sin búsquedas', () => {
+  it('el 400 con «Not enough credits» es falta de saldo, como el 402 y el 429', () => {
+    expect(sinCreditos(400, '{"message":"Not enough credits","statusCode":400}')).toBe(true)
+    expect(sinCreditos(402, '')).toBe(true)
+    expect(sinCreditos(429, '')).toBe(true)
+  })
+
+  it('otro 400 o un 500 no lo son', () => {
+    expect(sinCreditos(400, '{"message":"Query is required","statusCode":400}')).toBe(false)
+    expect(sinCreditos(500, 'Not enough credits')).toBe(false)
   })
 })
