@@ -239,6 +239,10 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 - **La base** ([`20261029180000_frenar_el_vencido_en_la_caja.sql`](../supabase/migrations/20261029180000_frenar_el_vencido_en_la_caja.sql), aplicada): el freno vive en `cobrar_venta()`, la puerta de toda venta a cuenta corriente; la venta anota quién autorizó y cuándo. El pedido mayorista autorizado le pasa a su venta quién lo autorizó. **Probada como usuario**, con todo deshecho al final: sin autorizar frena; con el de un vendedor frena; con el de un encargado cobra y lo anota; en efectivo cobra; una venta de hace 20 días no frena por lo que venció después; el PIN equivocado cuenta el intento; el mayorista autorizado sigue facturando.
 - **Visto a 375 px** el recuadro en sus tres estados (aviso, PIN, autorizado), con un PIN rechazado: nada se desplaza hacia el costado. **766 verdes** y los tipos sin errores.
 
+## Lo último que pasó — 29 de octubre: el manual explica la caja, la tableta y la pastilla
+
+Lucas preguntó cómo se vende un medicamento por caja, tableta y pastilla. **El manual en PDF y la [guía de pantallas](guia-de-pantallas.md) suman el paso a paso**, en Productos: crear la suelta desde la ficha de la caja, atar una que ya existe con *Elegir el envase*, modificar, cargar el stock en la caja y publicar cada nivel en la tienda. El PDF se regeneró y se miró la página: entra entero, sin cortes. **Los productos de prueba *PRUEBA-CAJA10* y su suelta ya no están**: se fueron con la limpieza, y para mostrárselo hay que armar uno real.
+
 ## Lo último que pasó — 29 de octubre: *Traer de ARCA* decía que el CUIT no existe
 
 **Visto por Lucas al cargar un cliente:** con un CUIT real y bien escrito, *Traer de ARCA* contestaba *«ARCA no tiene ningún contribuyente con ese CUIT»*.

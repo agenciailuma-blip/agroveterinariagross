@@ -51,6 +51,7 @@ El catálogo. Es la pantalla donde se carga y se corrige todo lo que se vende.
 - **Precio y rentabilidad** — precio de venta con IVA, costo, margen objetivo y el margen real que está dando. Muestra el margen **sobre el costo** y **sobre la venta**, porque "margen" significa las dos cosas según quién lo diga.
 - **Impuestos** — alícuota de IVA y rubro de ARCA (el que le sirve al contador para separar ventas por actividad).
 - **Stock** — cuánto dice el sistema, cuánto se contó, y el **aviso de stock bajo**: los dos niveles, bajo y crítico. Si no se le pone uno propio, hereda el de su categoría o el general.
+- **Caja y suelto** — para lo que se compra en caja y se vende por tableta, pastilla o kilo. La suelta dice de qué caja sale y cuántas trae; el costo lo toma de la caja y el precio lo pone uno.
 - **Proveedor** — a quién se le compra. Es lo que permite ajustarle el precio a todos los productos de ese laboratorio de una sola vez, desde Proveedores.
 - **Historial de costos** — un desplegable debajo del costo: cada vez que se compró, con la fecha, el proveedor, la factura, el costo con IVA y cuánto cambió contra la compra anterior, más una línea chica que muestra cómo vino. Se arma solo con cada mercadería recibida en Compras. Lo ve quien ve las compras.
 - **Clasificación** — rubro, marca, presentación, animal y etapa de vida.
@@ -59,6 +60,14 @@ El catálogo. Es la pantalla donde se carga y se corrige todo lo que se vende.
 - **Trazabilidad y normativa** — producto veterinario, requiere receta, fitosanitario, controla vencimiento.
 
 > **Vender online.** Nada sale a la tienda web hasta que alguien lo prende. Se prende en la ficha, a un grupo marcado, o **a una categoría o marca entera** —eligiéndola en el filtro, que muestra la cantidad y la prende toda, no sólo los primeros 100 de la lista—. Prendido, sale sólo si tiene **nombre público** y **precio**; si le falta algo, la ficha lo dice y el aviso cuenta cuántos quedaron afuera. Con qué lista de precios se publica se elige en **Precios → Tienda online**.
+
+> **Caja, tableta y pastilla, paso a paso.** Cada nivel es un producto, con su código y su precio.
+> 1. Abrir la ficha de la caja (o crearla con **Nuevo producto** y guardarla).
+> 2. **Caja y suelto → Crear la suelta**: se abre un producto nuevo con la categoría, la marca, el proveedor, el IVA y la caja de la que sale ya puestos. El código y el nombre vienen con «-S» y «SUELTO»; se pueden cambiar.
+> 3. Completar **¿Cuántas trae cada uno?** y el **precio** —debajo aparece la caja dividida por la cantidad, como referencia— y **Crear producto**.
+> 4. Si también se vende por pastilla, repetir desde la ficha de la tableta.
+>
+> Si la tableta ya existe como producto aparte: en su ficha, **Caja y suelto → Elegir el envase**, buscar la caja, poner cuántas trae y guardar. **Para modificar:** el precio, en la ficha de cada nivel; cuántas trae, en la de la suelta; **Quitar** los separa. El stock se carga siempre en la caja: lo suelto se abre solo al venderse. En la tienda online cada nivel se publica por separado con **Vender online**.
 
 > **Importar la planilla** (`Productos → Importar planilla`) acepta `.xlsx` y `.csv`. El sistema propone a qué campo corresponde cada columna y la persona confirma, viendo un dato de ejemplo — porque los encabezados mienten: una columna que dice "Precio" puede tener el costo. **Reimportar no duplica**: reconoce por código y actualiza. Una celda vacía no borra lo que ya había; un valor distinto sí lo pisa. **Trae también el aviso de stock** —*Stock mínimo* es el rojo; *Stock bajo*, el amarillo— **y la suelta** —*Sale de*, con el código de la caja, y *Cuántas trae*—; la caja puede estar en cualquier fila. Y **el peso y las unidades por bulto**, para el pedido al proveedor que pide un mínimo en kilos o en bultos; en la ficha están en la sección Proveedor.
 

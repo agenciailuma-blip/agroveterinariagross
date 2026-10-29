@@ -106,6 +106,9 @@
   }
   .nota.verde { background: #f3faee; border-left-color: var(--verde); }
   .nota b { font-weight: 700; }
+  .nota ol, .nota ul { margin: 1.2mm 0 1.5mm; padding-left: 5mm; }
+  .nota li { margin-bottom: .8mm; }
+  .nota p { margin: 1.8mm 0 0; }
 
   table.datos { width: 100%; border-collapse: collapse; margin-top: 2mm; font-size: 9.4pt; }
   table.datos th {
@@ -318,6 +321,18 @@
 
       <div class="nota verde"><b>Vender online, de a muchos.</b> En el listado se filtra por categoría y marca, se marcan los productos y se prenden o apagan juntos, o se prende una categoría entera: el sistema dice antes cuántos son y, después, cuántos no salen por faltarles el nombre público o el precio. Los que se venden online llevan la marca <b>Web</b> en la lista; en ámbar si están prendidos pero no salen.</div>
       <div class="nota verde"><b>La caja se abre sola.</b> El stock se carga como llega: en cajas. Cuando se vende una suelta y no quedan sueltas, el sistema abre una caja en el mismo momento: la caja baja una y las sueltas suben lo que trae. Con una caja de diez, vender una pastilla deja <b>cero cajas y nueve sueltas</b>; nunca muestra una caja que ya no está. Sirve para tres niveles —caja, tableta y pastilla—: si no quedan tabletas, abre una caja para sacar la tableta. Lo que vuelve por una devolución vuelve suelto, porque la caja ya está abierta. Cada apertura queda registrada con la venta que la provocó, quién y cuándo.</div>
+      <div class="nota"><b>Paso a paso: caja, tableta y pastilla.</b> Cada nivel es un producto, con su código y su precio; el sistema sabe cuál sale de cuál.
+        <ol>
+          <li>En <b>Productos</b>, abrir la ficha de la caja. Si todavía no existe, crearla con <b>Nuevo producto</b> y guardarla.</li>
+          <li>En la sección <b>Caja y suelto</b>, tocar <b>Crear la suelta</b>. Se abre un producto nuevo con la categoría, la marca, el proveedor, el IVA y la caja de la que sale ya puestos. El código y el nombre vienen sugeridos con «-S» y «SUELTO»; se pueden cambiar, por ejemplo a «… TABLETA».</li>
+          <li>Completar <b>¿Cuántas trae cada uno?</b> —las tabletas de una caja— y el <b>precio</b>. Debajo aparece el precio de la caja dividido por la cantidad, como referencia.</li>
+          <li><b>Crear producto.</b></li>
+          <li>Si también se vende por pastilla, abrir la ficha de la tableta y repetir los pasos 2 a 4: ahí la cantidad es la de pastillas por tableta.</li>
+        </ol>
+        <p><b>Si la tableta ya existe como producto aparte</b> —por ejemplo, porque vino de la planilla—: en su ficha, <b>Caja y suelto → Elegir el envase</b>, buscar la caja por nombre o código, poner cuántas trae y guardar.</p>
+        <p><b>Para modificar:</b> el precio se cambia en la ficha de cada nivel, como en cualquier producto; cuántas trae, en la ficha de la suelta; y <b>Quitar</b>, al lado de la caja, los separa y pasan a venderse cada uno por su lado. El costo no se toca: la suelta lo toma de la caja.</p>
+        <p><b>El stock se carga siempre en la caja</b>, que es lo que se compra; las tabletas y las pastillas se abren solas a medida que se venden. <b>En la tienda online</b> cada nivel se publica por separado con <b>Vender online</b>: se puede vender sólo la caja, o también la tableta.</p>
+      </div>
       <div class="nota"><b>Importar la planilla no duplica.</b> Acepta Excel y CSV. El sistema propone a qué campo corresponde cada columna y la persona confirma viendo un dato de ejemplo, porque los encabezados mienten: una columna que dice «Precio» puede tener el costo. Al reimportar reconoce por código y actualiza: una celda vacía no borra lo que había, un valor distinto sí lo pisa.</div>
       <div class="nota"><b>La planilla también trae el aviso de stock y la suelta.</b> Una columna con el <b>stock mínimo</b> —con cuántos el producto pasa a rojo— y, si se quiere, otra con el <b>stock bajo</b>, el amarillo. Si se pone sólo el mínimo, el amarillo queda con el mismo número. Para lo que se vende suelto, una columna con <b>el código de la caja de la que sale</b> y otra con <b>cuántas trae</b>: las dos van juntas. La caja puede estar en cualquier fila de la planilla; el sistema la carga antes que su suelta. Y dos columnas más para los proveedores que piden un mínimo en kilos o en bultos: el <b>peso</b> de una unidad, en kilos, y las <b>unidades por bulto</b>. Antes de importar, marca las filas mal escritas —un mínimo mayor que el bajo, una suelta sin cuántas trae, un peso en cero— para corregirlas en el Excel.</div>
     </div>
