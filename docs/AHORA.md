@@ -12,7 +12,7 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Lista para publicar: 0.19.2.** **El freno al vencido, en el mostrador y la caja**: el mostrador avisa al elegir un cliente con deuda vencida, y la caja no le cobra a cuenta corriente hasta que un encargado pone su PIN; con o sin conexión. **La base ya está aplicada**: hoy no hay clientes con cuenta corriente, así que no le traba nada a nadie, pero hay que publicar antes de habilitar la primera. Ver *Lo último que pasó*. **766 pruebas verdes en la app.**
+**Publicada: 0.19.2** (29/10, 15:15), verificada en Cloudflare: `latest.json` dice 0.19.2, el instalador está publicado y la versión web ya trae el PIN del encargado en la caja. **El freno al vencido, en el mostrador y la caja**: el mostrador avisa al elegir un cliente con deuda vencida, y la caja no le cobra a cuenta corriente hasta que un encargado pone su PIN; con o sin conexión. Ver *Lo último que pasó*. **766 pruebas verdes en la app.**
 
 **Publicada: 0.19.1** (29/10, 12:05), verificada en Cloudflare: `latest.json` dice 0.19.1, el instalador está publicado y la versión web ya trae el freno. **El freno al cliente mayorista con deuda vencida**: su pedido no se factura hasta que un encargado lo autoriza, con un clic o con su PIN. Y **Productos ya no baja hasta una zona vacía** con la ficha abierta. Ver *Lo último que pasó*. **756 pruebas verdes en la app.**
 
@@ -97,7 +97,7 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 
 ## Lo último que pasó — 29 de octubre: el freno al vencido en el mostrador y la caja
 
-**Respuesta 7 de Lucas, la parte del local** (fase-03, punto 1, ⑤): la venta a cuenta corriente de un cliente con deuda vencida no avanza hasta que un encargado la autoriza con su PIN, y queda anotado quién la dejó pasar. Va en la 0.19.2.
+**Respuesta 7 de Lucas, la parte del local** (fase-03, punto 1, ⑤): la venta a cuenta corriente de un cliente con deuda vencida no avanza hasta que un encargado la autoriza con su PIN, y queda anotado quién la dejó pasar. Publicada en la 0.19.2.
 
 - **En el mostrador, el aviso:** apenas se elige un cliente con vencido, debajo de su nombre dice cuánto debe y desde cuándo, y que a cuenta corriente lo tiene que autorizar un encargado en la caja.
 - **En la caja, el freno:** si algo de la venta va a cuenta corriente, aparece el recuadro rojo con el PIN del encargado y **Cobrar** no se puede apretar hasta que lo autorizan. Con efectivo o tarjeta se cobra igual: el que debe puede seguir comprando, lo que no puede es sumar deuda.
