@@ -12,6 +12,8 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
+**Lista para publicar: 0.19.3.** **La pestaña *Vencidos* en Clientes**: quién debe algo vencido, cuánto y desde hace cuántos días, con cada comprobante y lo que le queda impago. Tocar el cliente abre su cuenta corriente. Ver *Lo último que pasó*. **770 pruebas verdes en la app.**
+
 **Publicada: 0.19.2** (29/10, 15:15), verificada en Cloudflare: `latest.json` dice 0.19.2, el instalador está publicado y la versión web ya trae el PIN del encargado en la caja. **El freno al vencido, en el mostrador y la caja**: el mostrador avisa al elegir un cliente con deuda vencida, y la caja no le cobra a cuenta corriente hasta que un encargado pone su PIN; con o sin conexión. Ver *Lo último que pasó*. **766 pruebas verdes en la app.**
 
 **Publicada: 0.19.1** (29/10, 12:05), verificada en Cloudflare: `latest.json` dice 0.19.1, el instalador está publicado y la versión web ya trae el freno. **El freno al cliente mayorista con deuda vencida**: su pedido no se factura hasta que un encargado lo autoriza, con un clic o con su PIN. Y **Productos ya no baja hasta una zona vacía** con la ficha abierta. Ver *Lo último que pasó*. **756 pruebas verdes en la app.**
@@ -94,6 +96,16 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 🟡 **Lo que la venta tardaba en llegar a la caja sin internet** — arreglado el 05/10 y publicado en la 0.13.4, **sin probar en el local**. El mostrador le pasaba las ventas a la caja una vez por minuto, y la caja miraba su cola cada ocho segundos: hasta 68 segundos con el cliente esperando. Y llegaba de a partes porque, mientras la cabecera intentaba subir al servidor —hasta doce segundos sin internet—, salían los renglones solos. Ahora la venta sale al segundo y medio de apretar *Enviar a caja* (y otra vez a los catorce, por si el intento de subir tardó), viaja entera o espera entera, y la caja la muestra apenas llega. Se comprueba en el próximo corte: la venta tiene que aparecer en la caja en un par de segundos y completa.
 
 ---
+
+## Lo último que pasó — 29 de octubre: la pestaña *Vencidos* en Clientes
+
+**Fase-03, punto 1, ⑤:** el listado de «qué comprobantes vencieron, de quién». Va en la 0.19.3.
+
+- **En Clientes, arriba de la búsqueda, *Todos* y *Vencidos*.** En *Vencidos* aparece un bloque por cliente con lo que debe vencido, desde hace cuántos días y el teléfono; debajo, cada comprobante con la fecha en que venció y lo que le queda impago (y de cuánto era, si ya pagó una parte). Primero el que debe desde hace más tiempo; a igual atraso, el que debe más. La búsqueda filtra por nombre.
+- **Tocar el cliente abre su cuenta corriente**, que es donde se le cobra. Al cobrar, la lista se actualiza.
+- **Los números son los mismos en todo el sistema:** los pagos se descuentan de lo más viejo, igual que en la deuda por antigüedad de Reportes y en el freno de la caja. Probado en la base con un cliente inventado, con todo deshecho al final: tres facturas, una pagada entera y otra a medias por un cobro, una que vence hoy y otra más adelante; la lista, la deuda por antigüedad y el freno dieron los mismos $1.500.
+- **Quién la ve:** quien tiene permiso para ver la cuenta corriente; la base lee con los permisos de quien consulta.
+- **Visto a 375 px** en un banco de prueba con nombres y comprobantes largos: nada se desplaza hacia el costado. **770 verdes** y los tipos sin errores.
 
 ## Lo último que pasó — 29 de octubre: el freno al vencido en el mostrador y la caja
 

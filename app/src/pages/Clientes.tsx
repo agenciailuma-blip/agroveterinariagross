@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/auth/AuthProvider'
@@ -12,6 +12,8 @@ import {
 import type { Cliente } from '@/lib/api/clientes'
 import ClienteEditor from '@/components/ClienteEditor'
 import CuentaCorriente from '@/components/CuentaCorriente'
+import ListaVencidos from '@/components/ListaVencidos'
+import { agruparVencidos, comprobantesVencidos } from '@/lib/api/vencidos'
 import { moneda, numero } from '@/lib/tipos'
 import { useBotonConAtajo } from '@/lib/atajos'
 import { TeclaAtajo } from '@/components/Atajos'
@@ -19,6 +21,8 @@ import BotonBajarPlanilla from '@/components/BotonBajarPlanilla'
 import { bajarPlanillaDeClientes } from '@/lib/api/planillas'
 
 type Pestania = 'datos' | 'cuenta'
+/** Todos los clientes, o sólo los que deben algo vencido, con el detalle. */
+type Vista = 'todos' | 'vencidos'
 
 export default function Clientes() {
   const botonGuardar = useBotonConAtajo('F9')
@@ -28,6 +32,7 @@ export default function Clientes() {
   const [texto, setTexto] = useState('')
   const [debounced, setDebounced] = useState('')
   const [soloConDeuda, setSoloConDeuda] = useState(false)
+  const [vista, setVista] = useState<Vista>('todos')
   const [seleccionado, setSeleccionado] = useState<string | null>(null)
   const [creando, setCreando] = useState(false)
   const [form, setForm] = useState<Partial<Cliente>>(CLIENTE_NUEVO)
@@ -39,6 +44,7 @@ export default function Clientes() {
   const puedeCrear = tienePermiso('clientes.crear')
   const puedeEditar = tienePermiso('clientes.editar')
   const puedeCobrar = tienePermiso('cuentacorriente.cobrar')
+  const puedeVerCuenta = tienePermiso('cuentacorriente.ver')
 
   useEffect(() => {
     const t = setTimeout(() => setDebounced(texto.trim()), 250)
@@ -53,6 +59,18 @@ export default function Clientes() {
     queryKey: ['clientes', debounced, soloConDeuda],
     queryFn: () => listarClientes(debounced, soloConDeuda),
   })
+
+  const vencidos = useQuery({
+    queryKey: ['vencidos'],
+    queryFn: comprobantesVencidos,
+    enabled: vista === 'vencidos',
+  })
+
+  const clientesConVencidos = useMemo(() => {
+    const todos = agruparVencidos(vencidos.data ?? [])
+    const buscado = debounced.toLowerCase()
+    return buscado ? todos.filter((c) => c.nombre.toLowerCase().includes(buscado)) : todos
+  }, [vencidos.data, debounced])
 
   const referencias = useQuery({
     queryKey: ['referencias-fiscales'],
@@ -91,7 +109,8 @@ export default function Clientes() {
   function abrir(id: string) {
     setCreando(false)
     setSeleccionado(id)
-    setPestania('datos')
+    // Desde Vencidos se va a cobrar o a mirar la cuenta, no a cambiar datos.
+    setPestania(vista === 'vencidos' ? 'cuenta' : 'datos')
   }
 
   function nuevo() {
@@ -118,7 +137,15 @@ export default function Clientes() {
         <div>
           <h1 className="text-xl font-semibold tracking-tight text-tinta">Clientes</h1>
           <p className="text-sm text-piedra-500">
-            {listado.data ? `${numero.format(listado.data.total)} en total` : 'Cargando…'}
+            {vista === 'vencidos'
+              ? vencidos.data
+                ? `${numero.format(clientesConVencidos.length)} con vencidos · ${moneda.format(
+                    clientesConVencidos.reduce((t, c) => t + c.total, 0),
+                  )}`
+                : 'Cargando…'
+              : listado.data
+                ? `${numero.format(listado.data.total)} en total`
+                : 'Cargando…'}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -154,7 +181,22 @@ export default function Clientes() {
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <div className="relative min-w-64 flex-1">
+        {puedeVerCuenta && (
+          <div className="flex shrink-0 rounded-lg bg-piedra-100 p-0.5 text-sm">
+            {(['todos', 'vencidos'] as Vista[]).map((v) => (
+              <button
+                key={v}
+                onClick={() => setVista(v)}
+                className={`rounded-md px-3 py-1.5 font-medium ${
+                  vista === v ? 'bg-white text-tinta shadow-sm' : 'text-piedra-500 hover:text-tinta'
+                }`}
+              >
+                {v === 'todos' ? 'Todos' : 'Vencidos'}
+              </button>
+            ))}
+          </div>
+        )}
+        <div className="relative min-w-0 flex-1 basis-64">
           <svg
             className="pointer-events-none absolute top-1/2 left-3.5 size-5 -translate-y-1/2 text-piedra-400"
             fill="none"
@@ -174,15 +216,17 @@ export default function Clientes() {
             className="w-full rounded-xl border border-borde bg-white py-2.5 pr-4 pl-11 text-tinta shadow-sm outline-none focus:border-marca-500 focus:ring-2 focus:ring-marca-500/20"
           />
         </div>
-        <label className="flex cursor-pointer items-center gap-2 text-sm whitespace-nowrap text-piedra-600">
-          <input
-            type="checkbox"
-            checked={soloConDeuda}
-            onChange={(e) => setSoloConDeuda(e.target.checked)}
-            className="size-4 rounded border-borde text-marca-700 focus:ring-marca-500"
-          />
-          Sólo con deuda
-        </label>
+        {vista === 'todos' && (
+          <label className="flex cursor-pointer items-center gap-2 text-sm whitespace-nowrap text-piedra-600">
+            <input
+              type="checkbox"
+              checked={soloConDeuda}
+              onChange={(e) => setSoloConDeuda(e.target.checked)}
+              className="size-4 rounded border-borde text-marca-700 focus:ring-marca-500"
+            />
+            Sólo con deuda
+          </label>
+        )}
       </div>
 
       {/*
@@ -197,50 +241,66 @@ export default function Clientes() {
           }`}
         >
           <div className="h-full overflow-y-auto">
-            <table className="w-full text-sm">
-              <tbody className="divide-y divide-piedra-100">
-                {listado.isPending && (
-                  <tr>
-                    <td className="px-4 py-12 text-center text-piedra-400">Buscando…</td>
-                  </tr>
-                )}
-                {!listado.isPending && !listado.data?.filas.length && (
-                  <tr>
-                    <td className="px-4 py-12 text-center text-piedra-400">
-                      {soloConDeuda ? 'Nadie tiene deuda abierta.' : 'No hay clientes que coincidan.'}
-                    </td>
-                  </tr>
-                )}
-                {listado.data?.filas.map((c) => (
-                  <tr
-                    key={c.id}
-                    onClick={() => abrir(c.id)}
-                    className={`cursor-pointer ${
-                      c.id === seleccionado ? 'bg-marca-50' : 'hover:bg-piedra-50'
-                    }`}
-                  >
-                    <td className="px-4 py-2.5">
-                      <p className="font-medium text-tinta">{c.nombre}</p>
-                      <p className="text-xs text-piedra-400">
-                        {c.numero_documento ?? 'sin documento'}
-                        {!c.activo && ' · inactivo'}
-                      </p>
-                    </td>
-                    <td className="w-32 px-4 py-2.5 text-right">
-                      {c.cuenta_corriente && (
-                        <span
-                          className={`text-sm font-medium tabular-nums ${
-                            c.saldo > 0 ? 'text-tinta' : 'text-piedra-400'
-                          }`}
-                        >
-                          {moneda.format(c.saldo)}
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            {vista === 'vencidos' ? (
+              vencidos.isPending ? (
+                <p className="px-4 py-12 text-center text-sm text-piedra-400">Buscando…</p>
+              ) : vencidos.isError ? (
+                <p role="alert" className="px-4 py-12 text-center text-sm text-red-700">
+                  {vencidos.error.message}
+                </p>
+              ) : !clientesConVencidos.length ? (
+                <p className="px-4 py-12 text-center text-sm text-piedra-400">
+                  {debounced ? 'No hay clientes con vencidos que coincidan.' : 'Nadie debe nada vencido.'}
+                </p>
+              ) : (
+                <ListaVencidos clientes={clientesConVencidos} seleccionado={seleccionado} onAbrir={abrir} />
+              )
+            ) : (
+              <table className="w-full text-sm">
+                <tbody className="divide-y divide-piedra-100">
+                  {listado.isPending && (
+                    <tr>
+                      <td className="px-4 py-12 text-center text-piedra-400">Buscando…</td>
+                    </tr>
+                  )}
+                  {!listado.isPending && !listado.data?.filas.length && (
+                    <tr>
+                      <td className="px-4 py-12 text-center text-piedra-400">
+                        {soloConDeuda ? 'Nadie tiene deuda abierta.' : 'No hay clientes que coincidan.'}
+                      </td>
+                    </tr>
+                  )}
+                  {listado.data?.filas.map((c) => (
+                    <tr
+                      key={c.id}
+                      onClick={() => abrir(c.id)}
+                      className={`cursor-pointer ${
+                        c.id === seleccionado ? 'bg-marca-50' : 'hover:bg-piedra-50'
+                      }`}
+                    >
+                      <td className="px-4 py-2.5">
+                        <p className="font-medium text-tinta">{c.nombre}</p>
+                        <p className="text-xs text-piedra-400">
+                          {c.numero_documento ?? 'sin documento'}
+                          {!c.activo && ' · inactivo'}
+                        </p>
+                      </td>
+                      <td className="w-32 px-4 py-2.5 text-right">
+                        {c.cuenta_corriente && (
+                          <span
+                            className={`text-sm font-medium tabular-nums ${
+                              c.saldo > 0 ? 'text-tinta' : 'text-piedra-400'
+                            }`}
+                          >
+                            {moneda.format(c.saldo)}
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
 
@@ -315,6 +375,7 @@ export default function Clientes() {
                   onCambio={() => {
                     qc.invalidateQueries({ queryKey: ['cliente', seleccionado] })
                     qc.invalidateQueries({ queryKey: ['clientes'] })
+                    qc.invalidateQueries({ queryKey: ['vencidos'] })
                   }}
                 />
               ) : null}
