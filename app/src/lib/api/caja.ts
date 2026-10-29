@@ -15,6 +15,7 @@ import {
 } from '@/lib/local/caja'
 import type { LineaDeseada } from '@/lib/local/caja'
 import type { DatosCheque } from '@/lib/api/cheques'
+import type { DatosFiado } from '@/lib/api/fiados'
 import { diaDeObera } from '@/lib/api/facturacion'
 import { vencidoAl } from '@/lib/vencido'
 import type { CargoPendiente, Vencido } from '@/lib/vencido'
@@ -92,6 +93,8 @@ export interface PagoNuevo {
   referencia: string | null
   /** Sólo en un pago con cheque: lo que dice el papel. */
   datos_cheque?: DatosCheque | null
+  /** Sólo en un pago fiado: a quién y hasta cuándo. */
+  datos_fiado?: DatosFiado | null
 }
 
 /*

@@ -88,9 +88,12 @@ export interface ReciboCompleto {
   mail_estado: 'enviado' | 'error' | null
   mail_error: string | null
   mail_en: string | null
-  cliente_id: string
+  /** Nulo si el recibo es de un fiado. */
+  cliente_id: string | null
   cliente_nombre: string
   cliente_email: string | null
+  /** El recibo del pago de un fiado (Fase 03, punto 7). */
+  fiado_persona_id: string | null
   cliente_documento: string | null
   cliente_domicilio: string | null
   /** El saldo de la cuenta apenas después de este recibo. */

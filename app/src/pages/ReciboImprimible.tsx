@@ -49,7 +49,8 @@ export default function ReciboImprimible() {
         </button>
       </div>
 
-      <MandarPorMail r={r} />
+      {/* El fiado no deja un mail: se le avisa por WhatsApp. */}
+      {!r.fiado_persona_id && <MandarPorMail r={r} />}
 
       <style>{'@page { size: A4; margin: 12mm; }'}</style>
       <Hoja r={r} />

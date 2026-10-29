@@ -51,6 +51,7 @@ export const TIPOS_MEDIO_PAGO: Record<string, string> = {
   transferencia: 'Transferencia',
   cuenta_corriente: 'Cuenta corriente',
   cheque: 'Cheque',
+  fiado: 'Fiado',
   otro: 'Otro',
 }
 

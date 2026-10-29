@@ -1,3 +1,4 @@
+mod enlaces;
 mod impresora;
 mod llave_local;
 mod red_local;
@@ -33,7 +34,9 @@ pub fn run() {
             // Los datos de clientes que quedan en la PC se guardan
             // cifrados; la llave la custodia Windows, no la aplicación.
             llave_local::leer_llave_base_local,
-            llave_local::guardar_llave_base_local
+            llave_local::guardar_llave_base_local,
+            // El aviso a un fiado: abre WhatsApp con el mensaje armado.
+            enlaces::abrir_whatsapp
         ])
         .run(tauri::generate_context!())
         .expect("No se pudo abrir la ventana del sistema");

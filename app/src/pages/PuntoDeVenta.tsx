@@ -24,6 +24,7 @@ import { totalesPorConcepto } from '@/lib/conceptos'
 import { emitirPresupuesto, emitirRemitoDirecto, numeroNoFiscal } from '@/lib/api/noFiscal'
 import { useAuth } from '@/auth/AuthProvider'
 import AvisoVencido from '@/components/AvisoVencido'
+import { ConsultaFiado } from '@/components/CamposFiado'
 import { abrirNoFiscal } from '@/lib/escritorio'
 import { moneda, numero } from '@/lib/tipos'
 import { confirmar, pedirNumero, pedirTexto } from '@/components/Dialogo'
@@ -1030,6 +1031,7 @@ export default function PuntoDeVenta() {
                 Si no se elige, la caja decide y el total puede cambiar.
               </p>
             )}
+            {medio?.tipo === 'fiado' && tienePermiso('fiados.ver') && <ConsultaFiado />}
           </div>
         )}
 

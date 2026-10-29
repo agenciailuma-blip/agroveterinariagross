@@ -272,6 +272,8 @@ Quién la carga: cualquiera con el permiso; arranca con encargados y consultorio
 
 > El fiado guarda DNI, domicilio y teléfono de personas que no son clientes. Es un registro propio del negocio sobre su propia deuda y está bien tenerlo; lo que no se hace es compartirlo con otros comercios. Entra en la misma base de datos personales que ya hay que tener inscripta.
 
+**Ya está (29/10):** el medio de pago **Fiado** en la caja pide DNI, nombre, domicilio, teléfono y la fecha en que paga; anda también sin conexión. La sección **Fiados** del menú ordena por lo vencido y la próxima fecha, con las estadísticas arriba. En la ficha de cada persona: sus ventas fiadas con los renglones, **Cobrar** (recibo del mismo talonario y a la caja del día, a las ventas más viejas o a la que se elija), **Cambiar fechas** en una o varias, con la historia de cada cambio, y **WhatsApp** con el mensaje armado. El aviso del DNI sale en la caja y, al marcar *Fiado* en el mostrador, también ahí.
+
 ---
 
 ## 8. La proforma que se factura desde la misma pantalla

@@ -16,7 +16,8 @@ import { moneda } from '@/lib/tipos'
 export default function Recibos() {
   const { tienePermiso } = useAuth()
   const [buscar, setBuscar] = useState('')
-  const puede = tienePermiso('cuentacorriente.ver') || tienePermiso('cuentacorriente.cobrar')
+  const puede =
+    tienePermiso('cuentacorriente.ver') || tienePermiso('cuentacorriente.cobrar') || tienePermiso('fiados.ver')
 
   const recibos = useQuery({
     queryKey: ['recibos', buscar.trim()],
@@ -40,7 +41,7 @@ export default function Recibos() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
           <h1 className="text-xl font-semibold tracking-tight text-tinta">Recibos</h1>
-          <p className="text-sm text-piedra-500">Las cobranzas de cuenta corriente, cada una con su número.</p>
+          <p className="text-sm text-piedra-500">Las cobranzas de cuenta corriente y los pagos de fiados, cada uno con su número.</p>
         </div>
         <input
           value={buscar}

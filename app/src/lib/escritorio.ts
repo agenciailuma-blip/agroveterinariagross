@@ -93,6 +93,19 @@ export interface RespuestaDelLocal {
   detalle: string
 }
 
+/*
+  WhatsApp con el mensaje armado. En el navegador, una pestaña; adentro
+  del programa, el navegador de la PC: una pestaña ahí no existe.
+*/
+export async function abrirWhatsapp(url: string): Promise<void> {
+  if (!enEscritorio) {
+    window.open(url, '_blank', 'noreferrer')
+    return
+  }
+  const { invoke } = await import('@tauri-apps/api/core')
+  await invoke('abrir_whatsapp', { url })
+}
+
 /** Cómo se llama esta computadora en la red. Vacío en el navegador. */
 export async function nombreDeEstaComputadora(): Promise<string> {
   if (!enEscritorio) return ''

@@ -12,6 +12,8 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
+**Construida: 0.19.9 — falta publicarla.** **Fiados**: un medio de pago nuevo en la caja que pide el DNI, y una sección propia en el menú con la cuenta de cada persona, sus fechas de pago, los cobros con recibo y el aviso por WhatsApp. **La base ya está aplicada.** Ver *Lo último que pasó*. **788 pruebas verdes en la app.**
+
 **Publicada: 0.19.8** (29/10, 18:07), verificada en Cloudflare: `latest.json` dice 0.19.8, el instalador está publicado y la versión web ya trae el botón. **El comprobante interno se factura con un botón**: en *Comprobantes no fiscales*, *Facturar* saca la factura de esa venta con fecha de hoy, sin rehacerla y sin tocar stock ni caja. **La base ya está aplicada.** Ver *Lo último que pasó*. **778 pruebas verdes en la app.**
 
 **Publicada: 0.19.7** (29/10, 17:40), verificada en Cloudflare: `latest.json` dice 0.19.7, el instalador está publicado y la versión web ya trae los productos asociados. **Los productos asociados**: en el mostrador, F11 junta renglones bajo un concepto —«Repuestos pulverizadora»— y la factura los muestra en uno solo, por el total; el stock, la caja y el IVA siguen con los productos reales. **La base ya está aplicada.** Ver *Lo último que pasó*. **778 pruebas verdes en la app.**
@@ -106,6 +108,21 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 🟡 **Lo que la venta tardaba en llegar a la caja sin internet** — arreglado el 05/10 y publicado en la 0.13.4, **sin probar en el local**. El mostrador le pasaba las ventas a la caja una vez por minuto, y la caja miraba su cola cada ocho segundos: hasta 68 segundos con el cliente esperando. Y llegaba de a partes porque, mientras la cabecera intentaba subir al servidor —hasta doce segundos sin internet—, salían los renglones solos. Ahora la venta sale al segundo y medio de apretar *Enviar a caja* (y otra vez a los catorce, por si el intento de subir tardó), viaja entera o espera entera, y la caja la muestra apenas llega. Se comprueba en el próximo corte: la venta tiene que aparecer en la caja en un par de segundos y completa.
 
 ---
+
+## Lo último que pasó — 29 de octubre: los fiados
+
+**Fase-03, punto 7.** Construida en la 0.19.9, falta publicarla.
+
+- **En la caja**, un medio de pago nuevo: **Fiado**. Pide **DNI**, nombre, domicilio, teléfono y **la fecha en que paga** (a 30 días si no se toca; botones de 7, 15 y 30). Sin DNI y nombre no se cobra. Puede ir junto con otro medio: parte en efectivo y el resto fiado. Anda **sin conexión**: los datos viajan con el pago, como los del cheque, y el fiado se arma en la base al subir la venta.
+- **El aviso:** al escribir un DNI que ya tuvo un fiado aparece «Ojo: este DNI ya tiene una carga anterior», con lo que debe y lo vencido, o con lo que debió si ya pagó; y la ficha se completa sola. En el **mostrador**, al marcar *Fiado* en «¿Cómo va a pagar?», aparece un campo para consultar el DNI antes de mandar a caja. El aviso necesita conexión.
+- **La sección *Fiados*** en el menú, aparte de Clientes: arriba cuánto se debe, cuánto está vencido, lo cobrado este mes y lo fiado desde el principio con el promedio. Abajo cada persona, **lo vencido primero** —lo más viejo arriba— y después por la próxima fecha. Se busca por DNI o nombre.
+- **La ficha de cada persona:** sus ventas fiadas con los renglones y lo que falta de cada una. **Cobrar** emite el recibo —el mismo talonario de la cuenta corriente— y, si es en efectivo, entra a la caja abierta; va a las ventas más viejas o a la que se elija, y no deja cobrar de más. **Cambiar fechas** reparte lo que falta en una o varias fechas («el 15 una entrega, el 18 otra»); las fechas anteriores quedan como historia, con quién y por qué. **Corregir datos** de la ficha.
+- **WhatsApp:** botón con el número y el mensaje armado —lo vencido, o la próxima fecha—, que manda quien está en el local. Sin API y sin costo. En el programa instalado abre el navegador de la PC, que ofrece seguir en WhatsApp; para eso el programa suma un permiso nuevo que sólo abre enlaces de WhatsApp.
+- **Si se anula la venta**, el fiado se anula con ella; lo que ya pagó queda a su favor.
+- **Los recibos de fiados** aparecen en *Recibos* con «(fiado)» y se imprimen igual. No se mandan por mail: el fiado no tiene correo.
+- **Permisos nuevos:** *ver los fiados* (administrador, encargado, cajero y vendedor, por el aviso del mostrador) y *cobrarlos, cambiar las fechas y corregir la ficha* (administrador, encargado y cajero).
+- **La base** ([`20261030120000_los_fiados.sql`](../supabase/migrations/20261030120000_los_fiados.sql), aplicada). **Probada como usuario** con ventas inventadas, con todo deshecho al final: sin DNI no cobra; con DNI arma la ficha y el fiado a 30 días; el aviso y la lista dan lo que debe; un cronograma que no suma lo que falta → no; dos fechas → la próxima es la primera; cobrar de más → no; cobrar → recibo, caja +$1.000 y la próxima cuota baja; el mismo recibo dos veces → no cobra dos veces; lo vencido y su orden en la lista; anular la venta → el fiado se anula y lo pagado queda a favor.
+- **Visto a 375 px** en un banco de prueba con nombres largos: la lista, la ficha, *Cobrar*, *Cambiar fechas* y los campos de la caja entran sin desplazarse hacia el costado. **Sin probar en la app con sesión iniciada**, ni el botón de WhatsApp en el programa instalado. **788 verdes** y los tipos sin errores.
 
 ## Lo último que pasó — 29 de octubre: el comprobante interno que después se factura
 

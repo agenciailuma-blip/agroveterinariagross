@@ -96,8 +96,18 @@ export const SECCIONES: Seccion[] = [
       'M17 20h5v-2a3 3 0 00-5.4-1.8M17 20H7m10 0v-2c0-.7-.1-1.3-.4-1.8M7 20H2v-2a3 3 0 015.4-1.8M7 20v-2c0-.7.1-1.3.4-1.8m0 0a5 5 0 019.2 0M15 7a3 3 0 11-6 0 3 3 0 016 0z',
     pestanas: [
       { a: '/clientes', etiqueta: 'Clientes', permiso: 'clientes.ver' },
-      { a: '/recibos', etiqueta: 'Recibos', permiso: ['cuentacorriente.ver', 'cuentacorriente.cobrar'] },
+      { a: '/recibos', etiqueta: 'Recibos', permiso: ['cuentacorriente.ver', 'cuentacorriente.cobrar', 'fiados.ver'] },
     ],
+  },
+  {
+    /*
+      Fase 03, punto 7. Otro registro y no una pestaña de Clientes: un
+      fiado no es un cliente, y Lucas lo quiere aparte.
+    */
+    id: 'fiados',
+    etiqueta: 'Fiados',
+    icono: 'M9 7h6m-6 4h6m-6 4h3M6 3h12a1 1 0 011 1v16l-3-2-3 2-3-2-3 2V4a1 1 0 011-1z',
+    pestanas: [{ a: '/fiados', etiqueta: 'Fiados', permiso: 'fiados.ver' }],
   },
   {
     id: 'productos',

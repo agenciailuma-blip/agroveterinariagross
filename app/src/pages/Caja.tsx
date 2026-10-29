@@ -42,6 +42,8 @@ import {
 import { emitirConCaeaLocal, sePuedeEmitirConCaea } from '@/lib/local/caea'
 import { chequeVacio, chequesDeLaCaja, faltaEnCheque } from '@/lib/api/cheques'
 import CamposCheque from '@/components/CamposCheque'
+import CamposFiado from '@/components/CamposFiado'
+import { faltaEnFiado, fiadoVacio } from '@/lib/api/fiados'
 import { moneda, numero } from '@/lib/tipos'
 import { useAtajo, useBotonConAtajo } from '@/lib/atajos'
 import { TeclaAtajo } from '@/components/Atajos'
@@ -197,6 +199,7 @@ export default function Caja() {
           cuotas: n,
           referencia: null,
           ...(m.tipo === 'cheque' ? { datos_cheque: chequeVacio(venta.data?.cliente?.nombre) } : {}),
+          ...(m.tipo === 'fiado' ? { datos_fiado: fiadoVacio() } : {}),
         },
       ])
       qc.invalidateQueries({ queryKey: ['venta', seleccionada] })
@@ -1050,6 +1053,11 @@ function PanelCobro({
   const chequeIncompleto = pagos.some(
     (p) => tipoDe(p.medio_pago_id) === 'cheque' && (!p.datos_cheque || faltaEnCheque(p.datos_cheque)),
   )
+  // Sin DNI y nombre no hay a quién cobrarle después.
+  const faltaFiado = pagos
+    .filter((p) => tipoDe(p.medio_pago_id) === 'fiado')
+    .map((p) => (p.datos_fiado ? faltaEnFiado(p.datos_fiado) : 'Faltan los datos de quien se lo lleva.'))
+    .find(Boolean)
   // El que de verdad quedó aplicado a los precios, no el de la tabla:
   // si el recalculo todavía no volvió, el cartel diría una cosa y el
   // total mostraría otra.
@@ -1344,10 +1352,11 @@ function PanelCobro({
             {pagos.map((p, i) => {
               const mp = medios.find((x) => x.id === p.medio_pago_id)
               const esCheque = mp?.tipo === 'cheque'
+              const esFiado = mp?.tipo === 'fiado'
               return (
                 <div
                   key={i}
-                  className={esCheque ? 'space-y-2 rounded-lg bg-piedra-50 p-3 ring-1 ring-borde' : ''}
+                  className={esCheque || esFiado ? 'space-y-2 rounded-lg bg-piedra-50 p-3 ring-1 ring-borde' : ''}
                 >
                   <div className="flex items-center gap-2">
                     <span className="flex-1 text-sm text-piedra-600">
@@ -1390,6 +1399,12 @@ function PanelCobro({
                     <CamposCheque
                       valor={p.datos_cheque ?? chequeVacio(venta.cliente?.nombre)}
                       onChange={(d) => setPagos(pagos.map((x, j) => (j === i ? { ...x, datos_cheque: d } : x)))}
+                    />
+                  )}
+                  {esFiado && (
+                    <CamposFiado
+                      valor={p.datos_fiado ?? fiadoVacio()}
+                      onChange={(d) => setPagos(pagos.map((x, j) => (j === i ? { ...x, datos_fiado: d } : x)))}
                     />
                   )}
                 </div>
@@ -1451,6 +1466,7 @@ function PanelCobro({
                             cuotas: 1,
                             referencia: null,
                             ...(m.tipo === 'cheque' ? { datos_cheque: chequeVacio(venta.cliente?.nombre) } : {}),
+                            ...(m.tipo === 'fiado' ? { datos_fiado: fiadoVacio() } : {}),
                           },
                         ])
                       }
@@ -1559,12 +1575,15 @@ function PanelCobro({
             onClick={onCobrar}
             disabled={
               !medio || Math.abs(diferencia) > 0.009 || cobrando || aplicando || calculandoPercepcion ||
-              (documentacion === 'a_facturar' && !esCuentaCorriente) || chequeIncompleto || frenadoPorVencido
+              (documentacion === 'a_facturar' && !esCuentaCorriente) || chequeIncompleto || frenadoPorVencido ||
+              !!faltaFiado
             }
             title={
               chequeIncompleto
                 ? 'Faltan datos del cheque: banco, número y fecha de pago.'
-                : frenadoPorVencido
+                : faltaFiado
+                  ? faltaFiado
+                  : frenadoPorVencido
                   ? 'Debe vencido: lo tiene que autorizar un encargado con su PIN.'
                   : undefined
             }

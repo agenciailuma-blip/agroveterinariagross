@@ -138,7 +138,7 @@ describe('el recibo por mail', () => {
     id: 'r1', serie: '0001', numero: 12, fecha: '2026-10-29', total: pagos.reduce((s, p) => s + p.importe, 0),
     concepto: null, emitido_en: '2026-10-29T12:00:00Z', emitido_por_nombre: 'Lucas Gross',
     mail_destinatario: null, mail_estado: null, mail_error: null, mail_en: null,
-    cliente_id: 'c1', cliente_nombre: 'Agro San José 🌱', cliente_email: null, cliente_documento: '30712345678',
+    cliente_id: 'c1', cliente_nombre: 'Agro San José 🌱', cliente_email: null, fiado_persona_id: null, cliente_documento: '30712345678',
     cliente_domicilio: 'Sarmiento 120, Oberá', saldo_despues: saldo, orden_numero: 4, orden_vendedor: 'Facundo',
     pagos, emisor: { razon_social: 'Gross S.A.', nombre_fantasia: 'Agroveterinaria Gross', cuit: '30-00000000-0' },
   })

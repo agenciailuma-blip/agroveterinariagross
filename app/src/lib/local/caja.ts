@@ -6,6 +6,8 @@ import { alCentavo, desglosarIva, percepcionIibb } from '@/lib/local/factura'
 import type { VentaLineaLocal, VentaLocal } from '@/lib/local/db'
 import { faltaEnCheque, paraLaBase } from '@/lib/api/cheques'
 import type { DatosCheque } from '@/lib/api/cheques'
+import { faltaEnFiado, paraLaBase as fiadoParaLaBase } from '@/lib/api/fiados'
+import type { DatosFiado } from '@/lib/api/fiados'
 import { diaDeObera } from '@/lib/api/facturacion'
 import { vencidoAl } from '@/lib/vencido'
 import type { Vencido } from '@/lib/vencido'
@@ -264,6 +266,8 @@ export interface PagoLocal {
   referencia: string | null
   /** Cuando se paga con cheque: banco, número, fecha de pago, librador. */
   datos_cheque?: DatosCheque | null
+  /** Cuando va fiado: DNI, nombre, domicilio, teléfono y cuándo paga. */
+  datos_fiado?: DatosFiado | null
 }
 
 /*
@@ -350,6 +354,13 @@ async function validarCobro(
     if (falta) throw new Error(`Cheque de ${p.importe}: ${falta}`)
   }
 
+  // Un fiado sin DNI es una deuda que no se le puede cobrar a nadie. La base tampoco lo acepta.
+  for (const p of pagos) {
+    if (medios.get(p.medio_pago_id)?.tipo !== 'fiado') continue
+    const falta = p.datos_fiado ? faltaEnFiado(p.datos_fiado) : 'Faltan los datos de quien se lo lleva.'
+    if (falta) throw new Error(`Fiado: ${falta}`)
+  }
+
   // Parte financiada en cuenta corriente
   const ctaCte = pagos
     .filter((p) => medios.get(p.medio_pago_id)?.tipo === 'cuenta_corriente')
@@ -428,6 +439,7 @@ export async function cobrarLocal(datos: {
         referencia: p.referencia,
         // Sólo si es un cheque: el resto de los pagos viaja igual que siempre.
         ...(p.datos_cheque ? { datos_cheque: paraLaBase(p.datos_cheque, p.importe) } : {}),
+        ...(p.datos_fiado ? { datos_fiado: fiadoParaLaBase(p.datos_fiado) } : {}),
       },
       descripcion: `${venta.codigo} · pago ${i + 1}`,
     })),
