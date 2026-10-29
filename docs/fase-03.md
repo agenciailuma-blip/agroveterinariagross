@@ -49,7 +49,7 @@ El cliente de siempre: la persona que lleva el alimento del perro, la oficina. S
 | ④ Factura por mail automática | 🟡 Hoy hay botón *Mandar por mail*, y el envío solo es sólo para la tienda | **Que salga sola al facturar a cuenta corriente**, si el cliente tiene mail |
 | ④ ¿Adjuntar el remito firmado? | ❌ | **Subir la foto del remito firmado** al remito (desde el celular o la PC), y que quede a la vista en la venta y en la cuenta corriente. Esa es la trazabilidad: quién firmó, cuándo. No va en el mail de la factura, porque la factura sale antes de que firmen |
 | ⑤ Resumen de vencidos por cliente | 🟡 Está la deuda por antigüedad; no hay un listado de «qué comprobantes vencieron, de quién» | **Pestaña *Vencidos*** en Clientes, por cliente, con total y días |
-| ⑤ Alerta al vender a quien debe | ❌ | **Aviso y freno** en el mostrador y en la caja al elegir un cliente con comprobantes vencidos: la venta a cuenta corriente **no avanza hasta que un encargado la autoriza con su PIN**, y queda anotado quién la dejó pasar. Respuesta 7 |
+| ⑤ Alerta al vender a quien debe | 🟡 En el mayorista ya frena (29/10, ver punto 5); en el mostrador y la caja, todavía no | **Aviso y freno** en el mostrador y en la caja al elegir un cliente con comprobantes vencidos: la venta a cuenta corriente **no avanza hasta que un encargado la autoriza con su PIN**, y queda anotado quién la dejó pasar. Respuesta 7 |
 
 > Nota sobre el orden de Lucas: en su lámina la factura «acredita la venta pero no descarga stock» y el stock baja en el paso siguiente. En el sistema pasa todo en el mismo momento, al cobrar a cuenta corriente, y es mejor así: no hay un rato en el que la mercadería salió y el stock no lo sabe.
 
@@ -159,12 +159,12 @@ Para que Facundo salga a la calle la semana del 2/11. Va en la **0.18.0**.
 - **El recibo numerado**, el mismo para toda cobranza de cuenta corriente: el de la ficha del cliente también sale con número (0001-00000001 en adelante). Hoja A4 para imprimir con el importe en letras y el saldo que queda, y **por mail en PDF**: al aceptar una orden se manda solo si el cliente tiene mail; desde la hoja, *Mandar por mail* a cualquier dirección. **El registro de recibos** está en *Clientes → Recibos*, por cliente o por número.
 - **Marcar a un cliente como mayorista le abre la cuenta corriente** a 30 días (si no la tenía): sin eso no se le puede vender por pedido ni aceptar sus cobros.
 - **El mail del pedido**: apenas el pedido llega al local, al cliente le llega el detalle —productos, cantidades, precios y total, y la nota de Facundo si dejó una—, si tiene mail cargado. En la ficha del pedido se ve si salió, y se manda de nuevo desde ahí, también a otra dirección.
+- **El freno al cliente con deuda vencida** (respuesta 7): Facundo arma y manda el pedido igual, con el aviso a la vista. En el local, el pedido de un cliente con vencido dice cuánto y desde cuándo, y **no se factura ni sale sin factura hasta que un encargado lo autoriza**: con un clic si es el encargado quien está en la computadora, o con **su PIN** si se acerca. Queda anotado quién lo autorizó y cuánto debía. El permiso nuevo, *Autorizar la venta a cuenta corriente de un cliente con deuda vencida*, lo tienen Encargado y Administrador.
 
 **Lo que falta del mayorista**, en este orden:
-1. **Frenar al vender a quien tiene vencido** y que el encargado autorice (respuesta 7): hoy Facundo y el local **ven** el vencido; lo que frena es el límite de crédito, como en la caja.
-2. **El pin en el mapa** con todos los clientes (hoy cada uno tiene su «Cómo llegar») y **las estadísticas** (5.5).
-3. **La planilla** para cargar la lista mayorista de a muchos.
-4. **Anular un recibo**: hoy un recibo emitido por error se compensa a mano en la cuenta corriente.
+1. **El pin en el mapa** con todos los clientes (hoy cada uno tiene su «Cómo llegar») y **las estadísticas** (5.5).
+2. **La planilla** para cargar la lista mayorista de a muchos.
+3. **Anular un recibo**: hoy un recibo emitido por error se compensa a mano en la cuenta corriente.
 
 ### 5.1 El cliente mayorista
 

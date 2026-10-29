@@ -5,6 +5,7 @@ import {
   cantidadesCorregidas,
   enlaceMapa,
   filtrarClientes,
+  frenadoPorVencido,
   numeroWhatsapp,
   rutasDe,
   totalDe,
@@ -82,6 +83,26 @@ describe('lo que corrige el depósito', () => {
   it('se mandan sólo las cantidades que cambiaron', () => {
     expect(cantidadesCorregidas(lineas, { a: 3, b: 0 })).toEqual([{ producto_id: 'b', cantidad: 0 }])
     expect(cantidadesCorregidas(lineas, {})).toEqual([])
+  })
+})
+
+describe('el cliente con deuda vencida', () => {
+  const pedido = { estado: 'confirmado' as const, cliente_vencido: 5000, vencido_autorizado_en: null }
+
+  it('frena el pedido en curso hasta que lo autorizan', () => {
+    expect(frenadoPorVencido(pedido)).toBe(true)
+    expect(frenadoPorVencido({ ...pedido, estado: 'pendiente' })).toBe(true)
+    expect(frenadoPorVencido({ ...pedido, vencido_autorizado_en: '2026-10-29T15:00:00Z' })).toBe(false)
+  })
+
+  it('sin vencido, o ya facturado o cancelado, no frena', () => {
+    expect(frenadoPorVencido({ ...pedido, cliente_vencido: 0 })).toBe(false)
+    expect(frenadoPorVencido({ ...pedido, estado: 'facturado' })).toBe(false)
+    expect(frenadoPorVencido({ ...pedido, estado: 'cancelado' })).toBe(false)
+  })
+
+  it('quien no ve la deuda no ve el freno: la base frena igual al facturar', () => {
+    expect(frenadoPorVencido({ ...pedido, cliente_vencido: null })).toBe(false)
   })
 })
 

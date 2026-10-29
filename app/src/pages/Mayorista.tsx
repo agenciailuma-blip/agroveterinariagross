@@ -13,6 +13,7 @@ import { moneda, numero } from '@/lib/tipos'
 import { boton, botonChico, campo, tarjeta } from '@/estilos'
 import {
   agregarLinea,
+  autorizarVencido,
   buscarProductos,
   cambiarCantidad,
   cancelarPedido,
@@ -23,6 +24,7 @@ import {
   ETIQUETA_ESTADO,
   facturarPedido,
   filtrarClientes,
+  frenadoPorVencido,
   leerCatalogo,
   leerClientes,
   listarPedidos,
@@ -579,7 +581,7 @@ function AvisosDelCliente({ c }: { c: ClienteMayorista }) {
   const avisos: ReactNode[] = []
   if ((c.vencido ?? 0) > 0) {
     avisos.push(
-      `Tiene ${moneda.format(c.vencido!)} vencido${c.vencimiento_mas_antiguo ? ` desde el ${fecha(c.vencimiento_mas_antiguo)}` : ''}.`,
+      `Tiene ${moneda.format(c.vencido!)} vencido${c.vencimiento_mas_antiguo ? ` desde el ${fecha(c.vencimiento_mas_antiguo)}` : ''}. El pedido sale igual; para facturarlo, en el local lo tiene que autorizar un encargado.`,
     )
   }
   if (!c.cuenta_corriente) avisos.push('No tiene cuenta corriente: en el local hay que habilitarla para facturarle.')
@@ -713,6 +715,9 @@ function FilaPedido({
         {verVendedor && p.vendedor_nombre && <span className="text-xs text-piedra-500">{p.vendedor_nombre}</span>}
         <span className="font-medium tabular-nums text-tinta">{moneda.format(p.total)}</span>
         <Estado estado={p.estado} />
+        {frenadoPorVencido(p) && (
+          <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800">Vencido sin autorizar</span>
+        )}
         {faltan && p.estado !== 'facturado' && p.estado !== 'cancelado' && (
           <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">Falta stock</span>
         )}
@@ -756,6 +761,9 @@ function FichaPedido({
   const puedeSinFactura = atiende && tienePermiso('facturacion.vender_sin_factura')
   const puedeRemitir = tienePermiso('facturacion.no_fiscal_emitir')
   const puedeCancelar = enCurso && (atiende || p.estado === 'pendiente')
+  const frenado = frenadoPorVencido(p)
+  const autorizaSinPin = tienePermiso('cuentacorriente.autorizar_vencido')
+  const [pin, setPin] = useState('')
 
   // Una acción por vez: dos toques seguidos no facturan dos veces.
   const accion = useMutation({
@@ -838,6 +846,25 @@ function FichaPedido({
     })
   }
 
+  async function alAutorizar(conPin: string | null) {
+    if (conPin === null) {
+      const ok = await confirmar({
+        titulo: `Autorizar el pedido ${p.numero}`,
+        detalle: `${p.cliente_nombre} debe ${moneda.format(p.cliente_vencido ?? 0)} vencido. Queda anotado que lo autorizaste vos.`,
+        aceptar: 'Autorizar',
+      })
+      if (!ok) return
+    }
+    accion.mutate(async () => {
+      try {
+        const nombre = await autorizarVencido(p.id, conPin)
+        return `Pedido ${p.numero}: autorizado por ${nombre ?? 'el encargado'}.`
+      } finally {
+        setPin('')
+      }
+    })
+  }
+
   async function alMandarMail() {
     const destinatario = await pedirTexto({
       titulo: `Mandar el pedido ${p.numero} por mail`,
@@ -902,6 +929,50 @@ function FichaPedido({
 
       {p.observaciones && (
         <p className="rounded-lg bg-piedra-50 px-3 py-2 text-sm text-piedra-700">{p.observaciones}</p>
+      )}
+
+      {frenado && (
+        <div className="space-y-2 rounded-lg bg-red-50 px-3 py-2.5 ring-1 ring-red-200">
+          <p className="text-sm text-red-800">
+            Debe {moneda.format(p.cliente_vencido!)} vencido
+            {p.cliente_vencido_desde ? ` desde el ${fecha(p.cliente_vencido_desde)}` : ''}. Para facturarle, lo tiene
+            que autorizar un encargado.
+          </p>
+          {atiende &&
+            (autorizaSinPin ? (
+              <button onClick={() => alAutorizar(null)} disabled={ocupado} className={botonChico.principal}>
+                Autorizar
+              </button>
+            ) : (
+              <form
+                className="flex flex-wrap items-center gap-2"
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  if (pin.trim()) alAutorizar(pin)
+                }}
+              >
+                <input
+                  type="password"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  value={pin}
+                  onChange={(e) => setPin(e.target.value)}
+                  placeholder="PIN del encargado"
+                  aria-label="PIN del encargado"
+                  className={`${campo} min-w-0 flex-1 basis-40`}
+                />
+                <button type="submit" disabled={!pin.trim() || ocupado} className={botonChico.principal}>
+                  Autorizar
+                </button>
+              </form>
+            ))}
+        </div>
+      )}
+      {p.vencido_autorizado_en && (
+        <p className="text-xs text-piedra-500">
+          Con deuda vencida: autorizó {p.vencido_autorizado_por_nombre ?? 'un encargado'} el{' '}
+          {fechaHora(p.vencido_autorizado_en)}
+        </p>
       )}
 
       <dl className="grid grid-cols-2 gap-3">
@@ -1017,12 +1088,12 @@ function FichaPedido({
             {p.estado === 'pendiente' ? 'Está todo: corroborado' : 'Guardar las cantidades'}
           </button>
         )}
-        {p.estado === 'confirmado' && cambios.length === 0 && puedeFacturar && (
+        {p.estado === 'confirmado' && cambios.length === 0 && !frenado && puedeFacturar && (
           <button onClick={() => alFacturar('fiscal')} disabled={ocupado} className={boton.principal}>
             Facturar
           </button>
         )}
-        {p.estado === 'confirmado' && cambios.length === 0 && puedeSinFactura && (
+        {p.estado === 'confirmado' && cambios.length === 0 && !frenado && puedeSinFactura && (
           <button onClick={() => alFacturar('no_fiscal')} disabled={ocupado} className={boton.secundario}>
             Sin factura
           </button>

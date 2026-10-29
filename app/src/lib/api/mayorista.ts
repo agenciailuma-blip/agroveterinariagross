@@ -119,6 +119,11 @@ export interface PedidoMayorista {
   mail_estado: 'enviado' | 'error' | null
   mail_error: string | null
   mail_en: string | null
+  /** Null si quien mira no tiene permiso de ver la deuda. */
+  cliente_vencido: number | null
+  cliente_vencido_desde: string | null
+  vencido_autorizado_en: string | null
+  vencido_autorizado_por_nombre: string | null
 }
 
 // ───────────────────────────────────────────────────────────────
@@ -402,6 +407,29 @@ export async function facturarPedido(
       problema: e instanceof Error ? e.message : 'ARCA no respondió.',
     }
   }
+}
+
+/*
+  Respuesta 7 de Lucas: al cliente con deuda vencida no se le factura
+  sin que un encargado lo autorice. El pedido se arma y se corrobora
+  igual; lo que espera es la factura.
+*/
+export function frenadoPorVencido(
+  p: Pick<PedidoMayorista, 'estado' | 'cliente_vencido' | 'vencido_autorizado_en'>,
+): boolean {
+  return (p.estado === 'pendiente' || p.estado === 'confirmado') && (p.cliente_vencido ?? 0) > 0 && !p.vencido_autorizado_en
+}
+
+/*
+  Sin PIN autoriza el usuario de la sesión, si es encargado; con PIN, el
+  dueño del PIN. Lo verifica la base. Devuelve quién autorizó.
+*/
+export async function autorizarVencido(id: string, pin: string | null): Promise<string | null> {
+  const { data, error } = await supabase.rpc('mayorista_autorizar_vencido', { p_id: id, p_pin: pin?.trim() || null })
+  if (error) throw new Error(error.message)
+  const r = data as { ok: boolean; error?: string; nombre?: string }
+  if (!r.ok) throw new Error(r.error ?? 'No se pudo autorizar.')
+  return r.nombre ?? null
 }
 
 export async function cancelarPedido(id: string, motivo: string): Promise<void> {
