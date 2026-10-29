@@ -11,6 +11,7 @@ import { abrirComprobante, abrirNoFiscal } from '@/lib/escritorio'
 import { enCastellano } from '@/lib/errores'
 import { moneda, numero } from '@/lib/tipos'
 import { boton, botonChico, campo, tarjeta } from '@/estilos'
+import { MarcaProforma } from '@/pages/MayoristaClientes'
 import {
   agregarLinea,
   autorizarVencido,
@@ -585,6 +586,7 @@ function AvisosDelCliente({ c }: { c: ClienteMayorista }) {
     )
   }
   if (!c.cuenta_corriente) avisos.push('No tiene cuenta corriente: en el local hay que habilitarla para facturarle.')
+  if (c.pide_proforma) avisos.push('Pide proforma: en el local el pedido sale sin factura.')
   return (
     <>
       {c.saldo !== null && c.saldo > 0 && (
@@ -715,6 +717,7 @@ function FilaPedido({
         {verVendedor && p.vendedor_nombre && <span className="text-xs text-piedra-500">{p.vendedor_nombre}</span>}
         <span className="font-medium tabular-nums text-tinta">{moneda.format(p.total)}</span>
         <Estado estado={p.estado} />
+        {p.cliente_pide_proforma && p.estado !== 'facturado' && p.estado !== 'cancelado' && <MarcaProforma />}
         {frenadoPorVencido(p) && (
           <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800">Vencido sin autorizar</span>
         )}
@@ -787,9 +790,12 @@ function FichaPedido({
 
   async function alFacturar(documentacion: 'fiscal' | 'no_fiscal') {
     const ok = await confirmar({
-      titulo: documentacion === 'fiscal' ? `Facturar el pedido ${p.numero}` : `Pedido ${p.numero} sin factura`,
-      detalle: `${moneda.format(p.total)} a la cuenta corriente de ${p.cliente_nombre}.`,
-      aceptar: documentacion === 'fiscal' ? 'Facturar' : 'Emitir el comprobante interno',
+      titulo: documentacion === 'fiscal' ? `Facturar el pedido ${p.numero}` : `Proforma del pedido ${p.numero}`,
+      detalle:
+        documentacion === 'fiscal' && p.cliente_pide_proforma
+          ? `${p.cliente_nombre} pide proforma. ${moneda.format(p.total)} a su cuenta corriente, con factura.`
+          : `${moneda.format(p.total)} a la cuenta corriente de ${p.cliente_nombre}.`,
+      aceptar: documentacion === 'fiscal' ? 'Facturar' : 'Emitir la proforma',
     })
     if (!ok) return
 
@@ -802,7 +808,7 @@ function FichaPedido({
           observaciones: `Pedido mayorista ${p.numero}`,
         })
         abrirNoFiscal(interno.id)
-        return `Pedido ${p.numero}: a la cuenta corriente, con comprobante interno.`
+        return `Pedido ${p.numero}: a la cuenta corriente, con proforma.`
       }
 
       if (r.problema) {
@@ -931,6 +937,12 @@ function FichaPedido({
         <p className="rounded-lg bg-piedra-50 px-3 py-2 text-sm text-piedra-700">{p.observaciones}</p>
       )}
 
+      {p.cliente_pide_proforma && (p.estado === 'pendiente' || p.estado === 'confirmado') && (
+        <p className="rounded-lg bg-marca-50 px-3 py-2 text-sm text-marca-800 ring-1 ring-marca-200">
+          {p.cliente_nombre} pide proforma: no quiere factura.
+        </p>
+      )}
+
       {frenado && (
         <div className="space-y-2 rounded-lg bg-red-50 px-3 py-2.5 ring-1 ring-red-200">
           <p className="text-sm text-red-800">
@@ -997,7 +1009,7 @@ function FichaPedido({
           </Dato>
         )}
         {p.interno_id && (
-          <Dato etiqueta="Comprobante interno">
+          <Dato etiqueta="Proforma">
             <button onClick={() => abrirNoFiscal(p.interno_id!)} className="text-marca-700 underline">
               {p.interno_numero}
             </button>
@@ -1088,14 +1100,24 @@ function FichaPedido({
             {p.estado === 'pendiente' ? 'Está todo: corroborado' : 'Guardar las cantidades'}
           </button>
         )}
+        {/* Con «Pide proforma» en la ficha, la proforma va primero y es el botón principal. */}
+        {p.estado === 'confirmado' && cambios.length === 0 && !frenado && puedeSinFactura && p.cliente_pide_proforma && (
+          <button onClick={() => alFacturar('no_fiscal')} disabled={ocupado} className={boton.principal}>
+            Proforma
+          </button>
+        )}
         {p.estado === 'confirmado' && cambios.length === 0 && !frenado && puedeFacturar && (
-          <button onClick={() => alFacturar('fiscal')} disabled={ocupado} className={boton.principal}>
+          <button
+            onClick={() => alFacturar('fiscal')}
+            disabled={ocupado}
+            className={p.cliente_pide_proforma ? boton.secundario : boton.principal}
+          >
             Facturar
           </button>
         )}
-        {p.estado === 'confirmado' && cambios.length === 0 && !frenado && puedeSinFactura && (
+        {p.estado === 'confirmado' && cambios.length === 0 && !frenado && puedeSinFactura && !p.cliente_pide_proforma && (
           <button onClick={() => alFacturar('no_fiscal')} disabled={ocupado} className={boton.secundario}>
-            Sin factura
+            Proforma
           </button>
         )}
         {p.estado === 'facturado' && !p.remito_id && puedeRemitir && (

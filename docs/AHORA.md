@@ -12,6 +12,8 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
+**Construida: 0.19.11 — falta publicarla.** **La proforma del mayorista, a la vista**: el botón se llama *Proforma* y la ficha del cliente tiene la marca *Pide proforma*, que la pone primero en sus pedidos. **La base ya está aplicada.** Ver *Lo último que pasó*. **799 pruebas verdes en la app.**
+
 **Publicada: 0.19.10** (29/10, 18:59), verificada en Cloudflare: `latest.json` dice 0.19.10, el instalador está publicado y la versión web ya trae Traslados. **Traslados**: las órdenes para ir a buscar o llevar un animal, en una pestaña nueva de Ventas, con sus estados, el mapa, el cobro por la caja, la hoja del día para el que maneja y las estadísticas de kilómetros, costo y tiempo. **La base ya está aplicada.** Ver *Lo último que pasó*. **799 pruebas verdes en la app.**
 
 **Publicada: 0.19.9** (29/10, 18:38), verificada en Cloudflare: `latest.json` dice 0.19.9, el instalador está publicado y la versión web ya trae Fiados. **Fiados**: un medio de pago nuevo en la caja que pide el DNI, y una sección propia en el menú con la cuenta de cada persona, sus fechas de pago, los cobros con recibo y el aviso por WhatsApp. **La base ya está aplicada.** Ver *Lo último que pasó*. **788 pruebas verdes en la app.**
@@ -110,6 +112,16 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 🟡 **Lo que la venta tardaba en llegar a la caja sin internet** — arreglado el 05/10 y publicado en la 0.13.4, **sin probar en el local**. El mostrador le pasaba las ventas a la caja una vez por minuto, y la caja miraba su cola cada ocho segundos: hasta 68 segundos con el cliente esperando. Y llegaba de a partes porque, mientras la cabecera intentaba subir al servidor —hasta doce segundos sin internet—, salían los renglones solos. Ahora la venta sale al segundo y medio de apretar *Enviar a caja* (y otra vez a los catorce, por si el intento de subir tardó), viaja entera o espera entera, y la caja la muestra apenas llega. Se comprueba en el próximo corte: la venta tiene que aparecer en la caja en un par de segundos y completa.
 
 ---
+
+## Lo último que pasó — 29 de octubre: la proforma del mayorista
+
+**Pedido de Lucas en un audio del 29/10:** algunos clientes mayoristas no quieren factura, quieren proforma. Construida en la 0.19.11, falta publicarla.
+
+- **Ya se podía**, pero no se veía: en *Mayorista → Pedidos*, con el pedido corroborado, el botón «Sin factura» emitía el comprobante interno a la cuenta corriente. Ahora se llama **Proforma**, la palabra de Lucas, y lo emitido figura como *Proforma* en el pedido.
+- **La marca *Pide proforma*** en la ficha del cliente mayorista, que puede poner el local o el vendedor de calle. Con la marca: en la lista de pedidos aparece *Pide proforma*; en el detalle, el aviso, y **Proforma pasa a ser el botón principal**, con *Facturar* al lado por si un día pide factura. Facturarle igual avisa que pide proforma. Al armar el pedido en el teléfono, el vendedor ve el aviso.
+- **Quién lo ve:** la proforma la emiten administrador y encargado, como antes. Si la tiene que emitir otro, se le da el permiso de vender sin factura desde *Usuarios*.
+- **La base** ([`20261030140000_pide_proforma.sql`](../supabase/migrations/20261030140000_pide_proforma.sql), aplicada). **Probada como usuario** con un cliente inventado, deshecho al final: el alta con la marca; corregir el teléfono no la toca; se apaga.
+- **Vista en la app con sesión iniciada**, a 375 px: el pedido con la marca —simulado en el navegador, sin guardar nada— y la ficha con la casilla, sin desplazarse hacia el costado. **799 verdes** y los tipos sin errores.
 
 ## Lo último que pasó — 29 de octubre: los traslados
 

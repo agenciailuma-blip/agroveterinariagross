@@ -214,6 +214,7 @@ function FilaCliente({
           {!c.cuenta_corriente && (
             <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-900">Sin cuenta corriente</span>
           )}
+          {c.pide_proforma && <MarcaProforma />}
         </div>
       </div>
       {c.ultimo_pedido_en && (
@@ -255,6 +256,11 @@ function FilaCliente({
       </div>
     </li>
   )
+}
+
+/** El cliente que no quiere factura. También en el pedido. */
+export function MarcaProforma() {
+  return <span className="rounded-full bg-marca-50 px-2 py-0.5 text-xs font-medium text-marca-700 ring-1 ring-marca-200">Pide proforma</span>
 }
 
 // ───────────────────────────────────────────────────────────────
@@ -300,8 +306,9 @@ function EditorCliente({
           ruta: cliente.ruta ?? '',
           latitud: cliente.latitud,
           longitud: cliente.longitud,
+          pide_proforma: cliente.pide_proforma ?? false,
         }
-      : { condicion_iva_id: 5, latitud: null, longitud: null },
+      : { condicion_iva_id: 5, latitud: null, longitud: null, pide_proforma: false },
   )
   const [error, setError] = useState<string | null>(null)
   const [nota, setNota] = useState<string | null>(null)
@@ -453,6 +460,19 @@ function EditorCliente({
         <Campo etiqueta="Zona">
           <input value={d.zona ?? ''} onChange={(e) => set({ zona: e.target.value })} className={campo} />
         </Campo>
+
+        <label className="flex items-start gap-2 sm:col-span-2">
+          <input
+            type="checkbox"
+            checked={d.pide_proforma ?? false}
+            onChange={(e) => set({ pide_proforma: e.target.checked })}
+            className="mt-0.5"
+          />
+          <span className="min-w-0 text-sm text-tinta">
+            Pide proforma
+            <span className="block text-xs text-piedra-500">No quiere factura: sus pedidos salen con proforma.</span>
+          </span>
+        </label>
 
         <div className="space-y-2 sm:col-span-2">
           <p className="text-xs font-medium text-piedra-600">Ubicación</p>

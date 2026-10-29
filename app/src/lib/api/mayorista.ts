@@ -60,6 +60,12 @@ export interface ClienteMayorista {
   vencimiento_mas_antiguo: string | null
   ultimo_pedido_en: string | null
   ultimo_pedido_numero: number | null
+  /**
+    No quiere factura: su pedido sale con proforma —el comprobante
+    interno— salvo que se elija facturar. Falta en la copia del teléfono
+    guardada antes del 29/10: se lee como «no».
+  */
+  pide_proforma?: boolean
 }
 
 export type EstadoPedidoMayorista = 'pendiente' | 'confirmado' | 'facturado' | 'cancelado'
@@ -124,6 +130,7 @@ export interface PedidoMayorista {
   cliente_vencido_desde: string | null
   vencido_autorizado_en: string | null
   vencido_autorizado_por_nombre: string | null
+  cliente_pide_proforma: boolean
 }
 
 // ───────────────────────────────────────────────────────────────
@@ -455,6 +462,7 @@ export interface DatosClienteMayorista {
   ruta?: string
   latitud?: number | null
   longitud?: number | null
+  pide_proforma?: boolean
 }
 
 export async function guardarClienteMayorista(

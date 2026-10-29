@@ -213,6 +213,8 @@ Facundo arma el pedido desde el celular: cliente, productos, cantidades, con el 
 3. **Remito logístico**, con otro clic, asociado a esa factura o proforma. Descuenta stock.
 4. **Mail automático** con la factura.
 
+**Ya está (29/10), la proforma:** el botón se llama **Proforma** —antes decía «Sin factura»— y la ficha del cliente mayorista tiene la marca **Pide proforma**. Con la marca, el pedido lo dice en la lista y en el detalle, y *Proforma* pasa a ser el botón principal; *Facturar* queda al lado para el día que pida factura. Facundo ve el aviso al armarle el pedido.
+
 Es el ejemplo exacto de lo que Lucas llamó *integralidad*: un pedido que se recibe, se controla, se factura y se remite sin cambiar de pantalla, y que **igual aparece en Remitos y en Comprobantes** con todo lo demás.
 
 ### 5.4 La orden de recibo
