@@ -11,9 +11,13 @@ import {
   obtenerVentaLocal,
   percepcionDeVentaLocal,
   saldoCuentaCorrienteLocal,
+  vencidoLocal,
 } from '@/lib/local/caja'
 import type { LineaDeseada } from '@/lib/local/caja'
 import type { DatosCheque } from '@/lib/api/cheques'
+import { diaDeObera } from '@/lib/api/facturacion'
+import { vencidoAl } from '@/lib/vencido'
+import type { CargoPendiente, Vencido } from '@/lib/vencido'
 
 export interface Caja {
   id: string
@@ -397,6 +401,67 @@ export async function saldoCuentaCorriente(clienteId: string): Promise<number> {
 }
 
 /*
+  Lo vencido del cliente hoy. Con conexión, de la base; sin ella, de la
+  copia local. Es la misma cuenta en los dos lados (lib/vencido.ts).
+*/
+export async function deudaVencida(clienteId: string): Promise<Vencido> {
+  const hoy = diaDeObera(new Date())
+  if (navigator.onLine) {
+    const { data, error } = await supabase
+      .from('cuenta_corriente_saldo')
+      .select('pendientes')
+      .eq('cliente_id', clienteId)
+      .maybeSingle<{ pendientes: CargoPendiente[] }>()
+    if (!error) return vencidoAl(data?.pendientes, hoy)
+  }
+  return vencidoLocal(clienteId, hoy)
+}
+
+/*
+  Los roles que, de fábrica, pueden autorizar a un cliente con deuda
+  vencida (migración 20261029160000). Sólo se usan sin conexión, cuando
+  la terminal no puede preguntarle a la base por el permiso: al subir el
+  cobro, la base mira el permiso de verdad.
+*/
+const AUTORIZAN_VENCIDO_SIN_CONEXION = ['Administrador', 'Encargado']
+
+/*
+  El PIN del encargado que deja pasar la venta a cuenta corriente.
+
+  Con conexión lo verifica la base, con el mismo límite de intentos del
+  mostrador, y además deja el verificador local para poder reconocerlo
+  sin internet otro día. Sin conexión, el verificador local y el rol.
+*/
+export async function autorizarVencidoEnCaja(
+  pin: string,
+  terminalId: string,
+): Promise<{ usuario_id: string; nombre: string }> {
+  const { recordarPin, verificarPinLocal } = await import('@/lib/local/pin')
+
+  if (navigator.onLine) {
+    try {
+      const { data, error } = await supabase.rpc('autorizar_vencido_con_pin', { p_pin: pin })
+      if (error) throw new Error(error.message)
+      const r = data as { ok: boolean; error?: string; usuario_id?: string; nombre?: string; rol?: string }
+      if (!r.ok) throw new Error(r.error ?? 'No se pudo autorizar.')
+      const operador = { usuario_id: r.usuario_id!, nombre: r.nombre!, rol: r.rol ?? '' }
+      await recordarPin(pin, operador, terminalId)
+      return operador
+    } catch (e) {
+      const mensaje = e instanceof Error ? e.message : String(e)
+      if (!/failed to fetch|networkerror|load failed/i.test(mensaje)) throw e
+    }
+  }
+
+  const local = await verificarPinLocal(pin, terminalId)
+  if (!local) throw new Error('El PIN no es correcto.')
+  if (!AUTORIZAN_VENCIDO_SIN_CONEXION.includes(local.rol)) {
+    throw new Error('Ese PIN es de alguien que no puede autorizar a un cliente con deuda vencida.')
+  }
+  return { usuario_id: local.usuario_id, nombre: local.nombre }
+}
+
+/*
   Cobra la venta.
 
   SIEMPRE pasa por la bandeja de salida, haya o no conexión — el mismo
@@ -465,9 +530,10 @@ export async function cobrar(
   cajaId: string,
   cajeroId: string,
   pagos: PagoNuevo[],
+  vencidoAutorizadoPor: string | null = null,
 ): Promise<{ subida: boolean }> {
   await asegurarVentaLocal(ventaId)
-  await cobrarLocal({ ventaId, cajaId, cajeroId, pagos })
+  await cobrarLocal({ ventaId, cajaId, cajeroId, pagos, vencidoAutorizadoPor })
 
   if (!navigator.onLine) return { subida: false }
 

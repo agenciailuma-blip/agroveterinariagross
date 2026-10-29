@@ -6,6 +6,9 @@ import { alCentavo, desglosarIva, percepcionIibb } from '@/lib/local/factura'
 import type { VentaLineaLocal, VentaLocal } from '@/lib/local/db'
 import { faltaEnCheque, paraLaBase } from '@/lib/api/cheques'
 import type { DatosCheque } from '@/lib/api/cheques'
+import { diaDeObera } from '@/lib/api/facturacion'
+import { vencidoAl } from '@/lib/vencido'
+import type { Vencido } from '@/lib/vencido'
 
 /*
   ─────────────────────────────────────────────────────────────
@@ -246,6 +249,12 @@ export async function saldoCuentaCorrienteLocal(clienteId: string): Promise<numb
   return Number(fila?.saldo ?? 0)
 }
 
+/** Lo vencido del cliente al día dado (AAAA-MM-DD, en Oberá). */
+export async function vencidoLocal(clienteId: string, dia: string): Promise<Vencido> {
+  const fila = await db.saldo_cuenta_corriente.get(clienteId)
+  return vencidoAl(fila?.pendientes, dia)
+}
+
 export interface PagoLocal {
   medio_pago_id: string
   importe: number
@@ -300,6 +309,8 @@ async function validarCobro(
   venta: VentaLocal,
   lineas: VentaLineaLocal[],
   pagos: PagoLocal[],
+  /** Quien autorizó, con su PIN, venderle a cuenta corriente a un cliente con deuda vencida. */
+  vencidoAutorizadoPor: string | null = null,
 ): Promise<void> {
   if (!['borrador', 'en_caja'].includes(venta.estado)) {
     throw new Error(`La venta está ${venta.estado} y no se puede cobrar.`)
@@ -360,6 +371,19 @@ async function validarCobro(
       )
     }
   }
+
+  /*
+    Respuesta 7 de Lucas: a quien debe vencido no se le suma deuda sin
+    que un encargado lo autorice. Lo vencido el día de la venta, como en
+    la base. Que el que autorizó pueda hacerlo lo mira quien pidió el
+    PIN (ver autorizarVencidoEnCaja); acá sólo que alguien lo hizo.
+  */
+  const vencido = await vencidoLocal(cliente.id, diaDeObera(new Date(venta.ocurrido_en)))
+  if (vencido.monto > 0 && !vencidoAutorizadoPor) {
+    throw new Error(
+      `${cliente.nombre} tiene deuda vencida: para venderle a cuenta corriente, lo tiene que autorizar un encargado con su PIN.`,
+    )
+  }
 }
 
 /*
@@ -380,13 +404,14 @@ export async function cobrarLocal(datos: {
   cajaId: string | null
   cajeroId: string
   pagos: PagoLocal[]
+  vencidoAutorizadoPor?: string | null
 }): Promise<void> {
   const guardada = await db.venta.get(datos.ventaId)
   if (!guardada) throw new Error('La venta no está en esta computadora.')
   const venta = await abrirVenta(guardada)
 
   const lineas = await db.venta_linea.where('venta_id').equals(datos.ventaId).toArray()
-  await validarCobro(venta, lineas, datos.pagos)
+  await validarCobro(venta, lineas, datos.pagos, datos.vencidoAutorizadoPor ?? null)
 
   await encolar(datos.ventaId, [
     ...datos.pagos.map((p, i) => ({
@@ -411,6 +436,8 @@ export async function cobrarLocal(datos: {
         p_venta_id: datos.ventaId,
         p_caja_id: datos.cajaId,
         p_cajero_id: datos.cajeroId,
+        // Sólo si hizo falta: el cobro de siempre viaja igual que siempre.
+        ...(datos.vencidoAutorizadoPor ? { p_vencido_autorizado_por: datos.vencidoAutorizadoPor } : {}),
       },
       descripcion: `${venta.codigo} · cobro`,
     },
@@ -457,6 +484,9 @@ async function aplicarEfectoLocal(
   if (ctaCte > 0) {
     const actual = await db.saldo_cuenta_corriente.get(venta.cliente_id)
     await db.saldo_cuenta_corriente.put({
+      // Los cargos impagos quedan como estaban: el de esta venta vence
+      // más adelante y no cambia lo vencido. Los rehace la base al subir.
+      ...actual,
       cliente_id: venta.cliente_id,
       saldo: Number(actual?.saldo ?? 0) + ctaCte,
       actualizado_en: new Date().toISOString(),

@@ -12,6 +12,8 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
+**Lista para publicar: 0.19.2.** **El freno al vencido, en el mostrador y la caja**: el mostrador avisa al elegir un cliente con deuda vencida, y la caja no le cobra a cuenta corriente hasta que un encargado pone su PIN; con o sin conexión. **La base ya está aplicada**: hoy no hay clientes con cuenta corriente, así que no le traba nada a nadie, pero hay que publicar antes de habilitar la primera. Ver *Lo último que pasó*. **766 pruebas verdes en la app.**
+
 **Publicada: 0.19.1** (29/10, 12:05), verificada en Cloudflare: `latest.json` dice 0.19.1, el instalador está publicado y la versión web ya trae el freno. **El freno al cliente mayorista con deuda vencida**: su pedido no se factura hasta que un encargado lo autoriza, con un clic o con su PIN. Y **Productos ya no baja hasta una zona vacía** con la ficha abierta. Ver *Lo último que pasó*. **756 pruebas verdes en la app.**
 
 **Publicada: 0.19.0** (29/10, 11:27), verificada en Cloudflare: `latest.json` dice 0.19.0. **La orden de recibo y el recibo numerado**: Facundo anota en el teléfono lo que le pagaron —también sin señal— y en el local, cuando confirman que entró la plata, sale el recibo con número, baja la deuda y se le manda por mail al cliente. El mismo recibo sale en toda cobranza de cuenta corriente, y hay un registro en *Clientes → Recibos*. Y **el mail del pedido**: apenas el pedido de Facundo llega al local, al cliente le llega el detalle. **La base y la función del mail ya están en el servidor.** Ver *Lo último que pasó*. **753 pruebas verdes en la app.**
@@ -93,6 +95,17 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 
 ---
 
+## Lo último que pasó — 29 de octubre: el freno al vencido en el mostrador y la caja
+
+**Respuesta 7 de Lucas, la parte del local** (fase-03, punto 1, ⑤): la venta a cuenta corriente de un cliente con deuda vencida no avanza hasta que un encargado la autoriza con su PIN, y queda anotado quién la dejó pasar. Va en la 0.19.2.
+
+- **En el mostrador, el aviso:** apenas se elige un cliente con vencido, debajo de su nombre dice cuánto debe y desde cuándo, y que a cuenta corriente lo tiene que autorizar un encargado en la caja.
+- **En la caja, el freno:** si algo de la venta va a cuenta corriente, aparece el recuadro rojo con el PIN del encargado y **Cobrar** no se puede apretar hasta que lo autorizan. Con efectivo o tarjeta se cobra igual: el que debe puede seguir comprando, lo que no puede es sumar deuda.
+- **Sin conexión también frena.** El saldo de cada cliente, que ya bajaba a las PC, ahora trae sus cargos impagos con el vencimiento, y la caja hace la misma cuenta que la base. El PIN, sin conexión, lo reconoce el verificador local y alcanza con que sea de un Encargado o Administrador; al subir el cobro, la base mira el permiso de verdad. Las PC vuelven a bajar los saldos enteros una vez, solas, al actualizar.
+- **Se juzga con el día de la venta:** un cobro hecho sin conexión que sube a la mañana siguiente no se rechaza por algo que venció esa noche.
+- **La base** ([`20261029180000_frenar_el_vencido_en_la_caja.sql`](../supabase/migrations/20261029180000_frenar_el_vencido_en_la_caja.sql), aplicada): el freno vive en `cobrar_venta()`, la puerta de toda venta a cuenta corriente; la venta anota quién autorizó y cuándo. El pedido mayorista autorizado le pasa a su venta quién lo autorizó. **Probada como usuario**, con todo deshecho al final: sin autorizar frena; con el de un vendedor frena; con el de un encargado cobra y lo anota; en efectivo cobra; una venta de hace 20 días no frena por lo que venció después; el PIN equivocado cuenta el intento; el mayorista autorizado sigue facturando.
+- **Visto a 375 px** el recuadro en sus tres estados (aviso, PIN, autorizado), con un PIN rechazado: nada se desplaza hacia el costado. **766 verdes** y los tipos sin errores.
+
 ## Lo último que pasó — 29 de octubre: Productos bajaba hasta una zona vacía
 
 **Visto por Francisco en Productos**, con la ficha de un producto abierta (nuevo o editando): además de la lista y de la ficha, que se desplazan cada una por su lado, **la página entera bajaba** —el menú incluido— hasta un espacio vacío.
@@ -109,7 +122,7 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 - **Quién autoriza:** quien tiene el permiso nuevo —Encargado y Administrador lo traen—. Si es el que está en la computadora, con un clic; si no, con **su PIN**, en la misma ficha. **El PIN se verifica en la base**, con la misma función del mostrador y su límite de intentos por terminal. Queda anotado quién lo autorizó, cuándo y cuánto debía vencido.
 - **La base** ([`20261029160000_frenar_el_vencido.sql`](../supabase/migrations/20261029160000_frenar_el_vencido.sql), aplicada). **Probada como usuario**, con todo deshecho al final: sin autorizar no factura; un PIN equivocado dice que no y el intento queda contado; el PIN de un vendedor no alcanza; el de un encargado sí, con su nombre; autorizar dos veces no repite; después de autorizar, factura.
 - **La ficha, vista a 375 px** como local (con el PIN), como encargado (con el clic) y como vendedor (ve el aviso, no autoriza): nada se desplaza hacia el costado.
-- **En el mostrador y la caja todavía no frena**: es el mismo pedido de Lucas para la cuenta corriente de siempre (fase-03, punto 1). La base ya tiene con qué: el permiso y el cálculo de lo vencido.
+- **En el mostrador y la caja**: hecho el mismo día, va en la 0.19.2 (ver arriba).
 
 ## Lo último que pasó — 29 de octubre: el mail del pedido
 

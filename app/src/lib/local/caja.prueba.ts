@@ -49,6 +49,8 @@ interface Escenario {
   condicion?: number
   /** Precio de cada una de las dos unidades, con IVA al 21%. */
   precio?: number
+  /** Cargos impagos, con su vencimiento. */
+  pendientes?: { v: string; i: number }[]
 }
 
 /** Deja la base local con una venta de $1.000 esperando en la caja. */
@@ -92,6 +94,7 @@ async function sembrar(e: Escenario = {}) {
   await db.saldo_cuenta_corriente.put({
     cliente_id: CLIENTE,
     saldo: e.saldo ?? 0,
+    ...(e.pendientes ? { pendientes: e.pendientes } : {}),
     actualizado_en: AHORA,
   })
 
@@ -253,6 +256,62 @@ describe('cuenta corriente y límite de crédito', () => {
     await sembrar({ cuentaCorriente: true, limite: 5000, saldo: 800 })
     await cobrar(1000, EFECTIVO)
     expect(await saldoCuentaCorrienteLocal(CLIENTE)).toBe(800)
+  })
+})
+
+/*
+  Respuesta 7 de Lucas. La venta es del 21/08 (AHORA): lo que venció
+  hasta el 20/08 es deuda vencida; lo que vence el 21/08, todavía no.
+*/
+describe('el cliente con deuda vencida', () => {
+  const VENCIDO = [{ v: '2026-08-10', i: 800 }]
+
+  function cobrarAutorizado(autorizo: string | null) {
+    return cobrarLocal({
+      ventaId: VENTA,
+      cajaId: 'caja-1',
+      cajeroId: 'u-1',
+      pagos: [{ medio_pago_id: CUENTA_CORRIENTE, importe: 1000, cuotas: 1, referencia: null }],
+      vencidoAutorizadoPor: autorizo,
+    })
+  }
+
+  it('a cuenta corriente no se cobra sin que lo autorice un encargado', async () => {
+    await sembrar({ cuentaCorriente: true, saldo: 800, pendientes: VENCIDO })
+    await expect(cobrar(1000, CUENTA_CORRIENTE)).rejects.toThrow(
+      /tiene deuda vencida: para venderle a cuenta corriente, lo tiene que autorizar un encargado/,
+    )
+    expect(await db.outbox.count()).toBe(0)
+  })
+
+  it('con efectivo se cobra igual: lo que no puede es sumar deuda', async () => {
+    await sembrar({ cuentaCorriente: true, saldo: 800, pendientes: VENCIDO })
+    await expect(cobrar(1000, EFECTIVO)).resolves.toBeUndefined()
+  })
+
+  it('autorizado, se cobra y la base recibe quién lo autorizó', async () => {
+    await sembrar({ cuentaCorriente: true, saldo: 800, pendientes: VENCIDO })
+    await expect(cobrarAutorizado('u-encargado')).resolves.toBeUndefined()
+    const rpc = await db.outbox.where('lote').equals(VENTA).and((o) => o.tipo === 'rpc').first()
+    expect(await descifrarObjeto(rpc!.datos)).toEqual({
+      p_venta_id: VENTA,
+      p_caja_id: 'caja-1',
+      p_cajero_id: 'u-1',
+      p_vencido_autorizado_por: 'u-encargado',
+    })
+  })
+
+  it('lo que vence el día de la venta todavía no frena', async () => {
+    await sembrar({ cuentaCorriente: true, saldo: 800, pendientes: [{ v: '2026-08-21', i: 800 }] })
+    await expect(cobrar(1000, CUENTA_CORRIENTE)).resolves.toBeUndefined()
+  })
+
+  it('al sumar la deuda en la copia local no pierde los cargos impagos', async () => {
+    await sembrar({ cuentaCorriente: true, saldo: 800, pendientes: VENCIDO })
+    await cobrarAutorizado('u-encargado')
+    const fila = await db.saldo_cuenta_corriente.get(CLIENTE)
+    expect(fila?.saldo).toBe(1800)
+    expect(fila?.pendientes).toEqual(VENCIDO)
   })
 })
 

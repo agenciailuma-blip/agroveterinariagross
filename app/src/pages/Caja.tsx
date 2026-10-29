@@ -10,9 +10,11 @@ import {
   abrirCaja,
   ajustarTotal,
   aplicarLista,
+  autorizarVencidoEnCaja,
   cajaAbierta,
   cerrarCaja,
   cobrar,
+  deudaVencida,
   editarVentaEnCaja,
   listarVentasEnCola,
   obtenerVentaCompleta,
@@ -21,6 +23,8 @@ import {
   saldoCuentaCorriente,
 } from '@/lib/api/caja'
 import type { PagoNuevo, VentaCompleta } from '@/lib/api/caja'
+import type { Vencido } from '@/lib/vencido'
+import AvisoVencido from '@/components/AvisoVencido'
 import type { LineaDeseada } from '@/lib/local/caja'
 import { buscarProductosVenta } from '@/lib/api/ventas'
 import type { ProductoVenta } from '@/lib/api/ventas'
@@ -92,6 +96,9 @@ export default function Caja() {
     pasado y el cliente esperaba por algo que ya estaba hecho.
   */
   const [cobrada, setCobrada] = useState(false)
+  // El encargado que dejó pasar, con su PIN, la venta a cuenta corriente
+  // de un cliente con deuda vencida. Vale para la venta elegida.
+  const [autorizoVencido, setAutorizoVencido] = useState<{ usuario_id: string; nombre: string } | null>(null)
 
   const caja = useQuery({
     queryKey: ['caja', terminal?.id],
@@ -124,6 +131,12 @@ export default function Caja() {
   const saldo = useQuery({
     queryKey: ['saldo-cc', venta.data?.cliente?.id],
     queryFn: () => saldoCuentaCorriente(venta.data!.cliente!.id),
+    enabled: !!venta.data?.cliente?.id && venta.data.cliente.cuenta_corriente,
+  })
+
+  const vencido = useQuery({
+    queryKey: ['vencido-cc', venta.data?.cliente?.id],
+    queryFn: () => deudaVencida(venta.data!.cliente!.id),
     enabled: !!venta.data?.cliente?.id && venta.data.cliente.cuenta_corriente,
   })
 
@@ -300,7 +313,13 @@ export default function Caja() {
       */
       if (sinFactura) await marcarDocumentacion(seleccionada!, documentacion)
 
-      const { subida } = await cobrar(seleccionada!, caja.data!.id, operador!.usuario_id, pagos)
+      const { subida } = await cobrar(
+        seleccionada!,
+        caja.data!.id,
+        operador!.usuario_id,
+        pagos,
+        autorizoVencido?.usuario_id ?? null,
+      )
       setCobrada(true)
 
       /*
@@ -480,6 +499,7 @@ export default function Caja() {
     setCuotas(1)
     setError(null)
     setDocumentacion('fiscal')
+    setAutorizoVencido(null)
   }
 
   useEffect(() => {
@@ -487,6 +507,7 @@ export default function Caja() {
     setMedioPrincipal(null)
     setCuotas(1)
     setError(null)
+    setAutorizoVencido(null)
     // Cada venta decide de nuevo. Que la anterior se haya cobrado sin
     // factura no dice nada de esta, y arrastrar la elección haría que
     // una venta salga sin factura porque nadie miró el selector.
@@ -792,6 +813,9 @@ export default function Caja() {
             percepcion={percepcionAhora}
             calculandoPercepcion={esResponsableInscripto && percepcion.isPending}
             saldoActual={saldo.data ?? 0}
+            vencido={vencido.data ?? null}
+            autorizoVencido={autorizoVencido}
+            onAutorizarVencido={async (pin) => setAutorizoVencido(await autorizarVencidoEnCaja(pin, terminal!.id))}
             aplicando={aplicar.isPending}
             cobrando={cobrarVenta.isPending}
             cobrada={cobrada}
@@ -921,6 +945,9 @@ function PanelCobro({
   percepcion,
   calculandoPercepcion,
   saldoActual,
+  vencido,
+  autorizoVencido,
+  onAutorizarVencido,
   aplicando,
   cobrando,
   cobrada,
@@ -952,6 +979,9 @@ function PanelCobro({
   percepcion: number
   calculandoPercepcion: boolean
   saldoActual: number
+  vencido: Vencido | null
+  autorizoVencido: { usuario_id: string; nombre: string } | null
+  onAutorizarVencido: (pin: string) => Promise<void>
   aplicando: boolean
   cobrando: boolean
   /** Ya cobrada, esperando el comprobante. */
@@ -1024,6 +1054,18 @@ function PanelCobro({
       ? [['a_facturar', 'Factura después', 'A cuenta corriente'] as [Documentacion, string, string]]
       : []),
   ]
+
+  /*
+    Respuesta 7 de Lucas: a quien debe vencido no se le suma deuda sin
+    que un encargado lo autorice con su PIN. Cuenta cualquier parte que
+    vaya a cuenta corriente, no sólo el medio principal: la base mira
+    todos los pagos.
+  */
+  const vaACuentaCorriente = pagos.some(
+    (p) => tipoDe(p.medio_pago_id) === 'cuenta_corriente' && Number(p.importe) > 0,
+  )
+  const debeVencido = !!venta.cliente?.cuenta_corriente && (vencido?.monto ?? 0) > 0
+  const frenadoPorVencido = debeVencido && vaACuentaCorriente && !autorizoVencido
 
   const excede =
     esCuentaCorriente &&
@@ -1414,6 +1456,15 @@ function PanelCobro({
           </div>
         )}
 
+        {debeVencido && (
+          <AvisoVencido
+            vencido={vencido!}
+            aCuentaCorriente={vaACuentaCorriente}
+            autorizo={autorizoVencido}
+            onAutorizar={onAutorizarVencido}
+          />
+        )}
+
         {error && (
           <p role="alert" className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 ring-1 ring-red-200">
             {error}
@@ -1485,9 +1536,15 @@ function PanelCobro({
             onClick={onCobrar}
             disabled={
               !medio || Math.abs(diferencia) > 0.009 || cobrando || aplicando || calculandoPercepcion ||
-              (documentacion === 'a_facturar' && !esCuentaCorriente) || chequeIncompleto
+              (documentacion === 'a_facturar' && !esCuentaCorriente) || chequeIncompleto || frenadoPorVencido
             }
-            title={chequeIncompleto ? 'Faltan datos del cheque: banco, número y fecha de pago.' : undefined}
+            title={
+              chequeIncompleto
+                ? 'Faltan datos del cheque: banco, número y fecha de pago.'
+                : frenadoPorVencido
+                  ? 'Debe vencido: lo tiene que autorizar un encargado con su PIN.'
+                  : undefined
+            }
             className={`flex-1 rounded-lg px-4 py-3 font-medium text-white disabled:opacity-40 ${
               documentacion !== 'fiscal'
                 ? 'bg-tinta hover:bg-tinta/90'

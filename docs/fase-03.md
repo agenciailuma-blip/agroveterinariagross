@@ -49,7 +49,7 @@ El cliente de siempre: la persona que lleva el alimento del perro, la oficina. S
 | ④ Factura por mail automática | 🟡 Hoy hay botón *Mandar por mail*, y el envío solo es sólo para la tienda | **Que salga sola al facturar a cuenta corriente**, si el cliente tiene mail |
 | ④ ¿Adjuntar el remito firmado? | ❌ | **Subir la foto del remito firmado** al remito (desde el celular o la PC), y que quede a la vista en la venta y en la cuenta corriente. Esa es la trazabilidad: quién firmó, cuándo. No va en el mail de la factura, porque la factura sale antes de que firmen |
 | ⑤ Resumen de vencidos por cliente | 🟡 Está la deuda por antigüedad; no hay un listado de «qué comprobantes vencieron, de quién» | **Pestaña *Vencidos*** en Clientes, por cliente, con total y días |
-| ⑤ Alerta al vender a quien debe | 🟡 En el mayorista ya frena (29/10, ver punto 5); en el mostrador y la caja, todavía no | **Aviso y freno** en el mostrador y en la caja al elegir un cliente con comprobantes vencidos: la venta a cuenta corriente **no avanza hasta que un encargado la autoriza con su PIN**, y queda anotado quién la dejó pasar. Respuesta 7 |
+| ⑤ Alerta al vender a quien debe | ✅ Frena en el mayorista, el mostrador y la caja (29/10): aviso al elegir el cliente, y la venta a cuenta corriente no avanza hasta que un encargado la autoriza con su PIN; queda anotado quién la dejó pasar. También sin conexión | — |
 
 > Nota sobre el orden de Lucas: en su lámina la factura «acredita la venta pero no descarga stock» y el stock baja en el paso siguiente. En el sistema pasa todo en el mismo momento, al cobrar a cuenta corriente, y es mejor así: no hay un rato en el que la mercadería salió y el stock no lo sabe.
 

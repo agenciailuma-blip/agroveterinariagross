@@ -145,7 +145,7 @@ const MAESTROS: Definicion[] = [
   {
     tabla: 'saldo_cuenta_corriente',
     origen: 'cuenta_corriente_saldo',
-    columnas: 'cliente_id, saldo, actualizado_en',
+    columnas: 'cliente_id, saldo, pendientes, actualizado_en',
     orden: ['cliente_id'],
   },
   /*
@@ -486,11 +486,14 @@ async function bajarColaCaja() {
       0.17.0 las filas que cambiaban en el mismo instante podían quedar
       afuera (ver recorrerPorFecha), y a las PC les faltaban productos
       de OBTech. Se vuelve a bajar todo lo que viene por cursor.
+  5 — 29/10: el saldo de cuenta corriente suma los cargos impagos, para
+      que la caja frene sin conexión al que debe vencido.
 */
-const VERSION_BAJADA = 4
+const VERSION_BAJADA = 5
 const TABLAS_DE_LA_VERSION_2 = ['cliente']
 const TABLAS_DE_LA_VERSION_3 = ['producto', 'umbral']
 const TABLAS_DE_LA_VERSION_4 = [...MAESTROS.map((m) => m.tabla), ...REFERENCIAS.map((r) => `referencia:${r}`)]
+const TABLAS_DE_LA_VERSION_5 = ['saldo_cuenta_corriente']
 
 async function rebajarLoQueCambio() {
   const marca = await db.cursor.get('version_bajada')
@@ -503,6 +506,7 @@ async function rebajarLoQueCambio() {
     await db.umbral.clear()
   }
   if (guardada < 4) await db.cursor.bulkDelete(TABLAS_DE_LA_VERSION_4)
+  if (guardada < 5) await db.cursor.bulkDelete(TABLAS_DE_LA_VERSION_5)
 
   await db.cursor.put({
     tabla: 'version_bajada',

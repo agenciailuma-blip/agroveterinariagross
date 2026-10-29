@@ -172,6 +172,13 @@ export interface ReferenciaLocal {
 export interface SaldoCuentaCorrienteLocal {
   cliente_id: string
   saldo: number
+  /*
+    Los cargos impagos con su vencimiento, para frenar sin conexión al
+    que debe vencido (ver lib/vencido.ts). Opcional: una terminal que
+    bajó los saldos antes de la 0.19.2 no lo tiene hasta volver a
+    bajarlos.
+  */
+  pendientes?: import('@/lib/vencido').CargoPendiente[]
   actualizado_en: string
 }
 

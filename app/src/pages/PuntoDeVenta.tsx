@@ -12,6 +12,7 @@ import {
 } from '@/lib/api/ventas'
 import type { ClienteVenta, LineaVenta, ProductoVenta } from '@/lib/api/ventas'
 import { clienteDesdeArca } from '@/lib/api/clientes'
+import { deudaVencida } from '@/lib/api/caja'
 import { cuitValido } from '@/lib/api/cheques'
 import { cargarPrecios, mediosParaElegir, previsualizarPrecio } from '@/lib/api/precios'
 import type { MedioPago } from '@/lib/api/precios'
@@ -43,6 +44,16 @@ export default function PuntoDeVenta() {
     }
   })
   const [cliente, setCliente] = useState<ClienteVenta | null>(null)
+  /*
+    Respuesta 7 de Lucas: el aviso apenas se elige al cliente. El freno
+    está en la caja, que es donde la venta se pone a cuenta corriente;
+    acá el vendedor se entera antes de armarle la venta.
+  */
+  const vencido = useQuery({
+    queryKey: ['vencido-cc', cliente?.id],
+    queryFn: () => deudaVencida(cliente!.id),
+    enabled: !!cliente?.cuenta_corriente,
+  })
   const [buscandoCliente, setBuscandoCliente] = useState(false)
   const [textoCliente, setTextoCliente] = useState('')
   const [consultandoArca, setConsultandoArca] = useState(false)
@@ -866,6 +877,15 @@ export default function PuntoDeVenta() {
                 {cliente?.condicion_iva_id === 1 ? 'Responsable Inscripto · Factura A · ' : ''}tocá para cambiar
               </span>
             </button>
+          )}
+          {!buscandoCliente && cliente?.cuenta_corriente && (vencido.data?.monto ?? 0) > 0 && (
+            <p className="mt-2 rounded-lg bg-amber-50 px-2 py-1.5 text-xs text-amber-800 ring-1 ring-amber-200">
+              Debe {moneda.format(vencido.data!.monto)} vencido
+              {vencido.data!.desde
+                ? ` desde el ${new Date(`${vencido.data!.desde}T12:00:00`).toLocaleDateString('es-AR')}`
+                : ''}
+              . A cuenta corriente, en la caja lo tiene que autorizar un encargado.
+            </p>
           )}
         </div>
 
