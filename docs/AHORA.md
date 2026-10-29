@@ -12,7 +12,7 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Construida: 0.19.8** (29/10) — **falta publicarla**. **El comprobante interno se factura con un botón**: en *Comprobantes no fiscales*, *Facturar* saca la factura de esa venta con fecha de hoy, sin rehacerla y sin tocar stock ni caja. **La base ya está aplicada.** Ver *Lo último que pasó*. **778 pruebas verdes en la app.**
+**Publicada: 0.19.8** (29/10, 18:07), verificada en Cloudflare: `latest.json` dice 0.19.8, el instalador está publicado y la versión web ya trae el botón. **El comprobante interno se factura con un botón**: en *Comprobantes no fiscales*, *Facturar* saca la factura de esa venta con fecha de hoy, sin rehacerla y sin tocar stock ni caja. **La base ya está aplicada.** Ver *Lo último que pasó*. **778 pruebas verdes en la app.**
 
 **Publicada: 0.19.7** (29/10, 17:40), verificada en Cloudflare: `latest.json` dice 0.19.7, el instalador está publicado y la versión web ya trae los productos asociados. **Los productos asociados**: en el mostrador, F11 junta renglones bajo un concepto —«Repuestos pulverizadora»— y la factura los muestra en uno solo, por el total; el stock, la caja y el IVA siguen con los productos reales. **La base ya está aplicada.** Ver *Lo último que pasó*. **778 pruebas verdes en la app.**
 
@@ -109,7 +109,7 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 
 ## Lo último que pasó — 29 de octubre: el comprobante interno que después se factura
 
-**Fase-03, punto 8** (la proforma que se factura desde la misma pantalla). Va en la 0.19.8.
+**Fase-03, punto 8** (la proforma que se factura desde la misma pantalla). Publicada en la 0.19.8.
 
 - **En *Comprobantes no fiscales***, cada comprobante interno de una venta ya cobrada tiene **Facturar**. Pide confirmar y saca la factura de esa venta —A o B según el cliente— con los mismos renglones y **la fecha de hoy**, aunque la venta sea de hace un mes. Se pide el CAE en el momento; si ARCA no responde, queda pendiente y se reintenta desde Facturación, como siempre.
 - **No se rehace nada:** el stock y la caja no se tocan, porque la venta ya está cobrada. El comprobante interno pasa a **facturado**, y tocar esa marca abre la factura.
