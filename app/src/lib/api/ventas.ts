@@ -98,6 +98,8 @@ export interface LineaVenta {
   condicion_iva: 'gravado' | 'exento' | 'no_gravado'
   /** Existencia al momento de agregarlo, para avisar si no alcanza. */
   stock_disponible: number
+  /** Productos asociados: el concepto bajo el que lo muestra la factura. */
+  concepto?: string | null
 }
 
 /*
@@ -407,6 +409,7 @@ async function guardarVenta(
         : null,
     alicuota_iva_id: l.alicuota_iva_id,
     condicion_iva: l.condicion_iva,
+    concepto: l.concepto ?? null,
   }))
 
   await encolar(id, [

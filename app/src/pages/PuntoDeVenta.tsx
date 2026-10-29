@@ -18,7 +18,9 @@ import { cargarPrecios, mediosParaElegir, previsualizarPrecio } from '@/lib/api/
 import type { MedioPago } from '@/lib/api/precios'
 import { useSync } from '@/lib/local/SyncProvider'
 import { subirPendientes } from '@/lib/local/sync'
-import { valorConfig } from '@/lib/local/consultas'
+import { listaConfig, valorConfig } from '@/lib/local/consultas'
+import AsociarProductos from '@/components/AsociarProductos'
+import { totalesPorConcepto } from '@/lib/conceptos'
 import { emitirPresupuesto, emitirRemitoDirecto, numeroNoFiscal } from '@/lib/api/noFiscal'
 import { useAuth } from '@/auth/AuthProvider'
 import AvisoVencido from '@/components/AvisoVencido'
@@ -123,6 +125,27 @@ export default function PuntoDeVenta() {
   useEffect(() => {
     valorConfig('ventas.pedir_cantidad_al_agregar', 1).then((v) => setPedirCantidad(v === 1))
   }, [copiaLocalLista])
+
+  /*
+    Productos asociados (fase-03, punto 3): F11 abre la ventana para
+    marcar renglones y elegir el concepto con que los muestra la
+    factura. La lista de conceptos se edita en Configuración y se lee de
+    la copia local, como todo lo del mostrador.
+  */
+  const [conceptos, setConceptos] = useState<string[]>([])
+  const [asociando, setAsociando] = useState(false)
+  useEffect(() => {
+    listaConfig('ventas.conceptos_asociados', ['Repuestos pulverizadora', 'Fumigación', 'Veneno']).then(setConceptos)
+  }, [copiaLocalLista])
+  useAtajo('F11', () => {
+    if (lineas.length && conceptos.length) setAsociando(true)
+  })
+
+  function asociar(ids: string[], concepto: string | null) {
+    renovar()
+    setLineas((prev) => prev.map((l) => (ids.includes(l.id) ? { ...l, concepto } : l)))
+    setAsociando(false)
+  }
 
   // El borrador sobrevive a un refresco accidental. Una venta a medio
   // armar que se pierde por un F5 es media hora de mostrador tirada.
@@ -608,6 +631,15 @@ export default function PuntoDeVenta() {
   */
   return (
     <div className="flex flex-col gap-4 lg:h-full lg:flex-row" onKeyDown={renovar}>
+      {asociando && (
+        <AsociarProductos
+          lineas={lineas}
+          conceptos={conceptos}
+          onAsociar={asociar}
+          onCerrar={() => setAsociando(false)}
+        />
+      )}
+
       {escribiendoLinea && (
         <LineaLibre onAgregar={agregarLibre} onCerrar={() => setEscribiendoLinea(false)} />
       )}
@@ -755,6 +787,11 @@ export default function PuntoDeVenta() {
                           {l.motivo_modificacion && (
                             <p className="mt-0.5 text-xs text-marca-700">
                               Precio modificado: {l.motivo_modificacion}
+                            </p>
+                          )}
+                          {l.concepto && (
+                            <p className="mt-0.5 text-xs [overflow-wrap:anywhere] text-marca-700">
+                              Se factura como {l.concepto}
                             </p>
                           )}
                         </td>
@@ -996,6 +1033,27 @@ export default function PuntoDeVenta() {
           </div>
         )}
 
+        {totalesPorConcepto(lineas).length > 0 && (
+          <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-borde">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-xs font-medium tracking-wide text-piedra-400 uppercase">Se factura como</p>
+              <button
+                onClick={() => setAsociando(true)}
+                className="rounded-lg px-2.5 py-1 text-xs font-medium text-marca-700 ring-1 ring-borde hover:bg-marca-50"
+              >
+                Cambiar
+                <TeclaAtajo tecla="F11" />
+              </button>
+            </div>
+            {totalesPorConcepto(lineas).map((c) => (
+              <p key={c.concepto} className="mt-2 flex justify-between gap-3 text-sm">
+                <span className="min-w-0 [overflow-wrap:anywhere] text-tinta">{c.concepto}</span>
+                <span className="shrink-0 tabular-nums text-tinta">{moneda.format(c.total)}</span>
+              </p>
+            ))}
+          </div>
+        )}
+
         <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-borde">
           <dl className="space-y-1.5 text-sm">
             <div className="flex justify-between text-piedra-500">
@@ -1156,6 +1214,16 @@ Se muestra en la cola del cajero. Si no hace falta, dejalo vacío.`,
               />
             )}
           </div>
+        )}
+
+        {lineas.length > 0 && conceptos.length > 0 && !totalesPorConcepto(lineas).length && (
+          <button
+            onClick={() => setAsociando(true)}
+            className="text-sm text-piedra-500 hover:text-marca-700 hover:underline"
+          >
+            Asociar productos a un concepto
+            <TeclaAtajo tecla="F11" />
+          </button>
         )}
 
         {lineas.length > 0 && (

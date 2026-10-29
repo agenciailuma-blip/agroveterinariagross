@@ -1137,6 +1137,7 @@ function PanelCobro({
                       Precio modificado: {l.motivo_modificacion}
                     </p>
                   )}
+                  {l.concepto && <p className="text-xs text-marca-700">Se factura como {l.concepto}</p>}
                 </div>
                 {puedeEditar && venta.venta_linea.length > 1 && (
                   <button

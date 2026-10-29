@@ -9,6 +9,7 @@ import RedDelLocal from '@/components/RedDelLocal'
 import CajasYMostradores from '@/components/CajasYMostradores'
 import ImpresoraDelMostrador from '@/components/ImpresoraDelMostrador'
 import RitmoDelMostrador from '@/components/RitmoDelMostrador'
+import ConceptosAsociados from '@/components/ConceptosAsociados'
 import { ListaDeAtajos } from '@/components/Atajos'
 import {
   crearPuntoVenta,
@@ -116,6 +117,7 @@ export default function Configuracion() {
           <Depositos />
           <RedDelLocal />
           <RitmoDelMostrador />
+          <ConceptosAsociados />
         </>
       )}
 

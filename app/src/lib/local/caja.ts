@@ -125,6 +125,7 @@ export interface VentaCompletaLocal {
     precio_acordado: number
     precio_unitario: number
     motivo_modificacion: string | null
+    concepto?: string | null
   }[]
 }
 
@@ -170,6 +171,7 @@ export async function obtenerVentaLocal(id: string): Promise<VentaCompletaLocal 
       precio_acordado: Number(l.precio_acordado),
       precio_unitario: Number(l.precio_unitario),
       motivo_modificacion: l.motivo_modificacion,
+      concepto: l.concepto ?? null,
     })),
   }
 }

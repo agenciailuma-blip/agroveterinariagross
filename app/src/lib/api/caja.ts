@@ -55,6 +55,8 @@ export interface LineaCobro {
   precio_acordado: number
   precio_unitario: number
   motivo_modificacion: string | null
+  /** Productos asociados: el concepto bajo el que lo muestra la factura. */
+  concepto?: string | null
 }
 
 export interface VentaCompleta {
@@ -217,7 +219,7 @@ export async function obtenerVentaCompleta(id: string): Promise<VentaCompleta> {
          cliente:cliente_id(id, nombre, condicion_iva_id, cuenta_corriente, limite_credito),
          vendedor:vendedor_id(id, nombre),
          venta_linea(id, orden, codigo_producto, descripcion, cantidad,
-                     precio_original, precio_acordado, precio_unitario, motivo_modificacion)`,
+                     precio_original, precio_acordado, precio_unitario, motivo_modificacion, concepto)`,
       )
       .eq('id', id)
       .single()
@@ -511,7 +513,7 @@ async function asegurarVentaLocal(ventaId: string): Promise<void> {
       .select(
         'id, venta_id, orden, producto_id, codigo_producto, descripcion, cantidad, ' +
           'precio_original, precio_acordado, precio_unitario, motivo_modificacion, ' +
-          'alicuota_iva_id, condicion_iva, actualizado_en',
+          'alicuota_iva_id, condicion_iva, concepto, actualizado_en',
       )
       .eq('venta_id', ventaId),
   ])

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import QRCode from 'qrcode'
 import { obtenerComprobanteCompleto, registrarImpresion } from '@/lib/api/comprobante'
@@ -348,7 +348,8 @@ function Hoja({ c, qr }: { c: ComprobanteCompleto; qr: string | null }) {
         </thead>
         <tbody>
           {c.lineas.map((l) => (
-            <tr key={l.orden} className="align-top">
+            <Fragment key={l.orden}>
+            <tr className="align-top">
               <td className="px-2 py-0.5 font-mono">{l.codigo_producto}</td>
               <td className="px-2 py-0.5">{l.descripcion}</td>
               <td className="px-2 py-0.5 text-right tabular-nums">{numero.format(l.cantidad)}</td>
@@ -364,6 +365,28 @@ function Hoja({ c, qr }: { c: ComprobanteCompleto; qr: string | null }) {
                 {moneda.format(sinIva(l.importe, l.alicuota_iva_id))}
               </td>
             </tr>
+            {/*
+              Productos asociados: lo que se llevó de verdad bajo el
+              concepto. Se ve en pantalla y no sale en el papel.
+            */}
+            {l.asociados && (
+              <tr className="print:hidden">
+                <td />
+                <td colSpan={esA ? 5 : 4} className="px-2 pb-1.5">
+                  <ul className="rounded bg-piedra-50 px-2 py-1 text-xs text-piedra-600">
+                    {l.asociados.map((a) => (
+                      <li key={a.orden} className="flex justify-between gap-3">
+                        <span>
+                          ✓ {a.descripcion} × {numero.format(a.cantidad)}
+                        </span>
+                        <span className="tabular-nums">{moneda.format(a.importe)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </td>
+              </tr>
+            )}
+            </Fragment>
           ))}
           {c.lineas.length === 0 && (
             <tr>

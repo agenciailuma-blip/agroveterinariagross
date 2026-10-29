@@ -308,6 +308,8 @@ export interface NoFiscalLineaLocal {
   cantidad: number
   precio_unitario: number
   importe: number
+  /** Productos asociados: el concepto bajo el que se imprime. */
+  concepto?: string | null
 }
 
 export interface VentaLineaLocal {
@@ -324,6 +326,8 @@ export interface VentaLineaLocal {
   motivo_modificacion: string | null
   alicuota_iva_id: number
   condicion_iva: string
+  /** Productos asociados: el concepto bajo el que se imprime. */
+  concepto?: string | null
   actualizado_en: string
 }
 

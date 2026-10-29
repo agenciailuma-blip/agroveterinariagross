@@ -2,14 +2,15 @@ import { supabase } from '@/lib/supabase'
 
 export interface FilaConfiguracion {
   clave: string
-  valor: number
+  valor: number | string | string[]
   descripcion: string | null
 }
 
 /**
- * Trae un grupo de claves de configuración como números. El resto de las
- * columnas (grupo, jsonb crudo) no le sirve a esta pantalla: solo valores
- * numéricos simples, que es lo único que 'configuracion' guarda hasta ahora.
+ * Trae un grupo de claves de configuración. Lo que es un número viene como
+ * número; lo demás, como está: la forma de calcular la percepción en una
+ * factura agrupada es un texto, y los conceptos de los productos asociados
+ * una lista. Antes todo pasaba por Number(), y ese texto llegaba como NaN.
  */
 export async function obtenerConfiguracion(claves: string[]): Promise<FilaConfiguracion[]> {
   const { data, error } = await supabase
@@ -21,12 +22,19 @@ export async function obtenerConfiguracion(claves: string[]): Promise<FilaConfig
 
   return (data ?? []).map((f) => ({
     clave: f.clave as string,
-    valor: Number(f.valor),
+    valor: valorDe(f.valor),
     descripcion: f.descripcion as string | null,
   }))
 }
 
-export async function guardarValorConfiguracion(clave: string, valor: number | string) {
+function valorDe(v: unknown): number | string | string[] {
+  if (Array.isArray(v)) return v.map(String)
+  if (typeof v === 'number') return v
+  const n = Number(v)
+  return typeof v === 'string' && v.trim() !== '' && Number.isFinite(n) ? n : String(v ?? '')
+}
+
+export async function guardarValorConfiguracion(clave: string, valor: number | string | string[]) {
   const { error } = await supabase.from('configuracion').update({ valor }).eq('clave', clave)
   if (error) throw new Error(error.message)
 }

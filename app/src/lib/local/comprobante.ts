@@ -1,6 +1,7 @@
 import { db } from '@/lib/local/db'
 import { abrirComprobante } from '@/lib/local/cifrado'
 import type { ComprobanteCompleto } from '@/lib/api/comprobante'
+import { agruparPorConcepto } from '@/lib/conceptos'
 
 /*
   ─────────────────────────────────────────────────────────────
@@ -75,17 +76,21 @@ export async function obtenerComprobanteLocal(id: string): Promise<ComprobanteCo
     autorizado_en: c.creado_en,
     creado_en: c.creado_en,
     impresiones: c.impresiones,
-    lineas: lineas
-      .sort((a, b) => a.orden - b.orden)
-      .map((l) => ({
-        orden: l.orden,
-        codigo_producto: l.codigo_producto,
-        descripcion: l.descripcion,
-        cantidad: Number(l.cantidad),
-        precio_unitario: Number(l.precio_unitario),
-        importe: Number(l.cantidad) * Number(l.precio_unitario),
-        alicuota_iva_id: l.alicuota_iva_id,
-      })),
+    lineas: agruparPorConcepto(
+      lineas
+        .sort((a, b) => a.orden - b.orden)
+        .map((l) => ({
+          orden: l.orden,
+          codigo_producto: l.codigo_producto,
+          descripcion: l.descripcion,
+          cantidad: Number(l.cantidad),
+          precio_unitario: Number(l.precio_unitario),
+          importe: Number(l.cantidad) * Number(l.precio_unitario),
+          alicuota_iva_id: l.alicuota_iva_id,
+          concepto: l.concepto ?? null,
+        })),
+      { porAlicuota: true },
+    ),
     alicuotas: alicuotas.map((a) => ({
       alicuota_iva_id: a.alicuota_iva_id,
       base_imponible: Number(a.base_imponible),

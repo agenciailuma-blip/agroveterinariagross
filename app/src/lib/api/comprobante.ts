@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { agruparPorConcepto } from '@/lib/conceptos'
 
 export interface LineaComprobante {
   orden: number
@@ -8,6 +9,10 @@ export interface LineaComprobante {
   precio_unitario: number
   importe: number
   alicuota_iva_id: number
+  /** Productos asociados: el concepto bajo el que se imprime. */
+  concepto?: string | null
+  /** En un renglón de concepto, los productos que se llevó de verdad. */
+  asociados?: LineaComprobante[]
 }
 
 export interface AlicuotaComprobante {
@@ -152,7 +157,7 @@ async function desdeElServidor(id: string): Promise<ComprobanteCompleto> {
     ventas.length
       ? supabase
           .from('venta_linea')
-          .select('orden, codigo_producto, descripcion, cantidad, precio_unitario, importe, alicuota_iva_id')
+          .select('orden, codigo_producto, descripcion, cantidad, precio_unitario, importe, alicuota_iva_id, concepto')
           .in('venta_id', ventas)
           .order('venta_id')
           .order('orden')
@@ -199,7 +204,15 @@ async function desdeElServidor(id: string): Promise<ComprobanteCompleto> {
     autorizado_en: (c.autorizado_en as string | null) ?? null,
     creado_en: c.creado_en as string,
     impresiones: c.impresiones as number,
-    lineas: (lineas.data ?? []) as unknown as LineaComprobante[],
+    lineas: agruparPorConcepto(
+      ((lineas.data ?? []) as unknown as LineaComprobante[]).map((l) => ({
+        ...l,
+        cantidad: Number(l.cantidad),
+        precio_unitario: Number(l.precio_unitario),
+        importe: Number(l.importe),
+      })),
+      { porAlicuota: true },
+    ),
     alicuotas: ((alicuotas.data ?? []) as unknown as (AlicuotaComprobante & {
       alicuota: { porcentaje: number } | { porcentaje: number }[] | null
     })[]).map((a) => ({

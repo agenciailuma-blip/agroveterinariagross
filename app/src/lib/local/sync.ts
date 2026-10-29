@@ -448,7 +448,7 @@ async function bajarColaCaja() {
       .select(
         'id, venta_id, orden, producto_id, codigo_producto, descripcion, cantidad, ' +
           'precio_original, precio_acordado, precio_unitario, motivo_modificacion, ' +
-          'alicuota_iva_id, condicion_iva, actualizado_en',
+          'alicuota_iva_id, condicion_iva, concepto, actualizado_en',
       )
       .in('venta_id', vigentes)
 

@@ -45,6 +45,7 @@ export const ATAJOS: { donde: string; atajos: Atajo[] }[] = [
     atajos: [
       { teclas: 'F2', que: 'Volver al buscador de productos' },
       { teclas: 'F3', que: 'Elegir el cliente' },
+      { teclas: 'F11', que: 'Asociar productos: que la factura los muestre bajo un concepto' },
       { teclas: 'F9', que: 'Enviar a caja. Otra vez F9 la manda sin nombre' },
     ],
   },

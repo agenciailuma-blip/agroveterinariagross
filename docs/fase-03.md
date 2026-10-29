@@ -96,6 +96,14 @@ El cliente de siempre: la persona que lleva el alimento del perro, la oficina. S
 
 **Cómo se construye:** los conceptos son **3 o 4 productos comodín fijos** (Repuestos pulverizadora, Fumigación, Veneno, y el que diga Lucas), que **no llevan stock**. En el mostrador, una tecla —él propuso **F11**— abre *Asociar productos*: se marcan los renglones, se elige el concepto, y los renglones quedan agrupados debajo. Lo que se guarda es la venta real; lo que se imprime es el concepto. Ya existe el producto comodín desde el 09/09: lo nuevo es el agrupamiento.
 
+### Lo que ya está — 29/10
+
+- **En el Mostrador, F11**: se marcan los renglones y se elige el concepto. La venta guarda los productos reales —stock, caja e IVA salen de ellos— y cada renglón dice bajo qué concepto se imprime.
+- **La factura, el comprobante interno y el presupuesto** muestran un renglón por concepto, por el total; en la factura, uno por alícuota si el concepto mezcla. **El remito** sigue mostrando lo que se llevó.
+- **Al abrir la factura en pantalla**, debajo del concepto se ve cada producto real con un ✓. No sale impreso.
+- **Los conceptos** se editan en Configuración. Arrancan con Repuestos pulverizadora, Fumigación y Veneno, hasta que Lucas conteste la pregunta 8.
+- **Sobre el IVA:** como a ARCA le van los totales por alícuota de los productos reales, el IVA declarado coincide siempre. Lo que sigue en pie del aviso de abajo es que el texto de la factura describe otra cosa.
+
 > ⚠️ **Para decirlo una vez, antes de construirlo.** Una factura que dice «Repuestos pulverizadora» por alimento de perro **describe otra cosa de la que salió**. Y este diseño guarda la prueba: el stock dice Royal Canin y la factura dice repuesto. Además, si los productos reales tienen **otra alícuota de IVA** que el concepto (un 10,5 % metido en un renglón de 21 %), el IVA declarado no coincide. Es decisión de Lucas y es una práctica común; **conviene que Armando la mire** antes de usarla, y que el concepto tome la alícuota de los productos que agrupa.
 
 ---

@@ -12,6 +12,8 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
+**Construida: 0.19.7** (29/10) — **falta publicarla**. **Los productos asociados**: en el mostrador, F11 junta renglones bajo un concepto —«Repuestos pulverizadora»— y la factura los muestra en uno solo, por el total; el stock, la caja y el IVA siguen con los productos reales. **La base ya está aplicada.** Ver *Lo último que pasó*. **778 pruebas verdes en la app.**
+
 **Publicada: 0.19.6** (29/10, 17:10), verificada en Cloudflare: `latest.json` dice 0.19.6, el instalador está publicado y la versión web ya trae el remito interno. Antes se volvió a subir la 0.19.5 con el número viejo: las PC no la tomaron porque el número no cambió, y la 0.19.6 la reemplazó. **El remito interno y *Pendientes de facturar***: la mercadería sale del mostrador con un remito sin precio, descuenta stock, y después se le ponen los precios y sale la factura o el comprobante interno a cuenta corriente, de uno o de varios remitos juntos. **La base ya está aplicada.** Ver *Lo último que pasó*. **774 pruebas verdes en la app.**
 
 **Publicada: 0.19.5** (29/10, 16:31), verificada en Cloudflare: `latest.json` dice 0.19.5, el instalador está publicado y la versión web ya trae la foto del remito firmado. **La foto del remito firmado**: se sube desde Remitos, con el celular o la PC, y queda a la vista en el remito y en la cuenta corriente del cliente, con quién firmó y cuándo. Con esto queda completo el punto 1 de la fase-03. Ver *Lo último que pasó*. **772 pruebas verdes en la app.**
@@ -102,6 +104,20 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 🟡 **Lo que la venta tardaba en llegar a la caja sin internet** — arreglado el 05/10 y publicado en la 0.13.4, **sin probar en el local**. El mostrador le pasaba las ventas a la caja una vez por minuto, y la caja miraba su cola cada ocho segundos: hasta 68 segundos con el cliente esperando. Y llegaba de a partes porque, mientras la cabecera intentaba subir al servidor —hasta doce segundos sin internet—, salían los renglones solos. Ahora la venta sale al segundo y medio de apretar *Enviar a caja* (y otra vez a los catorce, por si el intento de subir tardó), viaja entera o espera entera, y la caja la muestra apenas llega. Se comprueba en el próximo corte: la venta tiene que aparecer en la caja en un par de segundos y completa.
 
 ---
+
+## Lo último que pasó — 29 de octubre: los productos asociados
+
+**Fase-03, punto 3.** Va en la 0.19.7.
+
+- **En el Mostrador, F11** —o *Asociar productos a un concepto*, debajo de los botones— abre una ventana con los renglones de la venta: vienen marcados los que todavía no tienen concepto, se elige el concepto y listo. Cada renglón dice «Se factura como …», y arriba del total aparece cuánto va bajo cada concepto. Se puede cambiar o sacar antes de mandar a caja.
+- **La caja** ve el concepto en cada renglón.
+- **La factura** —en papel, en el ticket, en el PDF del mail y en la que se emite sin conexión— muestra un renglón por concepto, con la suma de los productos. **El comprobante interno y el presupuesto** también. **El remito no**: acompaña a la mercadería y dice lo que se llevó.
+- **Lo que se llevó de verdad**: al abrir la factura en pantalla, debajo del concepto aparece cada producto con un ✓, su cantidad y su importe. No sale en el papel.
+- **El IVA no cambia:** a ARCA le van los totales por alícuota, y siguen saliendo de los productos reales. Si un concepto junta productos al 10,5 % y al 21 %, la factura muestra dos renglones con el mismo nombre, uno por alícuota.
+- **Los conceptos** se editan en *Configuración → El local → Productos asociados*. Arrancan con Repuestos pulverizadora, Fumigación y Veneno, a la espera de la lista de Lucas (pregunta 8). Cambiar o sacar uno no toca lo ya facturado.
+- **Arreglado de paso:** *Configuración* leía todos los valores como números, y la forma de calcular la percepción en una factura agrupada («sobre el total» o «venta por venta») llegaba como `NaN`. Si alguien guardaba ese bloque, quedaba «sobre el total» aunque se hubiera elegido «venta por venta». En la base estaba bien.
+- **La base** ([`20261030100000_los_productos_asociados.sql`](../supabase/migrations/20261030100000_los_productos_asociados.sql), aplicada): una columna en el renglón de la venta y la lista en la configuración. Las PC que todavía tengan la 0.19.6 siguen vendiendo igual, sin conceptos.
+- **Visto a 375 px** en un banco de prueba: la ventana de asociar entra sin desplazarse hacia el costado. **Sin probar en la app con sesión iniciada**: ni F11 en el mostrador ni una factura impresa con concepto. **778 verdes** y los tipos sin errores.
 
 ## Lo último que pasó — 29 de octubre: el remito interno y *Pendientes de facturar*
 

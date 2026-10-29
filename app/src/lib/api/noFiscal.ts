@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { agruparPorConcepto } from '@/lib/conceptos'
 import { datosEmisor } from '@/lib/api/comprobante'
 import { encolar } from '@/lib/local/sync'
 import { reservarNumeroNoFiscal } from '@/lib/local/consultas'
@@ -377,7 +378,19 @@ export interface LineaNoFiscal {
   cantidad: number
   precio_unitario: number
   importe: number
+  /** Productos asociados: el concepto bajo el que se imprime. */
+  concepto?: string | null
+  /** En un renglón de concepto, los productos que se llevó de verdad. */
+  asociados?: LineaNoFiscal[]
 }
+
+/*
+  El remito acompaña a la mercadería: muestra lo que se llevó, siempre.
+  El presupuesto y el comprobante interno, como la factura, muestran el
+  concepto de los productos asociados.
+*/
+const conConceptos = (tipo: string, lineas: LineaNoFiscal[]) =>
+  tipo === 'remito' ? lineas : agruparPorConcepto(lineas, { porAlicuota: false })
 
 /*
   El documento completo, para imprimirlo.
@@ -437,7 +450,7 @@ export async function obtenerNoFiscalCompleto(id: string): Promise<NoFiscalCompl
       ...local.doc,
       tipo_clave: local.doc.tipo_clave as TipoNoFiscal,
       tipo_descripcion: ETIQUETA_NO_FISCAL[local.doc.tipo_clave as TipoNoFiscal] ?? '',
-      lineas: local.lineas,
+      lineas: conConceptos(local.doc.tipo_clave, local.lineas),
       emisor: local.emisor,
     }
   }
@@ -470,7 +483,7 @@ export async function obtenerNoFiscalCompleto(id: string): Promise<NoFiscalCompl
   const [lineas, emisor] = await Promise.all([
     supabase
       .from('comprobante_no_fiscal_linea')
-      .select('orden, codigo_producto, descripcion, cantidad, precio_unitario, importe')
+      .select('orden, codigo_producto, descripcion, cantidad, precio_unitario, importe, venta_linea:venta_linea_id(concepto)')
       .eq('comprobante_no_fiscal_id', id)
       .order('orden'),
     datosEmisor(),
@@ -498,12 +511,20 @@ export async function obtenerNoFiscalCompleto(id: string): Promise<NoFiscalCompl
     transportista: d.transportista as string | null,
     venta_codigo: vta?.codigo ?? null,
     creado_en: d.creado_en as string,
-    lineas: ((lineas.data ?? []) as unknown as LineaNoFiscal[]).map((l) => ({
-      ...l,
-      cantidad: Number(l.cantidad),
-      precio_unitario: Number(l.precio_unitario),
-      importe: Number(l.importe),
-    })),
+    lineas: conConceptos(
+      d.tipo_clave as string,
+      (
+        (lineas.data ?? []) as unknown as (LineaNoFiscal & {
+          venta_linea: { concepto: string | null } | { concepto: string | null }[] | null
+        })[]
+      ).map(({ venta_linea, ...l }) => ({
+        ...l,
+        cantidad: Number(l.cantidad),
+        precio_unitario: Number(l.precio_unitario),
+        importe: Number(l.importe),
+        concepto: uno(venta_linea)?.concepto ?? null,
+      })),
+    ),
     emisor,
   }
 }

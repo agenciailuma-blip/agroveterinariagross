@@ -105,6 +105,7 @@ export async function emitirNoFiscalLocal(datos: EmisionLocal): Promise<NoFiscal
     cantidad: Number(l.cantidad),
     precio_unitario: Number(l.precio_unitario),
     importe: Math.round(Number(l.cantidad) * Number(l.precio_unitario) * 100) / 100,
+    concepto: l.concepto ?? null,
   }))
 
   // Se cifra antes: esperar el cifrado adentro cerraría la transacción.

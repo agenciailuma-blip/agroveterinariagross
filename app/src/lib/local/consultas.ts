@@ -21,6 +21,12 @@ export async function valorConfig(clave: string, defecto: number) {
   return typeof v === 'number' ? v : Number(v ?? defecto) || defecto
 }
 
+/** Un valor de la configuración que es una lista de textos. */
+export async function listaConfig(clave: string, defecto: string[]): Promise<string[]> {
+  const v = (await db.configuracion.get(clave))?.valor
+  return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string' && x.trim() !== '') : defecto
+}
+
 /*
   Resuelve el estado de stock igual que la vista del servidor: gana el
   umbral del producto, después el de la categoría, después el general.
