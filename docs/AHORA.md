@@ -12,7 +12,7 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Construida: 0.19.9 — falta publicarla.** **Fiados**: un medio de pago nuevo en la caja que pide el DNI, y una sección propia en el menú con la cuenta de cada persona, sus fechas de pago, los cobros con recibo y el aviso por WhatsApp. **La base ya está aplicada.** Ver *Lo último que pasó*. **788 pruebas verdes en la app.**
+**Publicada: 0.19.9** (29/10, 18:38), verificada en Cloudflare: `latest.json` dice 0.19.9, el instalador está publicado y la versión web ya trae Fiados. **Fiados**: un medio de pago nuevo en la caja que pide el DNI, y una sección propia en el menú con la cuenta de cada persona, sus fechas de pago, los cobros con recibo y el aviso por WhatsApp. **La base ya está aplicada.** Ver *Lo último que pasó*. **788 pruebas verdes en la app.**
 
 **Publicada: 0.19.8** (29/10, 18:07), verificada en Cloudflare: `latest.json` dice 0.19.8, el instalador está publicado y la versión web ya trae el botón. **El comprobante interno se factura con un botón**: en *Comprobantes no fiscales*, *Facturar* saca la factura de esa venta con fecha de hoy, sin rehacerla y sin tocar stock ni caja. **La base ya está aplicada.** Ver *Lo último que pasó*. **778 pruebas verdes en la app.**
 
@@ -111,7 +111,7 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 
 ## Lo último que pasó — 29 de octubre: los fiados
 
-**Fase-03, punto 7.** Construida en la 0.19.9, falta publicarla.
+**Fase-03, punto 7.** Publicada en la 0.19.9.
 
 - **En la caja**, un medio de pago nuevo: **Fiado**. Pide **DNI**, nombre, domicilio, teléfono y **la fecha en que paga** (a 30 días si no se toca; botones de 7, 15 y 30). Sin DNI y nombre no se cobra. Puede ir junto con otro medio: parte en efectivo y el resto fiado. Anda **sin conexión**: los datos viajan con el pago, como los del cheque, y el fiado se arma en la base al subir la venta.
 - **El aviso:** al escribir un DNI que ya tuvo un fiado aparece «Ojo: este DNI ya tiene una carga anterior», con lo que debe y lo vencido, o con lo que debió si ya pagó; y la ficha se completa sola. En el **mostrador**, al marcar *Fiado* en «¿Cómo va a pagar?», aparece un campo para consultar el DNI antes de mandar a caja. El aviso necesita conexión.
@@ -207,6 +207,16 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 - **Se juzga con el día de la venta:** un cobro hecho sin conexión que sube a la mañana siguiente no se rechaza por algo que venció esa noche.
 - **La base** ([`20261029180000_frenar_el_vencido_en_la_caja.sql`](../supabase/migrations/20261029180000_frenar_el_vencido_en_la_caja.sql), aplicada): el freno vive en `cobrar_venta()`, la puerta de toda venta a cuenta corriente; la venta anota quién autorizó y cuándo. El pedido mayorista autorizado le pasa a su venta quién lo autorizó. **Probada como usuario**, con todo deshecho al final: sin autorizar frena; con el de un vendedor frena; con el de un encargado cobra y lo anota; en efectivo cobra; una venta de hace 20 días no frena por lo que venció después; el PIN equivocado cuenta el intento; el mayorista autorizado sigue facturando.
 - **Visto a 375 px** el recuadro en sus tres estados (aviso, PIN, autorizado), con un PIN rechazado: nada se desplaza hacia el costado. **766 verdes** y los tipos sin errores.
+
+## Lo último que pasó — 29 de octubre: *Traer de ARCA* decía que el CUIT no existe
+
+**Visto por Lucas al cargar un cliente:** con un CUIT real y bien escrito, *Traer de ARCA* contestaba *«ARCA no tiene ningún contribuyente con ese CUIT»*.
+
+- **La causa no es un error:** el sistema sigue conectado al **ARCA de pruebas** (`arca.ambiente = homologacion`), que sólo conoce CUIT inventados. Se destraba con el **certificado de producción**, el mismo que falta para facturar de verdad.
+- **El mensaje ya no confunde:** en pruebas, cuando ARCA no encuentra el CUIT, la función contesta *«El sistema está conectado al ARCA de pruebas, que no tiene los CUIT reales. Cargá los datos a mano.»*, con su propio motivo (`arca_de_pruebas`). Así *Verificar con ARCA* corta ahí, en lugar de marcar a cada cliente como inexistente. Con ARCA real el mensaje es el de siempre.
+- **Es del servidor:** `arca-constancia` v5, publicada el 29/10. Llega a todas las PC sin actualizar nada. Los tipos de la app suman el motivo nuevo y siguen sin errores.
+
+> **Cómo se lo contás a Lucas:** *Traer de ARCA* todavía no encuentra CUIT reales porque el sistema está conectado al ARCA de pruebas. Se habilita junto con la facturación real, con el certificado de producción. Hasta entonces, los datos del cliente se cargan a mano, y ahora el sistema lo dice así.
 
 ## Lo último que pasó — 29 de octubre: Productos bajaba hasta una zona vacía
 
