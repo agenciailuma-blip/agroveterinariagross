@@ -12,7 +12,7 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Construida: 0.19.6** (29/10) — **falta publicarla**. **El remito interno y *Pendientes de facturar***: la mercadería sale del mostrador con un remito sin precio, descuenta stock, y después se le ponen los precios y sale la factura o el comprobante interno a cuenta corriente, de uno o de varios remitos juntos. **La base ya está aplicada.** Ver *Lo último que pasó*. **774 pruebas verdes en la app.**
+**Publicada: 0.19.6** (29/10, 17:10), verificada en Cloudflare: `latest.json` dice 0.19.6, el instalador está publicado y la versión web ya trae el remito interno. Antes se volvió a subir la 0.19.5 con el número viejo: las PC no la tomaron porque el número no cambió, y la 0.19.6 la reemplazó. **El remito interno y *Pendientes de facturar***: la mercadería sale del mostrador con un remito sin precio, descuenta stock, y después se le ponen los precios y sale la factura o el comprobante interno a cuenta corriente, de uno o de varios remitos juntos. **La base ya está aplicada.** Ver *Lo último que pasó*. **774 pruebas verdes en la app.**
 
 **Publicada: 0.19.5** (29/10, 16:31), verificada en Cloudflare: `latest.json` dice 0.19.5, el instalador está publicado y la versión web ya trae la foto del remito firmado. **La foto del remito firmado**: se sube desde Remitos, con el celular o la PC, y queda a la vista en el remito y en la cuenta corriente del cliente, con quién firmó y cuándo. Con esto queda completo el punto 1 de la fase-03. Ver *Lo último que pasó*. **772 pruebas verdes en la app.**
 
@@ -105,7 +105,7 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 
 ## Lo último que pasó — 29 de octubre: el remito interno y *Pendientes de facturar*
 
-**Fase-03, punto 2.** Va en la 0.19.6.
+**Fase-03, punto 2.** Publicada en la 0.19.6.
 
 - **En el Mostrador**, con un cliente de cuenta corriente, debajo de *Hacer un presupuesto* aparece **Remito interno · precio después**. Pide confirmar, sale el remito para imprimir y firmar, descuenta stock y la venta no pasa por la caja. Lleva sólo productos del catálogo: con una línea escrita a mano el botón queda apagado, porque después no habría a qué ponerle precio.
 - **Con deuda vencida**, el botón pide el PIN de un encargado, igual que la caja, y queda anotado quién lo dejó pasar. Sin conexión el remito sale igual y sube cuando vuelve internet; con conexión, si la base lo rechaza, el rechazo se ve en el mostrador y no se imprime nada.
