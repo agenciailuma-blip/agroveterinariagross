@@ -12,7 +12,7 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Construida: 0.19.7** (29/10) — **falta publicarla**. **Los productos asociados**: en el mostrador, F11 junta renglones bajo un concepto —«Repuestos pulverizadora»— y la factura los muestra en uno solo, por el total; el stock, la caja y el IVA siguen con los productos reales. **La base ya está aplicada.** Ver *Lo último que pasó*. **778 pruebas verdes en la app.**
+**Publicada: 0.19.7** (29/10, 17:40), verificada en Cloudflare: `latest.json` dice 0.19.7, el instalador está publicado y la versión web ya trae los productos asociados. **Los productos asociados**: en el mostrador, F11 junta renglones bajo un concepto —«Repuestos pulverizadora»— y la factura los muestra en uno solo, por el total; el stock, la caja y el IVA siguen con los productos reales. **La base ya está aplicada.** Ver *Lo último que pasó*. **778 pruebas verdes en la app.**
 
 **Publicada: 0.19.6** (29/10, 17:10), verificada en Cloudflare: `latest.json` dice 0.19.6, el instalador está publicado y la versión web ya trae el remito interno. Antes se volvió a subir la 0.19.5 con el número viejo: las PC no la tomaron porque el número no cambió, y la 0.19.6 la reemplazó. **El remito interno y *Pendientes de facturar***: la mercadería sale del mostrador con un remito sin precio, descuenta stock, y después se le ponen los precios y sale la factura o el comprobante interno a cuenta corriente, de uno o de varios remitos juntos. **La base ya está aplicada.** Ver *Lo último que pasó*. **774 pruebas verdes en la app.**
 
@@ -107,7 +107,7 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 
 ## Lo último que pasó — 29 de octubre: los productos asociados
 
-**Fase-03, punto 3.** Va en la 0.19.7.
+**Fase-03, punto 3.** Publicada en la 0.19.7.
 
 - **En el Mostrador, F11** —o *Asociar productos a un concepto*, debajo de los botones— abre una ventana con los renglones de la venta: vienen marcados los que todavía no tienen concepto, se elige el concepto y listo. Cada renglón dice «Se factura como …», y arriba del total aparece cuánto va bajo cada concepto. Se puede cambiar o sacar antes de mandar a caja.
 - **La caja** ve el concepto en cada renglón.
