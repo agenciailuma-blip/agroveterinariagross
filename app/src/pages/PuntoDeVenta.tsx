@@ -12,14 +12,16 @@ import {
 } from '@/lib/api/ventas'
 import type { ClienteVenta, LineaVenta, ProductoVenta } from '@/lib/api/ventas'
 import { clienteDesdeArca } from '@/lib/api/clientes'
-import { deudaVencida } from '@/lib/api/caja'
+import { autorizarVencidoEnCaja, deudaVencida } from '@/lib/api/caja'
 import { cuitValido } from '@/lib/api/cheques'
 import { cargarPrecios, mediosParaElegir, previsualizarPrecio } from '@/lib/api/precios'
 import type { MedioPago } from '@/lib/api/precios'
 import { useSync } from '@/lib/local/SyncProvider'
 import { subirPendientes } from '@/lib/local/sync'
 import { valorConfig } from '@/lib/local/consultas'
-import { emitirPresupuesto } from '@/lib/api/noFiscal'
+import { emitirPresupuesto, emitirRemitoDirecto, numeroNoFiscal } from '@/lib/api/noFiscal'
+import { useAuth } from '@/auth/AuthProvider'
+import AvisoVencido from '@/components/AvisoVencido'
 import { abrirNoFiscal } from '@/lib/escritorio'
 import { moneda, numero } from '@/lib/tipos'
 import { confirmar, pedirNumero, pedirTexto } from '@/components/Dialogo'
@@ -35,6 +37,7 @@ export default function PuntoDeVenta() {
   const { terminal, disponibles, cargando: cargandoTerminal, elegir } = useTerminal()
   const { operador, identificar, salir, renovar } = useOperador()
   const { listo: copiaLocalLista, enLinea, sincronizando } = useSync()
+  const { tienePermiso } = useAuth()
 
   const [lineas, setLineas] = useState<LineaVenta[]>(() => {
     try {
@@ -54,6 +57,17 @@ export default function PuntoDeVenta() {
     queryFn: () => deudaVencida(cliente!.id),
     enabled: !!cliente?.cuenta_corriente,
   })
+  /*
+    El remito interno (fase-03, punto 2): la mercadería sale ahora y el
+    precio se pone después, en Pendientes de facturar. Con deuda vencida
+    lo autoriza un encargado con su PIN, igual que en la caja.
+  */
+  const [quiereRemito, setQuiereRemito] = useState(false)
+  const [autorizoRemito, setAutorizoRemito] = useState<{ usuario_id: string; nombre: string } | null>(null)
+  useEffect(() => {
+    setQuiereRemito(false)
+    setAutorizoRemito(null)
+  }, [cliente?.id])
   const [buscandoCliente, setBuscandoCliente] = useState(false)
   const [textoCliente, setTextoCliente] = useState('')
   const [consultandoArca, setConsultandoArca] = useState(false)
@@ -438,6 +452,40 @@ export default function PuntoDeVenta() {
       setPasoEnvio(null)
       setError(e instanceof Error ? e.message : 'No se pudo armar el presupuesto.')
     },
+  })
+
+  const remitoInterno = useMutation({
+    mutationFn: () =>
+      emitirRemitoDirecto(
+        cliente!.id,
+        lineas.map((l) => ({
+          producto_id: l.producto_id,
+          codigo: l.codigo_producto,
+          descripcion: l.descripcion,
+          cantidad: l.cantidad,
+          precio_unitario: l.precio_unitario,
+        })),
+        {
+          facturarDespues: true,
+          vencidoAutorizadoPor: autorizoRemito?.usuario_id ?? null,
+          terminalId: terminal!.id,
+          serie: terminal!.prefijo ?? null,
+        },
+      ),
+    onSuccess: ({ id, serie, numero }) => {
+      setLineas([])
+      setMedioAnticipado(null)
+      setCuotasAnticipadas(1)
+      setQuiereRemito(false)
+      setAutorizoRemito(null)
+      setError(null)
+      setExito(`${numeroNoFiscal('remito', serie, numero)} listo. Queda en Pendientes de facturar.`)
+      setTimeout(() => setExito(null), 4000)
+      abrirNoFiscal(id)
+      // Como al enviar a caja: el remito queda a nombre de quien lo hizo.
+      salir()
+    },
+    onError: (e) => setError(e instanceof Error ? e.message : 'No se pudo hacer el remito.'),
   })
 
   const enviar = useMutation({
@@ -1063,6 +1111,51 @@ Se muestra en la cola del cajero. Si no hace falta, dejalo vacío.`,
           <p className="text-xs text-piedra-500">
             Sin conexión el presupuesto se imprime igual y viaja cuando vuelva internet.
           </p>
+        )}
+
+        {/*
+          El remito interno, para el cliente de cuenta corriente que se
+          lleva la mercadería y el precio se arregla después.
+        */}
+        {cliente?.cuenta_corriente && lineas.length > 0 && tienePermiso('facturacion.no_fiscal_emitir') && (
+          <div>
+            <button
+              onClick={async () => {
+                if ((vencido.data?.monto ?? 0) > 0 && !autorizoRemito) {
+                  setQuiereRemito(true)
+                  return
+                }
+                const sigue = await confirmar({
+                  titulo: `¿Remito interno a ${cliente.nombre}?`,
+                  detalle: `${numero.format(totales.unidades)} ${totales.unidades === 1 ? 'unidad' : 'unidades'}. Sale sin precio y descuenta stock. Se factura después desde Pendientes de facturar.`,
+                  aceptar: 'Hacer el remito',
+                })
+                if (sigue) remitoInterno.mutate()
+              }}
+              disabled={
+                lineas.some((l) => !l.producto_id) ||
+                enviar.isPending ||
+                presupuestar.isPending ||
+                remitoInterno.isPending
+              }
+              className="w-full rounded-xl border border-borde px-4 py-2.5 text-sm font-medium text-tinta hover:bg-piedra-50 disabled:opacity-40"
+            >
+              {remitoInterno.isPending ? 'Haciendo el remito…' : 'Remito interno · precio después'}
+            </button>
+            {lineas.some((l) => !l.producto_id) && (
+              <p className="mt-1 text-xs text-piedra-500">
+                Lleva sólo productos del catálogo: sacá las líneas escritas a mano.
+              </p>
+            )}
+            {(quiereRemito || autorizoRemito) && vencido.data && vencido.data.monto > 0 && (
+              <AvisoVencido
+                vencido={vencido.data}
+                aCuentaCorriente
+                autorizo={autorizoRemito}
+                onAutorizar={async (pin) => setAutorizoRemito(await autorizarVencidoEnCaja(pin, terminal.id))}
+              />
+            )}
+          </div>
         )}
 
         {lineas.length > 0 && (

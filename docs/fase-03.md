@@ -72,6 +72,13 @@ El cliente de siempre: la persona que lleva el alimento del perro, la oficina. S
 
 **Cómo los separo**, preguntó Lucas: con una marca en la ficha del cliente, **«Precio a convenir»**. Cuando el vendedor elige ese cliente, el mostrador le ofrece el remito interno en lugar de mandar a la caja. Lo puede hacer igual con cualquier cliente.
 
+### Lo que ya está — 29/10
+
+- **En el Mostrador**, con un cliente de cuenta corriente: **Remito interno · precio después**. Descuenta stock, se imprime para firmar y no pasa por la caja. Sólo productos del catálogo. Con deuda vencida, PIN de un encargado.
+- **En Facturación, *Pendientes de facturar***: se eligen uno o varios remitos del cliente, se ponen los precios en una grilla —el de lista viene escrito— y sale la **factura o el comprobante interno** a cuenta corriente. No vuelve a descontar stock y cada remito queda asociado a su venta. La factura sale sola por mail.
+- **En la cuenta corriente del cliente**, los remitos todavía sin precio, arriba de los movimientos.
+- **Falta la marca «Precio a convenir»** en la ficha: por ahora el botón se ofrece a todo cliente de cuenta corriente.
+
 ---
 
 ## 3. Productos asociados a una factura

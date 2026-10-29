@@ -241,9 +241,18 @@ export async function emitirRemitoDirecto(
     serie?: string | null
     observaciones?: string | null
     entrega?: DatosEntrega
+    /*
+      Remito interno (fase-03, punto 2): sale sin precio y se factura
+      después desde Pendientes de facturar. Siempre descuenta stock.
+    */
+    facturarDespues?: boolean
+    /** Quién dejó pasar a un cliente con deuda vencida (respuesta 7 de Lucas). */
+    vencidoAutorizadoPor?: string | null
   } = {},
 ): Promise<{ id: string; serie: string; numero: number }> {
   if (!lineas.length) throw new Error('El remito no tiene ninguna línea.')
+  const facturarDespues = opciones.facturarDespues ?? false
+  const descuentaStock = facturarDespues || (opciones.descuentaStock ?? true)
 
   const serie = (opciones.serie ?? '').trim() || 'T'
   const id = crypto.randomUUID()
@@ -258,7 +267,7 @@ export async function emitirRemitoDirecto(
       cantidad: l.cantidad,
       precio_unitario: l.precio_unitario,
     })),
-    p_descuenta_stock: opciones.descuentaStock ?? true,
+    p_descuenta_stock: descuentaStock,
     p_terminal_id: opciones.terminalId ?? null,
     p_observaciones: opciones.observaciones ?? null,
     p_entrega_domicilio: opciones.entrega?.domicilio ?? null,
@@ -269,6 +278,23 @@ export async function emitirRemitoDirecto(
     p_serie: serie,
     p_numero: numero,
     p_ocurrido_en: new Date().toISOString(),
+    ...(facturarDespues
+      ? { p_facturar_despues: true, p_vencido_autorizado_por: opciones.vencidoAutorizadoPor ?? null }
+      : {}),
+  }
+
+  /*
+    El remito interno lo puede rechazar la base —sin cuenta corriente,
+    con deuda vencida sin autorizar—. Con conexión se le pregunta antes
+    de guardarlo acá: el rechazo se ve en el mostrador y no queda un
+    papel impreso que la base no va a aceptar. Sin conexión, el mostrador
+    ya hizo las mismas preguntas con su copia.
+  */
+  let yaSubido = false
+  if (facturarDespues && navigator.onLine) {
+    const { error } = await supabase.rpc('emitir_remito_directo', datos)
+    if (error?.code === 'P0001') throw new Error(error.message)
+    yaSubido = !error
   }
 
   // Igual que el otro camino: se guarda acá primero, siempre. Es lo que
@@ -280,12 +306,13 @@ export async function emitirRemitoDirecto(
     numero,
     clienteId,
     lineas,
-    descuentaStock: opciones.descuentaStock ?? true,
+    descuentaStock,
     observaciones: opciones.observaciones ?? null,
     entrega: opciones.entrega,
   })
+  if (yaSubido) return { id, serie, numero }
 
-  if (navigator.onLine) {
+  if (navigator.onLine && !facturarDespues) {
     const { error } = await supabase.rpc('emitir_remito_directo', datos)
     if (!error) return { id, serie, numero }
   }

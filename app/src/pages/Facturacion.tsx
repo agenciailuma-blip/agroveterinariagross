@@ -19,6 +19,7 @@ import PanelContingencia from '@/components/PanelContingencia'
 import EmitidasEnElCorte from '@/components/EmitidasEnElCorte'
 import DevolucionParcial from '@/components/DevolucionParcial'
 import PorFacturar from '@/components/PorFacturar'
+import PendientesDeFacturar from '@/components/PendientesDeFacturar'
 import { emitirConCaea, estadoContingencia } from '@/lib/api/contingencia'
 import { moneda } from '@/lib/tipos'
 
@@ -296,6 +297,16 @@ export default function Facturacion() {
       )}
 
       <PorFacturar puedeEmitir={puedeEmitir} onAviso={avisar} onError={setError} />
+
+      <PendientesDeFacturar
+        puedeFactura={puedeEmitir}
+        puedeInterno={tienePermiso('facturacion.vender_sin_factura')}
+        onAviso={avisar}
+        onError={(texto) => {
+          setError(texto)
+          refrescar()
+        }}
+      />
 
       {agrupada && (
         <VentasDeLaFactura

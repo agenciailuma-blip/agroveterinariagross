@@ -7,7 +7,10 @@ import { cajaAbierta } from '@/lib/api/caja'
 import { numeroRecibo, type ReciboEmitido } from '@/lib/api/recibos'
 import ModalCobranza from '@/components/ModalCobranza'
 import RemitoFirmado from '@/components/RemitoFirmado'
-import { firmasDeVentas } from '@/lib/api/remitoFirmado'
+import { firmasDeRemitos, firmasDeVentas } from '@/lib/api/remitoFirmado'
+import { remitosPorFacturar } from '@/lib/api/remitoInterno'
+import { abrirNoFiscal } from '@/lib/escritorio'
+import { useAuth } from '@/auth/AuthProvider'
 import { numeroNoFiscal } from '@/lib/api/noFiscal'
 import { useTerminal } from '@/lib/terminal'
 import { moneda } from '@/lib/tipos'
@@ -43,6 +46,23 @@ export default function CuentaCorriente({
     queryKey: ['remitos-firmados', 'ventas', ventas],
     queryFn: () => firmasDeVentas(ventas),
     enabled: ventas.length > 0,
+  })
+
+  /*
+    Los remitos internos que todavía no tienen precio: la mercadería ya
+    se la llevó, la deuda todavía no existe.
+  */
+  const { tienePermiso } = useAuth()
+  const sinPrecio = useQuery({
+    queryKey: ['remitos-por-facturar', cliente.id],
+    queryFn: () => remitosPorFacturar(cliente.id),
+    enabled: cliente.cuenta_corriente,
+  })
+  const idsSinPrecio = (sinPrecio.data ?? []).map((r) => r.id)
+  const firmasSinPrecio = useQuery({
+    queryKey: ['remitos-firmados', 'remitos', idsSinPrecio],
+    queryFn: () => firmasDeRemitos(idsSinPrecio),
+    enabled: idsSinPrecio.length > 0,
   })
 
   const caja = useQuery({
@@ -134,6 +154,40 @@ export default function CuentaCorriente({
         >
           Registrar cobranza
         </button>
+      )}
+
+      {!!sinPrecio.data?.length && (
+        <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-amber-200">
+          <div className="border-b border-amber-200 bg-amber-50 px-5 py-2.5">
+            <p className="text-xs font-medium tracking-wide text-amber-800 uppercase">Pendientes de facturar</p>
+            <p className="text-xs text-amber-700">Se llevó la mercadería; el importe entra cuando se factura.</p>
+          </div>
+          <ul className="divide-y divide-piedra-100 text-sm">
+            {sinPrecio.data.map((r) => (
+              <li key={r.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-5 py-2.5">
+                <button
+                  onClick={() => abrirNoFiscal(r.id)}
+                  className="font-mono text-xs text-marca-700 underline"
+                >
+                  {numeroNoFiscal('remito', r.serie, r.numero)}
+                </button>
+                <span className="text-xs text-piedra-500 tabular-nums">
+                  {fecha.format(new Date(`${r.fecha}T12:00:00`))}
+                </span>
+                <span className="text-xs text-piedra-500">{r.unidades} u. · sin precio</span>
+                <span className="ml-auto">
+                  <RemitoFirmado
+                    remitoId={r.id}
+                    fechaRemito={r.fecha}
+                    firma={firmasSinPrecio.data?.get(r.id) ?? null}
+                    puedeSubir={tienePermiso('facturacion.no_fiscal_emitir')}
+                    onCambio={() => qc.invalidateQueries({ queryKey: ['remitos-firmados'] })}
+                  />
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
 
       <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-borde">

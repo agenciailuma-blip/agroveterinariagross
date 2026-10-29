@@ -12,6 +12,8 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
+**Construida: 0.19.6** (29/10) — **falta publicarla**. **El remito interno y *Pendientes de facturar***: la mercadería sale del mostrador con un remito sin precio, descuenta stock, y después se le ponen los precios y sale la factura o el comprobante interno a cuenta corriente, de uno o de varios remitos juntos. **La base ya está aplicada.** Ver *Lo último que pasó*. **774 pruebas verdes en la app.**
+
 **Publicada: 0.19.5** (29/10, 16:31), verificada en Cloudflare: `latest.json` dice 0.19.5, el instalador está publicado y la versión web ya trae la foto del remito firmado. **La foto del remito firmado**: se sube desde Remitos, con el celular o la PC, y queda a la vista en el remito y en la cuenta corriente del cliente, con quién firmó y cuándo. Con esto queda completo el punto 1 de la fase-03. Ver *Lo último que pasó*. **772 pruebas verdes en la app.**
 
 **Publicada: 0.19.4** (29/10, 15:55), verificada en Cloudflare: `latest.json` dice 0.19.4, el instalador está publicado y la versión web ya trae el envío solo. **La factura a cuenta corriente sale sola por mail**, si el cliente tiene mail: desde la caja, desde Facturación y desde *Por facturar*. Ver *Lo último que pasó*. **770 pruebas verdes en la app.**
@@ -100,6 +102,20 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 🟡 **Lo que la venta tardaba en llegar a la caja sin internet** — arreglado el 05/10 y publicado en la 0.13.4, **sin probar en el local**. El mostrador le pasaba las ventas a la caja una vez por minuto, y la caja miraba su cola cada ocho segundos: hasta 68 segundos con el cliente esperando. Y llegaba de a partes porque, mientras la cabecera intentaba subir al servidor —hasta doce segundos sin internet—, salían los renglones solos. Ahora la venta sale al segundo y medio de apretar *Enviar a caja* (y otra vez a los catorce, por si el intento de subir tardó), viaja entera o espera entera, y la caja la muestra apenas llega. Se comprueba en el próximo corte: la venta tiene que aparecer en la caja en un par de segundos y completa.
 
 ---
+
+## Lo último que pasó — 29 de octubre: el remito interno y *Pendientes de facturar*
+
+**Fase-03, punto 2.** Va en la 0.19.6.
+
+- **En el Mostrador**, con un cliente de cuenta corriente, debajo de *Hacer un presupuesto* aparece **Remito interno · precio después**. Pide confirmar, sale el remito para imprimir y firmar, descuenta stock y la venta no pasa por la caja. Lleva sólo productos del catálogo: con una línea escrita a mano el botón queda apagado, porque después no habría a qué ponerle precio.
+- **Con deuda vencida**, el botón pide el PIN de un encargado, igual que la caja, y queda anotado quién lo dejó pasar. Sin conexión el remito sale igual y sube cuando vuelve internet; con conexión, si la base lo rechaza, el rechazo se ve en el mostrador y no se imprime nada.
+- **En Facturación, *Pendientes de facturar***: los remitos internos por cliente, con la fecha y hace cuántos días salieron. Vienen marcados todos los del cliente; se desmarca lo que no va. ***Poner precios*** abre la grilla: cada producto una vez —si vino en dos remitos, se suman las cantidades—, con el precio de lista del remito más nuevo ya escrito para cambiarlo. Se elige **Factura** o **Comprobante interno** y se aprieta *Facturar*.
+- **Al facturar** sale un solo comprobante a cuenta corriente con su vencimiento, **no se vuelve a descontar stock** y cada remito queda asociado a su venta: deja de estar pendiente. Si es factura, le sale sola por mail al cliente, como en el punto 1. Si el precio que se escribió no es el de lista, la línea queda con el motivo «Precio a convenir» y quién lo puso.
+- **En la cuenta corriente del cliente**, arriba de los movimientos, un bloque ***Pendientes de facturar*** con cada remito, su fecha y las unidades, «sin precio». Desde ahí se abre el remito y se sube la foto firmada.
+- **El límite de crédito sigue mandando:** al facturar se controla como en la caja. Un cliente con límite **$0** no se puede facturar; sin límite cargado, sí.
+- **La base** ([`20261029230000_el_remito_interno.sql`](../supabase/migrations/20261029230000_el_remito_interno.sql), aplicada). **Probada como usuario**, con todo deshecho al final: cliente sin cuenta corriente o línea escrita a mano → no sale; dos remitos → stock descontado una vez; falta un precio → no factura; facturar → total, líneas, cuenta corriente a 30 días, remitos asociados, stock sin tocar; facturar dos veces → no; deuda vencida sin autorizar o autorizada por un vendedor → no; por un encargado → sí; con factura → arma el comprobante para pedir el CAE.
+- **Lo que no se hizo:** la marca «Precio a convenir» en la ficha del cliente. El botón se ofrece a todo cliente de cuenta corriente; agregar la marca obligaba a que cada PC volviera a bajar los clientes enteros.
+- **Visto a 375 px** en un banco de prueba con nombres largos: la lista y la grilla de precios entran sin desplazarse hacia el costado. **Sin probar en la app con sesión iniciada**: ni el botón del mostrador ni facturar de verdad. **774 verdes** y los tipos sin errores.
 
 ## Lo último que pasó — 29 de octubre: la foto del remito firmado
 
