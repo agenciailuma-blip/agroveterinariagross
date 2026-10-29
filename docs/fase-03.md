@@ -235,6 +235,8 @@ Lucas lo dijo claro: si el vendedor puede bajar deuda, el día que es amigo del 
 - **Estadísticas**: comprobantes vencidos, porcentaje cobrado, último pedido, ventas totales, cantidades, más vendidos — **por cliente, ciudad, ruta y zona**. Lucas: «estadística de todo, no te preocupes ahora, lo vamos viendo». En esta fase va un tablero con esos cortes; los cruces más finos van después.
 - **Calendario de visitas**: va en las fases futuras, junto con lo de CRM.
 
+**Ya está (29/10), el tablero:** la pestaña **Estadísticas** en Mayorista. Por período —este mes, el pasado, tres meses, el año u otras fechas— y por **cliente, ciudad, ruta o zona**: lo vendido y las unidades, los pedidos y el último, la deuda y lo vencido de hoy, y **cuánto de lo cargado a cuenta ya se cobró**. Tocar una fila muestra lo más vendido de esa fila. La ven administrador, encargado y quien ve los reportes; el vendedor de calle no.
+
 ### 5.6 Mensajes masivos por WhatsApp → fases futuras
 
 **Va con el CRM** (una fase futura, *Campañas y comunicaciones* en el alcance). Mandar a muchos por WhatsApp de verdad necesita la API oficial, que **cobra por mensaje y pide aprobar cada plantilla**; hacerlo «a mano» desde un número común termina con el número bloqueado. Para esta fase alcanza con el aviso manual del fiado (punto 7), que sirve igual para un mayorista: un botón que abre WhatsApp con el mensaje escrito.

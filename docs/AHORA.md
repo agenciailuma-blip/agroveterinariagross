@@ -12,6 +12,8 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
+**Construida: 0.19.12 — falta publicarla.** **Las estadísticas del mayorista**: una pestaña nueva en Mayorista con lo vendido, los pedidos, la deuda, lo cobrado y lo más vendido, por cliente, ciudad, ruta o zona. **La base ya está aplicada.** Ver *Lo último que pasó*. **809 pruebas verdes en la app.**
+
 **Publicada: 0.19.11** (29/10, 19:16), verificada en Cloudflare: `latest.json` dice 0.19.11, el instalador está publicado y la versión web ya trae la marca. **La proforma del mayorista, a la vista**: el botón se llama *Proforma* y la ficha del cliente tiene la marca *Pide proforma*, que la pone primero en sus pedidos. **La base ya está aplicada.** Ver *Lo último que pasó*. **799 pruebas verdes en la app.**
 
 **Publicada: 0.19.10** (29/10, 18:59), verificada en Cloudflare: `latest.json` dice 0.19.10, el instalador está publicado y la versión web ya trae Traslados. **Traslados**: las órdenes para ir a buscar o llevar un animal, en una pestaña nueva de Ventas, con sus estados, el mapa, el cobro por la caja, la hoja del día para el que maneja y las estadísticas de kilómetros, costo y tiempo. **La base ya está aplicada.** Ver *Lo último que pasó*. **799 pruebas verdes en la app.**
@@ -112,6 +114,18 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 🟡 **Lo que la venta tardaba en llegar a la caja sin internet** — arreglado el 05/10 y publicado en la 0.13.4, **sin probar en el local**. El mostrador le pasaba las ventas a la caja una vez por minuto, y la caja miraba su cola cada ocho segundos: hasta 68 segundos con el cliente esperando. Y llegaba de a partes porque, mientras la cabecera intentaba subir al servidor —hasta doce segundos sin internet—, salían los renglones solos. Ahora la venta sale al segundo y medio de apretar *Enviar a caja* (y otra vez a los catorce, por si el intento de subir tardó), viaja entera o espera entera, y la caja la muestra apenas llega. Se comprueba en el próximo corte: la venta tiene que aparecer en la caja en un par de segundos y completa.
 
 ---
+
+## Lo último que pasó — 29 de octubre: las estadísticas del mayorista
+
+**Fase-03, punto 5.5.** Construida en la 0.19.12, falta publicarla.
+
+- **La pestaña *Estadísticas*** en Mayorista. Arriba, todo junto: lo vendido, los pedidos, la deuda de hoy con lo vencido y el porcentaje cobrado. Abajo, una fila por **cliente, ciudad, ruta o zona** —se elige—, de la que más vende a la que menos, con sus pedidos, el último, las unidades, la deuda, lo vencido y lo cobrado. Las rutas escritas distinto («Ruta 14», «ruta 14») se juntan; lo que no tiene ruta va al final.
+- **Lo más vendido**, de todos o de la fila que se toque.
+- **El período**: este mes, el pasado, los últimos tres meses, el año u otras fechas. La deuda y lo vencido son siempre de hoy.
+- **Qué cuenta cada número.** *Vendido*: las ventas cobradas del período de los clientes mayoristas —por pedido o en el mostrador, a cuenta o al contado—, menos las devoluciones. *Cobrado*: de lo que se les cargó a la cuenta en el período, qué parte ya pagaron; los pagos van a lo más viejo, como en la cuenta corriente.
+- **Quién la ve:** administrador, encargado y quien ve los reportes. El vendedor de calle no: muestra la deuda de todos los clientes.
+- **La base** ([`20261030150000_estadisticas_mayorista.sql`](../supabase/migrations/20261030150000_estadisticas_mayorista.sql), aplicada). **Probada como usuario** con movimientos y una venta inventados sobre el cliente mayorista que hay, con todo deshecho al final: de $50.000 cargados en octubre quedan $30.000 —40 % cobrado—, la venta y el producto con sus unidades, y un período al revés → no.
+- **Vista en la app con sesión iniciada**, a 375 px y en la PC: con los datos reales —un solo mayorista, sin ventas todavía— y con cuatro clientes simulados en el navegador, sin guardar nada. Sin desplazarse hacia el costado. **809 verdes** y los tipos sin errores.
 
 ## Lo último que pasó — 29 de octubre: la proforma del mayorista
 

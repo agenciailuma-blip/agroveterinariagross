@@ -92,6 +92,8 @@ export const SECCIONES: Seccion[] = [
       // Las órdenes de recibo: el vendedor las arma, el local las acepta.
       { a: '/mayorista/cobros', etiqueta: 'Cobros', permiso: ['mayorista.cobrar', 'mayorista.atender'], contador: 'cobros' },
       { a: '/mayorista/lista', etiqueta: 'Lista de precios', permiso: 'productos.editar_precio' },
+      // Fase 03, punto 5.5: por cliente, ciudad, ruta y zona.
+      { a: '/mayorista/estadisticas', etiqueta: 'Estadísticas', permiso: ['mayorista.atender', 'reportes.ver'] },
     ],
   },
   {

@@ -104,7 +104,12 @@ describe('las pestañas que se ven', () => {
       'Pedidos',
       'Clientes',
       'Cobros',
+      'Estadísticas',
     ])
+    // Las estadísticas muestran la deuda de todos: el vendedor de calle no las ve.
+    expect(pestanasVisibles(seccion('mayorista'), con(['mayorista.vender'])).map((p) => p.etiqueta)).not.toContain(
+      'Estadísticas',
+    )
     expect(seccionDe('/mayorista/lista')?.pestana.etiqueta).toBe('Lista de precios')
     expect(seccionDe('/mayorista')?.pestana.etiqueta).toBe('Pedidos')
   })

@@ -45,6 +45,7 @@ import Mayorista from '@/pages/Mayorista'
 import MayoristaClientes from '@/pages/MayoristaClientes'
 import MayoristaLista from '@/pages/MayoristaLista'
 import MayoristaCobros from '@/pages/MayoristaCobros'
+import MayoristaEstadisticas from '@/pages/MayoristaEstadisticas'
 import Recibos from '@/pages/Recibos'
 import Fiados from '@/pages/Fiados'
 import FiadoFicha from '@/pages/FiadoFicha'
@@ -163,6 +164,7 @@ function Rutas() {
         <Route path="mayorista/clientes" element={<MayoristaClientes />} />
         <Route path="mayorista/lista" element={<MayoristaLista />} />
         <Route path="mayorista/cobros" element={<MayoristaCobros />} />
+        <Route path="mayorista/estadisticas" element={<MayoristaEstadisticas />} />
         <Route path="recibos" element={<Recibos />} />
         <Route path="fiados" element={<Fiados />} />
         <Route path="fiados/:id" element={<FiadoFicha />} />
