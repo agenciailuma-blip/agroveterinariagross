@@ -79,7 +79,7 @@ export function armarMail(d: DatosDelMail): { asunto: string; html: string; text
 <meta name="color-scheme" content="light only"><meta name="supported-color-schemes" content="light only">
 <title>${escapar(asunto)}</title></head>
 <body style="margin:0;padding:0;background:#f0f5f7">
-<div style="display:none;max-height:0;overflow:hidden;opacity:0">${escapar(`Tu ${d.tipo} por ${importe(d.total)}, en PDF.`)}</div>
+<div style="display:none;max-height:0;overflow:hidden;opacity:0">${escapar(`Tu ${d.esRecibo ? "recibo" : d.tipo} por ${importe(d.total)}, en PDF.`)}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f0f5f7">
 <tr><td align="center" style="padding:28px 12px">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;background:#ffffff;border:1px solid #d1e2e8;border-radius:14px;overflow:hidden">
