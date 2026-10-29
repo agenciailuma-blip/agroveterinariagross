@@ -6,6 +6,9 @@ import type { Cliente } from '@/lib/api/clientes'
 import { cajaAbierta } from '@/lib/api/caja'
 import { numeroRecibo, type ReciboEmitido } from '@/lib/api/recibos'
 import ModalCobranza from '@/components/ModalCobranza'
+import RemitoFirmado from '@/components/RemitoFirmado'
+import { firmasDeVentas } from '@/lib/api/remitoFirmado'
+import { numeroNoFiscal } from '@/lib/api/noFiscal'
 import { useTerminal } from '@/lib/terminal'
 import { moneda } from '@/lib/tipos'
 
@@ -30,6 +33,16 @@ export default function CuentaCorriente({
   const movimientos = useQuery({
     queryKey: ['movimientos-cc', cliente.id],
     queryFn: () => movimientosCuentaCorriente(cliente.id),
+  })
+
+  // El remito firmado de cada venta, si ya subieron la foto.
+  const ventas = (movimientos.data ?? [])
+    .filter((m) => m.referencia_tipo === 'venta' && m.tipo === 'venta' && m.referencia_id)
+    .map((m) => m.referencia_id!)
+  const firmas = useQuery({
+    queryKey: ['remitos-firmados', 'ventas', ventas],
+    queryFn: () => firmasDeVentas(ventas),
+    enabled: ventas.length > 0,
   })
 
   const caja = useQuery({
@@ -155,6 +168,23 @@ export default function CuentaCorriente({
                       </span>
                     )}
                   </p>
+                  {(() => {
+                    const firma = m.tipo === 'venta' && m.referencia_id ? firmas.data?.get(m.referencia_id) : undefined
+                    return (
+                      firma && (
+                        <p className="text-xs text-piedra-400">
+                          Remito {numeroNoFiscal('remito', firma.serie, firma.numero)} ·{' '}
+                          <RemitoFirmado
+                            remitoId={firma.remito_id}
+                            fechaRemito={firma.firmado_el}
+                            firma={firma}
+                            puedeSubir={false}
+                            onCambio={() => undefined}
+                          />
+                        </p>
+                      )
+                    )
+                  })()}
                 </div>
                 <p
                   className={`shrink-0 whitespace-nowrap text-right font-medium tabular-nums ${

@@ -12,6 +12,8 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
+**Lista para publicar: 0.19.5.** **La foto del remito firmado**: se sube desde Remitos, con el celular o la PC, y queda a la vista en el remito y en la cuenta corriente del cliente, con quién firmó y cuándo. Con esto queda completo el punto 1 de la fase-03. Ver *Lo último que pasó*. **772 pruebas verdes en la app.**
+
 **Publicada: 0.19.4** (29/10, 15:55), verificada en Cloudflare: `latest.json` dice 0.19.4, el instalador está publicado y la versión web ya trae el envío solo. **La factura a cuenta corriente sale sola por mail**, si el cliente tiene mail: desde la caja, desde Facturación y desde *Por facturar*. Ver *Lo último que pasó*. **770 pruebas verdes en la app.**
 
 **Publicada: 0.19.3** (29/10, 15:39), verificada en Cloudflare: `latest.json` dice 0.19.3, el instalador está publicado y la versión web ya trae la pestaña. **La pestaña *Vencidos* en Clientes**: quién debe algo vencido, cuánto y desde hace cuántos días, con cada comprobante y lo que le queda impago. Tocar el cliente abre su cuenta corriente. Ver *Lo último que pasó*. **770 pruebas verdes en la app.**
@@ -98,6 +100,18 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 🟡 **Lo que la venta tardaba en llegar a la caja sin internet** — arreglado el 05/10 y publicado en la 0.13.4, **sin probar en el local**. El mostrador le pasaba las ventas a la caja una vez por minuto, y la caja miraba su cola cada ocho segundos: hasta 68 segundos con el cliente esperando. Y llegaba de a partes porque, mientras la cabecera intentaba subir al servidor —hasta doce segundos sin internet—, salían los renglones solos. Ahora la venta sale al segundo y medio de apretar *Enviar a caja* (y otra vez a los catorce, por si el intento de subir tardó), viaja entera o espera entera, y la caja la muestra apenas llega. Se comprueba en el próximo corte: la venta tiene que aparecer en la caja en un par de segundos y completa.
 
 ---
+
+## Lo último que pasó — 29 de octubre: la foto del remito firmado
+
+**Fase-03, punto 1, ④** —el último que faltaba del punto 1—. Va en la 0.19.5.
+
+- **En Remitos**, al lado de *Imprimir*, cada remito tiene **Subir firmado**. Se elige la foto —en el celular deja sacarla en el momento o buscarla en la galería—, se anota quién firmó (si se sabe) y cuándo, y se guarda. Desde ahí dice **Firmado**, y al tocarlo se ve la foto con quién firmó, cuándo, y quién la subió.
+- **En la cuenta corriente del cliente**, debajo de la venta, aparece «Remito R … · Firmado», que abre la misma foto.
+- **Si la foto salió mal**, *Subir otra foto*: la anterior queda guardada y se muestra la última. No se puede borrar ni cambiar ninguna: para la trazabilidad sirve que esté todo.
+- **Privada:** la foto tiene firmas y nombres, así que no está a la vista de cualquiera en internet como las de los productos. Se ve con un enlace que dura diez minutos, y sólo quien puede ver los remitos o la cuenta corriente. La sube quien puede emitir remitos.
+- **Se achica antes de subir** (2000 px del lado más largo, en WebP): una foto de celular de varios MB queda en unos cientos de KB y la letra chica se sigue leyendo.
+- **La base** ([`20261029220000_el_remito_firmado.sql`](../supabase/migrations/20261029220000_el_remito_firmado.sql), aplicada). **Probada como usuario**, con todo deshecho al final: sin el archivo subido, en otra carpeta, con fecha futura o anterior al remito → no la anota; bien → la anota con quién la subió; no se puede cambiar; alguien sin permiso no ve ni el registro ni el archivo.
+- **Visto a 375 px** en un banco de prueba: las ventanas de subir y de ver entran sin desplazarse hacia el costado. **Sin probar con una foto de verdad** subida desde la app: hace falta iniciar sesión. **772 verdes** y los tipos sin errores.
 
 ## Lo último que pasó — 29 de octubre: la factura a cuenta corriente sale sola por mail
 

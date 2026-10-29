@@ -44,14 +44,17 @@ export function medidasAchicadas(ancho: number, alto: number, maximo = LADO_MAXI
   La foto, achicada y en WebP, hecha en la computadora de quien la sube:
   así viaja chica y la base no tiene que procesar nada.
 */
-export async function aWebp(archivo: Blob): Promise<{ blob: Blob; ancho: number; alto: number }> {
+export async function aWebp(
+  archivo: Blob,
+  maximo = LADO_MAXIMO,
+): Promise<{ blob: Blob; ancho: number; alto: number }> {
   let imagen: ImageBitmap
   try {
     imagen = await createImageBitmap(archivo)
   } catch {
     throw new Error('No se pudo leer la imagen. Probá con una foto JPG, PNG o WebP.')
   }
-  const { ancho, alto } = medidasAchicadas(imagen.width, imagen.height)
+  const { ancho, alto } = medidasAchicadas(imagen.width, imagen.height, maximo)
   const lienzo = document.createElement('canvas')
   lienzo.width = ancho
   lienzo.height = alto

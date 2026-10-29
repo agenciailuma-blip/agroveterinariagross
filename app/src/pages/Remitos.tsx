@@ -4,6 +4,8 @@ import { useAuth } from '@/auth/AuthProvider'
 import { useTerminal } from '@/lib/terminal'
 import { listarNoFiscales, numeroNoFiscal, remitosSinCobrar } from '@/lib/api/noFiscal'
 import NuevoRemito from '@/components/NuevoRemito'
+import RemitoFirmado from '@/components/RemitoFirmado'
+import { firmasDeRemitos } from '@/lib/api/remitoFirmado'
 import { abrirNoFiscal } from '@/lib/escritorio'
 
 /*
@@ -31,6 +33,14 @@ export default function Remitos() {
     queryKey: ['remitos'],
     queryFn: () => listarNoFiscales('remito'),
     enabled: puedeVer,
+  })
+
+  // La foto del remito firmado de cada uno, si ya la subieron.
+  const idsRemitos = (remitos.data ?? []).map((r) => r.id)
+  const firmas = useQuery({
+    queryKey: ['remitos-firmados', idsRemitos],
+    queryFn: () => firmasDeRemitos(idsRemitos),
+    enabled: idsRemitos.length > 0,
   })
 
   const sinCobrar = useQuery({
@@ -214,12 +224,21 @@ export default function Remitos() {
                       {r.estado === 'anulado' ? (
                         <span className="text-xs text-piedra-400">anulado</span>
                       ) : (
-                        <button
-                          onClick={() => abrirNoFiscal(r.id)}
-                          className="text-xs text-marca-700 underline"
-                        >
-                          Imprimir
-                        </button>
+                        <div className="flex flex-col items-end gap-1">
+                          <button
+                            onClick={() => abrirNoFiscal(r.id)}
+                            className="text-xs text-marca-700 underline"
+                          >
+                            Imprimir
+                          </button>
+                          <RemitoFirmado
+                            remitoId={r.id}
+                            fechaRemito={r.fecha}
+                            firma={firmas.data?.get(r.id) ?? null}
+                            puedeSubir={puedeEmitir}
+                            onCambio={() => qc.invalidateQueries({ queryKey: ['remitos-firmados'] })}
+                          />
+                        </div>
                       )}
                     </td>
                   </tr>

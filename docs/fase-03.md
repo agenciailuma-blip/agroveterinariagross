@@ -47,7 +47,7 @@ El cliente de siempre: la persona que lleva el alimento del perro, la oficina. S
 | ② Factura + remito de entrega | ✅ La caja factura a cuenta corriente; el remito se emite desde la venta | — |
 | ③ Baja de stock y registro en la cuenta, con vencimiento | ✅ Lo hace el cobro, con los días de la ficha | — |
 | ④ Factura por mail automática | ✅ Sale sola al facturar a cuenta corriente, si el cliente tiene mail (29/10): desde la caja, Facturación y *Por facturar*; no se repite. La emitida sin conexión con CAEA se manda con el botón | — |
-| ④ ¿Adjuntar el remito firmado? | ❌ | **Subir la foto del remito firmado** al remito (desde el celular o la PC), y que quede a la vista en la venta y en la cuenta corriente. Esa es la trazabilidad: quién firmó, cuándo. No va en el mail de la factura, porque la factura sale antes de que firmen |
+| ④ ¿Adjuntar el remito firmado? | ✅ Foto del remito firmado (29/10): se sube desde Remitos, con el celular o la PC, con quién firmó y cuándo; se ve en el remito y en la cuenta corriente. Privada, y no se borra | — |
 | ⑤ Resumen de vencidos por cliente | ✅ Pestaña *Vencidos* en Clientes (29/10): por cliente, con el total, los días y cada comprobante con lo que le queda impago | — |
 | ⑤ Alerta al vender a quien debe | ✅ Frena en el mayorista, el mostrador y la caja (29/10): aviso al elegir el cliente, y la venta a cuenta corriente no avanza hasta que un encargado la autoriza con su PIN; queda anotado quién la dejó pasar. También sin conexión | — |
 

@@ -53,6 +53,9 @@ export interface MovimientoCC {
   concepto: string | null
   vencimiento: string | null
   ocurrido_en: string
+  /** Qué lo originó: 'venta', 'recibo', 'cheque', 'manual'… */
+  referencia_tipo: string | null
+  referencia_id: string | null
   usuario: { nombre: string } | null
 }
 
@@ -343,7 +346,7 @@ function traducir(mensaje: string) {
 export async function movimientosCuentaCorriente(clienteId: string): Promise<MovimientoCC[]> {
   const { data, error } = await supabase
     .from('movimiento_cuenta_corriente')
-    .select('id, tipo, importe, concepto, vencimiento, ocurrido_en, usuario:usuario_id(nombre)')
+    .select('id, tipo, importe, concepto, vencimiento, ocurrido_en, referencia_tipo, referencia_id, usuario:usuario_id(nombre)')
     .eq('cliente_id', clienteId)
     .order('ocurrido_en', { ascending: false })
     .limit(200)
