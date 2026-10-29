@@ -12,7 +12,7 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Lista para publicar: 0.19.3.** **La pestaña *Vencidos* en Clientes**: quién debe algo vencido, cuánto y desde hace cuántos días, con cada comprobante y lo que le queda impago. Tocar el cliente abre su cuenta corriente. Ver *Lo último que pasó*. **770 pruebas verdes en la app.**
+**Publicada: 0.19.3** (29/10, 15:39), verificada en Cloudflare: `latest.json` dice 0.19.3, el instalador está publicado y la versión web ya trae la pestaña. **La pestaña *Vencidos* en Clientes**: quién debe algo vencido, cuánto y desde hace cuántos días, con cada comprobante y lo que le queda impago. Tocar el cliente abre su cuenta corriente. Ver *Lo último que pasó*. **770 pruebas verdes en la app.**
 
 **Publicada: 0.19.2** (29/10, 15:15), verificada en Cloudflare: `latest.json` dice 0.19.2, el instalador está publicado y la versión web ya trae el PIN del encargado en la caja. **El freno al vencido, en el mostrador y la caja**: el mostrador avisa al elegir un cliente con deuda vencida, y la caja no le cobra a cuenta corriente hasta que un encargado pone su PIN; con o sin conexión. Ver *Lo último que pasó*. **766 pruebas verdes en la app.**
 
@@ -99,7 +99,7 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 
 ## Lo último que pasó — 29 de octubre: la pestaña *Vencidos* en Clientes
 
-**Fase-03, punto 1, ⑤:** el listado de «qué comprobantes vencieron, de quién». Va en la 0.19.3.
+**Fase-03, punto 1, ⑤:** el listado de «qué comprobantes vencieron, de quién». Publicada en la 0.19.3.
 
 - **En Clientes, arriba de la búsqueda, *Todos* y *Vencidos*.** En *Vencidos* aparece un bloque por cliente con lo que debe vencido, desde hace cuántos días y el teléfono; debajo, cada comprobante con la fecha en que venció y lo que le queda impago (y de cuánto era, si ya pagó una parte). Primero el que debe desde hace más tiempo; a igual atraso, el que debe más. La búsqueda filtra por nombre.
 - **Tocar el cliente abre su cuenta corriente**, que es donde se le cobra. Al cobrar, la lista se actualiza.
