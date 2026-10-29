@@ -12,7 +12,7 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Lista para publicar: 0.19.4.** **La factura a cuenta corriente sale sola por mail**, si el cliente tiene mail: desde la caja, desde Facturación y desde *Por facturar*. Ver *Lo último que pasó*. **770 pruebas verdes en la app.**
+**Publicada: 0.19.4** (29/10, 15:55), verificada en Cloudflare: `latest.json` dice 0.19.4, el instalador está publicado y la versión web ya trae el envío solo. **La factura a cuenta corriente sale sola por mail**, si el cliente tiene mail: desde la caja, desde Facturación y desde *Por facturar*. Ver *Lo último que pasó*. **770 pruebas verdes en la app.**
 
 **Publicada: 0.19.3** (29/10, 15:39), verificada en Cloudflare: `latest.json` dice 0.19.3, el instalador está publicado y la versión web ya trae la pestaña. **La pestaña *Vencidos* en Clientes**: quién debe algo vencido, cuánto y desde hace cuántos días, con cada comprobante y lo que le queda impago. Tocar el cliente abre su cuenta corriente. Ver *Lo último que pasó*. **770 pruebas verdes en la app.**
 
@@ -101,7 +101,7 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 
 ## Lo último que pasó — 29 de octubre: la factura a cuenta corriente sale sola por mail
 
-**Fase-03, punto 1, ④.** Va en la 0.19.4.
+**Fase-03, punto 1, ④.** Publicada en la 0.19.4.
 
 - **Cuándo sale:** al quedar autorizada una factura —A, B, C, M o MiPyME— en la que alguna venta se llevó, toda o en parte, a cuenta corriente, si el cliente tiene mail cargado. Las notas de crédito y débito no salen solas.
 - **Desde dónde:** la caja al cobrar, Facturación al facturar o reintentar una pendiente, y *Por facturar* al facturar lo del mes. El aviso del CAE aparece enseguida; cuando el mail termina, el mismo cartel dice a quién salió o por qué no.
