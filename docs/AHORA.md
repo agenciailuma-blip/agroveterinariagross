@@ -12,7 +12,7 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Construida: 0.19.11 — falta publicarla.** **La proforma del mayorista, a la vista**: el botón se llama *Proforma* y la ficha del cliente tiene la marca *Pide proforma*, que la pone primero en sus pedidos. **La base ya está aplicada.** Ver *Lo último que pasó*. **799 pruebas verdes en la app.**
+**Publicada: 0.19.11** (29/10, 19:16), verificada en Cloudflare: `latest.json` dice 0.19.11, el instalador está publicado y la versión web ya trae la marca. **La proforma del mayorista, a la vista**: el botón se llama *Proforma* y la ficha del cliente tiene la marca *Pide proforma*, que la pone primero en sus pedidos. **La base ya está aplicada.** Ver *Lo último que pasó*. **799 pruebas verdes en la app.**
 
 **Publicada: 0.19.10** (29/10, 18:59), verificada en Cloudflare: `latest.json` dice 0.19.10, el instalador está publicado y la versión web ya trae Traslados. **Traslados**: las órdenes para ir a buscar o llevar un animal, en una pestaña nueva de Ventas, con sus estados, el mapa, el cobro por la caja, la hoja del día para el que maneja y las estadísticas de kilómetros, costo y tiempo. **La base ya está aplicada.** Ver *Lo último que pasó*. **799 pruebas verdes en la app.**
 
@@ -115,7 +115,7 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 
 ## Lo último que pasó — 29 de octubre: la proforma del mayorista
 
-**Pedido de Lucas en un audio del 29/10:** algunos clientes mayoristas no quieren factura, quieren proforma. Construida en la 0.19.11, falta publicarla.
+**Pedido de Lucas en un audio del 29/10:** algunos clientes mayoristas no quieren factura, quieren proforma. Publicada en la 0.19.11.
 
 - **Ya se podía**, pero no se veía: en *Mayorista → Pedidos*, con el pedido corroborado, el botón «Sin factura» emitía el comprobante interno a la cuenta corriente. Ahora se llama **Proforma**, la palabra de Lucas, y lo emitido figura como *Proforma* en el pedido.
 - **La marca *Pide proforma*** en la ficha del cliente mayorista, que puede poner el local o el vendedor de calle. Con la marca: en la lista de pedidos aparece *Pide proforma*; en el detalle, el aviso, y **Proforma pasa a ser el botón principal**, con *Facturar* al lado por si un día pide factura. Facturarle igual avisa que pide proforma. Al armar el pedido en el teléfono, el vendedor ve el aviso.
