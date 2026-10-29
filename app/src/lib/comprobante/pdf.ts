@@ -1,6 +1,9 @@
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from 'pdf-lib'
 import QRCode from 'qrcode'
 import type { ComprobanteCompleto } from '@/lib/api/comprobante'
+import { LEYENDA_NO_FISCAL } from '@/lib/api/noFiscal'
+import { numeroRecibo, type ReciboCompleto } from '@/lib/api/recibos'
+import { importeEnLetras } from '@/lib/enLetras'
 import { presentacionDe } from '@/lib/comprobante/presentacion'
 import { moneda, numero } from '@/lib/tipos'
 
@@ -267,6 +270,127 @@ export async function facturaEnPdf(c: ComprobanteCompleto, urlQr: string | null)
   escribir(p, 'ARCA — Comprobante Autorizado', izq + ladoQr + 14, y - 8 - ladoQr / 2, 9, true)
   aLaDerecha(p, `${c.modalidad === 'caea' ? 'CAEA' : 'CAE'} N°: ${c.cae ?? '—'}`, der, y - 8 - ladoQr / 2 + 6, 9, true)
   aLaDerecha(p, `Fecha de Vto.: ${c.cae_vencimiento ? fecha(c.cae_vencimiento) : '—'}`, der, y - 8 - ladoQr / 2 - 7, 9, true)
+
+  return doc.save()
+}
+
+/*
+  El recibo en PDF: la misma hoja que ReciboImprimible, para mandarla
+  por mail. Una página: quién pagó, cuánto —también en letras—, con qué,
+  y cómo quedó la cuenta.
+*/
+export async function reciboEnPdf(r: ReciboCompleto): Promise<Uint8Array> {
+  const doc = await PDFDocument.create()
+  const nro = numeroRecibo(r.serie, r.numero)
+  doc.setTitle(seguro(`Recibo ${nro}`))
+  doc.setAuthor(seguro(r.emisor.razon_social ?? ''))
+  doc.setCreator('Sistema de gestión Gross')
+  const normal = await doc.embedFont(StandardFonts.Helvetica)
+  const negrita = await doc.embedFont(StandardFonts.HelveticaBold)
+
+  const izq = MARGEN
+  const der = A4.ancho - MARGEN
+  const ancho = der - izq
+  const p: Pincel = { pagina: doc.addPage([A4.ancho, A4.alto]), normal, negrita }
+  let y = A4.alto - MARGEN
+
+  const leyenda = () => {
+    caja(p, izq, y - 20, ancho, 20, 1.6)
+    const t = seguro(LEYENDA_NO_FISCAL)
+    escribir(p, t, izq + ancho / 2 - negrita.widthOfTextAtSize(t, 10) / 2, y - 14, 10, true)
+    y -= 28
+  }
+
+  leyenda()
+
+  /* ── Encabezado ── */
+  const altoEnc = 78
+  caja(p, izq, y - altoEnc, ancho, altoEnc, 1.6)
+  escribir(p, recortar(r.emisor.nombre_fantasia || r.emisor.razon_social || '', negrita, 14, ancho / 2), izq + 10, y - 22, 14, true)
+  let yl = y - 40
+  if (r.emisor.razon_social) {
+    dato(p, 'Razón social', r.emisor.razon_social, izq + 10, yl)
+    yl -= 12
+  }
+  const domicilio = [r.emisor.domicilio, r.emisor.localidad].filter(Boolean).join(' — ')
+  if (domicilio) {
+    dato(p, 'Domicilio', recortar(domicilio, normal, 8.5, ancho / 2 - 60), izq + 10, yl)
+    yl -= 12
+  }
+  if (r.emisor.cuit) dato(p, 'CUIT', r.emisor.cuit, izq + 10, yl)
+
+  aLaDerecha(p, 'RECIBO', der - 10, y - 24, 16, true)
+  aLaDerecha(p, `N° ${nro}`, der - 10, y - 42, 11, true)
+  aLaDerecha(p, `Fecha: ${fecha(r.fecha)}`, der - 10, y - 57, 9)
+  y -= altoEnc + 10
+
+  /* ── Quién pagó y cuánto ── */
+  const altoRec = 74
+  caja(p, izq, y - altoRec, ancho, altoRec, 1.2)
+  dato(p, 'Recibimos de', recortar(r.cliente_nombre, normal, 10, ancho - 110), izq + 10, y - 17, 10)
+  let yr = y - 31
+  const ident = [r.cliente_documento ? `CUIT/DNI ${r.cliente_documento}` : '', r.cliente_domicilio ?? '']
+    .filter(Boolean)
+    .join(' · ')
+  if (ident) escribir(p, recortar(ident, normal, 8.5, ancho - 20), izq + 10, yr)
+  yr -= 16
+  dato(p, 'La suma de pesos', recortar(importeEnLetras(r.total), normal, 9, ancho - 110), izq + 10, yr, 9)
+  yr -= 14
+  dato(p, 'En concepto de', recortar(r.concepto || 'Pago a cuenta', normal, 9, ancho - 110), izq + 10, yr, 9)
+  y -= altoRec + 10
+
+  /* ── Con qué ── */
+  const FILA = 14
+  const inicio = y
+  escribir(p, 'Forma de pago', izq + 8, y - 12, 8.5, true)
+  escribir(p, 'Detalle', izq + 130, y - 12, 8.5, true)
+  aLaDerecha(p, 'Importe', der - 8, y - 12, 8.5, true)
+  y -= 17
+  p.pagina.drawLine({ start: { x: izq, y: y + 1 }, end: { x: der, y: y + 1 }, thickness: 1.2, color: NEGRO })
+  for (const pago of r.pagos) {
+    y -= FILA
+    escribir(p, recortar(pago.medio, normal, 8.5, 115), izq + 8, y + 3)
+    const detalle = pago.cheque
+      ? `${pago.cheque.banco} N° ${pago.cheque.numero}${pago.cheque.fecha_pago ? ` · al ${fecha(pago.cheque.fecha_pago)}` : ''}`
+      : ''
+    if (detalle) escribir(p, recortar(detalle, normal, 8.5, ancho - 230), izq + 130, y + 3)
+    aLaDerecha(p, moneda.format(pago.importe), der - 8, y + 3)
+  }
+  y -= 8
+  caja(p, izq, y, ancho, inicio - y, 1.2)
+  y -= 8
+
+  const anchoTot = 230
+  caja(p, der - anchoTot, y - 26, anchoTot, 26, 1.6)
+  escribir(p, 'Total recibido', der - anchoTot + 10, y - 17, 11, true)
+  aLaDerecha(p, moneda.format(r.total), der - 10, y - 17, 11, true)
+  y -= 40
+
+  const saldo = Math.round(r.saldo_despues * 100) / 100
+  escribir(
+    p,
+    saldo > 0
+      ? `Saldo de la cuenta después de este pago: ${moneda.format(saldo)}`
+      : saldo < 0
+        ? `La cuenta queda con ${moneda.format(-saldo)} a favor.`
+        : 'La cuenta queda al día.',
+    izq,
+    y,
+    9,
+  )
+  y -= 14
+  if (r.orden_numero) {
+    escribir(p, `Cobrado por ${r.orden_vendedor ?? 'el vendedor'} · orden ${r.orden_numero}`, izq, y, 8)
+    y -= 12
+  }
+
+  /* ── Firma ── */
+  y -= 50
+  p.pagina.drawLine({ start: { x: der - 200, y }, end: { x: der, y }, thickness: 0.8, color: NEGRO })
+  escribir(p, 'Firma y aclaración', der - 200, y - 11, 8)
+  y -= 34
+
+  leyenda()
 
   return doc.save()
 }

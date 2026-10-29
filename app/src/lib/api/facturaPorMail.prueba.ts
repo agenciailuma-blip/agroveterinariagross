@@ -7,7 +7,8 @@ import {
   nombreDelPdf,
   pdfValido,
 } from '../../../../supabase/functions/enviar-factura/reglas.ts'
-import { aBase64, facturaEnPdf, seguro } from '@/lib/comprobante/pdf'
+import { aBase64, facturaEnPdf, reciboEnPdf, seguro } from '@/lib/comprobante/pdf'
+import type { ReciboCompleto } from '@/lib/api/recibos'
 import type { ComprobanteCompleto } from '@/lib/api/comprobante'
 
 /*
@@ -128,5 +129,36 @@ describe('el mail', () => {
 
   it('lo que no es un PDF no se manda', () => {
     expect(pdfValido(new TextEncoder().encode('<html>no soy un pdf</html>'.repeat(10)))).toBe(false)
+  })
+})
+
+describe('el recibo por mail', () => {
+  const recibo = (pagos: ReciboCompleto['pagos'], saldo = 0): ReciboCompleto => ({
+    id: 'r1', serie: '0001', numero: 12, fecha: '2026-10-29', total: pagos.reduce((s, p) => s + p.importe, 0),
+    concepto: null, emitido_en: '2026-10-29T12:00:00Z', emitido_por_nombre: 'Lucas Gross',
+    mail_destinatario: null, mail_estado: null, mail_error: null, mail_en: null,
+    cliente_id: 'c1', cliente_nombre: 'Agro San José 🌱', cliente_email: null, cliente_documento: '30712345678',
+    cliente_domicilio: 'Sarmiento 120, Oberá', saldo_despues: saldo, orden_numero: 4, orden_vendedor: 'Facundo',
+    pagos, emisor: { razon_social: 'Gross S.A.', nombre_fantasia: 'Agroveterinaria Gross', cuit: '30-00000000-0' },
+  })
+
+  it('el PDF sale con transferencia y con varios cheques', async () => {
+    expect(pdfValido(await reciboEnPdf(recibo([{ medio: 'Transferencia', importe: 125000.5, cheque: null }], 3000)))).toBe(true)
+    const cheques = recibo([
+      { medio: 'Cheque', importe: 300, cheque: { banco: 'Banco Macro', numero: '99887766', fecha_pago: '2026-11-28', librador: null } },
+      { medio: 'Cheque', importe: 200.5, cheque: { banco: 'Banco Nación', numero: '11223344', fecha_pago: null, librador: null } },
+    ], -50)
+    expect(pdfValido(await reciboEnPdf(cheques))).toBe(true)
+  })
+
+  it('el mail habla de un pago, no de una compra', () => {
+    const m = armarMail({ ...MAIL, tipo: 'Recibo', numero: '0001-00000012', esRecibo: true })
+    expect(m.asunto).toBe('Recibo 0001-00000012 · Agroveterinaria Gross')
+    expect(m.texto).toContain('el recibo 0001-00000012 de tu pago')
+    expect(m.texto).toContain('Gracias por tu pago.')
+    expect(m.html).toContain('Te mandamos el recibo de tu pago.')
+    expect(m.html).not.toContain('factura')
+    // La factura sigue igual que antes.
+    expect(armarMail(MAIL).html).toContain('Te mandamos tu factura.')
   })
 })

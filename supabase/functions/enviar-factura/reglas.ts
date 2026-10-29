@@ -22,6 +22,8 @@ export interface DatosDelMail {
   logo: string;
   /** Si hay una casilla del local para las respuestas. */
   respondible: boolean;
+  /** Un recibo de pago en vez de una factura: cambian las palabras, no el diseño. */
+  esRecibo?: boolean;
 }
 
 const pesos = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" });
@@ -57,11 +59,15 @@ export function armarMail(d: DatosDelMail): { asunto: string; html: string; text
   const asunto = `${d.tipo} ${d.numero} · ${d.comercio}`;
   const nombre = d.receptor && !/consumidor final/i.test(d.receptor) ? d.receptor.trim() : "";
   const saludo = nombre ? `Hola, ${nombre}:` : "Hola:";
-  const cuerpo = `Te mandamos tu ${d.tipo} ${d.numero} por ${importe(d.total)}. La encontrás adjunta en PDF.`;
+  const adjunto = d.esRecibo ? "Lo encontrás adjunto en PDF." : "La encontrás adjunta en PDF.";
+  const gracias = d.esRecibo ? "Gracias por tu pago." : "Gracias por tu compra.";
+  const cuerpo = d.esRecibo
+    ? `Te mandamos el recibo ${d.numero} de tu pago por ${importe(d.total)}. ${adjunto}`
+    : `Te mandamos tu ${d.tipo} ${d.numero} por ${importe(d.total)}. ${adjunto}`;
   const pie = [d.comercio, d.domicilio, d.telefono ? `Tel. ${d.telefono}` : ""].filter(Boolean).join(" · ");
   const consulta = d.respondible ? "Si tenés alguna consulta, respondé este mail." : "";
 
-  const texto = [saludo, "", cuerpo, "", "Gracias por tu compra.", "", pie, ...(consulta ? [consulta] : []), ""].join("\n");
+  const texto = [saludo, "", cuerpo, "", gracias, "", pie, ...(consulta ? [consulta] : []), ""].join("\n");
 
   const f = "font-family:Ubuntu,'Segoe UI',Arial,Helvetica,sans-serif";
   const fila = (k: string, v: string) =>
@@ -88,7 +94,7 @@ export function armarMail(d: DatosDelMail): { asunto: string; html: string; text
 <tr><td style="background:#64b32e;height:4px;line-height:4px;font-size:0">&nbsp;</td></tr>
 <tr><td style="padding:30px 28px 6px;${f};font-size:15px;line-height:1.6;color:#1f2021">
 <p style="margin:0 0 10px">${escapar(saludo)}</p>
-<p style="margin:0 0 22px">Te mandamos tu factura. La encontrás adjunta en PDF.</p>
+<p style="margin:0 0 22px">${d.esRecibo ? "Te mandamos el recibo de tu pago." : "Te mandamos tu factura."} ${adjunto}</p>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f0f5f7;border:1px solid #d1e2e8;border-radius:10px">
 <tr><td style="padding:14px 18px">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
@@ -99,7 +105,7 @@ ${fila("Fecha", fechaCorta(d.fecha))}
 <td align="right" style="${f};font-size:26px;font-weight:bold;color:#8d0b7b;white-space:nowrap">${escapar(importe(d.total))}</td></tr>
 </table>
 </td></tr></table>
-<p style="margin:24px 0 0">Gracias por tu compra.</p>
+<p style="margin:24px 0 0">${gracias}</p>
 </td></tr>
 <tr><td style="padding:22px 28px 26px">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>

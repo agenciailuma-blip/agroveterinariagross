@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { listarDepositos } from '@/lib/api/depositos'
 import { contarPedidosPendientes } from '@/lib/api/pedidos'
 import { contarPedidosPendientes as contarMayoristasPendientes } from '@/lib/api/mayorista'
+import { contarOrdenesPendientes } from '@/lib/api/recibos'
 import AvisoDeActualizacion from '@/components/AvisoDeActualizacion'
 import AvisoBaseBloqueada from '@/components/AvisoBaseBloqueada'
 import { useAuth } from '@/auth/AuthProvider'
@@ -55,7 +56,15 @@ function useContadores(): Record<NonNullable<Pestana['contador']>, number> {
     refetchInterval: 60_000,
     retry: false,
   })
-  return { pedidos: pedidosPendientes.data ?? 0, mayorista: mayoristas.data ?? 0 }
+  // Las órdenes de recibo que mandó el vendedor y nadie aceptó todavía.
+  const cobros = useQuery({
+    queryKey: ['ordenes-recibo-pendientes'],
+    queryFn: contarOrdenesPendientes,
+    enabled: tienePermiso('cuentacorriente.cobrar') && navigator.onLine,
+    refetchInterval: 60_000,
+    retry: false,
+  })
+  return { pedidos: pedidosPendientes.data ?? 0, mayorista: mayoristas.data ?? 0, cobros: cobros.data ?? 0 }
 }
 
 /*

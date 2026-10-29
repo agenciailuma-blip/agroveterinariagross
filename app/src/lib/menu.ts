@@ -24,7 +24,7 @@ export interface Pestana {
   /* Con varios, alcanza con uno: el vendedor de calle y el local ven la misma pestaña. */
   permiso?: string | string[]
   /* Un número al lado: cuánto espera que alguien haga algo. */
-  contador?: 'pedidos' | 'mayorista'
+  contador?: 'pedidos' | 'mayorista' | 'cobros'
   /* Sólo tiene sentido con más de un depósito activo. */
   conVariosDepositos?: boolean
 }
@@ -84,6 +84,8 @@ export const SECCIONES: Seccion[] = [
         contador: 'mayorista',
       },
       { a: '/mayorista/clientes', etiqueta: 'Clientes', permiso: ['mayorista.vender', 'mayorista.atender'] },
+      // Las órdenes de recibo: el vendedor las arma, el local las acepta.
+      { a: '/mayorista/cobros', etiqueta: 'Cobros', permiso: ['mayorista.cobrar', 'mayorista.atender'], contador: 'cobros' },
       { a: '/mayorista/lista', etiqueta: 'Lista de precios', permiso: 'productos.editar_precio' },
     ],
   },
@@ -92,7 +94,10 @@ export const SECCIONES: Seccion[] = [
     etiqueta: 'Clientes',
     icono:
       'M17 20h5v-2a3 3 0 00-5.4-1.8M17 20H7m10 0v-2c0-.7-.1-1.3-.4-1.8M7 20H2v-2a3 3 0 015.4-1.8M7 20v-2c0-.7.1-1.3.4-1.8m0 0a5 5 0 019.2 0M15 7a3 3 0 11-6 0 3 3 0 016 0z',
-    pestanas: [{ a: '/clientes', etiqueta: 'Clientes', permiso: 'clientes.ver' }],
+    pestanas: [
+      { a: '/clientes', etiqueta: 'Clientes', permiso: 'clientes.ver' },
+      { a: '/recibos', etiqueta: 'Recibos', permiso: ['cuentacorriente.ver', 'cuentacorriente.cobrar'] },
+    ],
   },
   {
     id: 'productos',

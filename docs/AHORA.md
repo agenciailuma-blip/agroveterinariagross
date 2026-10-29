@@ -12,6 +12,8 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
+**Construida: 0.19.0** (29/10) — **falta publicarla**. **La orden de recibo y el recibo numerado**: Facundo anota en el teléfono lo que le pagaron —también sin señal— y en el local, cuando confirman que entró la plata, sale el recibo con número, baja la deuda y se le manda por mail al cliente. El mismo recibo sale en toda cobranza de cuenta corriente, y hay un registro en *Clientes → Recibos*. **La base ya está aplicada.** 🟡 **La función que manda el mail del recibo no está actualizada en el servidor**: hasta que se suba, el recibo se emite e imprime, pero *Mandar por mail* falla (la factura por mail sigue andando). Ver *Lo último que pasó*. **750 pruebas verdes en la app.**
+
 **Publicada: 0.18.0** (28/10, a la noche), verificada en Cloudflare: `latest.json` dice 0.18.0 y el instalador está publicado. La primera subida falló del lado de Cloudflare («Internal authentication error», y después no podía leer la cuenta al iniciar sesión); se reintentó sólo la subida, sin volver a compilar. — **Mayorista, la primera entrega**, para que Facundo salga a la calle la semana del 2/11: el rol *Vendedor de calle*, los clientes mayoristas por ruta, la lista de precios mayorista y el pedido que se arma en el teléfono —también sin señal— y en el local se corrobora, se factura o sale con comprobante interno, y se remite. **La base ya está aplicada**, y la consulta de CUIT a ARCA ya deja entrar al vendedor de calle; la app ya está publicada. Ver *Lo último que pasó*. **736 pruebas verdes en la app.**
 
 **Publicada: 0.17.2** (22/10) — **la ventana de *Buscar fotos* ya se desplaza**. Visto en el local: con diez fotos por producto la ventana pasaba el alto de la pantalla y no había forma de bajar ni de llegar a *Guardar*. Era cómo se centraba —una grilla, donde el alto máximo no se aplica—; ahora se centra con flex y la lista se desplaza. *Subir fotos* estaba armada igual y quedó igual de arreglada. Medido: en una pantalla de 768 px la ventana medía 1.802; ahora 752, con los botones a la vista, y a 375 px también.
@@ -88,6 +90,18 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 🟡 **Lo que la venta tardaba en llegar a la caja sin internet** — arreglado el 05/10 y publicado en la 0.13.4, **sin probar en el local**. El mostrador le pasaba las ventas a la caja una vez por minuto, y la caja miraba su cola cada ocho segundos: hasta 68 segundos con el cliente esperando. Y llegaba de a partes porque, mientras la cabecera intentaba subir al servidor —hasta doce segundos sin internet—, salían los renglones solos. Ahora la venta sale al segundo y medio de apretar *Enviar a caja* (y otra vez a los catorce, por si el intento de subir tardó), viaja entera o espera entera, y la caja la muestra apenas llega. Se comprueba en el próximo corte: la venta tiene que aparecer en la caja en un par de segundos y completa.
 
 ---
+
+## Lo último que pasó — 29 de octubre: la orden de recibo y el recibo numerado
+
+**Facundo no emite recibos: arma una orden de recibo**, y la deuda no baja hasta que el local confirma que entró la plata (fase-03, 5.4). Detalle en [`fase-03.md`](fase-03.md), *Lo que ya está*.
+
+- **La base** ([`20261029120000_recibo_y_orden_de_recibo.sql`](../supabase/migrations/20261029120000_recibo_y_orden_de_recibo.sql), aplicada): el recibo con su número (serie 0001), la orden de recibo y el permiso para armarla, que el rol *Vendedor de calle* ya trae. **Emitir el recibo es la cobranza de siempre** (`registrar_cobranza`, o la de cheques): no hay otra manera de bajar una deuda. El recibo mandado dos veces —se corta la conexión y se aprieta de nuevo— es uno solo.
+- **El número arranca en 1.** Si Gross viene con un talonario de papel y quiere seguir esa numeración, se cambia `recibo.primer_numero` en la configuración **antes del primer recibo**.
+- **Un cliente marcado como mayorista queda con cuenta corriente** a 30 días. Salió probando: ningún cliente cargado tenía cuenta corriente, así que a ninguno se le podía aceptar un cobro. Los que ya estaban marcados no cambian; se arregla al volver a guardarlos o tildándolo en la ficha.
+- **Probado contra la base, como usuario**, con todo deshecho al final: el vendedor arma la orden y no la puede aceptar ni rechazar, ni ve los recibos; la orden mandada dos veces no se duplica; al aceptar sale el recibo y baja la deuda; el mismo recibo mandado dos veces es uno solo; una orden aceptada no se acepta otra vez; con cheques, el recibo lleva cada cheque.
+- **Las pantallas, vistas a 375 px** con datos inventados: nada se desplaza hacia el costado. Se corrigió que la deuda del cliente se cortaba al armar la orden en el teléfono.
+- 🟡 **Falta subir la función del mail** ([`enviar-factura`](../supabase/functions/enviar-factura/index.ts)), que ahora también manda recibos. Desde acá no se pudo: quedó bloqueado por permisos.
+- 🟡 **Falta probarlo con el usuario de Facundo**, que Lucas crea esta semana.
 
 ## Lo último que pasó — 29 de octubre: Buscar fotos decía «El buscador contestó 400»
 

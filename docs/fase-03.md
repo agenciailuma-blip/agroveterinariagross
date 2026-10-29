@@ -155,12 +155,16 @@ Para que Facundo salga a la calle la semana del 2/11. Va en la **0.18.0**.
 - **La lista de precios mayorista**: precio fijo por producto, se carga en *Mayorista → Lista de precios*. Facundo ve sólo esos productos.
 - **El pedido**: Facundo elige el cliente, busca los productos y manda. **Sin señal, el pedido queda en el teléfono y sale solo cuando vuelve**, sin duplicarse. En el local, el número de pedidos esperando se ve en el menú. Depósito corrige lo que falte y lo marca **corroborado**; después **Facturar** o **Sin factura** (comprobante interno), a la cuenta corriente —es la venta de siempre: baja el stock, anota la deuda con su vencimiento y controla el límite de crédito—. La factura sale por mail al cliente si tiene mail. Después, **Remito**.
 
+- **La orden de recibo** (*Mayorista → Cobros*, y el botón *Cobro* en cada cliente): Facundo anota cuánto le pagaron, cómo —transferencia, efectivo o cheque— y un detalle. **Sin señal queda en el teléfono y sale sola cuando vuelve**, sin duplicarse. **No baja la deuda.** En el local, el número de órdenes esperando se ve en el menú; **«Entró la plata: emitir el recibo»** abre la cobranza con lo que dijo Facundo ya puesto, para corregirlo si entró otra cosa. Recién ahí sale el recibo y baja la deuda. O **Rechazar**, con el motivo, que Facundo ve.
+- **El recibo numerado**, el mismo para toda cobranza de cuenta corriente: el de la ficha del cliente también sale con número (0001-00000001 en adelante). Hoja A4 para imprimir con el importe en letras y el saldo que queda, y **por mail en PDF**: al aceptar una orden se manda solo si el cliente tiene mail; desde la hoja, *Mandar por mail* a cualquier dirección. **El registro de recibos** está en *Clientes → Recibos*, por cliente o por número.
+- **Marcar a un cliente como mayorista le abre la cuenta corriente** a 30 días (si no la tenía): sin eso no se le puede vender por pedido ni aceptar sus cobros.
+
 **Lo que falta del mayorista**, en este orden:
-1. **La orden de recibo y el recibo numerado** (5.4) — la próxima entrega.
-2. **El mail del pedido al cliente** al armarlo (hoy le llega la factura).
-3. **Frenar al vender a quien tiene vencido** y que el encargado autorice (respuesta 7): hoy Facundo y el local **ven** el vencido; lo que frena es el límite de crédito, como en la caja.
-4. **El pin en el mapa** con todos los clientes (hoy cada uno tiene su «Cómo llegar») y **las estadísticas** (5.5).
-5. **La planilla** para cargar la lista mayorista de a muchos.
+1. **El mail del pedido al cliente** al armarlo (hoy le llega la factura).
+2. **Frenar al vender a quien tiene vencido** y que el encargado autorice (respuesta 7): hoy Facundo y el local **ven** el vencido; lo que frena es el límite de crédito, como en la caja.
+3. **El pin en el mapa** con todos los clientes (hoy cada uno tiene su «Cómo llegar») y **las estadísticas** (5.5).
+4. **La planilla** para cargar la lista mayorista de a muchos.
+5. **Anular un recibo**: hoy un recibo emitido por error se compensa a mano en la cuenta corriente.
 
 ### 5.1 El cliente mayorista
 

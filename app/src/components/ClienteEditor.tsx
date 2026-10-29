@@ -369,7 +369,13 @@ export default function ClienteEditor({
             type="checkbox"
             checked={datos.mayorista ?? false}
             disabled={!puedeEditar}
-            onChange={(e) => set({ mayorista: e.target.checked })}
+            // Lo del vendedor de calle va siempre a cuenta corriente: al
+            // marcarlo se habilita (la base hace lo mismo al guardar).
+            onChange={(e) =>
+              set(e.target.checked && !datos.cuenta_corriente
+                ? { mayorista: true, cuenta_corriente: true }
+                : { mayorista: e.target.checked })
+            }
             className="size-4 rounded border-borde text-marca-700 focus:ring-marca-500"
           />
           Lo atiende el vendedor de calle

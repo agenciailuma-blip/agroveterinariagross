@@ -52,6 +52,7 @@ export default function MayoristaClientes() {
   const puedeVer = tienePermiso('mayorista.vender') || tienePermiso('mayorista.atender')
   const cargaClientes = tienePermiso('mayorista.clientes')
   const arma = tienePermiso('mayorista.vender')
+  const cobra = tienePermiso('mayorista.cobrar')
 
   const clientes = useQuery({
     queryKey: ['mayorista-clientes'],
@@ -165,6 +166,7 @@ export default function MayoristaClientes() {
               c={c}
               onEditar={cargaClientes ? () => setEditando(c) : undefined}
               onPedido={arma ? () => navegar(`/mayorista?cliente=${c.id}`) : undefined}
+              onCobro={cobra ? () => navegar(`/mayorista/cobros?cliente=${c.id}`) : undefined}
             />
           ))}
         </ul>
@@ -177,10 +179,13 @@ function FilaCliente({
   c,
   onEditar,
   onPedido,
+  onCobro,
 }: {
   c: ClienteMayorista
   onEditar?: () => void
   onPedido?: () => void
+  /** Le pagó al vendedor: la orden de recibo. */
+  onCobro?: () => void
 }) {
   const whatsapp = enlaceWhatsapp(c.telefono)
   const mapa = enlaceMapa(c)
@@ -220,6 +225,11 @@ function FilaCliente({
         {onPedido && (
           <button onClick={onPedido} className={botonChico.principal}>
             Pedido
+          </button>
+        )}
+        {onCobro && (
+          <button onClick={onCobro} className={botonChico.secundario}>
+            Cobro
           </button>
         )}
         {c.telefono && (

@@ -87,11 +87,12 @@ describe('las pestañas que se ven', () => {
     expect(seccionDe('/calendario')?.seccion.id).toBe('tesoreria')
   })
 
-  it('Mayorista: el vendedor de calle ve pedidos y clientes, no la lista de precios', () => {
-    const vendedorDeCalle = con(['mayorista.vender', 'mayorista.clientes', 'mayorista.ver_stock'])
+  it('Mayorista: el vendedor de calle ve pedidos, clientes y cobros, no la lista de precios', () => {
+    const vendedorDeCalle = con(['mayorista.vender', 'mayorista.clientes', 'mayorista.ver_stock', 'mayorista.cobrar'])
     expect(pestanasVisibles(seccion('mayorista'), vendedorDeCalle).map((p) => p.etiqueta)).toEqual([
       'Pedidos',
       'Clientes',
+      'Cobros',
     ])
     // Y ninguna otra sección, salvo el inicio.
     const otras = SECCIONES.filter((s) => s.id !== 'mayorista' && s.id !== 'inicio')
@@ -102,9 +103,18 @@ describe('las pestañas que se ven', () => {
     expect(pestanasVisibles(seccion('mayorista'), con(['mayorista.atender'])).map((p) => p.etiqueta)).toEqual([
       'Pedidos',
       'Clientes',
+      'Cobros',
     ])
     expect(seccionDe('/mayorista/lista')?.pestana.etiqueta).toBe('Lista de precios')
     expect(seccionDe('/mayorista')?.pestana.etiqueta).toBe('Pedidos')
+  })
+
+  it('el registro de recibos lo ve quien ve o cobra cuentas, no el vendedor de calle', () => {
+    expect(pestanasVisibles(seccion('clientes'), con(['cuentacorriente.cobrar'])).map((p) => p.etiqueta)).toEqual([
+      'Recibos',
+    ])
+    expect(pestanasVisibles(seccion('clientes'), con(['mayorista.cobrar']))).toEqual([])
+    expect(seccionDe('/recibos')?.seccion.id).toBe('clientes')
   })
 
   it('sin ningún permiso de la sección, la sección no tiene pestañas', () => {

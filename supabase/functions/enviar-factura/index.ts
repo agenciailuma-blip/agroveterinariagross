@@ -14,6 +14,10 @@ import { armarMail, correoValido, errorDelCorreo, nombreDelPdf, pdfValido } from
 // la factura tiene que existir y estar autorizada, el asunto y el nombre
 // del archivo salen de ella, y el remitente, de la configuración.
 //
+// También manda el recibo de una cobranza (Fase 03, 5.4): con recibo_id
+// en vez de comprobante_id. Mismo correo, mismo PDF armado en la app;
+// el envío queda anotado en el recibo.
+//
 // La clave de Resend está en los secretos del proyecto (RESEND_API_KEY)
 // y nunca sale de acá. Contesta antes de los 35 segundos que la app le
 // espera: Resend tiene veinte.
@@ -41,18 +45,33 @@ Deno.serve(async (req: Request) => {
   const servidor = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
   try {
-    // Manda quien puede ver la facturación: el que tiene la factura abierta.
+    // Los permisos se miran como el usuario que aprieta el botón.
     const comoUsuario = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } } },
     );
-    const permiso = await comoUsuario.rpc("tiene_permiso", { p_clave: "facturacion.ver" });
-    if (!permiso.data) {
-      return responder({ ok: false, motivo: "sin_permiso", error: "No tenés permiso para mandar facturas." }, 403);
+    const body = await req.json().catch(() => ({}));
+    const reciboId = body.recibo_id ? String(body.recibo_id) : null;
+
+    // El recibo lo manda quien cobra o ve las cuentas; la factura, quien ve la facturación.
+    const permisos = reciboId ? ["cuentacorriente.cobrar", "cuentacorriente.ver"] : ["facturacion.ver"];
+    let puede = false;
+    for (const clave of permisos) {
+      const r = await comoUsuario.rpc("tiene_permiso", { p_clave: clave });
+      if (r.data) {
+        puede = true;
+        break;
+      }
+    }
+    if (!puede) {
+      return responder({
+        ok: false,
+        motivo: "sin_permiso",
+        error: reciboId ? "No tenés permiso para mandar recibos." : "No tenés permiso para mandar facturas.",
+      }, 403);
     }
 
-    const body = await req.json().catch(() => ({}));
     const comprobanteId = String(body.comprobante_id ?? "");
     const destinatario = String(body.destinatario ?? "").trim();
     const automatico = body.automatico === true;
@@ -67,8 +86,10 @@ Deno.serve(async (req: Request) => {
       pdf = new Uint8Array();
     }
     if (!pdfValido(pdf)) {
-      return responder({ ok: false, motivo: "pdf", error: "No llegó bien el PDF de la factura. Probá de nuevo." }, 400);
+      return responder({ ok: false, motivo: "pdf", error: `No llegó bien el PDF ${reciboId ? "del recibo" : "de la factura"}. Probá de nuevo.` }, 400);
     }
+
+    if (reciboId) return await mandarRecibo(servidor, reciboId, destinatario, String(body.pdf));
 
     const { data: c } = await servidor
       .from("comprobante")
@@ -151,3 +172,77 @@ Deno.serve(async (req: Request) => {
     return responder({ ok: false, motivo: "error", error: err instanceof Error ? err.message : String(err) }, 500);
   }
 });
+
+// ───────────────────────────────────────────────────────────────
+// El recibo
+// ───────────────────────────────────────────────────────────────
+
+// deno-lint-ignore no-explicit-any
+type Cliente = any;
+
+async function mandarRecibo(
+  servidor: Cliente,
+  reciboId: string,
+  destinatario: string,
+  pdfBase64: string,
+): Promise<Response> {
+  const { data: r } = await servidor
+    .from("recibo")
+    .select("id, serie, numero, fecha, total, cliente:cliente_id(nombre)")
+    .eq("id", reciboId)
+    .maybeSingle();
+  if (!r) return responder({ ok: false, motivo: "recibo", error: "No se encontró el recibo." }, 404);
+
+  const clave = Deno.env.get("RESEND_API_KEY");
+  if (!clave) return responder({ ok: false, motivo: "sin_clave", error: "Falta la clave de Resend en el servidor." }, 503);
+
+  const { data: config } = await servidor
+    .from("configuracion")
+    .select("clave, valor")
+    .in("clave", ["correo.remitente", "correo.responder_a", "correo.logo", "comercio.nombre_fantasia", "comercio.razon_social",
+      "comercio.domicilio", "comercio.localidad", "comercio.telefono"]);
+  const valor = (k: string) => String((config as { clave: string; valor: unknown }[] | null)?.find((x) => x.clave === k)?.valor ?? "").trim();
+
+  const numero = `${r.serie}-${String(r.numero).padStart(8, "0")}`;
+  const responderA = valor("correo.responder_a");
+  const mail = armarMail({
+    tipo: "Recibo",
+    numero,
+    fecha: String(r.fecha ?? ""),
+    total: Number(r.total),
+    receptor: String((uno(r.cliente as never) as { nombre: string } | null)?.nombre ?? ""),
+    comercio: valor("comercio.nombre_fantasia") || valor("comercio.razon_social") || "Agroveterinaria Gross",
+    domicilio: [valor("comercio.domicilio"), valor("comercio.localidad")].filter(Boolean).join(", "),
+    telefono: valor("comercio.telefono"),
+    logo: valor("correo.logo") || "https://gross-sistema.pages.dev/marca/correo-isotipo-blanco.png",
+    respondible: !!responderA,
+    esRecibo: true,
+  });
+
+  const respuesta = await fetch(RESEND, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${clave}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from: valor("correo.remitente") || "Agroveterinaria Gross <onboarding@resend.dev>",
+      to: [destinatario],
+      ...(responderA ? { reply_to: responderA } : {}),
+      subject: mail.asunto,
+      html: mail.html,
+      text: mail.texto,
+      attachments: [{ filename: nombreDelPdf({ tipo: "Recibo", numero }), content: pdfBase64 }],
+    }),
+    signal: AbortSignal.timeout(ESPERA_MS),
+  });
+  const cuerpo = await respuesta.json().catch(() => ({}));
+  const error = respuesta.ok ? null : errorDelCorreo(respuesta.status, String(cuerpo?.message ?? cuerpo?.error ?? ""));
+
+  await servidor.from("recibo").update({
+    mail_destinatario: destinatario,
+    mail_estado: respuesta.ok ? "enviado" : "error",
+    mail_error: error,
+    mail_en: new Date().toISOString(),
+  }).eq("id", reciboId);
+
+  if (!respuesta.ok) return responder({ ok: false, motivo: "correo_rechazo", error }, 502);
+  return responder({ ok: true, referencia: cuerpo?.id ?? null });
+}

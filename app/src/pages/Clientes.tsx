@@ -22,7 +22,7 @@ type Pestania = 'datos' | 'cuenta'
 
 export default function Clientes() {
   const botonGuardar = useBotonConAtajo('F9')
-  const { perfil, tienePermiso } = useAuth()
+  const { tienePermiso } = useAuth()
   const qc = useQueryClient()
 
   const [texto, setTexto] = useState('')
@@ -311,7 +311,6 @@ export default function Clientes() {
                 <CuentaCorriente
                   cliente={detalle.data.cliente}
                   saldo={detalle.data.saldo}
-                  usuarioId={perfil!.id}
                   puedeCobrar={puedeCobrar}
                   onCambio={() => {
                     qc.invalidateQueries({ queryKey: ['cliente', seleccionado] })

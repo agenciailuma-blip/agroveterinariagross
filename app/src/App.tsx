@@ -44,6 +44,9 @@ import Costos from '@/pages/Costos'
 import Mayorista from '@/pages/Mayorista'
 import MayoristaClientes from '@/pages/MayoristaClientes'
 import MayoristaLista from '@/pages/MayoristaLista'
+import MayoristaCobros from '@/pages/MayoristaCobros'
+import Recibos from '@/pages/Recibos'
+import ReciboImprimible from '@/pages/ReciboImprimible'
 
 /*
   networkMode: 'always' es lo más importante de esta configuración.
@@ -154,6 +157,8 @@ function Rutas() {
         <Route path="mayorista" element={<Mayorista />} />
         <Route path="mayorista/clientes" element={<MayoristaClientes />} />
         <Route path="mayorista/lista" element={<MayoristaLista />} />
+        <Route path="mayorista/cobros" element={<MayoristaCobros />} />
+        <Route path="recibos" element={<Recibos />} />
         <Route path="clientes" element={<Clientes />} />
         <Route path="clientes/importar" element={<ImportarSaldos tipo="clientes" />} />
         <Route path="clientes/verificar" element={<VerificarClientesArca />} />
@@ -175,6 +180,7 @@ function Rutas() {
       <Route path="comprobante/:id" element={<ComprobanteImprimible />} />
       <Route path="comprobantes/listado" element={<ListadoDeComprobantesImprimible />} />
       <Route path="no-fiscal/:id" element={<NoFiscalImprimible />} />
+      <Route path="recibo/:id" element={<ReciboImprimible />} />
       <Route path="orden-interna/:id" element={<OrdenInternaImprimible />} />
       <Route path="pedido-proveedor/:id" element={<PedidoProveedorImprimible />} />
       <Route path="cuenta-corriente/:clienteId" element={<ResumenCuentaCorriente />} />
