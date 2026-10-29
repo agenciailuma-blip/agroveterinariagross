@@ -12,7 +12,7 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Construida: 0.19.10 — falta publicarla.** **Traslados**: las órdenes para ir a buscar o llevar un animal, en una pestaña nueva de Ventas, con sus estados, el mapa, el cobro por la caja, la hoja del día para el que maneja y las estadísticas de kilómetros, costo y tiempo. **La base ya está aplicada.** Ver *Lo último que pasó*. **799 pruebas verdes en la app.**
+**Publicada: 0.19.10** (29/10, 18:59), verificada en Cloudflare: `latest.json` dice 0.19.10, el instalador está publicado y la versión web ya trae Traslados. **Traslados**: las órdenes para ir a buscar o llevar un animal, en una pestaña nueva de Ventas, con sus estados, el mapa, el cobro por la caja, la hoja del día para el que maneja y las estadísticas de kilómetros, costo y tiempo. **La base ya está aplicada.** Ver *Lo último que pasó*. **799 pruebas verdes en la app.**
 
 **Publicada: 0.19.9** (29/10, 18:38), verificada en Cloudflare: `latest.json` dice 0.19.9, el instalador está publicado y la versión web ya trae Fiados. **Fiados**: un medio de pago nuevo en la caja que pide el DNI, y una sección propia en el menú con la cuenta de cada persona, sus fechas de pago, los cobros con recibo y el aviso por WhatsApp. **La base ya está aplicada.** Ver *Lo último que pasó*. **788 pruebas verdes en la app.**
 
@@ -113,7 +113,7 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 
 ## Lo último que pasó — 29 de octubre: los traslados
 
-**Fase-03, punto 6.** Construida en la 0.19.10, falta publicarla.
+**Fase-03, punto 6.** Publicada en la 0.19.10.
 
 - **Una pestaña nueva, *Traslados*, en Ventas** —termina en la caja, como los pedidos—, y no una sección más en el menú.
 - **La orden** lleva fecha, hora, motivo (eutanasia, cirugía, retiro, devolución u otro), dirección y localidad, nombre completo y teléfono del dueño, el animal, el monto y observaciones. Cada una tiene su número.
