@@ -12,7 +12,7 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Construida: 0.19.1** (29/10) — ⚠️ **publicarla cuanto antes**. **El freno al cliente mayorista con deuda vencida**: su pedido no se factura hasta que un encargado lo autoriza, con un clic o con su PIN. **La base ya frena desde el 29/10 a la tarde, y la 0.19.0 no tiene el botón para autorizar**: hasta publicar la 0.19.1, el pedido de un cliente con vencido no se puede facturar. Y **Productos ya no baja hasta una zona vacía** con la ficha abierta. Ver *Lo último que pasó*. **756 pruebas verdes en la app.**
+**Publicada: 0.19.1** (29/10, 12:05), verificada en Cloudflare: `latest.json` dice 0.19.1, el instalador está publicado y la versión web ya trae el freno. **El freno al cliente mayorista con deuda vencida**: su pedido no se factura hasta que un encargado lo autoriza, con un clic o con su PIN. Y **Productos ya no baja hasta una zona vacía** con la ficha abierta. Ver *Lo último que pasó*. **756 pruebas verdes en la app.**
 
 **Publicada: 0.19.0** (29/10, 11:27), verificada en Cloudflare: `latest.json` dice 0.19.0. **La orden de recibo y el recibo numerado**: Facundo anota en el teléfono lo que le pagaron —también sin señal— y en el local, cuando confirman que entró la plata, sale el recibo con número, baja la deuda y se le manda por mail al cliente. El mismo recibo sale en toda cobranza de cuenta corriente, y hay un registro en *Clientes → Recibos*. Y **el mail del pedido**: apenas el pedido de Facundo llega al local, al cliente le llega el detalle. **La base y la función del mail ya están en el servidor.** Ver *Lo último que pasó*. **753 pruebas verdes en la app.**
 
