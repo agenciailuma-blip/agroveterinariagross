@@ -29,6 +29,7 @@ function fila(extra: Partial<FilaNoFiscal> = {}): FilaNoFiscal {
     transportista: 'Camioneta 1',
     descuenta_stock: true,
     venta_id: 'v1',
+    convertido_en_comprobante_id: null,
     venta_codigo: 'CAJA1-000010',
     venta_estado: 'cobrada',
     ...extra,

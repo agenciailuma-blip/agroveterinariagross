@@ -12,6 +12,8 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
+**Construida: 0.19.8** (29/10) — **falta publicarla**. **El comprobante interno se factura con un botón**: en *Comprobantes no fiscales*, *Facturar* saca la factura de esa venta con fecha de hoy, sin rehacerla y sin tocar stock ni caja. **La base ya está aplicada.** Ver *Lo último que pasó*. **778 pruebas verdes en la app.**
+
 **Publicada: 0.19.7** (29/10, 17:40), verificada en Cloudflare: `latest.json` dice 0.19.7, el instalador está publicado y la versión web ya trae los productos asociados. **Los productos asociados**: en el mostrador, F11 junta renglones bajo un concepto —«Repuestos pulverizadora»— y la factura los muestra en uno solo, por el total; el stock, la caja y el IVA siguen con los productos reales. **La base ya está aplicada.** Ver *Lo último que pasó*. **778 pruebas verdes en la app.**
 
 **Publicada: 0.19.6** (29/10, 17:10), verificada en Cloudflare: `latest.json` dice 0.19.6, el instalador está publicado y la versión web ya trae el remito interno. Antes se volvió a subir la 0.19.5 con el número viejo: las PC no la tomaron porque el número no cambió, y la 0.19.6 la reemplazó. **El remito interno y *Pendientes de facturar***: la mercadería sale del mostrador con un remito sin precio, descuenta stock, y después se le ponen los precios y sale la factura o el comprobante interno a cuenta corriente, de uno o de varios remitos juntos. **La base ya está aplicada.** Ver *Lo último que pasó*. **774 pruebas verdes en la app.**
@@ -104,6 +106,18 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 🟡 **Lo que la venta tardaba en llegar a la caja sin internet** — arreglado el 05/10 y publicado en la 0.13.4, **sin probar en el local**. El mostrador le pasaba las ventas a la caja una vez por minuto, y la caja miraba su cola cada ocho segundos: hasta 68 segundos con el cliente esperando. Y llegaba de a partes porque, mientras la cabecera intentaba subir al servidor —hasta doce segundos sin internet—, salían los renglones solos. Ahora la venta sale al segundo y medio de apretar *Enviar a caja* (y otra vez a los catorce, por si el intento de subir tardó), viaja entera o espera entera, y la caja la muestra apenas llega. Se comprueba en el próximo corte: la venta tiene que aparecer en la caja en un par de segundos y completa.
 
 ---
+
+## Lo último que pasó — 29 de octubre: el comprobante interno que después se factura
+
+**Fase-03, punto 8** (la proforma que se factura desde la misma pantalla). Va en la 0.19.8.
+
+- **En *Comprobantes no fiscales***, cada comprobante interno de una venta ya cobrada tiene **Facturar**. Pide confirmar y saca la factura de esa venta —A o B según el cliente— con los mismos renglones y **la fecha de hoy**, aunque la venta sea de hace un mes. Se pide el CAE en el momento; si ARCA no responde, queda pendiente y se reintenta desde Facturación, como siempre.
+- **No se rehace nada:** el stock y la caja no se tocan, porque la venta ya está cobrada. El comprobante interno pasa a **facturado**, y tocar esa marca abre la factura.
+- **La percepción de IIBB**, si al cliente le corresponde, va en la factura y se le carga a la cuenta corriente, porque con el comprobante interno no se le cobró. Si le corresponde y no tiene cuenta corriente, no se factura desde acá y lo dice.
+- **Si es a cuenta corriente**, la factura le sale sola por mail, como en el punto 1.
+- **Usa lo que ya existía:** las columnas para enlazar el interno con su factura están desde el 04/09, y la factura sale por el mismo camino que *Por facturar*.
+- **La base** ([`20261030110000_el_comprobante_interno_se_factura.sql`](../supabase/migrations/20261030110000_el_comprobante_interno_se_factura.sql), aplicada). **Probada como usuario** con un comprobante interno real, con todo deshecho al final: sale la factura B pendiente de CAE, con fecha de hoy y el mismo total; stock y cuenta corriente sin tocar; el interno queda facturado y enlazado; facturarlo dos veces → no; un vendedor → no; cliente inscripto con percepción y sin cuenta corriente → no; con cuenta corriente → factura A con la percepción y la nota de débito en la cuenta.
+- **El botón está en el listado, no en la hoja del comprobante.** **Sin probar en la app con sesión iniciada**, ni medido a 375 px: el botón va en la misma columna que *Ver* y *Anular*. **778 verdes** y los tipos sin errores.
 
 ## Lo último que pasó — 29 de octubre: los productos asociados
 

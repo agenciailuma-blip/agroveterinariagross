@@ -12,7 +12,10 @@ import {
   numeroNoFiscal,
 } from '@/lib/api/noFiscal'
 import type { FilaNoFiscal, TipoNoFiscal } from '@/lib/api/noFiscal'
-import { abrirNoFiscal } from '@/lib/escritorio'
+import { abrirComprobante, abrirNoFiscal } from '@/lib/escritorio'
+import { confirmar } from '@/components/Dialogo'
+import { facturarComprobanteInterno } from '@/lib/api/facturacion'
+import { mandarSolaACuentaCorriente } from '@/lib/api/facturaPorMail'
 import { moneda } from '@/lib/tipos'
 
 /*
@@ -44,6 +47,7 @@ export default function NoFiscales() {
 
   const puedeVer = tienePermiso('facturacion.no_fiscal_ver')
   const puedeAnular = tienePermiso('facturacion.no_fiscal_anular')
+  const puedeFacturar = tienePermiso('facturacion.emitir')
 
   const filas = useQuery({
     queryKey: ['no-fiscales', filtro],
@@ -68,6 +72,31 @@ export default function NoFiscales() {
       qc.invalidateQueries({ queryKey: ['cola-caja'] })
     },
     onError: (e) => setError(e instanceof Error ? e.message : 'No se pudo mandar a la caja.'),
+  })
+
+  /*
+    El comprobante interno que el cliente después quiere con factura.
+    Sale con los mismos renglones y la fecha de hoy; el stock y la caja
+    no se tocan, porque la venta ya está cobrada.
+  */
+  const facturar = useMutation({
+    mutationFn: (id: string) => facturarComprobanteInterno(id),
+    onSuccess: ({ cae, comprobanteId, problema }) => {
+      qc.invalidateQueries({ queryKey: ['no-fiscales'] })
+      qc.invalidateQueries({ queryKey: ['comprobantes'] })
+      if (problema) {
+        setAviso(null)
+        setError(`La factura quedó armada, pero ARCA no la autorizó todavía: ${problema} Se reintenta desde Facturación.`)
+        return
+      }
+      setError(null)
+      const texto = `Factura autorizada por ARCA. CAE ${cae}`
+      setAviso(texto)
+      void mandarSolaACuentaCorriente(comprobanteId).then((mail) => {
+        if (mail) setAviso(`${texto} ${mail}`)
+      })
+    },
+    onError: (e) => setError(e instanceof Error ? e.message : 'No se pudo facturar.'),
   })
 
   const anular = useMutation({
@@ -165,8 +194,17 @@ export default function NoFiscales() {
                   key={f.id}
                   f={f}
                   puedeAnular={puedeAnular}
-                  trabajando={aCaja.isPending || anular.isPending}
+                  puedeFacturar={puedeFacturar}
+                  trabajando={aCaja.isPending || anular.isPending || facturar.isPending}
                   onACaja={() => f.venta_id && aCaja.mutate(f.venta_id)}
+                  onFacturar={async () => {
+                    const sigue = await confirmar({
+                      titulo: `¿Facturar ${numeroNoFiscal(f.tipo_clave, f.serie, f.numero)}?`,
+                      detalle: `Sale la factura a ${f.receptor_nombre} por ${moneda.format(f.total)}, con fecha de hoy. El stock y la caja no se tocan.`,
+                      aceptar: 'Facturar',
+                    })
+                    if (sigue) facturar.mutate(f.id)
+                  }}
                   onAnular={async () => {
                     const motivo = await pedirTexto({
                       titulo: `¿Anular ${numeroNoFiscal(f.tipo_clave, f.serie, f.numero)}?`,
@@ -191,14 +229,18 @@ export default function NoFiscales() {
 function Fila({
   f,
   puedeAnular,
+  puedeFacturar,
   trabajando,
   onACaja,
+  onFacturar,
   onAnular,
 }: {
   f: FilaNoFiscal
   puedeAnular: boolean
+  puedeFacturar: boolean
   trabajando: boolean
   onACaja: () => void
+  onFacturar: () => void
   onAnular: () => void
 }) {
   const vencido =
@@ -213,11 +255,25 @@ function Fila({
   const puedeIrACaja =
     f.tipo_clave === 'presupuesto' && f.estado === 'emitido' && f.venta_estado === 'borrador'
 
+  // El comprobante interno de una venta ya cobrada se puede facturar.
+  const sePuedeFacturar =
+    puedeFacturar && f.tipo_clave === 'comprobante_interno' && f.estado === 'emitido' && f.venta_estado === 'cobrada'
+
   const estado =
     f.estado === 'anulado' ? (
       <span className="rounded bg-piedra-100 px-1.5 py-0.5 text-piedra-600">anulado</span>
     ) : f.estado === 'convertido' ? (
-      <span className="rounded bg-verde-100 px-1.5 py-0.5 text-verde-800">facturado</span>
+      f.convertido_en_comprobante_id ? (
+        <button
+          onClick={() => abrirComprobante(f.convertido_en_comprobante_id!)}
+          className="rounded bg-verde-100 px-1.5 py-0.5 text-verde-800 underline"
+          title="Ver la factura"
+        >
+          facturado
+        </button>
+      ) : (
+        <span className="rounded bg-verde-100 px-1.5 py-0.5 text-verde-800">facturado</span>
+      )
     ) : vencido ? (
       <span className="rounded bg-amber-100 px-1.5 py-0.5 text-amber-900">vencido</span>
     ) : f.valido_hasta ? (
@@ -266,6 +322,15 @@ function Fila({
               className="text-xs font-medium text-marca-700 underline disabled:opacity-40"
             >
               Mandar a cobrar
+            </button>
+          )}
+          {sePuedeFacturar && (
+            <button
+              onClick={onFacturar}
+              disabled={trabajando}
+              className="text-xs font-medium text-marca-700 underline disabled:opacity-40"
+            >
+              Facturar
             </button>
           )}
           {f.estado !== 'anulado' && (

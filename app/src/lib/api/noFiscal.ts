@@ -552,6 +552,8 @@ export interface FilaNoFiscal {
   */
   descuenta_stock: boolean
   venta_id: string | null
+  /** La factura en que terminó, si se facturó. */
+  convertido_en_comprobante_id: string | null
   venta_codigo: string | null
   venta_estado: string | null
 }
@@ -561,7 +563,8 @@ export async function listarNoFiscales(tipo: TipoNoFiscal | 'todos'): Promise<Fi
     .from('comprobante_no_fiscal')
     .select(
       `id, tipo_clave, serie, numero, fecha, receptor_nombre, total, estado, valido_hasta,
-       entrega_localidad, transportista, descuenta_stock, venta_id, venta:venta_id(codigo, estado)`,
+       entrega_localidad, transportista, descuenta_stock, venta_id, convertido_en_comprobante_id,
+       venta:venta_id(codigo, estado)`,
     )
     .order('creado_en', { ascending: false })
     .limit(200)

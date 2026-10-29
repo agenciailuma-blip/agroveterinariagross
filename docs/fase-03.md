@@ -278,6 +278,8 @@ Quién la carga: cualquiera con el permiso; arranca con encargados y consultorio
 
 *Lámina 07, punto 4.* Un comprobante interno (proforma) que después hay que facturar: hoy hay que rehacer la venta. **Un botón *Facturar* en el comprobante interno**, que emite la factura con los mismos renglones y deja los dos asociados. El stock no se toca dos veces.
 
+**Ya está (29/10):** *Facturar* en cada comprobante interno de una venta cobrada, en *Comprobantes no fiscales*. La factura sale con fecha de hoy; stock y caja no se tocan; el interno queda «facturado» y enlazado a la factura. La percepción de IIBB, si corresponde, se carga a la cuenta corriente.
+
 ---
 
 ## Lo que se anota aparte: la auditoría de integralidad

@@ -257,6 +257,26 @@ export async function facturarVenta(ventaId: string): Promise<{ comprobanteId: s
 }
 
 /*
+  El comprobante interno que después se factura (fase-03, punto 8). La
+  base arma la factura con fecha de hoy, sin tocar stock ni caja, y deja
+  el interno enlazado a ella. El CAE se pide acá: si ARCA no responde, la
+  factura queda pendiente y se reintenta desde Facturación.
+*/
+export async function facturarComprobanteInterno(
+  id: string,
+): Promise<{ comprobanteId: string; cae: string | null; problema: string | null }> {
+  const { data, error } = await supabase.rpc('facturar_comprobante_interno', { p_id: id })
+  if (error) throw new Error(error.message)
+  const comprobanteId = data as string
+  try {
+    const { cae } = await solicitarCae(comprobanteId)
+    return { comprobanteId, cae, problema: null }
+  } catch (e) {
+    return { comprobanteId, cae: null, problema: e instanceof Error ? e.message : 'ARCA no respondió.' }
+  }
+}
+
+/*
   ─────────────────────────────────────────────────────────────
   Por facturar: ventas a cuenta corriente que esperan su factura
 
