@@ -245,6 +245,19 @@ Deno.serve(async (req: Request) => {
     const r = interpretarConstancia(xml, cuit);
 
     if (!r.encontrado) {
+      /*
+        El ARCA de pruebas sólo conoce sus CUIT inventados: un CUIT real
+        no aparece y no es que esté mal cargado. Va con su propio motivo
+        para que Verificar con ARCA corte ahí y no marque a cada cliente
+        como inexistente (29/10).
+      */
+      if (/no existe/i.test(r.motivo) && ambiente === "homologacion") {
+        return responder({
+          ok: false,
+          motivo: "arca_de_pruebas",
+          error: "El sistema está conectado al ARCA de pruebas, que no tiene los CUIT reales. Cargá los datos a mano.",
+        }, 503);
+      }
       if (/no existe/i.test(r.motivo)) {
         return responder({ ok: false, motivo: "no_existe", error: "ARCA no tiene ningún contribuyente con ese CUIT." }, 404);
       }

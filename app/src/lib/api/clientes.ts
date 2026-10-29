@@ -169,7 +169,14 @@ export type ConsultaArca =
   | { ok: true; datos: DatosDeArca }
   | {
       ok: false
-      motivo: 'cuit_invalido' | 'no_existe' | 'sin_autorizacion' | 'arca_no_responde' | 'sin_conexion' | 'error'
+      motivo:
+        | 'cuit_invalido'
+        | 'no_existe'
+        | 'arca_de_pruebas'
+        | 'sin_autorizacion'
+        | 'arca_no_responde'
+        | 'sin_conexion'
+        | 'error'
       error: string
     }
 

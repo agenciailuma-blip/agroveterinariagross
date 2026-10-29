@@ -80,7 +80,7 @@ export default function VerificarClientesArca() {
         if (r.motivo === 'no_existe' || r.motivo === 'cuit_invalido') {
           encontrados.push({ tipo: r.motivo, cliente })
         } else {
-          // ARCA no contesta, no está autorizado o se cortó internet:
+          // ARCA no contesta, no está autorizado, es el de pruebas o se cortó internet:
           // seguir sería preguntar cientos de veces lo mismo.
           setCorte(r.error)
           break

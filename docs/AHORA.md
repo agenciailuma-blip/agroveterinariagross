@@ -214,7 +214,7 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 
 - **La causa no es un error:** el sistema sigue conectado al **ARCA de pruebas** (`arca.ambiente = homologacion`), que sólo conoce CUIT inventados. Se destraba con el **certificado de producción**, el mismo que falta para facturar de verdad.
 - **El mensaje ya no confunde:** en pruebas, cuando ARCA no encuentra el CUIT, la función contesta *«El sistema está conectado al ARCA de pruebas, que no tiene los CUIT reales. Cargá los datos a mano.»*, con su propio motivo (`arca_de_pruebas`). Así *Verificar con ARCA* corta ahí, en lugar de marcar a cada cliente como inexistente. Con ARCA real el mensaje es el de siempre.
-- **Es del servidor:** `arca-constancia` v5, publicada el 29/10. Llega a todas las PC sin actualizar nada. Los tipos de la app suman el motivo nuevo y siguen sin errores.
+- **Es del servidor:** `arca-constancia` v5, publicada el 29/10. Llega a todas las PC sin actualizar nada. **Verificado en la app**, sin guardar nada: con el CUIT 20338052309 del reporte, el formulario de cliente nuevo muestra el aviso nuevo; con el CUIT de Gross, que ARCA de pruebas conoce, sigue trayendo el nombre y el aviso del domicilio fiscal. Los tipos de la app suman el motivo nuevo y siguen sin errores.
 
 > **Cómo se lo contás a Lucas:** *Traer de ARCA* todavía no encuentra CUIT reales porque el sistema está conectado al ARCA de pruebas. Se habilita junto con la facturación real, con el certificado de producción. Hasta entonces, los datos del cliente se cargan a mano, y ahora el sistema lo dice así.
 
