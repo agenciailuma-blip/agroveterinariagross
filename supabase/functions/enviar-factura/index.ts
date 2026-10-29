@@ -1,6 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { decodeBase64 } from "jsr:@std/encoding@1/base64";
-import { armarMail, correoValido, errorDelCorreo, nombreDelPdf, pdfValido } from "./reglas.ts";
+import { armarMail, armarMailPedido, correoValido, errorDelCorreo, nombreDelPdf, pdfValido } from "./reglas.ts";
 
 // ═══════════════════════════════════════════════════════════════
 // Mandar la factura por mail
@@ -17,6 +17,10 @@ import { armarMail, correoValido, errorDelCorreo, nombreDelPdf, pdfValido } from
 // También manda el recibo de una cobranza (Fase 03, 5.4): con recibo_id
 // en vez de comprobante_id. Mismo correo, mismo PDF armado en la app;
 // el envío queda anotado en el recibo.
+//
+// Y el pedido mayorista (5.3), con pedido_id: apenas llega al local, al
+// cliente le llega el detalle. Sin PDF; el mail lo arma el servidor con
+// lo que hay en la base. Queda anotado en el pedido.
 //
 // La clave de Resend está en los secretos del proyecto (RESEND_API_KEY)
 // y nunca sale de acá. Contesta antes de los 35 segundos que la app le
@@ -53,6 +57,7 @@ Deno.serve(async (req: Request) => {
     );
     const body = await req.json().catch(() => ({}));
     const reciboId = body.recibo_id ? String(body.recibo_id) : null;
+    if (body.pedido_id) return await mandarPedido(servidor, comoUsuario, body);
 
     // El recibo lo manda quien cobra o ve las cuentas; la factura, quien ve la facturación.
     const permisos = reciboId ? ["cuentacorriente.cobrar", "cuentacorriente.ver"] : ["facturacion.ver"];
@@ -242,6 +247,112 @@ async function mandarRecibo(
     mail_error: error,
     mail_en: new Date().toISOString(),
   }).eq("id", reciboId);
+
+  if (!respuesta.ok) return responder({ ok: false, motivo: "correo_rechazo", error }, 502);
+  return responder({ ok: true, referencia: cuerpo?.id ?? null });
+}
+
+// ───────────────────────────────────────────────────────────────
+// El pedido mayorista
+// ───────────────────────────────────────────────────────────────
+
+/*
+  Lo manda el teléfono del vendedor apenas el pedido llega (automatico),
+  o el local desde la ficha. Quién puede lo decide la base: el pedido
+  se lee como el usuario, y sólo lo ve quien atiende los pedidos o el
+  vendedor que lo armó. A falta de dirección, la del cliente.
+*/
+async function mandarPedido(
+  servidor: Cliente,
+  comoUsuario: Cliente,
+  // deno-lint-ignore no-explicit-any
+  body: any,
+): Promise<Response> {
+  const pedidoId = String(body.pedido_id);
+  const automatico = body.automatico === true;
+
+  const { data: visible } = await comoUsuario.from("pedido_mayorista").select("id").eq("id", pedidoId).maybeSingle();
+  if (!visible) {
+    return responder({ ok: false, motivo: "sin_permiso", error: "No tenés permiso para mandar este pedido." }, 403);
+  }
+
+  const { data: p } = await servidor
+    .from("pedido_mayorista")
+    .select(`id, numero, armado_en, observaciones, mail_estado,
+             cliente:cliente_id(nombre, email), vendedor:vendedor_id(nombre),
+             lineas:pedido_mayorista_linea(orden, cantidad, precio, producto:producto_id(nombre_interno))`)
+    .eq("id", pedidoId)
+    .maybeSingle();
+  if (!p) return responder({ ok: false, motivo: "pedido", error: "No se encontró el pedido." }, 404);
+
+  // El teléfono puede reintentar un pedido que ya había llegado: no se manda dos veces solo.
+  if (automatico && p.mail_estado === "enviado") return responder({ ok: true, repetido: true });
+
+  const cliente = uno(p.cliente as never) as { nombre: string; email: string | null } | null;
+  const destinatario = String(body.destinatario ?? "").trim() || String(cliente?.email ?? "").trim();
+  if (!destinatario) {
+    return responder({ ok: false, motivo: "sin_correo", error: "El cliente no tiene mail cargado." }, 409);
+  }
+  if (!correoValido(destinatario)) {
+    return responder({ ok: false, motivo: "correo", error: "Esa dirección de correo no es válida." }, 400);
+  }
+
+  const clave = Deno.env.get("RESEND_API_KEY");
+  if (!clave) return responder({ ok: false, motivo: "sin_clave", error: "Falta la clave de Resend en el servidor." }, 503);
+
+  const { data: config } = await servidor
+    .from("configuracion")
+    .select("clave, valor")
+    .in("clave", ["correo.remitente", "correo.responder_a", "correo.logo", "comercio.nombre_fantasia", "comercio.razon_social",
+      "comercio.domicilio", "comercio.localidad", "comercio.telefono"]);
+  const valor = (k: string) => String((config as { clave: string; valor: unknown }[] | null)?.find((x) => x.clave === k)?.valor ?? "").trim();
+
+  const lineas = ((p.lineas ?? []) as { orden: number; cantidad: number; precio: number; producto: unknown }[])
+    .sort((a, b) => a.orden - b.orden)
+    .map((l) => ({
+      nombre: String((uno(l.producto as never) as { nombre_interno: string } | null)?.nombre_interno ?? ""),
+      cantidad: Number(l.cantidad),
+      precio: Number(l.precio),
+    }));
+  const responderA = valor("correo.responder_a");
+  const mail = armarMailPedido({
+    numero: Number(p.numero),
+    // El día en la Argentina, no en el reloj del servidor.
+    fecha: new Date(p.armado_en).toLocaleDateString("en-CA", { timeZone: "America/Argentina/Buenos_Aires" }),
+    receptor: String(cliente?.nombre ?? ""),
+    vendedor: (uno(p.vendedor as never) as { nombre: string } | null)?.nombre ?? null,
+    lineas,
+    total: lineas.reduce((t, l) => t + Math.round(l.cantidad * l.precio * 100) / 100, 0),
+    observaciones: p.observaciones ?? null,
+    comercio: valor("comercio.nombre_fantasia") || valor("comercio.razon_social") || "Agroveterinaria Gross",
+    domicilio: [valor("comercio.domicilio"), valor("comercio.localidad")].filter(Boolean).join(", "),
+    telefono: valor("comercio.telefono"),
+    logo: valor("correo.logo") || "https://gross-sistema.pages.dev/marca/correo-isotipo-blanco.png",
+    respondible: !!responderA,
+  });
+
+  const respuesta = await fetch(RESEND, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${clave}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from: valor("correo.remitente") || "Agroveterinaria Gross <onboarding@resend.dev>",
+      to: [destinatario],
+      ...(responderA ? { reply_to: responderA } : {}),
+      subject: mail.asunto,
+      html: mail.html,
+      text: mail.texto,
+    }),
+    signal: AbortSignal.timeout(ESPERA_MS),
+  });
+  const cuerpo = await respuesta.json().catch(() => ({}));
+  const error = respuesta.ok ? null : errorDelCorreo(respuesta.status, String(cuerpo?.message ?? cuerpo?.error ?? ""));
+
+  await servidor.from("pedido_mayorista").update({
+    mail_destinatario: destinatario,
+    mail_estado: respuesta.ok ? "enviado" : "error",
+    mail_error: error,
+    mail_en: new Date().toISOString(),
+  }).eq("id", pedidoId);
 
   if (!respuesta.ok) return responder({ ok: false, motivo: "correo_rechazo", error }, 502);
   return responder({ ok: true, referencia: cuerpo?.id ?? null });

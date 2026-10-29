@@ -115,6 +115,10 @@ export interface PedidoMayorista {
   interno_numero: string | null
   remito_id: string | null
   remito_numero: string | null
+  mail_destinatario: string | null
+  mail_estado: 'enviado' | 'error' | null
+  mail_error: string | null
+  mail_en: string | null
 }
 
 // ───────────────────────────────────────────────────────────────
@@ -298,6 +302,8 @@ export function enviarCola(): Promise<{ enviados: number; numeros: number[] }> {
         }
         sacarDeLaCola(p.id)
         numeros.push((data as { numero: number }).numero)
+        // Al cliente le llega el detalle. Si no sale, se ve en la ficha y se manda desde ahí.
+        mandarPedidoPorMail(p.id, null, true).catch(() => {})
       }
     } catch (e) {
       if (!esFallaDeRed(e)) throw e
@@ -312,6 +318,30 @@ export function enviarCola(): Promise<{ enviados: number; numeros: number[] }> {
 // ───────────────────────────────────────────────────────────────
 // Los pedidos
 // ───────────────────────────────────────────────────────────────
+
+/*
+  El mail del pedido al cliente: el detalle de lo que pidió. Lo arma y lo
+  manda la función de correo con lo que hay en la base; queda anotado en
+  el pedido. Sin dirección, la del cliente.
+*/
+export async function mandarPedidoPorMail(pedidoId: string, destinatario: string | null, automatico = false): Promise<void> {
+  const { error } = await supabase.functions.invoke('enviar-factura', {
+    body: { pedido_id: pedidoId, destinatario: destinatario?.trim() || null, automatico },
+  })
+  if (error) {
+    const contexto = (error as { context?: Response }).context
+    let mensaje = 'No se pudo mandar el mail. Revisá la conexión y probá de nuevo.'
+    if (contexto && typeof contexto.json === 'function') {
+      try {
+        const cuerpo = await contexto.json()
+        if (cuerpo?.error) mensaje = String(cuerpo.error)
+      } catch {
+        // No era JSON: falló la red.
+      }
+    }
+    throw new Error(mensaje)
+  }
+}
 
 export async function listarPedidos(vista: VistaMayorista): Promise<PedidoMayorista[]> {
   const { data, error } = await supabase.rpc('mayorista_pedidos', { p_vista: vista })

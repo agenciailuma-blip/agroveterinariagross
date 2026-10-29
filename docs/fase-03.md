@@ -158,13 +158,13 @@ Para que Facundo salga a la calle la semana del 2/11. Va en la **0.18.0**.
 - **La orden de recibo** (*Mayorista → Cobros*, y el botón *Cobro* en cada cliente): Facundo anota cuánto le pagaron, cómo —transferencia, efectivo o cheque— y un detalle. **Sin señal queda en el teléfono y sale sola cuando vuelve**, sin duplicarse. **No baja la deuda.** En el local, el número de órdenes esperando se ve en el menú; **«Entró la plata: emitir el recibo»** abre la cobranza con lo que dijo Facundo ya puesto, para corregirlo si entró otra cosa. Recién ahí sale el recibo y baja la deuda. O **Rechazar**, con el motivo, que Facundo ve.
 - **El recibo numerado**, el mismo para toda cobranza de cuenta corriente: el de la ficha del cliente también sale con número (0001-00000001 en adelante). Hoja A4 para imprimir con el importe en letras y el saldo que queda, y **por mail en PDF**: al aceptar una orden se manda solo si el cliente tiene mail; desde la hoja, *Mandar por mail* a cualquier dirección. **El registro de recibos** está en *Clientes → Recibos*, por cliente o por número.
 - **Marcar a un cliente como mayorista le abre la cuenta corriente** a 30 días (si no la tenía): sin eso no se le puede vender por pedido ni aceptar sus cobros.
+- **El mail del pedido**: apenas el pedido llega al local, al cliente le llega el detalle —productos, cantidades, precios y total, y la nota de Facundo si dejó una—, si tiene mail cargado. En la ficha del pedido se ve si salió, y se manda de nuevo desde ahí, también a otra dirección.
 
 **Lo que falta del mayorista**, en este orden:
-1. **El mail del pedido al cliente** al armarlo (hoy le llega la factura).
-2. **Frenar al vender a quien tiene vencido** y que el encargado autorice (respuesta 7): hoy Facundo y el local **ven** el vencido; lo que frena es el límite de crédito, como en la caja.
-3. **El pin en el mapa** con todos los clientes (hoy cada uno tiene su «Cómo llegar») y **las estadísticas** (5.5).
-4. **La planilla** para cargar la lista mayorista de a muchos.
-5. **Anular un recibo**: hoy un recibo emitido por error se compensa a mano en la cuenta corriente.
+1. **Frenar al vender a quien tiene vencido** y que el encargado autorice (respuesta 7): hoy Facundo y el local **ven** el vencido; lo que frena es el límite de crédito, como en la caja.
+2. **El pin en el mapa** con todos los clientes (hoy cada uno tiene su «Cómo llegar») y **las estadísticas** (5.5).
+3. **La planilla** para cargar la lista mayorista de a muchos.
+4. **Anular un recibo**: hoy un recibo emitido por error se compensa a mano en la cuenta corriente.
 
 ### 5.1 El cliente mayorista
 

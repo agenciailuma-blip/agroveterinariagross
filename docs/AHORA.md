@@ -12,7 +12,7 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Construida: 0.19.0** (29/10) — **falta publicarla**. **La orden de recibo y el recibo numerado**: Facundo anota en el teléfono lo que le pagaron —también sin señal— y en el local, cuando confirman que entró la plata, sale el recibo con número, baja la deuda y se le manda por mail al cliente. El mismo recibo sale en toda cobranza de cuenta corriente, y hay un registro en *Clientes → Recibos*. **La base y la función del mail ya están en el servidor.** Ver *Lo último que pasó*. **750 pruebas verdes en la app.**
+**Construida: 0.19.0** (29/10) — **falta publicarla**. **La orden de recibo y el recibo numerado**: Facundo anota en el teléfono lo que le pagaron —también sin señal— y en el local, cuando confirman que entró la plata, sale el recibo con número, baja la deuda y se le manda por mail al cliente. El mismo recibo sale en toda cobranza de cuenta corriente, y hay un registro en *Clientes → Recibos*. Y **el mail del pedido**: apenas el pedido de Facundo llega al local, al cliente le llega el detalle. **La base ya está en el servidor; la función del mail con el pedido, todavía no.** Ver *Lo último que pasó*. **753 pruebas verdes en la app.**
 
 **Publicada: 0.18.0** (28/10, a la noche), verificada en Cloudflare: `latest.json` dice 0.18.0 y el instalador está publicado. La primera subida falló del lado de Cloudflare («Internal authentication error», y después no podía leer la cuenta al iniciar sesión); se reintentó sólo la subida, sin volver a compilar. — **Mayorista, la primera entrega**, para que Facundo salga a la calle la semana del 2/11: el rol *Vendedor de calle*, los clientes mayoristas por ruta, la lista de precios mayorista y el pedido que se arma en el teléfono —también sin señal— y en el local se corrobora, se factura o sale con comprobante interno, y se remite. **La base ya está aplicada**, y la consulta de CUIT a ARCA ya deja entrar al vendedor de calle; la app ya está publicada. Ver *Lo último que pasó*. **736 pruebas verdes en la app.**
 
@@ -90,6 +90,17 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 🟡 **Lo que la venta tardaba en llegar a la caja sin internet** — arreglado el 05/10 y publicado en la 0.13.4, **sin probar en el local**. El mostrador le pasaba las ventas a la caja una vez por minuto, y la caja miraba su cola cada ocho segundos: hasta 68 segundos con el cliente esperando. Y llegaba de a partes porque, mientras la cabecera intentaba subir al servidor —hasta doce segundos sin internet—, salían los renglones solos. Ahora la venta sale al segundo y medio de apretar *Enviar a caja* (y otra vez a los catorce, por si el intento de subir tardó), viaja entera o espera entera, y la caja la muestra apenas llega. Se comprueba en el próximo corte: la venta tiene que aparecer en la caja en un par de segundos y completa.
 
 ---
+
+## Lo último que pasó — 29 de octubre: el mail del pedido
+
+**Al cliente le llega su pedido por mail** apenas llega al local (fase-03, 5.3). Va en la 0.19.0.
+
+- **El teléfono de Facundo lo pide solo** cuando el pedido llega, también el que esperaba en la cola sin señal. **El mail lo arma el servidor** con lo que quedó en la base: productos, cantidades, precios, total y la nota, sin PDF. Va a la dirección del cliente; si no tiene, no sale. Si el teléfono reintenta un pedido que ya había llegado, el mail no se repite.
+- **En la ficha del pedido** se ve si salió, a quién y cuándo, o por qué no salió. *Mandar por mail* lo manda —o *Mandar de nuevo*— a la dirección que se escriba. Lo puede mandar quien atiende los pedidos o el vendedor que lo armó, nadie más.
+- **La base** ([`20261029140000_el_mail_del_pedido.sql`](../supabase/migrations/20261029140000_el_mail_del_pedido.sql), aplicada): el pedido anota su mail, y la lista de pedidos lo devuelve. Probada con un usuario del local; sin sesión no se puede llamar.
+- **El mail de la factura y el del recibo no cambian**: comparados antes y después, salen idénticos. Los tres comparten la banda con la marca y el pie.
+- **La ficha, vista a 375 px** con los tres casos —salió, no salió, cliente sin mail— y como vendedor: nada se desplaza hacia el costado. El pedido que sale de la cola dispara el mail con la dirección del cliente.
+- 🟡 **Falta subir la función del mail** (`enviar-factura`) con la parte del pedido, **antes de publicar la 0.19.0**: si no, el mail del pedido no sale y la ficha dice que todavía no salió. Y, como la factura y el recibo, **un mail llegando de verdad depende del dominio verificado en Resend**.
 
 ## Lo último que pasó — 29 de octubre: la orden de recibo y el recibo numerado
 

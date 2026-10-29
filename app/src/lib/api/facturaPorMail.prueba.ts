@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { PDFDocument } from 'pdf-lib'
 import {
   armarMail,
+  armarMailPedido,
   correoValido,
   errorDelCorreo,
   nombreDelPdf,
@@ -160,5 +161,44 @@ describe('el recibo por mail', () => {
     expect(m.html).not.toContain('factura')
     // La factura sigue igual que antes.
     expect(armarMail(MAIL).html).toContain('Te mandamos tu factura.')
+  })
+})
+
+describe('el pedido mayorista por mail', () => {
+  const PEDIDO = {
+    numero: 57, fecha: '2026-10-29', receptor: 'Veterinaria El Ceibo', vendedor: 'Facundo',
+    lineas: [
+      { nombre: 'Livra Cachorro 15 kg', cantidad: 3, precio: 41250.5 },
+      { nombre: 'Livra Adulto 20 kg', cantidad: 1.5, precio: 39900 },
+    ],
+    total: 3 * 41250.5 + 1.5 * 39900, observaciones: null,
+    comercio: 'Agroveterinaria Gross', domicilio: 'Av. Libertad 315, Oberá', telefono: '3755-421829',
+    logo: 'https://gross-sistema.pages.dev/marca/correo-isotipo-blanco.png', respondible: false,
+  }
+
+  it('dice qué pidió, a cuánto y quién se lo tomó', () => {
+    const m = armarMailPedido(PEDIDO)
+    expect(m.asunto).toBe('Pedido N.º 57 · Agroveterinaria Gross')
+    expect(m.texto).toContain('Hola, Veterinaria El Ceibo:')
+    expect(m.texto).toContain('el pedido N.º 57 que armaste con Facundo el 29/10/2026')
+    expect(m.texto).toContain('3 × Livra Cachorro 15 kg ($ 41.250,50 c/u): $ 123.751,50')
+    expect(m.texto).toContain('1,5 × Livra Adulto 20 kg')
+    expect(m.texto).toContain('Total: $ 183.601,50')
+    expect(m.html).toContain('Livra Adulto 20 kg')
+    expect(m.html).toContain('$ 183.601,50')
+    expect(m.html).not.toContain('PDF')
+  })
+
+  it('la nota del vendedor va, y no deja pasar HTML', () => {
+    const m = armarMailPedido({ ...PEDIDO, observaciones: 'Entregar <martes>', vendedor: null })
+    expect(m.texto).toContain('Nota: Entregar <martes>')
+    expect(m.html).toContain('Entregar &lt;martes&gt;')
+    expect(m.texto).toContain('que armaste el 29/10/2026')
+    expect(armarMailPedido(PEDIDO).texto).not.toContain('Nota:')
+  })
+
+  it('invita a responder sólo si alguien va a leer la respuesta', () => {
+    expect(armarMailPedido(PEDIDO).texto).not.toContain('respondé')
+    expect(armarMailPedido({ ...PEDIDO, respondible: true }).html).toContain('respondé este mail')
   })
 })

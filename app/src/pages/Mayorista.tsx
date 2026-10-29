@@ -26,6 +26,7 @@ import {
   leerCatalogo,
   leerClientes,
   listarPedidos,
+  mandarPedidoPorMail,
   pedidosEnCola,
   sacarDeLaCola,
   totalDe,
@@ -837,6 +838,22 @@ function FichaPedido({
     })
   }
 
+  async function alMandarMail() {
+    const destinatario = await pedirTexto({
+      titulo: `Mandar el pedido ${p.numero} por mail`,
+      detalle: `El detalle del pedido, para ${p.cliente_nombre}.`,
+      etiqueta: 'Correo',
+      valorInicial: p.mail_destinatario ?? p.cliente_email ?? '',
+      ejemplo: 'correo@cliente.com',
+      aceptar: 'Mandar',
+    })
+    if (!destinatario?.trim()) return
+    accion.mutate(async () => {
+      await mandarPedidoPorMail(p.id, destinatario)
+      return `Pedido ${p.numero}: le mandamos el detalle a ${destinatario.trim()}.`
+    })
+  }
+
   async function alCancelar() {
     const motivo = await pedirTexto({
       titulo: `Cancelar el pedido ${p.numero}`,
@@ -923,6 +940,23 @@ function FichaPedido({
           </Dato>
         )}
       </dl>
+
+      {p.estado !== 'cancelado' && (
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+          <p className={`min-w-0 break-words text-xs ${p.mail_estado === 'error' ? 'text-red-700' : 'text-piedra-500'}`}>
+            {p.mail_estado === 'enviado' && p.mail_en
+              ? `Mail con el pedido: enviado a ${p.mail_destinatario} el ${fechaHora(p.mail_en)}`
+              : p.mail_estado === 'error'
+                ? `El mail con el pedido no salió a ${p.mail_destinatario}${p.mail_error ? `: ${p.mail_error}` : '.'}`
+                : p.cliente_email
+                  ? 'Mail con el pedido: todavía no salió.'
+                  : 'El cliente no tiene mail cargado.'}
+          </p>
+          <button onClick={alMandarMail} disabled={ocupado} className={botonChico.suave}>
+            {p.mail_estado === 'enviado' ? 'Mandar de nuevo' : 'Mandar por mail'}
+          </button>
+        </div>
+      )}
 
       <div>
         {corrige && p.estado === 'pendiente' && (
