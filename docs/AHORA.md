@@ -310,8 +310,8 @@ Lucas trajo **ocho pedidos nuevos**, en su cuaderno y explicados en dos audios: 
 
 **El análisis, el diseño, las preguntas para Lucas y el orden de construcción:** [`fase-03.md`](fase-03.md). Lo central:
 - **Nada es un sistema aparte.** Lo que Lucas llama «módulo» es una sección del menú con alguien que entra sólo ahí: *Mayorista* (con un rol nuevo para el vendedor de calle) y *Fiados*. Lo demás son funciones de pantallas que ya existen.
-- **El remito logístico lleva CAI, no CAE.** Decidido el 26/10: **sin talonarios de imprenta**; Gross pide el CAI en ARCA y el sistema imprime el remito entero. El paso a paso para Lucas y Armando: [`tramite-remito-r.md`](tramite-remito-r.md).
-- **Siete de las ocho preguntas, contestadas el 26/10** (están en el documento). Falta qué conceptos fijos llevan los productos asociados, y que Armando confirme la modalidad del punto de venta de remitos.
+- **El remito logístico lleva CAI, no CAE.** El 26/10 se había decidido imprimirlo entero desde el sistema; **el 29/10 Armando contestó que para eso hay que ser autoimpresor y Gross no llega al volumen** que pide ARCA. Va en **hojas A4 de imprenta, con CAI y por duplicado**, y el sistema imprime sobre ellas: ver el punto 4 de [`fase-03.md`](fase-03.md). Falta una hoja de muestra de la imprenta.
+- **Siete de las ocho preguntas, contestadas el 26/10** (están en el documento). Falta qué conceptos fijos llevan los productos asociados. La modalidad del remito R la contestó Armando el 29/10: hojas de imprenta.
 - **Las listas de precios ya admiten un precio fijo por producto** —no sólo porcentaje, como se dijo en el audio—. Falta la pantalla para cargarlo.
 - ⚠️ **Los productos asociados** hacen una factura que describe otra cosa de la que salió. Avisado una vez en el documento; conviene que lo mire Armando.
 - **Los mensajes masivos van en la fase siguiente**, con el CRM.

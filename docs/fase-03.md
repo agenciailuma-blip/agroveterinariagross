@@ -122,15 +122,23 @@ El cliente de siempre: la persona que lleva el alimento del perro, la oficina. S
 | **Autorización fiscal** | No (documento interno) | No (documento interno) | **Sí, con CAI** |
 | **Hoy** | ✅ Es el remito que ya existe | Nuevo (punto 2) | Nuevo |
 
-### El remito logístico: es CAI, no CAE — y sin imprenta
+### El remito logístico: es CAI, no CAE — con hojas de imprenta
 
 Lucas habló de un «talonario con CAE». **Para remitos lo que existe es el CAI** —el Código de Autorización de Impresión—. El CAE es sólo para facturas electrónicas, y **ARCA no autoriza remitos uno por uno** (sólo tiene remito electrónico para carne y harina). Por eso Armando le habló de la imprenta.
 
 **Decidido el 26/10: sin talonarios de imprenta.** Gross pide el CAI en ARCA **una vez**, para un punto de venta exclusivo de remitos y una cantidad de números, y **el sistema imprime el remito entero** —en hoja en blanco o en PDF al celular, que la RG 5678/2025 permite desde 2025—. Es como lo hacen sus proveedores. El paso a paso para Lucas y Armando está en [`tramite-remito-r.md`](tramite-remito-r.md).
 
-**Lo que hacemos nosotros:** en Configuración se cargan el CAI, su vencimiento, el punto de venta y el rango de números. Cada remito R sale con el número siguiente, la letra R, el CAI y su vencimiento, *Documento no válido como factura*, los domicilios de origen y destino, quién lleva la carga y la factura o proforma asociada. **El sistema no deja pasar del último número ni de la fecha de vencimiento**, y avisa antes, para pedir el CAI siguiente a tiempo.
+**Cambió el 29/10, con la respuesta de Armando: hojas de imprenta.** Para imprimir el remito entero hay que ser **autoimpresor**, y ARCA lo da con un volumen de comprobantes A al año que Gross no tiene —pide unos 3.000 y Gross emite cerca de la mitad—. Armando tampoco lo recomienda. Lo que propone: **pedir a una imprenta las hojas A4 del remito R, con CAI, por duplicado, e imprimir el sistema sobre ellas.** Con eso el paso a paso de [`tramite-remito-r.md`](tramite-remito-r.md) ya no se sigue: el CAI lo gestiona la imprenta.
 
-**Falta que Armando confirme la modalidad del punto de venta** —autoimpresor o la que corresponda a Gross—. Es la primera pregunta del paso a paso.
+**Cómo queda:**
+
+- **La imprenta trae lo fijo**: la letra R, el número de cada hoja, el CAI y su vencimiento, los datos de Gross y *Documento no válido como factura*.
+- **El sistema imprime lo que cambia**, en el espacio libre de la hoja: fecha, destinatario y su domicilio, quién lleva la carga, los renglones y la factura o proforma asociada. Conviene pedirle a la imprenta **el cuerpo de la hoja en blanco**, sin cuadrícula, así el sistema lo acomoda sin depender de líneas preimpresas.
+- **El número lo pone la hoja.** En Configuración se cargan el CAI, su vencimiento y el rango de números de las hojas que entregó la imprenta. El sistema propone el número de la hoja siguiente y lo guarda con el remito; si una hoja se arruina, se anula ese número y se usa la próxima. No deja pasar del último número ni del vencimiento, y avisa antes, para encargar hojas a tiempo.
+- **Por duplicado:** original para el que recibe y duplicado para Gross. Si la imprenta entrega hojas sueltas y no en papel autocopiativo, el sistema imprime dos veces.
+- **Sin PDF al celular:** el remito R es la hoja de imprenta.
+
+**Lo que falta para hacerlo:** **una hoja de muestra de la imprenta** —o el diseño que vaya a usar—, para acomodar la impresión al espacio libre, y el CAI con el rango de números de la primera tanda.
 
 ### ¿Cuándo baja el stock? — la regla, para que no cambie según el caso
 
