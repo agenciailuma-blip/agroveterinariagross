@@ -406,7 +406,12 @@ export default function Layout() {
           </div>
         </header>
         <Pestanas clase="flex flex-wrap border-b border-borde bg-white px-1 lg:hidden" />
-        <main className="flex-1 overflow-auto p-4 md:p-6">
+        {/*
+          `relative`: lo que una pantalla posiciona sin un padre con
+          posición —un título invisible, por ejemplo— queda adentro y no
+          estira la página entera hasta una zona vacía (29/10).
+        */}
+        <main className="relative flex-1 overflow-auto p-4 md:p-6">
           <Outlet />
         </main>
       </div>

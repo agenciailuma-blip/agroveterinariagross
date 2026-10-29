@@ -93,6 +93,14 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 
 ---
 
+## Lo último que pasó — 29 de octubre: Productos bajaba hasta una zona vacía
+
+**Visto por Francisco en Productos**, con la ficha de un producto abierta (nuevo o editando): además de la lista y de la ficha, que se desplazan cada una por su lado, **la página entera bajaba** —el menú incluido— hasta un espacio vacío.
+
+- **La causa:** cada sección de la ficha tiene un título invisible, el que lee el lector de pantalla. Se ubicaba respecto de la página y no de la ficha, así que las secciones de abajo estiraban la página. Medido con los mismos estilos de la app: **2.626 px de página en una ventana de 846**.
+- **El arreglo:** las secciones de la ficha de producto y de la de cliente, y la cantidad de *Pedidos* a proveedor, que tenían lo mismo, ahora lo contienen: la página mide lo que la ventana. Y el área de contenido de todas las pantallas también lo contiene, para que una pantalla nueva no vuelva a mover la página entera ni el menú.
+- **Verificado en la app**, en Productos con la ficha de *ACEDAN GOTAS* abierta, sin guardar nada: a 1920 × 1000, la página mide **1.000 px**; sacándole el arreglo en el momento, vuelve a **2.613**. A 375 px, la página mide lo que la pantalla y nada se desplaza hacia el costado. **756 verdes** y los tipos sin errores. ⚠️ **Va en la próxima versión que se construya.**
+
 ## Lo último que pasó — 29 de octubre: el freno al cliente con deuda vencida
 
 **Respuesta 7 de Lucas, en el mayorista**: al cliente con comprobantes vencidos el sistema avisa y frena, y un encargado autoriza. Va en la 0.19.1. Detalle en [`fase-03.md`](fase-03.md), *Lo que ya está*.

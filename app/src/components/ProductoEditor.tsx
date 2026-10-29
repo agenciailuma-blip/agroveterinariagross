@@ -102,9 +102,14 @@ const TONO_EN_TIENDA: Record<TonoEnTienda, string> = {
   pendiente: 'bg-marca-50 text-marca-800 ring-marca-200',
 }
 
+/*
+  El título invisible (sr-only) se posiciona respecto del primer padre
+  con posición: sin el `relative`, era la página, y las secciones de
+  abajo de la ficha la estiraban hasta una zona vacía (29/10).
+*/
 function Seccion({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
-    <fieldset className="border-t border-borde pt-4">
+    <fieldset className="relative border-t border-borde pt-4">
       <legend className="sr-only">{titulo}</legend>
       <h3 className="mb-3 text-xs font-semibold tracking-wide text-piedra-400 uppercase">
         {titulo}

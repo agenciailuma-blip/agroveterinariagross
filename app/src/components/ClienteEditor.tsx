@@ -34,10 +34,13 @@ function Campo({
   centímetros: el tipo de persona se leía «Pers» y el número de documento
   no entraba. Con dos, lo que ocupaba media fila pasa a ocuparla entera y
   lo más chico queda a media pantalla.
+
+  El `relative` es para el título invisible: sin él, estiraba la página
+  hasta una zona vacía (ver ProductoEditor, 29/10).
 */
 function Seccion({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
-    <fieldset className="border-t border-borde pt-4">
+    <fieldset className="relative border-t border-borde pt-4">
       <legend className="sr-only">{titulo}</legend>
       <h3 className="mb-3 text-xs font-semibold tracking-wide text-piedra-400 uppercase">
         {titulo}

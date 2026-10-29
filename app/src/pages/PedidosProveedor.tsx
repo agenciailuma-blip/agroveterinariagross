@@ -521,7 +521,7 @@ function FilaDelPedido({ f, valor, onCambio }: { f: FilaParaPedido; valor: numbe
           <p className="mt-0.5 text-xs text-piedra-400">En su ficha figura otro proveedor; una orden se lo pidió a éste.</p>
         )}
       </div>
-      <label className="w-24 shrink-0 text-right">
+      <label className="relative w-24 shrink-0 text-right">
         <span className="sr-only">Pedir</span>
         <input
           type="number"
