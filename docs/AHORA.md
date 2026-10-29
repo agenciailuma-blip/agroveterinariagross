@@ -12,7 +12,7 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Construida: 0.19.12 — falta publicarla.** **Las estadísticas del mayorista**: una pestaña nueva en Mayorista con lo vendido, los pedidos, la deuda, lo cobrado y lo más vendido, por cliente, ciudad, ruta o zona. **La base ya está aplicada.** Ver *Lo último que pasó*. **809 pruebas verdes en la app.**
+**Publicada: 0.19.12** (29/10, 19:39), verificada en Cloudflare: `latest.json` dice 0.19.12, el instalador está publicado y la versión web ya trae la pestaña. **Las estadísticas del mayorista**: una pestaña nueva en Mayorista con lo vendido, los pedidos, la deuda, lo cobrado y lo más vendido, por cliente, ciudad, ruta o zona. **La base ya está aplicada.** Ver *Lo último que pasó*. **809 pruebas verdes en la app.**
 
 **Publicada: 0.19.11** (29/10, 19:16), verificada en Cloudflare: `latest.json` dice 0.19.11, el instalador está publicado y la versión web ya trae la marca. **La proforma del mayorista, a la vista**: el botón se llama *Proforma* y la ficha del cliente tiene la marca *Pide proforma*, que la pone primero en sus pedidos. **La base ya está aplicada.** Ver *Lo último que pasó*. **799 pruebas verdes en la app.**
 
@@ -117,7 +117,7 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 
 ## Lo último que pasó — 29 de octubre: las estadísticas del mayorista
 
-**Fase-03, punto 5.5.** Construida en la 0.19.12, falta publicarla.
+**Fase-03, punto 5.5.** Publicada en la 0.19.12.
 
 - **La pestaña *Estadísticas*** en Mayorista. Arriba, todo junto: lo vendido, los pedidos, la deuda de hoy con lo vencido y el porcentaje cobrado. Abajo, una fila por **cliente, ciudad, ruta o zona** —se elige—, de la que más vende a la que menos, con sus pedidos, el último, las unidades, la deuda, lo vencido y lo cobrado. Las rutas escritas distinto («Ruta 14», «ruta 14») se juntan; lo que no tiene ruta va al final.
 - **Lo más vendido**, de todos o de la fila que se toque.
