@@ -12,6 +12,8 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
+**Lista para publicar: 0.19.4.** **La factura a cuenta corriente sale sola por mail**, si el cliente tiene mail: desde la caja, desde Facturación y desde *Por facturar*. Ver *Lo último que pasó*. **770 pruebas verdes en la app.**
+
 **Publicada: 0.19.3** (29/10, 15:39), verificada en Cloudflare: `latest.json` dice 0.19.3, el instalador está publicado y la versión web ya trae la pestaña. **La pestaña *Vencidos* en Clientes**: quién debe algo vencido, cuánto y desde hace cuántos días, con cada comprobante y lo que le queda impago. Tocar el cliente abre su cuenta corriente. Ver *Lo último que pasó*. **770 pruebas verdes en la app.**
 
 **Publicada: 0.19.2** (29/10, 15:15), verificada en Cloudflare: `latest.json` dice 0.19.2, el instalador está publicado y la versión web ya trae el PIN del encargado en la caja. **El freno al vencido, en el mostrador y la caja**: el mostrador avisa al elegir un cliente con deuda vencida, y la caja no le cobra a cuenta corriente hasta que un encargado pone su PIN; con o sin conexión. Ver *Lo último que pasó*. **766 pruebas verdes en la app.**
@@ -96,6 +98,17 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 🟡 **Lo que la venta tardaba en llegar a la caja sin internet** — arreglado el 05/10 y publicado en la 0.13.4, **sin probar en el local**. El mostrador le pasaba las ventas a la caja una vez por minuto, y la caja miraba su cola cada ocho segundos: hasta 68 segundos con el cliente esperando. Y llegaba de a partes porque, mientras la cabecera intentaba subir al servidor —hasta doce segundos sin internet—, salían los renglones solos. Ahora la venta sale al segundo y medio de apretar *Enviar a caja* (y otra vez a los catorce, por si el intento de subir tardó), viaja entera o espera entera, y la caja la muestra apenas llega. Se comprueba en el próximo corte: la venta tiene que aparecer en la caja en un par de segundos y completa.
 
 ---
+
+## Lo último que pasó — 29 de octubre: la factura a cuenta corriente sale sola por mail
+
+**Fase-03, punto 1, ④.** Va en la 0.19.4.
+
+- **Cuándo sale:** al quedar autorizada una factura —A, B, C, M o MiPyME— en la que alguna venta se llevó, toda o en parte, a cuenta corriente, si el cliente tiene mail cargado. Las notas de crédito y débito no salen solas.
+- **Desde dónde:** la caja al cobrar, Facturación al facturar o reintentar una pendiente, y *Por facturar* al facturar lo del mes. El aviso del CAE aparece enseguida; cuando el mail termina, el mismo cartel dice a quién salió o por qué no.
+- **No sale dos veces:** si la factura ya tiene un envío que llegó —automático o con el botón—, no se repite. Si el anterior falló, sí se vuelve a intentar.
+- **Lo decide la base** ([`20261029210000_la_factura_sola_a_cuenta_corriente.sql`](../supabase/migrations/20261029210000_la_factura_sola_a_cuenta_corriente.sql), aplicada), y el mail lo manda la misma función que el botón: no hubo que tocar la función del servidor. **Probada como usuario**, con todo deshecho al final: factura de una venta y factura del mes a cuenta corriente → el mail del cliente; nota de crédito, factura en efectivo, factura ya enviada, o alguien sin permiso → nada; envío anterior con error → vuelve a salir.
+- **Lo que no sale solo:** la factura emitida **sin conexión con CAEA** en la caja, porque no hay internet en ese momento. Se manda con *Mandar por mail* desde la factura. El mayorista sigue mandando la suya como antes.
+- **Sin probar con un mail de verdad:** no mandé ninguno para no escribirle a un cliente. El envío es el mismo que ya se usa con el botón y con la tienda.
 
 ## Lo último que pasó — 29 de octubre: la pestaña *Vencidos* en Clientes
 

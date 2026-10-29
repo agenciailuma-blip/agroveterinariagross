@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { agruparPorCliente, facturarPendientes, ventasPorFacturar } from '@/lib/api/facturacion'
+import { mandarSolaACuentaCorriente } from '@/lib/api/facturaPorMail'
 import { moneda } from '@/lib/tipos'
 import { botonChico, tarjeta } from '@/estilos'
 
@@ -40,11 +41,16 @@ export default function PorFacturar({
 
   const facturar = useMutation({
     mutationFn: (ids: string[]) => facturarPendientes(ids),
-    onSuccess: ({ cae, problema }) => {
+    onSuccess: ({ cae, comprobanteId, problema }) => {
       if (problema) {
         onError(`La factura quedó armada, pero ARCA no la autorizó todavía: ${problema} Se puede reintentar desde la lista de abajo.`)
       } else {
-        onAviso(`Factura autorizada por ARCA. CAE ${cae}`)
+        // Es a cuenta corriente siempre: le sale sola por mail al cliente.
+        const texto = `Factura autorizada por ARCA. CAE ${cae}`
+        onAviso(texto)
+        void mandarSolaACuentaCorriente(comprobanteId).then((mail) => {
+          if (mail) onAviso(`${texto} ${mail}`)
+        })
       }
       qc.invalidateQueries({ queryKey: ['por-facturar'] })
       qc.invalidateQueries({ queryKey: ['comprobantes'] })

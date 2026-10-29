@@ -31,6 +31,7 @@ import type { ProductoVenta } from '@/lib/api/ventas'
 import { cargarPrecios, mediosParaElegir } from '@/lib/api/precios'
 import type { MedioPago } from '@/lib/api/precios'
 import { facturarVenta } from '@/lib/api/facturacion'
+import { mandarSolaACuentaCorriente } from '@/lib/api/facturaPorMail'
 import { emitirNoFiscal, marcarDocumentacion, numeroNoFiscal } from '@/lib/api/noFiscal'
 import { abrirComprobante, abrirNoFiscal } from '@/lib/escritorio'
 import {
@@ -79,6 +80,8 @@ export default function Caja() {
     comprobanteId: string | null
     /** Emitida por contingencia: el código es un CAEA y falta informarla. */
     caea: boolean
+    /** Lo que pasó con el mail de la factura a cuenta corriente, cuando vuelve. */
+    mail?: string
   } | null>(null)
   const [cerrando, setCerrando] = useState(false)
   const [errorEdicion, setErrorEdicion] = useState<string | null>(null)
@@ -458,6 +461,16 @@ export default function Caja() {
         */
         setListoParaImprimir({ codigo: codigo ?? '', cae: cae ?? '', comprobanteId, caea: conCaea })
         if (comprobanteId) imprimirSolo(() => imprimirComprobante(comprobanteId, terminal))
+        /*
+          A cuenta corriente, la factura le sale sola por mail al cliente.
+          No se espera: el cajero sigue con el próximo, y el cartel verde
+          dice a quién salió cuando termina. Con CAEA no hay internet.
+        */
+        if (comprobanteId && !conCaea) {
+          void mandarSolaACuentaCorriente(comprobanteId).then((mail) => {
+            if (mail) setListoParaImprimir((l) => (l?.comprobanteId === comprobanteId ? { ...l, mail } : l))
+          })
+        }
       }
       limpiar()
       qc.invalidateQueries({ queryKey: ['cola-caja'] })
@@ -711,6 +724,15 @@ export default function Caja() {
                 {listoParaImprimir.cae}
                 {listoParaImprimir.caea && ' · se le informa a ARCA cuando vuelva internet'}
               </p>
+              {listoParaImprimir.mail && (
+                <p
+                  className={`text-xs ${
+                    listoParaImprimir.mail.startsWith('Salió') ? 'text-verde-800' : 'text-amber-800'
+                  }`}
+                >
+                  {listoParaImprimir.mail}
+                </p>
+              )}
             </div>
             <div className="flex items-center gap-2">
               {listoParaImprimir.comprobanteId && (

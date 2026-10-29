@@ -14,6 +14,7 @@ import {
   ventasSinFacturar,
 } from '@/lib/api/facturacion'
 import type { FilaComprobante, Semaforo, VentanaCae } from '@/lib/api/facturacion'
+import { mandarSolaACuentaCorriente } from '@/lib/api/facturaPorMail'
 import PanelContingencia from '@/components/PanelContingencia'
 import EmitidasEnElCorte from '@/components/EmitidasEnElCorte'
 import DevolucionParcial from '@/components/DevolucionParcial'
@@ -80,13 +81,27 @@ export default function Facturacion() {
   function avisar(texto: string) {
     setAviso(texto)
     setError(null)
-    setTimeout(() => setAviso(null), 5000)
+    // Sólo se borra el mismo aviso: si mientras tanto llegó otro —el del
+    // mail, que viene después del CAE—, ese cuenta sus cinco segundos.
+    setTimeout(() => setAviso((a) => (a === texto ? null : a)), 5000)
+  }
+
+  /*
+    Autorizada una factura, si es a cuenta corriente le sale sola por mail
+    al cliente. El aviso del CAE aparece enseguida; lo del mail, cuando
+    vuelve.
+  */
+  function avisarConMail(texto: string, comprobanteId: string) {
+    avisar(texto)
+    void mandarSolaACuentaCorriente(comprobanteId).then((mail) => {
+      if (mail) avisar(`${texto} ${mail}`)
+    })
   }
 
   const reintentar = useMutation({
     mutationFn: (id: string) => solicitarCae(id),
-    onSuccess: ({ cae }) => {
-      avisar(`Autorizado por ARCA. CAE ${cae}`)
+    onSuccess: ({ cae }, id) => {
+      avisarConMail(`Autorizado por ARCA. CAE ${cae}`, id)
       refrescar()
     },
     onError: (e) => {
@@ -97,8 +112,8 @@ export default function Facturacion() {
 
   const facturar = useMutation({
     mutationFn: (ventaId: string) => facturarVenta(ventaId),
-    onSuccess: ({ cae }) => {
-      avisar(`Autorizado por ARCA. CAE ${cae}`)
+    onSuccess: ({ cae, comprobanteId }) => {
+      avisarConMail(`Autorizado por ARCA. CAE ${cae}`, comprobanteId)
       refrescar()
     },
     onError: (e) => {

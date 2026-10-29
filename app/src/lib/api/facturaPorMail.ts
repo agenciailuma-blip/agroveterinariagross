@@ -1,6 +1,8 @@
 import { supabase } from '@/lib/supabase'
+import { obtenerComprobanteCompleto } from '@/lib/api/comprobante'
 import type { ComprobanteCompleto } from '@/lib/api/comprobante'
 import { urlQrDe } from '@/lib/comprobante/imprimirDirecto'
+import { enCastellano } from '@/lib/errores'
 
 /*
   ─────────────────────────────────────────────────────────────
@@ -9,7 +11,7 @@ import { urlQrDe } from '@/lib/comprobante/imprimirDirecto'
   Pedido 17 de Lucas, decidido el 21/10. La app arma el PDF —la misma
   hoja A4 que se imprime— y la función enviar-factura lo manda por
   Resend y lo anota. Desde el botón de la factura, y solo al facturar un
-  pedido de la tienda.
+  pedido de la tienda o a cuenta corriente.
   ─────────────────────────────────────────────────────────────
 */
 
@@ -75,4 +77,28 @@ export async function correoSugerido(ventaId: string | null): Promise<string> {
   const cliente = venta.data?.cliente as { email: string | null } | { email: string | null }[] | null
   const delCliente = (Array.isArray(cliente) ? cliente[0]?.email : cliente?.email) ?? ''
   return (delPedido || delCliente).trim()
+}
+
+/*
+  La factura a cuenta corriente sale sola (fase-03, punto 1, ④).
+
+  Si le toca lo decide la base: autorizada, a cuenta corriente, el
+  cliente con mail, y todavía no enviada. Por eso se puede llamar desde
+  cualquier lugar donde se factura —la caja, Facturación, Por facturar—
+  sin que salga dos veces.
+
+  Devuelve el texto para el cartel: a quién salió, por qué no salió, o
+  nada si no le tocaba. No tira: el mail nunca deshace una factura.
+*/
+export async function mandarSolaACuentaCorriente(comprobanteId: string): Promise<string> {
+  try {
+    const { data, error } = await supabase.rpc('mail_automatico_de_factura', { p_comprobante_id: comprobanteId })
+    if (error) throw new Error(error.message)
+    const destinatario = ((data as string | null) ?? '').trim()
+    if (!destinatario) return ''
+    await enviarFacturaPorMail(await obtenerComprobanteCompleto(comprobanteId), destinatario, true)
+    return `Salió por mail a ${destinatario}.`
+  } catch (e) {
+    return `El mail no salió: ${enCastellano(e)} Se manda desde la factura.`
+  }
 }
