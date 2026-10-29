@@ -12,7 +12,7 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Construida: 0.19.1** (29/10) — ⚠️ **publicarla cuanto antes**. **El freno al cliente mayorista con deuda vencida**: su pedido no se factura hasta que un encargado lo autoriza, con un clic o con su PIN. **La base ya frena desde el 29/10 a la tarde, y la 0.19.0 no tiene el botón para autorizar**: hasta publicar la 0.19.1, el pedido de un cliente con vencido no se puede facturar. Ver *Lo último que pasó*. **756 pruebas verdes en la app.**
+**Construida: 0.19.1** (29/10) — ⚠️ **publicarla cuanto antes**. **El freno al cliente mayorista con deuda vencida**: su pedido no se factura hasta que un encargado lo autoriza, con un clic o con su PIN. **La base ya frena desde el 29/10 a la tarde, y la 0.19.0 no tiene el botón para autorizar**: hasta publicar la 0.19.1, el pedido de un cliente con vencido no se puede facturar. Y **Productos ya no baja hasta una zona vacía** con la ficha abierta. Ver *Lo último que pasó*. **756 pruebas verdes en la app.**
 
 **Publicada: 0.19.0** (29/10, 11:27), verificada en Cloudflare: `latest.json` dice 0.19.0. **La orden de recibo y el recibo numerado**: Facundo anota en el teléfono lo que le pagaron —también sin señal— y en el local, cuando confirman que entró la plata, sale el recibo con número, baja la deuda y se le manda por mail al cliente. El mismo recibo sale en toda cobranza de cuenta corriente, y hay un registro en *Clientes → Recibos*. Y **el mail del pedido**: apenas el pedido de Facundo llega al local, al cliente le llega el detalle. **La base y la función del mail ya están en el servidor.** Ver *Lo último que pasó*. **753 pruebas verdes en la app.**
 
@@ -99,7 +99,7 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 
 - **La causa:** cada sección de la ficha tiene un título invisible, el que lee el lector de pantalla. Se ubicaba respecto de la página y no de la ficha, así que las secciones de abajo estiraban la página. Medido con los mismos estilos de la app: **2.626 px de página en una ventana de 846**.
 - **El arreglo:** las secciones de la ficha de producto y de la de cliente, y la cantidad de *Pedidos* a proveedor, que tenían lo mismo, ahora lo contienen: la página mide lo que la ventana. Y el área de contenido de todas las pantallas también lo contiene, para que una pantalla nueva no vuelva a mover la página entera ni el menú.
-- **Verificado en la app**, en Productos con la ficha de *ACEDAN GOTAS* abierta, sin guardar nada: a 1920 × 1000, la página mide **1.000 px**; sacándole el arreglo en el momento, vuelve a **2.613**. A 375 px, la página mide lo que la pantalla y nada se desplaza hacia el costado. **756 verdes** y los tipos sin errores. ⚠️ **Va en la próxima versión que se construya.**
+- **Verificado en la app**, en Productos con la ficha de *ACEDAN GOTAS* abierta, sin guardar nada: a 1920 × 1000, la página mide **1.000 px**; sacándole el arreglo en el momento, vuelve a **2.613**. A 375 px, la página mide lo que la pantalla y nada se desplaza hacia el costado. **756 verdes** y los tipos sin errores. **Va en la 0.19.1.**
 
 ## Lo último que pasó — 29 de octubre: el freno al cliente con deuda vencida
 
