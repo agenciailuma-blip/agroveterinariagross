@@ -12,7 +12,7 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Construida: 0.19.13 — falta publicarla.** **El remito R sobre la hoja de imprenta**: la plantilla para la gráfica ([`docs/remito-r/`](remito-r/Remito%20R%20-%20Plantilla%20para%20la%20imprenta.pdf)), la impresión de sólo lo que cambia, las tandas en Configuración y las hojas arruinadas. Además, **la marca *Precio a convenir***, **la planilla de la lista mayorista** y **anular un recibo**. **La base ya está aplicada.** Ver *Lo último que pasó*. **842 pruebas verdes en la app.**
+**Publicada: 0.19.13** (30/10, 10:15), verificada en Cloudflare: `latest.json` dice 0.19.13, el instalador está y el programa publicado trae lo nuevo. **El remito R sobre la hoja de imprenta**: la plantilla para la gráfica ([`docs/remito-r/`](remito-r/Remito%20R%20-%20Plantilla%20para%20la%20imprenta.pdf)), la impresión de sólo lo que cambia, las tandas en Configuración y las hojas arruinadas. Además, **la marca *Precio a convenir***, **la planilla de la lista mayorista** y **anular un recibo**. **La base ya está aplicada.** Ver *Lo último que pasó*. **842 pruebas verdes en la app.**
 
 **Publicada: 0.19.12** (29/10, 19:39), verificada en Cloudflare: `latest.json` dice 0.19.12, el instalador está publicado y la versión web ya trae la pestaña. **Las estadísticas del mayorista**: una pestaña nueva en Mayorista con lo vendido, los pedidos, la deuda, lo cobrado y lo más vendido, por cliente, ciudad, ruta o zona. **La base ya está aplicada.** Ver *Lo último que pasó*. **809 pruebas verdes en la app.**
 

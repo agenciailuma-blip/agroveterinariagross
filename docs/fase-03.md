@@ -77,7 +77,7 @@ El cliente de siempre: la persona que lleva el alimento del perro, la oficina. S
 - **En el Mostrador**, con un cliente de cuenta corriente: **Remito interno · precio después**. Descuenta stock, se imprime para firmar y no pasa por la caja. Sólo productos del catálogo. Con deuda vencida, PIN de un encargado.
 - **En Facturación, *Pendientes de facturar***: se eligen uno o varios remitos del cliente, se ponen los precios en una grilla —el de lista viene escrito— y sale la **factura o el comprobante interno** a cuenta corriente. No vuelve a descontar stock y cada remito queda asociado a su venta. La factura sale sola por mail.
 - **En la cuenta corriente del cliente**, los remitos todavía sin precio, arriba de los movimientos.
-- **La marca «Precio a convenir»** (30/10): en la ficha del cliente de cuenta corriente. Con ella, el Mostrador ofrece primero el remito interno; sin ella, se puede hacer igual. Construida en la 0.19.13, falta publicarla.
+- **La marca «Precio a convenir»** (30/10): en la ficha del cliente de cuenta corriente. Con ella, el Mostrador ofrece primero el remito interno; sin ella, se puede hacer igual. Publicada en la 0.19.13.
 
 ---
 
@@ -138,7 +138,7 @@ Lucas habló de un «talonario con CAE». **Para remitos lo que existe es el CAI
 - **Por duplicado:** original para el que recibe y duplicado para Gross. Si la imprenta entrega hojas sueltas y no en papel autocopiativo, el sistema imprime dos veces.
 - **Sin PDF al celular:** el remito R es la hoja de imprenta.
 
-**Ya está (30/10):** de los tres ejemplos que mandó Lucas se eligió el segundo. La [plantilla para la imprenta](remito-r/Remito%20R%20-%20Plantilla%20para%20la%20imprenta.pdf) sale de ahí, y el sistema imprime sobre ella sólo lo que cambia, con tandas, hojas arruinadas, duplicado y corrimiento por impresora. Construida en la 0.19.13, falta publicarla.
+**Ya está (30/10):** de los tres ejemplos que mandó Lucas se eligió el segundo. La [plantilla para la imprenta](remito-r/Remito%20R%20-%20Plantilla%20para%20la%20imprenta.pdf) sale de ahí, y el sistema imprime sobre ella sólo lo que cambia, con tandas, hojas arruinadas, duplicado y corrimiento por impresora. Publicada en la 0.19.13.
 
 **Aprobada la propuesta visual de la plantilla (30/10).** **Lo que falta:** mandarla a la gráfica, que entregue la muestra, para probarla en la impresora del comercio, y cargar el CAI con el rango de números de la primera tanda.
 
@@ -188,8 +188,8 @@ Para que Facundo salga a la calle la semana del 2/11. Va en la **0.18.0**.
 
 **Lo que falta del mayorista**, en este orden:
 1. **El pin en el mapa** con todos los clientes (hoy cada uno tiene su «Cómo llegar») y **las estadísticas** (5.5).
-2. ~~**La planilla** para cargar la lista mayorista de a muchos.~~ Construida en la 0.19.13, falta publicarla.
-3. ~~**Anular un recibo**: hoy un recibo emitido por error se compensa a mano en la cuenta corriente.~~ Construida en la 0.19.13, falta publicarla.
+2. ~~**La planilla** para cargar la lista mayorista de a muchos.~~ Publicada en la 0.19.13.
+3. ~~**Anular un recibo**: hoy un recibo emitido por error se compensa a mano en la cuenta corriente.~~ Publicada en la 0.19.13.
 
 ### 5.1 El cliente mayorista
 
