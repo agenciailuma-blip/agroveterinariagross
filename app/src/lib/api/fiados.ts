@@ -196,6 +196,7 @@ export interface PagoFiado {
   medio: string
   cobro: string | null
   creado_en: string
+  anulado_en: string | null
   recibo_id: string | null
   recibo_serie: string | null
   recibo_numero: number | null

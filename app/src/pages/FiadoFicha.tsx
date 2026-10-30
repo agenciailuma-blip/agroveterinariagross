@@ -187,6 +187,7 @@ export default function FiadoFicha() {
                 <span className="min-w-0">
                   {fechaCorta(p.fecha)} · {p.medio}
                   {p.cobro && <span className="text-piedra-500"> · cobró {p.cobro}</span>}
+                  {p.anulado_en && <span className="font-medium text-red-700"> · Anulado</span>}
                 </span>
                 <span className="flex items-center gap-3">
                   {p.recibo_id && (
@@ -194,7 +195,9 @@ export default function FiadoFicha() {
                       Recibo {numeroRecibo(p.recibo_serie!, p.recibo_numero!)}
                     </Link>
                   )}
-                  <span className="font-medium tabular-nums">{moneda.format(p.importe)}</span>
+                  <span className={`font-medium tabular-nums ${p.anulado_en ? 'text-piedra-400 line-through' : ''}`}>
+                    {moneda.format(p.importe)}
+                  </span>
                 </span>
               </li>
             ))}

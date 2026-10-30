@@ -84,6 +84,11 @@ export interface ReciboCompleto {
   concepto: string | null
   emitido_en: string
   emitido_por_nombre: string | null
+  anulado_en: string | null
+  anulado_por_nombre: string | null
+  motivo_anulacion: string | null
+  /** Si entró plata al cajón: para anularlo, tiene que salir de una caja abierta. */
+  paso_por_caja: boolean
   mail_destinatario: string | null
   mail_estado: 'enviado' | 'error' | null
   mail_error: string | null
@@ -129,12 +134,27 @@ export interface FilaRecibo {
   orden_numero: number | null
   emitido_por_nombre: string | null
   mail_estado: 'enviado' | 'error' | null
+  anulado_en: string | null
 }
 
 export async function listarRecibos(texto: string): Promise<FilaRecibo[]> {
   const { data, error } = await supabase.rpc('listar_recibos', { p_texto: texto.trim() || null, p_limite: 300 })
   if (error) throw new Error(error.message)
   return ((data ?? []) as FilaRecibo[]).map((f) => ({ ...f, total: Number(f.total) }))
+}
+
+/** Lo cobrado de verdad: un recibo anulado sigue en la lista, pero no suma. */
+export function totalCobrado(filas: Pick<FilaRecibo, 'total' | 'anulado_en'>[]): number {
+  return Math.round(filas.reduce((s, r) => s + (r.anulado_en ? 0 : r.total), 0) * 100) / 100
+}
+
+/*
+  Conserva el número y deshace lo que movió: la deuda vuelve, la plata
+  sale de la caja abierta y los cheques en cartera pasan a devueltos.
+*/
+export async function anularRecibo(id: string, motivo: string, cajaId: string | null): Promise<void> {
+  const { error } = await supabase.rpc('anular_recibo', { p_id: id, p_motivo: motivo, p_caja_id: cajaId })
+  if (error) throw new Error(error.message)
 }
 
 /*

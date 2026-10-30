@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/auth/AuthProvider'
-import { listarRecibos, numeroRecibo } from '@/lib/api/recibos'
+import { listarRecibos, numeroRecibo, totalCobrado } from '@/lib/api/recibos'
 import { fechaCorta } from '@/lib/comprobante/presentacion'
 import { enCastellano } from '@/lib/errores'
 import { campoDeFiltro, tarjeta } from '@/estilos'
@@ -34,7 +34,8 @@ export default function Recibos() {
   }
 
   const filas = recibos.data ?? []
-  const total = filas.reduce((s, r) => s + r.total, 0)
+  const total = totalCobrado(filas)
+  const anulados = filas.filter((r) => r.anulado_en).length
 
   return (
     <div className="space-y-5">
@@ -67,6 +68,7 @@ export default function Recibos() {
         <>
           <p className="text-xs text-piedra-500">
             {filas.length === 1 ? 'Un recibo' : `${filas.length} recibos`} · {moneda.format(total)}
+            {anulados > 0 && ` · ${anulados === 1 ? '1 anulado' : `${anulados} anulados`}, sin sumar`}
             {filas.length >= 300 && ' · se muestran los últimos 300; buscá para encontrar uno anterior'}
           </p>
           <ul className={`${tarjeta} divide-y divide-piedra-100`}>
@@ -86,8 +88,14 @@ export default function Recibos() {
                     </p>
                   </div>
                   <div className="ml-auto shrink-0 text-right">
-                    <p className="text-sm font-semibold tabular-nums text-tinta">{moneda.format(r.total)}</p>
-                    {r.mail_estado && (
+                    <p
+                      className={`text-sm font-semibold tabular-nums ${r.anulado_en ? 'text-piedra-400 line-through' : 'text-tinta'}`}
+                    >
+                      {moneda.format(r.total)}
+                    </p>
+                    {r.anulado_en ? (
+                      <p className="text-xs font-medium text-red-700">Anulado</p>
+                    ) : r.mail_estado && (
                       <p className={`text-xs ${r.mail_estado === 'enviado' ? 'text-verde-700' : 'text-red-700'}`}>
                         {r.mail_estado === 'enviado' ? 'Mandado por mail' : 'El mail no salió'}
                       </p>

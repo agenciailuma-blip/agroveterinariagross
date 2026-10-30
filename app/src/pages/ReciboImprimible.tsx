@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useParams } from 'react-router-dom'
+import { useAuth } from '@/auth/AuthProvider'
+import { pedirTexto } from '@/components/Dialogo'
+import { cajaAbierta } from '@/lib/api/caja'
 import { LEYENDA_NO_FISCAL } from '@/lib/api/noFiscal'
-import { enviarReciboPorMail, numeroRecibo, reciboCompleto, type ReciboCompleto } from '@/lib/api/recibos'
+import { anularRecibo, enviarReciboPorMail, numeroRecibo, reciboCompleto, type ReciboCompleto } from '@/lib/api/recibos'
 import { fechaCorta } from '@/lib/comprobante/presentacion'
+import { useTerminal } from '@/lib/terminal'
 import { importeEnLetras } from '@/lib/enLetras'
 import { enCastellano } from '@/lib/errores'
 import { boton, campo } from '@/estilos'
@@ -44,17 +48,81 @@ export default function ReciboImprimible() {
         <button onClick={() => navigate(-1)} className="text-sm text-marca-700 hover:underline">
           ← Volver
         </button>
-        <button onClick={() => window.print()} className={boton.principal}>
-          Imprimir
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          {!r.anulado_en && <AnularRecibo r={r} />}
+          <button onClick={() => window.print()} className={boton.principal}>
+            Imprimir
+          </button>
+        </div>
       </div>
 
       {/* El fiado no deja un mail: se le avisa por WhatsApp. */}
-      {!r.fiado_persona_id && <MandarPorMail r={r} />}
+      {!r.fiado_persona_id && !r.anulado_en && <MandarPorMail r={r} />}
 
       <style>{'@page { size: A4; margin: 12mm; }'}</style>
       <Hoja r={r} />
     </div>
+  )
+}
+
+function AnularRecibo({ r }: { r: ReciboCompleto }) {
+  const qc = useQueryClient()
+  const { tienePermiso } = useAuth()
+  const { terminal } = useTerminal()
+  const puede = tienePermiso('cuentacorriente.anular_recibo')
+
+  const caja = useQuery({
+    queryKey: ['caja', terminal?.id],
+    queryFn: () => cajaAbierta(terminal!.id),
+    enabled: puede && r.paso_por_caja && !!terminal,
+  })
+  const cajaId = caja.data?.id ?? null
+
+  const anular = useMutation({
+    mutationFn: (motivo: string) => anularRecibo(r.id, motivo, r.paso_por_caja ? cajaId : null),
+    // La anulación toca la cuenta, la caja, los cheques y la orden.
+    onSuccess: () => qc.invalidateQueries(),
+  })
+
+  if (!puede) return null
+
+  async function pedirMotivo() {
+    const lineas = [
+      r.fiado_persona_id ? 'La deuda vuelve al fiado.' : 'La deuda vuelve a la cuenta corriente.',
+      r.paso_por_caja && `Salen ${moneda.format(r.total)} de la caja abierta.`,
+      r.pagos.some((p) => p.cheque) && 'Los cheques pasan a devueltos.',
+      r.orden_numero && `La orden ${r.orden_numero} del vendedor queda rechazada.`,
+    ]
+    const motivo = await pedirTexto({
+      titulo: `Anular el recibo ${numeroRecibo(r.serie, r.numero)}`,
+      detalle: lineas.filter(Boolean).join(' '),
+      etiqueta: 'Motivo',
+      minimo: 3,
+      aceptar: 'Anular el recibo',
+      peligro: true,
+    })
+    if (motivo) anular.mutate(motivo)
+  }
+
+  const buscandoCaja = r.paso_por_caja && !!terminal && caja.isPending
+  const faltaCaja = r.paso_por_caja && !buscandoCaja && !cajaId
+
+  return (
+    <>
+      {faltaCaja && <span className="text-xs text-piedra-500">Para anularlo hace falta una caja abierta.</span>}
+      {anular.isError && (
+        <span role="alert" className="text-xs text-red-700">
+          {enCastellano(anular.error, 'No se pudo anular el recibo.')}
+        </span>
+      )}
+      <button
+        onClick={pedirMotivo}
+        disabled={anular.isPending || faltaCaja || buscandoCaja}
+        className={boton.peligro}
+      >
+        {anular.isPending ? 'Anulando…' : 'Anular'}
+      </button>
+    </>
   )
 }
 
@@ -130,6 +198,16 @@ function Hoja({ r }: { r: ReciboCompleto }) {
     <div className="mx-auto max-w-[21cm] bg-white p-8 text-[11px] text-black shadow-sm ring-1 ring-borde print:p-0 print:shadow-none print:ring-0">
       <p className="mb-4 border-2 border-black py-1.5 text-center text-sm font-bold tracking-wide">{LEYENDA_NO_FISCAL}</p>
 
+      {r.anulado_en && (
+        <div className="mb-4 border-4 border-red-700 px-3 py-2 text-center text-red-700 print:border-black print:text-black">
+          <p className="text-xl font-bold tracking-widest">RECIBO ANULADO</p>
+          <p className="[overflow-wrap:anywhere]">
+            El {new Date(r.anulado_en).toLocaleDateString('es-AR')}
+            {r.anulado_por_nombre && `, por ${r.anulado_por_nombre}`}. Motivo: {r.motivo_anulacion}
+          </p>
+        </div>
+      )}
+
       <div className="flex flex-wrap items-start justify-between gap-6 border-b border-black pb-4">
         <div className="min-w-0">
           {r.emisor.logo ? (
@@ -195,22 +273,26 @@ function Hoja({ r }: { r: ReciboCompleto }) {
         </div>
       </div>
 
-      <p className="mt-4">
-        {saldo > 0
-          ? `Saldo de la cuenta después de este pago: ${moneda.format(saldo)}`
-          : saldo < 0
-            ? `La cuenta queda con ${moneda.format(-saldo)} a favor.`
-            : 'La cuenta queda al día.'}
-      </p>
+      {!r.anulado_en && (
+        <p className="mt-4">
+          {saldo > 0
+            ? `Saldo de la cuenta después de este pago: ${moneda.format(saldo)}`
+            : saldo < 0
+              ? `La cuenta queda con ${moneda.format(-saldo)} a favor.`
+              : 'La cuenta queda al día.'}
+        </p>
+      )}
       {r.orden_numero && (
         <p className="text-[10px]">
           Cobrado por {r.orden_vendedor ?? 'el vendedor'} · orden {r.orden_numero}
         </p>
       )}
 
-      <div className="mt-12 flex justify-end">
-        <p className="w-56 border-t border-black pt-1">Firma y aclaración</p>
-      </div>
+      {!r.anulado_en && (
+        <div className="mt-12 flex justify-end">
+          <p className="w-56 border-t border-black pt-1">Firma y aclaración</p>
+        </div>
+      )}
 
       <p className="mt-6 border-2 border-black py-1.5 text-center text-sm font-bold tracking-wide">{LEYENDA_NO_FISCAL}</p>
     </div>

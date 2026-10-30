@@ -12,7 +12,7 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Construida: 0.19.13 — falta publicarla.** **El remito R sobre la hoja de imprenta**: la plantilla para la gráfica ([`docs/remito-r/`](remito-r/Remito%20R%20-%20Plantilla%20para%20la%20imprenta.pdf)), la impresión de sólo lo que cambia, las tandas en Configuración y las hojas arruinadas. Además, **la marca *Precio a convenir*** y **la planilla de la lista mayorista**. **La base ya está aplicada.** Ver *Lo último que pasó*. **841 pruebas verdes en la app.**
+**Construida: 0.19.13 — falta publicarla.** **El remito R sobre la hoja de imprenta**: la plantilla para la gráfica ([`docs/remito-r/`](remito-r/Remito%20R%20-%20Plantilla%20para%20la%20imprenta.pdf)), la impresión de sólo lo que cambia, las tandas en Configuración y las hojas arruinadas. Además, **la marca *Precio a convenir***, **la planilla de la lista mayorista** y **anular un recibo**. **La base ya está aplicada.** Ver *Lo último que pasó*. **842 pruebas verdes en la app.**
 
 **Publicada: 0.19.12** (29/10, 19:39), verificada en Cloudflare: `latest.json` dice 0.19.12, el instalador está publicado y la versión web ya trae la pestaña. **Las estadísticas del mayorista**: una pestaña nueva en Mayorista con lo vendido, los pedidos, la deuda, lo cobrado y lo más vendido, por cliente, ciudad, ruta o zona. **La base ya está aplicada.** Ver *Lo último que pasó*. **809 pruebas verdes en la app.**
 
@@ -116,6 +116,19 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 🟡 **Lo que la venta tardaba en llegar a la caja sin internet** — arreglado el 05/10 y publicado en la 0.13.4, **sin probar en el local**. El mostrador le pasaba las ventas a la caja una vez por minuto, y la caja miraba su cola cada ocho segundos: hasta 68 segundos con el cliente esperando. Y llegaba de a partes porque, mientras la cabecera intentaba subir al servidor —hasta doce segundos sin internet—, salían los renglones solos. Ahora la venta sale al segundo y medio de apretar *Enviar a caja* (y otra vez a los catorce, por si el intento de subir tardó), viaja entera o espera entera, y la caja la muestra apenas llega. Se comprueba en el próximo corte: la venta tiene que aparecer en la caja en un par de segundos y completa.
 
 ---
+
+## Lo último que pasó — 30 de octubre: anular un recibo
+
+En la hoja del recibo, **Anular** pide el motivo y dice qué va a pasar. El recibo conserva su número, sale con la marca **RECIBO ANULADO** y sigue en el registro, tachado y sin sumar. Ya no se puede mandar por mail.
+
+- **Cuenta corriente:** entra una nota de débito por el total, que vence en el día, igual que el cheque que se le carga al cliente.
+- **Fiado:** el pago queda marcado en la ficha y la venta vuelve a deber.
+- **Caja:** si entró plata al cajón, sale de la caja abierta de esa terminal. Sin caja abierta no se puede anular.
+- **Cheques:** sólo si siguen en la cartera, y pasan a devueltos: el mismo cheque se puede volver a cargar. Si ya se depositó o se endosó, el recibo no se anula.
+- **Orden del vendedor:** queda rechazada con el motivo. Si la plata entra después, se arma otra orden.
+- **Permiso nuevo:** *Anular recibos*, para Administrador y Encargado. El Cajero no lo tiene.
+- **La base** ([`20261030200000_anular_un_recibo.sql`](../supabase/migrations/20261030200000_anular_un_recibo.sql), aplicada). **Probada como usuario**, con todo deshecho al final: efectivo, transferencia con orden, cheque en cartera, cheque depositado, fiado, doble anulación, sin caja, sin motivo y sin permiso.
+- **Verificado:** **842 verdes** y los tipos sin errores. La pantalla, a 375 px con datos simulados: el diálogo, la hoja anulada, el registro y el botón frenado sin caja. **Sin probar:** anular un recibo real desde la pantalla, porque todavía no hay ninguno emitido, y la hoja anulada impresa en papel.
 
 ## Lo último que pasó — 30 de octubre: la planilla de la lista mayorista
 

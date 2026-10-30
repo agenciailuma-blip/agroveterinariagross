@@ -1,10 +1,20 @@
 import { describe, expect, it } from 'vitest'
-import { etiquetaForma, leerImporte, numeroRecibo } from '@/lib/api/recibos'
+import { etiquetaForma, leerImporte, numeroRecibo, totalCobrado } from '@/lib/api/recibos'
 
 describe('el recibo', () => {
   it('el número, con la serie y ocho cifras', () => {
     expect(numeroRecibo('0001', 12)).toBe('0001-00000012')
     expect(numeroRecibo('0001', 123456789)).toBe('0001-123456789')
+  })
+
+  it('el anulado sigue en la lista, pero no suma', () => {
+    expect(
+      totalCobrado([
+        { total: 100.1, anulado_en: null },
+        { total: 50, anulado_en: '2026-10-30T12:00:00Z' },
+        { total: 0.2, anulado_en: null },
+      ]),
+    ).toBe(100.3)
   })
 })
 

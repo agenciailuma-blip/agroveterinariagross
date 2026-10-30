@@ -189,7 +189,7 @@ Para que Facundo salga a la calle la semana del 2/11. Va en la **0.18.0**.
 **Lo que falta del mayorista**, en este orden:
 1. **El pin en el mapa** con todos los clientes (hoy cada uno tiene su «Cómo llegar») y **las estadísticas** (5.5).
 2. ~~**La planilla** para cargar la lista mayorista de a muchos.~~ Construida en la 0.19.13, falta publicarla.
-3. **Anular un recibo**: hoy un recibo emitido por error se compensa a mano en la cuenta corriente.
+3. ~~**Anular un recibo**: hoy un recibo emitido por error se compensa a mano en la cuenta corriente.~~ Construida en la 0.19.13, falta publicarla.
 
 ### 5.1 El cliente mayorista
 
