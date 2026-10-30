@@ -188,7 +188,7 @@ Para que Facundo salga a la calle la semana del 2/11. Va en la **0.18.0**.
 
 **Lo que falta del mayorista**, en este orden:
 1. **El pin en el mapa** con todos los clientes (hoy cada uno tiene su «Cómo llegar») y **las estadísticas** (5.5).
-2. **La planilla** para cargar la lista mayorista de a muchos.
+2. ~~**La planilla** para cargar la lista mayorista de a muchos.~~ Construida en la 0.19.13, falta publicarla.
 3. **Anular un recibo**: hoy un recibo emitido por error se compensa a mano en la cuenta corriente.
 
 ### 5.1 El cliente mayorista
@@ -204,7 +204,7 @@ Lo nuevo de la ficha, sólo para los mayoristas:
 
 Lucas quiere que Facundo pida «tres bolsas de cachorro» y que al llegar **el precio ya esté**, sin preguntar. Francisco le propuso **una tercera lista, *Mayorista***, y él aceptó probarlo.
 
-**Un dato para corregir lo que se dijo en el audio:** las listas **no son sólo por porcentaje**. La base guarda desde agosto **un precio fijo por producto en cada lista**, que le gana al porcentaje. **La pantalla ya está** (*Mayorista → Lista de precios*); falta la planilla para cargarlo de a muchos. Son pocos productos (Livra, por ahora), así que alcanza con eso. **Facundo sólo ve y elige los productos que tienen precio en esa lista.**
+**Un dato para corregir lo que se dijo en el audio:** las listas **no son sólo por porcentaje**. La base guarda desde agosto **un precio fijo por producto en cada lista**, que le gana al porcentaje. **La pantalla ya está** (*Mayorista → Lista de precios*), con su planilla para cargarlo de a muchos. Son pocos productos (Livra, por ahora), así que alcanza con eso. **Facundo sólo ve y elige los productos que tienen precio en esa lista.**
 
 ### 5.3 La orden de pedido
 

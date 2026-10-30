@@ -172,7 +172,7 @@ export function importarProveedores(
   ─────────────────────────────────────────────────────────────
 */
 
-async function todos(
+export async function todos(
   tabla: 'producto' | 'cliente' | 'proveedor',
   columnas: string,
   filtrar: <Q extends { is: (c: string, v: null) => Q; eq: (c: string, v: string) => Q }>(q: Q) => Q = (q) => q,

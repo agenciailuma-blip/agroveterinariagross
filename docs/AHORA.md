@@ -12,7 +12,7 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Construida: 0.19.13 — falta publicarla.** **El remito R sobre la hoja de imprenta**: la plantilla para la gráfica ([`docs/remito-r/`](remito-r/Remito%20R%20-%20Plantilla%20para%20la%20imprenta.pdf)), la impresión de sólo lo que cambia, las tandas en Configuración y las hojas arruinadas. Además, **la marca *Precio a convenir***. **La base ya está aplicada.** Ver *Lo último que pasó*. **830 pruebas verdes en la app.**
+**Construida: 0.19.13 — falta publicarla.** **El remito R sobre la hoja de imprenta**: la plantilla para la gráfica ([`docs/remito-r/`](remito-r/Remito%20R%20-%20Plantilla%20para%20la%20imprenta.pdf)), la impresión de sólo lo que cambia, las tandas en Configuración y las hojas arruinadas. Además, **la marca *Precio a convenir*** y **la planilla de la lista mayorista**. **La base ya está aplicada.** Ver *Lo último que pasó*. **841 pruebas verdes en la app.**
 
 **Publicada: 0.19.12** (29/10, 19:39), verificada en Cloudflare: `latest.json` dice 0.19.12, el instalador está publicado y la versión web ya trae la pestaña. **Las estadísticas del mayorista**: una pestaña nueva en Mayorista con lo vendido, los pedidos, la deuda, lo cobrado y lo más vendido, por cliente, ciudad, ruta o zona. **La base ya está aplicada.** Ver *Lo último que pasó*. **809 pruebas verdes en la app.**
 
@@ -116,6 +116,15 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 🟡 **Lo que la venta tardaba en llegar a la caja sin internet** — arreglado el 05/10 y publicado en la 0.13.4, **sin probar en el local**. El mostrador le pasaba las ventas a la caja una vez por minuto, y la caja miraba su cola cada ocho segundos: hasta 68 segundos con el cliente esperando. Y llegaba de a partes porque, mientras la cabecera intentaba subir al servidor —hasta doce segundos sin internet—, salían los renglones solos. Ahora la venta sale al segundo y medio de apretar *Enviar a caja* (y otra vez a los catorce, por si el intento de subir tardó), viaja entera o espera entera, y la caja la muestra apenas llega. Se comprueba en el próximo corte: la venta tiene que aparecer en la caja en un par de segundos y completa.
 
 ---
+
+## Lo último que pasó — 30 de octubre: la planilla de la lista mayorista
+
+En *Mayorista → Lista de precios*, **Descargar planilla** baja todo el catálogo en Excel, con el precio de mostrador y el mayorista. Se completa esa columna y se sube con **Importar planilla**.
+
+- **Antes de guardar** se ve qué entra, qué cambia y qué no se entendió, con su fila. Los precios escritos a la argentina se leen bien.
+- **Lo que no está en el archivo no se toca**, así que sirve una planilla con diez productos. Un precio borrado saca el producto sólo si se tilda *Sacarlos de la lista*.
+- **La base** ([`20261030190000_lista_mayorista_de_a_muchos.sql`](../supabase/migrations/20261030190000_lista_mayorista_de_a_muchos.sql), aplicada): guarda todo junto, o entran todos o no entra ninguno. **Probada como usuario**, con todo deshecho al final.
+- **Verificado:** **841 verdes** y los tipos sin errores. Con los datos reales, a 375 px: la planilla bajada y subida sin tocar da *18 sin cambios*, y una de prueba muestra lo que entra, lo que cambia y lo que no existe. Se canceló sin guardar. **Sin probar:** apretar *Guardar* desde la pantalla, y abrir la planilla en Excel.
 
 ## Lo último que pasó — 30 de octubre: la marca «Precio a convenir»
 

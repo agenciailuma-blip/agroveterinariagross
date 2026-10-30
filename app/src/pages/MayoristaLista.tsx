@@ -3,10 +3,16 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/auth/AuthProvider'
 import { enCastellano } from '@/lib/errores'
 import { moneda, numero } from '@/lib/tipos'
-import { botonChico, campoDeFiltro, tarjeta } from '@/estilos'
+import { boton, botonChico, campoDeFiltro, tarjeta } from '@/estilos'
+import BotonBajarPlanilla from '@/components/BotonBajarPlanilla'
+import { leerArchivo } from '@/lib/importacion/archivo'
+import { leerPlanillaDeLista, type CambioDeLista, type LecturaDeLista } from '@/lib/importacion/listaMayorista'
 import {
+  bajarPlanillaDeLista,
   buscarParaLista,
+  catalogoDeLaLista,
   guardarPrecio,
+  guardarPrecios,
   leerLista,
   type PrecioMayorista,
   type ProductoParaLista,
@@ -35,7 +41,43 @@ export default function MayoristaLista() {
   const [aviso, setAviso] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
+  const [lectura, setLectura] = useState<LecturaDeLista | null>(null)
+  const [leyendo, setLeyendo] = useState(false)
+
   const puede = tienePermiso('productos.editar_precio')
+
+  async function alElegirPlanilla(archivo: File) {
+    setLeyendo(true)
+    setAviso(null)
+    setError(null)
+    setLectura(null)
+    try {
+      const [hojas, catalogo] = await Promise.all([leerArchivo(archivo), catalogoDeLaLista()])
+      const leida = hojas.map((h) => leerPlanillaDeLista(h.filas, catalogo)).find((l) => l !== null)
+      if (!leida) setError('La planilla tiene que tener las columnas «Código» y «Precio mayorista».')
+      else setLectura(leida)
+    } catch (e) {
+      setError(enCastellano(e, 'No se pudo leer la planilla.'))
+    } finally {
+      setLeyendo(false)
+    }
+  }
+
+  const aplicar = useMutation({
+    mutationFn: (cambios: CambioDeLista[]) =>
+      guardarPrecios(cambios.map((c) => ({ producto_id: c.producto_id, precio: c.precio }))),
+    onSuccess: (n) => {
+      setError(null)
+      setLectura(null)
+      setAviso(n === 1 ? 'Se guardó 1 cambio en la lista.' : `Se guardaron ${numero.format(n)} cambios en la lista.`)
+      qc.invalidateQueries({ queryKey: ['mayorista-lista'] })
+      qc.invalidateQueries({ queryKey: ['mayorista-catalogo'] })
+    },
+    onError: (e) => {
+      setAviso(null)
+      setError(enCastellano(e))
+    },
+  })
 
   const lista = useQuery({ queryKey: ['mayorista-lista'], queryFn: leerLista, enabled: puede })
   const encontrados = useQuery({
@@ -76,11 +118,30 @@ export default function MayoristaLista() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight text-tinta">Lista de precios mayorista</h1>
-        <p className="text-sm text-piedra-500">
-          Lo que el vendedor de calle puede ofrecer, y a cuánto. Lo que no está acá, no lo ve.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 flex-1 basis-64">
+          <h1 className="text-xl font-semibold tracking-tight text-tinta">Lista de precios mayorista</h1>
+          <p className="text-sm text-piedra-500">
+            Lo que el vendedor de calle puede ofrecer, y a cuánto. Lo que no está acá, no lo ve.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <BotonBajarPlanilla bajar={bajarPlanillaDeLista} />
+          <label className={`${boton.secundario} cursor-pointer`}>
+            {leyendo ? 'Leyendo…' : 'Importar planilla'}
+            <input
+              type="file"
+              accept=".xlsx,.xls,.csv,text/csv"
+              disabled={leyendo}
+              onChange={(e) => {
+                const f = e.target.files?.[0]
+                if (f) alElegirPlanilla(f)
+                e.target.value = ''
+              }}
+              className="hidden"
+            />
+          </label>
+        </div>
       </div>
 
       {aviso && (
@@ -92,6 +153,15 @@ export default function MayoristaLista() {
         <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 ring-1 ring-red-200">
           {error}
         </p>
+      )}
+
+      {lectura && (
+        <VistaDePlanilla
+          lectura={lectura}
+          ocupado={aplicar.isPending}
+          onAplicar={(cambios) => aplicar.mutate(cambios)}
+          onCancelar={() => setLectura(null)}
+        />
       )}
 
       <section className={`${tarjeta} space-y-3 p-4`}>
@@ -161,6 +231,100 @@ export default function MayoristaLista() {
           </ul>
         )}
       </section>
+    </div>
+  )
+}
+
+/*
+  Lo que va a pasar, antes de guardar. Sacar productos es aparte y hay que
+  pedirlo: un precio borrado sin querer dejaría al vendedor sin ese producto.
+*/
+function VistaDePlanilla({
+  lectura,
+  ocupado,
+  onAplicar,
+  onCancelar,
+}: {
+  lectura: LecturaDeLista
+  ocupado: boolean
+  onAplicar: (cambios: CambioDeLista[]) => void
+  onCancelar: () => void
+}) {
+  const [sacar, setSacar] = useState(false)
+  const { entran, cambian, salen, iguales, problemas } = lectura
+  const cambios = [...entran, ...cambian, ...(sacar ? salen : [])]
+
+  return (
+    <section className={`${tarjeta} space-y-3 p-4`}>
+      <h2 className="text-sm font-semibold text-tinta">Lo que trae la planilla</h2>
+      {entran.length + cambian.length + salen.length + problemas.length === 0 && (
+        <p className="text-sm text-piedra-500">
+          {iguales > 0 ? 'No hay nada para cambiar: los precios son los mismos.' : 'No trae ningún precio.'}
+        </p>
+      )}
+
+      <Grupo titulo="Entran a la lista" filas={entran} />
+      <Grupo titulo="Cambian de precio" filas={cambian} />
+      <Grupo titulo="Sin precio: salen de la lista" filas={salen} />
+      {salen.length > 0 && (
+        <label className="flex items-center gap-2 text-sm text-tinta">
+          <input type="checkbox" checked={sacar} onChange={(e) => setSacar(e.target.checked)} />
+          Sacarlos de la lista
+        </label>
+      )}
+      {iguales > 0 && <p className="text-xs text-piedra-500">{numero.format(iguales)} sin cambios.</p>}
+
+      {problemas.length > 0 && (
+        <div>
+          <h3 className="text-sm font-medium text-red-700">
+            No se cargan ({numero.format(problemas.length)})
+          </h3>
+          <ul className="mt-1 max-h-48 space-y-0.5 overflow-y-auto text-xs text-red-700">
+            {problemas.map((p) => (
+              <li key={p.fila} className="[overflow-wrap:anywhere]">
+                Fila {p.fila}
+                {p.codigo && ` · ${p.codigo}`}: {p.motivo}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <div className="flex flex-wrap gap-2">
+        <button onClick={() => onAplicar(cambios)} disabled={ocupado || cambios.length === 0} className={boton.principal}>
+          {ocupado
+            ? 'Guardando…'
+            : cambios.length === 1
+              ? 'Guardar 1 cambio'
+              : `Guardar ${numero.format(cambios.length)} cambios`}
+        </button>
+        <button onClick={onCancelar} disabled={ocupado} className={boton.secundario}>
+          Cancelar
+        </button>
+      </div>
+    </section>
+  )
+}
+
+function Grupo({ titulo, filas }: { titulo: string; filas: CambioDeLista[] }) {
+  if (filas.length === 0) return null
+  return (
+    <div>
+      <h3 className="text-sm font-medium text-tinta">
+        {titulo} ({numero.format(filas.length)})
+      </h3>
+      <ul className="mt-1 max-h-48 divide-y divide-piedra-100 overflow-y-auto">
+        {filas.map((c) => (
+          <li key={c.producto_id} className="flex flex-wrap items-baseline justify-between gap-x-3 py-1 text-xs">
+            <span className="min-w-0 flex-1 basis-40 [overflow-wrap:anywhere] text-tinta">{c.nombre}</span>
+            <span className="shrink-0 tabular-nums text-piedra-600">
+              {c.antes !== null && moneda.format(c.antes)}
+              {c.antes !== null && c.precio !== null && ' → '}
+              {c.precio !== null && <span className="font-medium text-tinta">{moneda.format(c.precio)}</span>}
+            </span>
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }

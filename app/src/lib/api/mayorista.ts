@@ -1,3 +1,6 @@
+import { todos } from '@/lib/api/importacion'
+import { aExcel, descargar, nombreDeArchivo } from '@/lib/importacion/exportar'
+import { ANCHOS_DE_LISTA, hojaDeLista, type ProductoDeLaPlanilla } from '@/lib/importacion/listaMayorista'
 import { supabase } from '@/lib/supabase'
 import { solicitarCae } from '@/lib/api/facturacion'
 
@@ -634,4 +637,35 @@ export async function buscarParaLista(texto: string): Promise<ProductoParaLista[
     .limit(20)
   if (error) throw new Error(error.message)
   return (data ?? []) as ProductoParaLista[]
+}
+
+/* De a muchos, desde la planilla: o entran todos o no entra ninguno. */
+export async function guardarPrecios(cambios: { producto_id: string; precio: number | null }[]): Promise<number> {
+  const { data, error } = await supabase.rpc('mayorista_guardar_precios', { p_cambios: cambios })
+  if (error) throw new Error(error.message)
+  return data as number
+}
+
+/** Todo el catálogo, con el precio mayorista de los que están en la lista. */
+export async function catalogoDeLaLista(): Promise<ProductoDeLaPlanilla[]> {
+  const [productos, lista] = await Promise.all([
+    todos('producto', 'id, codigo, nombre_interno, precio_venta, activo'),
+    leerLista(),
+  ])
+  const precios = new Map(lista.map((p) => [p.producto_id, Number(p.precio)]))
+  return (productos as unknown as { id: string; codigo: string; nombre_interno: string; precio_venta: number; activo: boolean }[])
+    .map((p) => ({
+      id: p.id,
+      codigo: p.codigo,
+      nombre: p.nombre_interno,
+      precio_venta: Number(p.precio_venta),
+      activo: p.activo,
+      precio: precios.get(p.id) ?? null,
+    }))
+    .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
+}
+
+export async function bajarPlanillaDeLista(): Promise<void> {
+  const hoja = hojaDeLista(await catalogoDeLaLista())
+  descargar(nombreDeArchivo('lista-mayorista'), await aExcel(hoja, ANCHOS_DE_LISTA))
 }
