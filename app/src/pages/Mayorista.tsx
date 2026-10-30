@@ -7,7 +7,8 @@ import { confirmar, pedirTexto } from '@/components/Dialogo'
 import { emitirEnServidor } from '@/lib/api/noFiscal'
 import { enviarFacturaPorMail } from '@/lib/api/facturaPorMail'
 import { obtenerComprobanteCompleto } from '@/lib/api/comprobante'
-import { abrirComprobante, abrirNoFiscal } from '@/lib/escritorio'
+import { listarTandas } from '@/lib/api/remitoR'
+import { abrirComprobante, abrirNoFiscal, abrirRemitoR } from '@/lib/escritorio'
 import { enCastellano } from '@/lib/errores'
 import { moneda, numero } from '@/lib/tipos'
 import { boton, botonChico, campo, tarjeta } from '@/estilos'
@@ -847,7 +848,10 @@ function FichaPedido({
         observaciones: `Pedido mayorista ${p.numero}`,
         entrega: { domicilio: p.cliente_domicilio, localidad: p.cliente_localidad, contacto: p.cliente_telefono },
       })
-      abrirNoFiscal(r.id)
+      // Con hojas de imprenta cargadas, el remito del mayorista sale sobre ellas.
+      const conHojas = await listarTandas().then((t) => t.some((x) => x.vigente), () => false)
+      if (conHojas) abrirRemitoR(r.id)
+      else abrirNoFiscal(r.id)
       return `Pedido ${p.numero}: remito emitido.`
     })
   }
@@ -1019,6 +1023,9 @@ function FichaPedido({
           <Dato etiqueta="Remito">
             <button onClick={() => abrirNoFiscal(p.remito_id!)} className="text-marca-700 underline">
               {p.remito_numero}
+            </button>
+            <button onClick={() => abrirRemitoR(p.remito_id!)} className="ml-2 text-marca-700 underline">
+              Hoja R
             </button>
           </Dato>
         )}

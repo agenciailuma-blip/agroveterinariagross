@@ -79,3 +79,4 @@ app/src-tauri/gen/
 # versionarlo: es la configuración de la bóveda, no de la sesión.
 docs/.obsidian/workspace.json
 docs/.obsidian/workspace-mobile.json
+docs/remito-r/.armado/

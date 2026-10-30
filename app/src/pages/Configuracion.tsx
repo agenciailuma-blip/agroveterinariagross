@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/auth/AuthProvider'
 import DiagnosticoTerminal from '@/components/DiagnosticoTerminal'
 import DatosDelEmisor from '@/components/DatosDelEmisor'
+import TandasRemitoR from '@/components/TandasRemitoR'
 import Depositos from '@/components/Depositos'
 import RedDelLocal from '@/components/RedDelLocal'
 import CajasYMostradores from '@/components/CajasYMostradores'
@@ -100,6 +101,7 @@ export default function Configuracion() {
         <>
           <DatosDelEmisor />
           <PuntosDeVenta />
+          <TandasRemitoR />
           <PercepcionIibb />
           <div className="rounded-xl bg-piedra-100 p-4 text-sm text-piedra-600">
             <p className="font-medium text-tinta">Sobre la exclusión por cliente</p>

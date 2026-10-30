@@ -6,7 +6,7 @@ import { listarNoFiscales, numeroNoFiscal, remitosSinCobrar } from '@/lib/api/no
 import NuevoRemito from '@/components/NuevoRemito'
 import RemitoFirmado from '@/components/RemitoFirmado'
 import { firmasDeRemitos } from '@/lib/api/remitoFirmado'
-import { abrirNoFiscal } from '@/lib/escritorio'
+import { abrirNoFiscal, abrirRemitoR } from '@/lib/escritorio'
 
 /*
   Los remitos del reparto.
@@ -230,6 +230,12 @@ export default function Remitos() {
                             className="text-xs text-marca-700 underline"
                           >
                             Imprimir
+                          </button>
+                          <button
+                            onClick={() => abrirRemitoR(r.id)}
+                            className="text-xs text-marca-700 underline"
+                          >
+                            Hoja R
                           </button>
                           <RemitoFirmado
                             remitoId={r.id}

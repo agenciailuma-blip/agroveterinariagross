@@ -74,6 +74,10 @@ export function abrirComprobante(comprobanteId: string): Promise<void> {
   Va por el mismo camino y con etiqueta propia: si compartieran etiqueta,
   abrir un remito traería al frente la factura que ya estaba abierta.
 */
+export function abrirRemitoR(id: string): Promise<void> {
+  return abrirDocumento(`/remito-r/${id}`, `remito-r-${id}`, 'Remito R')
+}
+
 export function abrirNoFiscal(id: string): Promise<void> {
   return abrirDocumento(`/no-fiscal/${id}`, `no-fiscal-${id}`, 'Comprobante no fiscal')
 }

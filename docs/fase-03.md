@@ -138,7 +138,9 @@ Lucas habló de un «talonario con CAE». **Para remitos lo que existe es el CAI
 - **Por duplicado:** original para el que recibe y duplicado para Gross. Si la imprenta entrega hojas sueltas y no en papel autocopiativo, el sistema imprime dos veces.
 - **Sin PDF al celular:** el remito R es la hoja de imprenta.
 
-**Lo que falta para hacerlo:** **una hoja de muestra de la imprenta** —o el diseño que vaya a usar—, para acomodar la impresión al espacio libre, y el CAI con el rango de números de la primera tanda.
+**Ya está (30/10):** de los tres ejemplos que mandó Lucas se eligió el segundo. La [plantilla para la imprenta](remito-r/Remito%20R%20-%20Plantilla%20para%20la%20imprenta.pdf) sale de ahí, y el sistema imprime sobre ella sólo lo que cambia, con tandas, hojas arruinadas, duplicado y corrimiento por impresora. Construida en la 0.19.13, falta publicarla.
+
+**Lo que falta:** que la gráfica entregue la muestra, para probarla en la impresora del comercio, y cargar el CAI con el rango de números de la primera tanda.
 
 ### ¿Cuándo baja el stock? — la regla, para que no cambie según el caso
 
@@ -336,7 +338,7 @@ Por lo que se usa todos los días primero, y por lo que una pieza le presta a la
 | 5 | **Proforma → factura** | Chico, y lo usa el mayorista |
 | 6 | **Fiados** | Independiente; usa el recibo |
 | 7 | **Mayorista**: cliente con ruta y mapa, lista con precios fijos, rol de Facundo, pedido, orden de recibo | El más grande; usa todo lo anterior |
-| 8 | **Remito logístico** | Espera el CAI: lo pide Gross en ARCA. Se puede construir antes con un CAI de prueba |
+| 8 | **Remito logístico** | Construido en la 0.19.13. Falta la muestra de la gráfica y el CAI de la primera tanda |
 | 9 | **Traslados de animales** | Independiente; usa la caja como cualquier servicio |
 | 10 | **Estadísticas** de mayorista, fiado y traslados | Necesitan datos cargados para tener sentido |
 

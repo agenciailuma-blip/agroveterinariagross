@@ -12,6 +12,8 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
+**Construida: 0.19.13 — falta publicarla.** **El remito R sobre la hoja de imprenta**: la plantilla para la gráfica ([`docs/remito-r/`](remito-r/Remito%20R%20-%20Plantilla%20para%20la%20imprenta.pdf)), la impresión de sólo lo que cambia, las tandas en Configuración y las hojas arruinadas. **La base ya está aplicada.** Ver *Lo último que pasó*. **828 pruebas verdes en la app.**
+
 **Publicada: 0.19.12** (29/10, 19:39), verificada en Cloudflare: `latest.json` dice 0.19.12, el instalador está publicado y la versión web ya trae la pestaña. **Las estadísticas del mayorista**: una pestaña nueva en Mayorista con lo vendido, los pedidos, la deuda, lo cobrado y lo más vendido, por cliente, ciudad, ruta o zona. **La base ya está aplicada.** Ver *Lo último que pasó*. **809 pruebas verdes en la app.**
 
 **Publicada: 0.19.11** (29/10, 19:16), verificada en Cloudflare: `latest.json` dice 0.19.11, el instalador está publicado y la versión web ya trae la marca. **La proforma del mayorista, a la vista**: el botón se llama *Proforma* y la ficha del cliente tiene la marca *Pide proforma*, que la pone primero en sus pedidos. **La base ya está aplicada.** Ver *Lo último que pasó*. **799 pruebas verdes en la app.**
@@ -114,6 +116,19 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 🟡 **Lo que la venta tardaba en llegar a la caja sin internet** — arreglado el 05/10 y publicado en la 0.13.4, **sin probar en el local**. El mostrador le pasaba las ventas a la caja una vez por minuto, y la caja miraba su cola cada ocho segundos: hasta 68 segundos con el cliente esperando. Y llegaba de a partes porque, mientras la cabecera intentaba subir al servidor —hasta doce segundos sin internet—, salían los renglones solos. Ahora la venta sale al segundo y medio de apretar *Enviar a caja* (y otra vez a los catorce, por si el intento de subir tardó), viaja entera o espera entera, y la caja la muestra apenas llega. Se comprueba en el próximo corte: la venta tiene que aparecer en la caja en un par de segundos y completa.
 
 ---
+
+## Lo último que pasó — 30 de octubre: el remito R sobre la hoja de imprenta
+
+Lucas mandó tres ejemplos de remito de sus proveedores; **se eligió el segundo**. De ahí salió la plantilla y la impresión encima.
+
+- **La plantilla para la gráfica:** [`Remito R - Plantilla para la imprenta.pdf`](remito-r/Remito%20R%20-%20Plantilla%20para%20la%20imprenta.pdf), con original, duplicado e indicaciones. Lleva los datos de Gross; lo que completa la imprenta (número, CAI, vencimiento, código de barras, sus datos) está resaltado en amarillo. El cuerpo va en blanco, con la marca de agua. Se regenera con [`armar-plantilla.mjs`](remito-r/armar-plantilla.mjs).
+- **Lo que imprime el sistema** ([`RemitoRImprimible.tsx`](../app/src/pages/RemitoRImprimible.tsx)): fecha, destinatario, pedido, renglones, transporte, total de unidades y factura o proforma. Sin precios. En pantalla se ve sobre el dibujo de la hoja; en el papel, el dibujo no sale. Un remito largo ocupa más de una hoja, con «Hoja 1 de 2».
+- **Los números:** se toman recién al imprimir; imprimir de nuevo usa el mismo. *Se arruinó* anota la hoja y pasa a la siguiente. No deja pasar del último número ni del vencimiento, y avisa con 50 hojas o 30 días. Las tandas se cargan en Configuración → Facturación.
+- **La impresora:** *Prueba en papel en blanco* imprime el dibujo y los datos sin gastar número, y *Correr a la derecha / hacia abajo* corrige la diferencia. Queda guardado en cada computadora, igual que imprimir o no el duplicado.
+- **Dónde se abre:** *Hoja R* en el pedido mayorista y en Remitos. Con una tanda vigente, el remito del pedido mayorista se abre directamente ahí; sin tanda, como hasta ahora.
+- **La base** ([`20261030160000_remito_r.sql`](../supabase/migrations/20261030160000_remito_r.sql), aplicada): el remito sigue siendo el de siempre y sigue bajando el stock; se agregan las tandas y las hojas. **Probada como usuario**, con todo deshecho al final.
+- **Verificado:** **828 verdes** y los tipos sin errores. La pantalla, a 900 y a 375 px, con un remito real y una tanda simulada, sin escribir en la base. Una impresión de prueba a PDF cae en la posición exacta en milímetros y el corrimiento se aplica.
+- **Sin probar:** **papel real en una impresora real.** Hace falta la muestra de la gráfica. Tampoco se usó todavía con un CAI de verdad.
 
 ## Lo último que pasó — 29 de octubre: las estadísticas del mayorista
 

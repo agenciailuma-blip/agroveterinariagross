@@ -36,6 +36,7 @@ import ListadoDeComprobantesImprimible from '@/pages/ListadoDeComprobantesImprim
 import Remitos from '@/pages/Remitos'
 import NoFiscales from '@/pages/NoFiscales'
 import NoFiscalImprimible from '@/pages/NoFiscalImprimible'
+import RemitoRImprimible from '@/pages/RemitoRImprimible'
 import Reportes from '@/pages/Reportes'
 import ResumenCuentaCorriente from '@/pages/ResumenCuentaCorriente'
 import Cheques from '@/pages/Cheques'
@@ -189,6 +190,7 @@ function Rutas() {
       <Route path="comprobante/:id" element={<ComprobanteImprimible />} />
       <Route path="comprobantes/listado" element={<ListadoDeComprobantesImprimible />} />
       <Route path="no-fiscal/:id" element={<NoFiscalImprimible />} />
+      <Route path="remito-r/:id" element={<RemitoRImprimible />} />
       <Route path="recibo/:id" element={<ReciboImprimible />} />
       <Route path="traslados/hoja" element={<TrasladosHoja />} />
       <Route path="orden-interna/:id" element={<OrdenInternaImprimible />} />
