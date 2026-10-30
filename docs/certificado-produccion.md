@@ -1,5 +1,5 @@
 ---
-actualizado: 2026-09-16
+actualizado: 2026-10-30
 estado: esperando el trámite
 ---
 
@@ -23,7 +23,7 @@ Y al preguntarle qué puntos de venta ve para el CUIT de Gross, contestó **«60
 
 ## El trámite — lo hace quien tenga la clave fiscal del CUIT 20-14636976-7
 
-El CUIT está a nombre de **GROSS ERNESTO HUGO**. Lo puede hacer el titular, o quien tenga delegado el servicio *Administración de Certificados Digitales* (si el estudio contable hizo el alta del punto de venta 9, puede que ya lo tenga).
+El CUIT está a nombre de **GROSS ERNESTO HUGO**. Lo puede hacer el titular, o quien tenga delegado el servicio *Administración de Certificados Digitales* (si el estudio contable hizo el alta del punto de venta 9, puede que ya lo tenga). Hace falta **clave fiscal nivel 3**. Para el paso 5, además, poder usar el *Administrador de Relaciones de Clave Fiscal* de ese CUIT.
 
 **Se lleva:** el archivo `gross_produccion.csr`. No tiene nada secreto adentro: se puede mandar por mail o llevar en un pendrive.
 
@@ -39,6 +39,7 @@ El CUIT está a nombre de **GROSS ERNESTO HUGO**. Lo puede hacer el titular, o q
 
    **Y en el mismo lugar, una relación más:** Nueva relación → ARCA → WebServices → **Consulta de Constancia de Inscripción** → el mismo computador fiscal **`SistemaGross`** → Confirmar. Es lo que permite que el sistema, con sólo el CUIT del cliente, traiga su nombre, domicilio y condición frente al IVA, sin preguntarle nada.
 6. Mandar el `.crt`. **Tampoco tiene nada secreto.**
+7. **Anotar el punto de venta del web service.** *Administración de puntos de venta y domicilios* → A/B/M de puntos de venta → mandar el número del que dice **RECE para aplicativo y web services**, con su domicilio. El contador contestó que hay uno habilitado, pero **no dijo el número**, y el sistema tiene cargado el 1. Si no hay ninguno, se da de alta ahí, con *Agregar*.
 
 **Lo que NO hay que hacer:** generar otro pedido desde el portal, ni pedir o mandar ninguna "clave privada". La clave privada es `secrets/gross_produccion.key`, se generó acá y **no sale de acá** salvo para cargarse en el servidor.
 
@@ -46,16 +47,17 @@ El CUIT está a nombre de **GROSS ERNESTO HUGO**. Lo puede hacer el titular, o q
 
 ## Cuando llegue el `.crt` — lo que hacemos nosotros
 
-**Importante: cambiar a producción es un solo interruptor para todo el sistema.** Desde ese momento, cada factura que sale es una factura de verdad, y el CAE de pruebas deja de funcionar. **Cuándo se cambia es una decisión aparte**, que se toma con Lucas y contra la fecha del 26/10: tener el certificado no obliga a cambiar ese día.
+**Importante: cambiar a producción es un solo interruptor para todo el sistema.** Desde ese momento, cada factura que sale es una factura de verdad, y el CAE de pruebas deja de funcionar. **Cuándo se cambia es una decisión aparte**, que se toma con Lucas: tener el certificado no obliga a cambiar ese día.
 
 **Antes de cambiar:**
 
-- [ ] Guardar el certificado como `secrets/gross_produccion.crt` y verificar que corresponde a la clave (que `openssl x509 -modulus` y `openssl rsa -modulus` den lo mismo).
-- [ ] Que el panel de contingencia filtre por ambiente: `vista_caea_estado` hoy muestra los CAEA de pruebas y los reales juntos, y en la quincena del cambio habría dos "vigentes" con el mismo período. **Emitir no se confunde** —`caea_vigente()` sí filtra—, pero la pantalla mostraría un código que no sirve.
+- [ ] Guardar el certificado como `secrets/gross_produccion.crt`, verificar que corresponde a la clave (que `openssl x509 -modulus` y `openssl rsa -modulus` den lo mismo) y anotar cuándo vence.
+- [ ] **Sacar los comprobantes de prueba.** Al 30/10 hay 57 en el punto de venta 1 (55 autorizados y 2 rechazados, numerados hasta el 51) y 2 en el 9. **ARCA real arranca en el 1 y el sistema no deja repetir un número**, así que tienen que salir antes del cambio, con sus ventas, pagos, stock y cuenta corriente. Es la limpieza pendiente de `AHORA.md`: respaldo antes, y `copia_local.generacion` al terminar. La tabla `comprobante` no guarda el ambiente: **una vez cambiado, ya no se distingue uno de prueba de uno real**.
+- [x] Que el panel de contingencia filtre por ambiente: `vista_caea_estado` ya lo hace.
 
 **El día del cambio:**
 
-- [ ] Reemplazar los secretos `ARCA_CERT_PEM` y `ARCA_KEY_PEM` en Supabase por los de producción. Los usan las dos Edge Functions, `arca-wsfe-solicitar-cae` y `arca-wsfe-caea`.
+- [ ] Reemplazar los secretos `ARCA_CERT_PEM` y `ARCA_KEY_PEM` en Supabase por los de producción. Los usan las tres Edge Functions: `arca-wsfe-solicitar-cae`, `arca-wsfe-caea` y `arca-constancia`.
 - [ ] `configuracion` → `arca.ambiente` = `produccion`.
 - [ ] Llamar a `arca-wsfe-caea` con `accion: 'puntos_venta'`. **Tienen que aparecer dos:** el 9 como CAEA, y el del web service (RECE) con el que se va a facturar. ⚠️ **Confirmar que ese número es el 1**, que es el que tiene cargado hoy el sistema. Si es otro, se corrige antes de la primera factura.
 - [ ] Pedir el CAEA de la quincena en curso desde el panel (o esperar a la tarea de las 9). A partir de ese pedido, **ARCA espera que se le informe al final de la quincena**, aunque no se use: la tarea diaria lo hace sola.
