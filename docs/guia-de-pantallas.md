@@ -116,13 +116,13 @@ Cómo se arma el precio final según con qué paga el cliente.
 
 > **El precio que se cotiza es el de tarjeta**, y el efectivo se presenta como descuento. No es un detalle estético: define qué número lee el vendedor en voz alta. Si dice el de contado y la caja cobra más, queda pegado con el cliente adelante.
 
-**El recargo por cuotas, que es lo que Lucas edita.** Cada medio de pago que admite cuotas tiene un casillero por plan: *1 cuota*, *2 cuotas*, *3 cuotas*, cada uno con su porcentaje. Se escribe el número y se guarda solo al salir del casillero. Debajo, la pantalla dice cuánto se cobra una venta de $100.000 con cada plan: es para comparar contra lo que cobra el posnet, sin sacar la cuenta.
+**El recargo por cuotas.** Cada medio de pago que admite cuotas tiene un casillero por plan: *1 cuota*, *2 cuotas*, *3 cuotas*, cada uno con su porcentaje. Se escribe el número y se guarda solo al salir del casillero. Debajo, la pantalla dice cuánto se cobra una venta de $100.000 con cada plan: es para comparar contra lo que cobra el posnet, sin sacar la cuenta.
 
-Hoy están cargados **0% a 1 cuota, 10% a 2 y 15% a 3** (17/09, dicho por Lucas).
+Hoy están cargados **0% a 1 cuota, 10% a 2 y 15% a 3**.
 
 > **Dónde aparece ese recargo:** en el **precio**. Al elegir el plan en la caja, el total de la venta sube y la factura sale por ese importe. **No va como un renglón aparte al pie del ticket**, y no es una decisión estética: un "costo financiero" discriminado es otro régimen, con sus propias reglas, y Gross no lo usa. Lo confirmó el contador.
 >
-> **Cómo se lo explicás a Lucas:** es lo mismo que hacés hoy con la lista de tarjeta, pero por cantidad de cuotas y sin cargar el producto tres veces. Vos ponés el porcentaje una vez, y el sistema se lo suma al precio cuando el cajero elige el plan.
+> **Cómo se explica:** es lo mismo que se hace con la lista de tarjeta, pero por cantidad de cuotas y sin cargar el producto tres veces. El porcentaje se pone una vez, y el sistema se lo suma al precio cuando el cajero elige el plan.
 
 ---
 
@@ -228,7 +228,7 @@ El semáforo de todo lo que se le informa a ARCA.
 >
 > El archivo lleva **una fila por alícuota**: una factura con 21% y 10,5% ocupa dos renglones, cada uno con su neto y su impuesto, que es como lo espera un contador. Las **notas de crédito van en negativo**, así sumar la columna da el neto del mes. Y sólo entran los comprobantes **autorizados por ARCA** — un rechazado no tiene CAE y no puede ir en un libro.
 
-🔜 **Faltan:** las **devoluciones parciales** (hoy la devolución es de la venta entera) y la **nota de débito**. Y 🔜 **mandar la factura por email al cobrar**, que pidió Lucas.
+🔜 **Faltan:** las **devoluciones parciales** (hoy la devolución es de la venta entera) y la **nota de débito**. Y 🔜 **mandar la factura por email al cobrar**.
 
 ---
 

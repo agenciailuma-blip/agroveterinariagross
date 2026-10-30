@@ -140,7 +140,7 @@ Lucas habló de un «talonario con CAE». **Para remitos lo que existe es el CAI
 
 **Ya está (30/10):** de los tres ejemplos que mandó Lucas se eligió el segundo. La [plantilla para la imprenta](remito-r/Remito%20R%20-%20Plantilla%20para%20la%20imprenta.pdf) sale de ahí, y el sistema imprime sobre ella sólo lo que cambia, con tandas, hojas arruinadas, duplicado y corrimiento por impresora. Construida en la 0.19.13, falta publicarla.
 
-**Lo que falta:** que la gráfica entregue la muestra, para probarla en la impresora del comercio, y cargar el CAI con el rango de números de la primera tanda.
+**Aprobada la propuesta visual de la plantilla (30/10).** **Lo que falta:** mandarla a la gráfica, que entregue la muestra, para probarla en la impresora del comercio, y cargar el CAI con el rango de números de la primera tanda.
 
 ### ¿Cuándo baja el stock? — la regla, para que no cambie según el caso
 

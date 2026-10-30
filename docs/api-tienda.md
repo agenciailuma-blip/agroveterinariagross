@@ -2,7 +2,7 @@
 
 Documentación de la API con la que una tienda online lee el catálogo del sistema de gestión —nombre público, descripción, precio, clasificaciones y stock disponible—, le registra las compras y consulta en qué está cada una.
 
-> **La versión que se le entrega a la tienda** es la página con la marca de Gross: https://claude.ai/artifact/VXHehNGKU5HF9Ltbbe7LgB — esta copia es la misma documentación, en el repositorio, para que no dependa de un enlace.
+> **Esta es la documentación de la API de la tienda.**
 >
 > **Criterio de redacción:** documentación atemporal. Datos, pasos y ejemplos; nada de «por ahora», «primera etapa» ni el nombre del proveedor que la consume. Lo que cambia —el estado del proyecto, qué falta— vive en [`AHORA.md`](AHORA.md).
 

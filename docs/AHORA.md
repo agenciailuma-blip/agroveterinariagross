@@ -117,6 +117,13 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 
 ---
 
+## Lo último que pasó — 30 de octubre: el manual, al día con la fase 3
+
+- **El manual** ([`docs/manual/`](manual/Manual%20del%20Sistema%20-%20Agroveterinaria%20Gross.pdf)) pasó a 28 pantallas, en el orden del menú. Suma Traslados, Mayorista, Recibos, Fiados, Facturas emitidas y Percepciones, y lo nuevo de Mostrador, Caja, Clientes, Facturación, Remitos, Presupuestos y Configuración. Incluye el **paso a paso del remito R**.
+- **Sin nombres ni referencias internas:** se limpiaron también la guía de pantallas, cheques, el trámite del remito R y la API de la tienda. Las reglas de redacción quedaron en [`COMO-SE-GENERA.md`](manual/COMO-SE-GENERA.md). Quedan con nombres, a propósito, los documentos internos de trabajo: este, `fase-03`, las reuniones y los pedidos.
+- **Aprobada la propuesta visual** de la [plantilla del remito R](remito-r/Remito%20R%20-%20Plantilla%20para%20la%20imprenta.pdf). Falta mandarla a la gráfica.
+- **Verificado:** el manual en pantalla y el PDF regenerado, de 40 páginas, sin revisar página por página.
+
 ## Lo último que pasó — 30 de octubre: anular un recibo
 
 En la hoja del recibo, **Anular** pide el motivo y dice qué va a pasar. El recibo conserva su número, sale con la marca **RECIBO ANULADO** y sigue en el registro, tachado y sin sumar. Ya no se puede mandar por mail.

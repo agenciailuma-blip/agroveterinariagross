@@ -1,6 +1,6 @@
 # Remito R desde el sistema — el trámite en ARCA
 
-**Para:** Lucas y Armando.
+**Para:** el titular del CUIT y su contador.
 **Qué se logra:** que el remito R, el que acompaña la mercadería que viaja por la provincia, **lo imprima el sistema** —en hoja en blanco o en PDF al celular— y no haya que encargar talonarios a la imprenta.
 
 ---
@@ -10,11 +10,11 @@
 - **El remito R no lleva CAE, lleva CAI** (Código de Autorización de Impresión). El CAE es sólo para facturas.
 - **ARCA no autoriza los remitos uno por uno**, como hace con las facturas. Se pide **un CAI para un rango de números** de un punto de venta, y con ese CAI se emiten los remitos hasta que se terminan los números o vence el CAI. Después se pide otro.
 - **Desde 2025 el remito puede ser digital** (RG 5678/2025): se muestra en el celular y se le manda una copia al destinatario. El CAI sigue haciendo falta igual.
-- **Quién lo hace:** Lucas con su clave fiscal, o Armando si tiene la delegación del CUIT. Se necesita **clave fiscal nivel 3**, el **CUIT activo sin limitaciones** y el **domicilio fiscal actualizado**.
+- **Quién lo hace:** el titular con su clave fiscal, o el contador si tiene la delegación del CUIT. Se necesita **clave fiscal nivel 3**, el **CUIT activo sin limitaciones** y el **domicilio fiscal actualizado**.
 
 ---
 
-## Paso 1 — La pregunta para Armando
+## Paso 1 — La pregunta para el contador
 
 > Queremos emitir el **Remito R desde nuestro sistema de gestión**, impreso en hoja en blanco o en PDF, sin talonario de imprenta. **¿Con qué modalidad damos de alta el punto de venta para eso —autoimpresor u otra— y Gross cumple los requisitos?**
 
@@ -25,7 +25,7 @@ Con esa respuesta se sigue. Los pasos 2 a 5 son iguales en cualquier caso.
 1. Entrar a ARCA con clave fiscal → **Administración de puntos de venta y domicilios**.
 2. Elegir la empresa → **A/B/M de puntos de venta** → **Agregar**.
 3. **Número:** uno libre, que no se use para nada más (por ejemplo, el **10**). **No usar los puntos de venta de las facturas**: el remito tiene que tener su propio número.
-4. **Sistema de emisión:** el que indique Armando en el paso 1.
+4. **Sistema de emisión:** el que indique el contador en el paso 1.
 5. **Domicilio:** el del local desde donde sale la mercadería.
 6. Confirmar.
 

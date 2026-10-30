@@ -5,11 +5,11 @@ estado: publicado en la 0.13.0 — falta ver en pantalla depositar, debitar y de
 
 # Cheques
 
-> **Construido el 30/09**, con las cuatro respuestas de Lucas. Las tres piezas que se habían planteado el 10/09 —recibir, pagar con cheque y el calendario— entraron juntas: con las respuestas a la vista, B y C eran chicas encima de A.
+> **Construido el 30/09**, con las cuatro respuestas del cliente. Las tres piezas que se habían planteado el 10/09 —recibir, pagar con cheque y el calendario— entraron juntas: con las respuestas a la vista, B y C eran chicas encima de A.
 
 ---
 
-## Lo que contestó Lucas
+## Lo que contestó el cliente
 
 | Pregunta | Respuesta | Qué cambió |
 |---|---|---|
@@ -22,7 +22,7 @@ estado: publicado en la 0.13.0 — falta ver en pantalla depositar, debitar y de
 
 ## Cómo funciona
 
-> **Cómo se lo contás a Lucas:** un cheque entra por la caja o por la cobranza de la cuenta del cliente, y queda en la **cartera**, en Tesorería → Cheques, ordenado por la fecha en que se puede cobrar. Desde ahí se deposita —de a varios—, se le devuelve al cliente, o se marca rechazado. Para **hacerlo correr**, al pagarle a un proveedor se elige «Cheque de la cartera» y se lo endosa. Los **propios** —de chequera o e-cheq— se cargan en el mismo pago, y quedan esperando el débito. El **Calendario** junta todo: qué se cobra y qué se paga cada día.
+> **Cómo se cuenta:** un cheque entra por la caja o por la cobranza de la cuenta del cliente, y queda en la **cartera**, en Tesorería → Cheques, ordenado por la fecha en que se puede cobrar. Desde ahí se deposita —de a varios—, se le devuelve al cliente, o se marca rechazado. Para **hacerlo correr**, al pagarle a un proveedor se elige «Cheque de la cartera» y se lo endosa. Los **propios** —de chequera o e-cheq— se cargan en el mismo pago, y quedan esperando el débito. El **Calendario** junta todo: qué se cobra y qué se paga cada día.
 
 ### Por dónde entra un cheque
 
