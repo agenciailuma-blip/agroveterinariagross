@@ -334,6 +334,16 @@ export default function ClienteEditor({
 
         {datos.cuenta_corriente && (
           <>
+            <label className="col-span-2 sm:col-span-4 flex items-center gap-2 text-sm text-tinta">
+              <input
+                type="checkbox"
+                checked={datos.precio_a_convenir ?? false}
+                disabled={!puedeEditar}
+                onChange={(e) => set({ precio_a_convenir: e.target.checked })}
+                className="size-4 rounded border-borde text-marca-700 focus:ring-marca-500"
+              />
+              Precio a convenir: en el mostrador, primero el remito interno
+            </label>
             <Campo
               etiqueta="Límite de crédito"
               ancho="col-span-2"

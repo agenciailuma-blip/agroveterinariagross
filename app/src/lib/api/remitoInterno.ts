@@ -31,6 +31,11 @@ export interface RemitoPorFacturar {
   dias: number
 }
 
+/** La marca sólo cuenta con cuenta corriente: el remito interno se factura a la cuenta. */
+export function esPrecioAConvenir(c: { cuenta_corriente: boolean; precio_a_convenir?: boolean } | null | undefined): boolean {
+  return !!c?.cuenta_corriente && !!c.precio_a_convenir
+}
+
 export async function remitosPorFacturar(clienteId?: string): Promise<RemitoPorFacturar[]> {
   let consulta = supabase
     .from('vista_remito_por_facturar')

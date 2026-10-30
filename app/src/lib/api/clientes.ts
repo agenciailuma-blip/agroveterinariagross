@@ -31,6 +31,7 @@ export interface Cliente {
   descuento_porcentaje: number
   lista_precio_id: string | null
   cuenta_corriente: boolean
+  precio_a_convenir: boolean
   limite_credito: number | null
   dias_vencimiento: number
   iibb_percepcion_excluido: boolean
@@ -79,6 +80,7 @@ export const CLIENTE_NUEVO: Partial<Cliente> = {
   provincia: 'Misiones',
   descuento_porcentaje: 0,
   cuenta_corriente: false,
+  precio_a_convenir: false,
   dias_vencimiento: 30,
   iibb_percepcion_excluido: false,
   activo: true,

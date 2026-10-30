@@ -44,6 +44,8 @@ export interface ClienteVenta {
   condicion_iva_id: number
   descuento_porcentaje: number
   cuenta_corriente: boolean
+  /** Los precios se arreglan después: el mostrador ofrece primero el remito interno. */
+  precio_a_convenir?: boolean
   limite_credito: number | null
 }
 
@@ -216,7 +218,7 @@ export async function buscarClientes(texto: string): Promise<ClienteVenta[]> {
   let q = supabase
     .from('cliente')
     .select(
-      'id, codigo, nombre, numero_documento, condicion_iva_id, descuento_porcentaje, cuenta_corriente, limite_credito',
+      'id, codigo, nombre, numero_documento, condicion_iva_id, descuento_porcentaje, cuenta_corriente, precio_a_convenir, limite_credito',
     )
     .eq('activo', true)
     .is('eliminado_en', null)
@@ -239,7 +241,7 @@ export async function clienteConsumidorFinal(): Promise<ClienteVenta | null> {
   const { data } = await supabase
     .from('cliente')
     .select(
-      'id, codigo, nombre, numero_documento, condicion_iva_id, descuento_porcentaje, cuenta_corriente, limite_credito',
+      'id, codigo, nombre, numero_documento, condicion_iva_id, descuento_porcentaje, cuenta_corriente, precio_a_convenir, limite_credito',
     )
     .eq('codigo', 'CF')
     .maybeSingle<ClienteVenta>()

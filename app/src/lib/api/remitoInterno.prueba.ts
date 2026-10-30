@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { agruparLineas, agruparPorCliente } from '@/lib/api/remitoInterno'
+import { agruparLineas, agruparPorCliente, esPrecioAConvenir } from '@/lib/api/remitoInterno'
 import type { LineaDeRemito, RemitoPorFacturar } from '@/lib/api/remitoInterno'
 
 /*
@@ -51,5 +51,17 @@ describe('el remito interno', () => {
       ['y', 1],
       ['x', 2],
     ])
+  })
+})
+
+describe('la marca «Precio a convenir»', () => {
+  it('vale con cuenta corriente', () => {
+    expect(esPrecioAConvenir({ cuenta_corriente: true, precio_a_convenir: true })).toBe(true)
+  })
+  it('sin la marca o sin cuenta corriente, no', () => {
+    expect(esPrecioAConvenir({ cuenta_corriente: true, precio_a_convenir: false })).toBe(false)
+    expect(esPrecioAConvenir({ cuenta_corriente: true })).toBe(false)
+    expect(esPrecioAConvenir({ cuenta_corriente: false, precio_a_convenir: true })).toBe(false)
+    expect(esPrecioAConvenir(null)).toBe(false)
   })
 })

@@ -77,7 +77,7 @@ El cliente de siempre: la persona que lleva el alimento del perro, la oficina. S
 - **En el Mostrador**, con un cliente de cuenta corriente: **Remito interno · precio después**. Descuenta stock, se imprime para firmar y no pasa por la caja. Sólo productos del catálogo. Con deuda vencida, PIN de un encargado.
 - **En Facturación, *Pendientes de facturar***: se eligen uno o varios remitos del cliente, se ponen los precios en una grilla —el de lista viene escrito— y sale la **factura o el comprobante interno** a cuenta corriente. No vuelve a descontar stock y cada remito queda asociado a su venta. La factura sale sola por mail.
 - **En la cuenta corriente del cliente**, los remitos todavía sin precio, arriba de los movimientos.
-- **Falta la marca «Precio a convenir»** en la ficha: por ahora el botón se ofrece a todo cliente de cuenta corriente.
+- **La marca «Precio a convenir»** (30/10): en la ficha del cliente de cuenta corriente. Con ella, el Mostrador ofrece primero el remito interno; sin ella, se puede hacer igual. Construida en la 0.19.13, falta publicarla.
 
 ---
 

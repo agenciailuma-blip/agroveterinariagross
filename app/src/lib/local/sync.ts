@@ -71,7 +71,7 @@ const MAESTROS: Definicion[] = [
     tabla: 'cliente',
     origen: 'cliente',
     columnas:
-      'id, codigo, nombre, numero_documento, tipo_documento_id, calle, numero, localidad, condicion_iva_id, iibb_percepcion_excluido, descuento_porcentaje, lista_precio_id, cuenta_corriente, limite_credito, dias_vencimiento, activo, actualizado_en, eliminado_en',
+      'id, codigo, nombre, numero_documento, tipo_documento_id, calle, numero, localidad, condicion_iva_id, iibb_percepcion_excluido, descuento_porcentaje, lista_precio_id, cuenta_corriente, precio_a_convenir, limite_credito, dias_vencimiento, activo, actualizado_en, eliminado_en',
     /*
       La búsqueda se arma con el nombre en claro y después se cifra junto
       con él: es una copia del nombre, y dejarla legible sería dejar el

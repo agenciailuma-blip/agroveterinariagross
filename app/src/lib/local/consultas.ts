@@ -165,6 +165,7 @@ export async function buscarClientesLocal(texto: string): Promise<ClienteVenta[]
     condicion_iva_id: c.condicion_iva_id,
     descuento_porcentaje: Number(c.descuento_porcentaje),
     cuenta_corriente: c.cuenta_corriente,
+    precio_a_convenir: c.precio_a_convenir ?? false,
     limite_credito: c.limite_credito != null ? Number(c.limite_credito) : null,
   }))
 }

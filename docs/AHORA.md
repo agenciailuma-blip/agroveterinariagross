@@ -12,7 +12,7 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Construida: 0.19.13 — falta publicarla.** **El remito R sobre la hoja de imprenta**: la plantilla para la gráfica ([`docs/remito-r/`](remito-r/Remito%20R%20-%20Plantilla%20para%20la%20imprenta.pdf)), la impresión de sólo lo que cambia, las tandas en Configuración y las hojas arruinadas. **La base ya está aplicada.** Ver *Lo último que pasó*. **828 pruebas verdes en la app.**
+**Construida: 0.19.13 — falta publicarla.** **El remito R sobre la hoja de imprenta**: la plantilla para la gráfica ([`docs/remito-r/`](remito-r/Remito%20R%20-%20Plantilla%20para%20la%20imprenta.pdf)), la impresión de sólo lo que cambia, las tandas en Configuración y las hojas arruinadas. Además, **la marca *Precio a convenir***. **La base ya está aplicada.** Ver *Lo último que pasó*. **830 pruebas verdes en la app.**
 
 **Publicada: 0.19.12** (29/10, 19:39), verificada en Cloudflare: `latest.json` dice 0.19.12, el instalador está publicado y la versión web ya trae la pestaña. **Las estadísticas del mayorista**: una pestaña nueva en Mayorista con lo vendido, los pedidos, la deuda, lo cobrado y lo más vendido, por cliente, ciudad, ruta o zona. **La base ya está aplicada.** Ver *Lo último que pasó*. **809 pruebas verdes en la app.**
 
@@ -116,6 +116,14 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 🟡 **Lo que la venta tardaba en llegar a la caja sin internet** — arreglado el 05/10 y publicado en la 0.13.4, **sin probar en el local**. El mostrador le pasaba las ventas a la caja una vez por minuto, y la caja miraba su cola cada ocho segundos: hasta 68 segundos con el cliente esperando. Y llegaba de a partes porque, mientras la cabecera intentaba subir al servidor —hasta doce segundos sin internet—, salían los renglones solos. Ahora la venta sale al segundo y medio de apretar *Enviar a caja* (y otra vez a los catorce, por si el intento de subir tardó), viaja entera o espera entera, y la caja la muestra apenas llega. Se comprueba en el próximo corte: la venta tiene que aparecer en la caja en un par de segundos y completa.
 
 ---
+
+## Lo último que pasó — 30 de octubre: la marca «Precio a convenir»
+
+Lo que faltaba del remito interno (fase 03, punto 2): separar a las municipalidades y a los clientes a los que se les hacen los precios después.
+
+- **En la ficha del cliente**, con cuenta corriente: la marca *Precio a convenir* ([`20261030180000_precio_a_convenir.sql`](../supabase/migrations/20261030180000_precio_a_convenir.sql), aplicada).
+- **En el Mostrador**, con ese cliente: el remito interno pasa a ser el botón grande y se lleva el F9; *Enviar a caja* queda abajo, y se muestra la etiqueta junto al nombre. Sin la marca, todo sigue igual: el remito interno se puede hacer con cualquier cliente de cuenta corriente. También funciona sin conexión, con la copia local.
+- **Verificado:** **830 verdes** y los tipos sin errores. **Sin ver en pantalla:** el orden de los botones en el Mostrador, porque pide el PIN de un usuario.
 
 ## Lo último que pasó — 30 de octubre: el remito R sobre la hoja de imprenta
 

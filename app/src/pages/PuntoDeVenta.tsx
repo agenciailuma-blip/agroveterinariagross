@@ -1,3 +1,4 @@
+import { esPrecioAConvenir } from '@/lib/api/remitoInterno'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useTerminal } from '@/lib/terminal'
@@ -35,6 +36,12 @@ import { useAtajo, useBotonConAtajo } from '@/lib/atajos'
 import { TeclaAtajo } from '@/components/Atajos'
 
 const BORRADOR = 'gross.venta-en-curso'
+
+/* El botón grande es lo que se hace siempre con ese cliente; el otro queda a mano. */
+const PRINCIPAL =
+  'rounded-xl bg-marca-700 px-4 py-4 text-base font-medium text-white hover:bg-marca-600 disabled:opacity-40'
+const SECUNDARIO =
+  'rounded-xl border border-borde px-4 py-2.5 text-sm font-medium text-tinta hover:bg-piedra-50 disabled:opacity-40'
 
 export default function PuntoDeVenta() {
   const { terminal, disponibles, cargando: cargandoTerminal, elegir } = useTerminal()
@@ -630,6 +637,62 @@ export default function PuntoDeVenta() {
     fijos. Debajo de lg no entra al lado de la tabla: va debajo, a todo
     el ancho, y la página se desplaza hacia abajo. Medido el 15/10.
   */
+  /*
+    El remito interno, para el cliente de cuenta corriente que se lleva
+    la mercadería y el precio se arregla después. Con la marca «Precio a
+    convenir» es lo primero que se ofrece, con su F9; mandarlo a la caja
+    queda abajo. Sin la marca, al revés.
+  */
+  const aConvenir = esPrecioAConvenir(cliente)
+  const bloqueRemitoInterno = cliente?.cuenta_corriente && lineas.length > 0 && tienePermiso('facturacion.no_fiscal_emitir') && (
+          <div>
+            <button
+              onClick={async () => {
+                if ((vencido.data?.monto ?? 0) > 0 && !autorizoRemito) {
+                  setQuiereRemito(true)
+                  return
+                }
+                const sigue = await confirmar({
+                  titulo: `¿Remito interno a ${cliente.nombre}?`,
+                  detalle: `${numero.format(totales.unidades)} ${totales.unidades === 1 ? 'unidad' : 'unidades'}. Sale sin precio y descuenta stock. Se factura después desde Pendientes de facturar.`,
+                  aceptar: 'Hacer el remito',
+                })
+                if (sigue) remitoInterno.mutate()
+              }}
+              disabled={
+                lineas.some((l) => !l.producto_id) ||
+                enviar.isPending ||
+                presupuestar.isPending ||
+                remitoInterno.isPending
+              }
+              ref={aConvenir ? botonEnviar : undefined}
+              className={`w-full ${aConvenir ? PRINCIPAL : SECUNDARIO}`}
+            >
+              {remitoInterno.isPending ? (
+                'Haciendo el remito…'
+              ) : (
+                <>
+                  Remito interno · precio después
+                  {aConvenir && <TeclaAtajo tecla="F9" clara />}
+                </>
+              )}
+            </button>
+            {lineas.some((l) => !l.producto_id) && (
+              <p className="mt-1 text-xs text-piedra-500">
+                Lleva sólo productos del catálogo: sacá las líneas escritas a mano.
+              </p>
+            )}
+            {(quiereRemito || autorizoRemito) && vencido.data && vencido.data.monto > 0 && (
+              <AvisoVencido
+                vencido={vencido.data}
+                aCuentaCorriente
+                autorizo={autorizoRemito}
+                onAutorizar={async (pin) => setAutorizoRemito(await autorizarVencidoEnCaja(pin, terminal.id))}
+              />
+            )}
+          </div>
+        )
+
   return (
     <div className="flex flex-col gap-4 lg:h-full lg:flex-row" onKeyDown={renovar}>
       {asociando && (
@@ -959,6 +1022,9 @@ export default function PuntoDeVenta() {
                   {numero.format(cliente.descuento_porcentaje)}% dto.
                 </span>
               )}
+              {aConvenir && (
+                <span className="ml-2 rounded-full bg-marca-50 px-2 py-0.5 text-xs text-marca-700">Precio a convenir</span>
+              )}
               <span className="mt-0.5 block text-xs text-piedra-400">
                 {cliente?.condicion_iva_id === 1 ? 'Responsable Inscripto · Factura A · ' : ''}tocá para cambiar
               </span>
@@ -1112,6 +1178,8 @@ export default function PuntoDeVenta() {
           </p>
         )}
 
+        {aConvenir && bloqueRemitoInterno}
+
         <button
           onClick={async () => {
             /*
@@ -1140,16 +1208,16 @@ Se muestra en la cola del cajero. Si no hace falta, dejalo vacío.`,
             if (nombre === null) return
             enviar.mutate(nombre || null)
           }}
-          ref={botonEnviar}
+          ref={aConvenir ? undefined : botonEnviar}
           disabled={!lineas.length || !cliente || enviar.isPending || presupuestar.isPending}
-          className="rounded-xl bg-marca-700 px-4 py-4 text-base font-medium text-white hover:bg-marca-600 disabled:opacity-40"
+          className={aConvenir ? SECUNDARIO : PRINCIPAL}
         >
           {enviar.isPending ? (
             `Enviando… ${pasoEnvio ?? ''}`
           ) : (
             <>
               Enviar a caja
-              <TeclaAtajo tecla="F9" clara />
+              {!aConvenir && <TeclaAtajo tecla="F9" clara />}
             </>
           )}
         </button>
@@ -1173,50 +1241,7 @@ Se muestra en la cola del cajero. Si no hace falta, dejalo vacío.`,
           </p>
         )}
 
-        {/*
-          El remito interno, para el cliente de cuenta corriente que se
-          lleva la mercadería y el precio se arregla después.
-        */}
-        {cliente?.cuenta_corriente && lineas.length > 0 && tienePermiso('facturacion.no_fiscal_emitir') && (
-          <div>
-            <button
-              onClick={async () => {
-                if ((vencido.data?.monto ?? 0) > 0 && !autorizoRemito) {
-                  setQuiereRemito(true)
-                  return
-                }
-                const sigue = await confirmar({
-                  titulo: `¿Remito interno a ${cliente.nombre}?`,
-                  detalle: `${numero.format(totales.unidades)} ${totales.unidades === 1 ? 'unidad' : 'unidades'}. Sale sin precio y descuenta stock. Se factura después desde Pendientes de facturar.`,
-                  aceptar: 'Hacer el remito',
-                })
-                if (sigue) remitoInterno.mutate()
-              }}
-              disabled={
-                lineas.some((l) => !l.producto_id) ||
-                enviar.isPending ||
-                presupuestar.isPending ||
-                remitoInterno.isPending
-              }
-              className="w-full rounded-xl border border-borde px-4 py-2.5 text-sm font-medium text-tinta hover:bg-piedra-50 disabled:opacity-40"
-            >
-              {remitoInterno.isPending ? 'Haciendo el remito…' : 'Remito interno · precio después'}
-            </button>
-            {lineas.some((l) => !l.producto_id) && (
-              <p className="mt-1 text-xs text-piedra-500">
-                Lleva sólo productos del catálogo: sacá las líneas escritas a mano.
-              </p>
-            )}
-            {(quiereRemito || autorizoRemito) && vencido.data && vencido.data.monto > 0 && (
-              <AvisoVencido
-                vencido={vencido.data}
-                aCuentaCorriente
-                autorizo={autorizoRemito}
-                onAutorizar={async (pin) => setAutorizoRemito(await autorizarVencidoEnCaja(pin, terminal.id))}
-              />
-            )}
-          </div>
-        )}
+        {!aConvenir && bloqueRemitoInterno}
 
         {lineas.length > 0 && conceptos.length > 0 && !totalesPorConcepto(lineas).length && (
           <button
