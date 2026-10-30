@@ -253,6 +253,16 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 - **La base** ([`20261029180000_frenar_el_vencido_en_la_caja.sql`](../supabase/migrations/20261029180000_frenar_el_vencido_en_la_caja.sql), aplicada): el freno vive en `cobrar_venta()`, la puerta de toda venta a cuenta corriente; la venta anota quién autorizó y cuándo. El pedido mayorista autorizado le pasa a su venta quién lo autorizó. **Probada como usuario**, con todo deshecho al final: sin autorizar frena; con el de un vendedor frena; con el de un encargado cobra y lo anota; en efectivo cobra; una venta de hace 20 días no frena por lo que venció después; el PIN equivocado cuenta el intento; el mayorista autorizado sigue facturando.
 - **Visto a 375 px** el recuadro en sus tres estados (aviso, PIN, autorizado), con un PIN rechazado: nada se desplaza hacia el costado. **766 verdes** y los tipos sin errores.
 
+## Lo último que pasó — 30 de octubre: la factura de ayer quedaba trabada
+
+**Visto por Lucas en Pedidos web:** el pedido de prueba de Zubu GR-MVU4M8M0278 (WEB-000011) quedó con la Factura B 36 *rechazada por ARCA*, error **10016**, y *Reintentar el CAE* daba lo mismo.
+
+- **La causa:** la factura nace con la fecha de la venta, 29/10, y segundos antes se había autorizado la B 35 con fecha 30/10. ARCA no acepta una fecha anterior a la última de la serie. El número estaba bien. La fecha sólo se corregía pasados los 5 días de tolerancia, así que **con clientes reales, un pedido de la noche facturado a la mañana siguiente, después de otra venta, se habría trabado igual**.
+- **El arreglo** ([`20261030170000_la_fecha_de_la_factura.sql`](../supabase/migrations/20261030170000_la_fecha_de_la_factura.sql), aplicada): antes de pedir el CAE, `alinear_numeracion_comprobante` adelanta la fecha hasta la última de la serie con CAE o CAEA. Lo rechazado no cuenta. Y «hoy» pasa a ser el de Oberá: de noche, `current_date` ya era mañana. Está en la base: llega a todas las PC sin publicar nada.
+- **Verificado:** **10 comprobaciones** en [`la-fecha-de-la-factura.sql`](../supabase/pruebas/la-fecha-de-la-factura.sql), en seco junto con la migración; sin el arreglo, falla en el caso del pedido. **Contra ARCA de homologación:** la B 36 se reintentó el 30/10 y salió autorizada, CAE 86441033699712, con fecha 30/10.
+
+⚠️ **Dato de prueba:** el pedido WEB-000011 sigue en *Pedidos web*, ahora facturado en homologación. Dice «No preparar»: no entregarlo. La factura no se mandó por mail.
+
 ## Lo último que pasó — 29 de octubre: el manual explica la caja, la tableta y la pastilla
 
 Lucas preguntó cómo se vende un medicamento por caja, tableta y pastilla. **El manual en PDF y la [guía de pantallas](guia-de-pantallas.md) suman el paso a paso**, en Productos: crear la suelta desde la ficha de la caja, atar una que ya existe con *Elegir el envase*, modificar, cargar el stock en la caja y publicar cada nivel en la tienda. El PDF se regeneró y se miró la página: entra entero, sin cortes. **Los productos de prueba *PRUEBA-CAJA10* y su suelta ya no están**: se fueron con la limpieza, y para mostrárselo hay que armar uno real.
