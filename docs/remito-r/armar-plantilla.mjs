@@ -4,7 +4,7 @@
     node docs/remito-r/armar-plantilla.mjs
 
   Salen dos cosas del mismo dibujo:
-  · el PDF para la imprenta: original, duplicado e indicaciones;
+  · el PDF para la imprenta: original y duplicado;
   · la imagen de la hoja que usa el sistema de fondo, para mostrar en
     pantalla cómo cae lo impreso y para la prueba de alineación.
 
@@ -151,44 +151,6 @@ function hoja(copia, resaltar) {
   return `<section class="pagina"><svg class="dibujo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 297">${p.join('')}</svg></section>`
 }
 
-const INDICACIONES = `
-<section class="pagina texto">
-  <h1>Remito R — indicaciones para la imprenta</h1>
-  <p class="bajada">Agroveterinaria Gross · GROSS ERNESTO HUGO · C.U.I.T. 20-14636976-7</p>
-
-  <h2>Qué se pide</h2>
-  <ul>
-    <li>Hojas <b>A4 sueltas</b> (210 × 297 mm), en <b>original y duplicado</b>. Las páginas 1 y 2 de este archivo son los diseños.</li>
-    <li>Tienen que pasar por una <b>impresora láser común</b>: el comercio imprime sobre ellas los datos de cada remito.</li>
-    <li>Cada número va en <b>dos hojas seguidas</b>: original y duplicado del mismo número, en ese orden, en toda la tanda.</li>
-  </ul>
-
-  <h2>Lo que completa la imprenta</h2>
-  <p>Está resaltado en amarillo en las páginas 1 y 2. <b>El amarillo no se imprime.</b></p>
-  <ul>
-    <li>El número de cada hoja, con su punto de venta, numerado correlativo.</li>
-    <li>El C.A.I. y su fecha de vencimiento, gestionados ante ARCA.</li>
-    <li>El código de barras del C.A.I.</li>
-    <li>Sus datos, la fecha de impresión y el rango de números de la tanda.</li>
-  </ul>
-
-  <h2>Lo que no hay que mover</h2>
-  <ul>
-    <li><b>El tamaño ni la posición de los campos.</b> Los datos del remito salen de la impresora en lugares medidos: si un campo se corre, el dato cae afuera. Se imprime al 100 %, sin ajustar a la página.</li>
-    <li><b>El cuerpo de la hoja va en blanco:</b> sin renglones ni cuadrícula. Sólo la marca de agua, bien clara, para que se lea lo que se imprime encima.</li>
-    <li>Los recuadros de fecha y las líneas de firma, como están.</li>
-  </ul>
-
-  <h2>Antes de imprimir la tanda</h2>
-  <p>Se pide <b>una muestra</b> —original y duplicado— para probarla en la impresora del comercio. Si la imprenta tiene que cambiar algo del diseño, por una exigencia de ARCA o de su equipo, que lo avise antes: se ajusta del lado del sistema.</p>
-
-  <h2>Colores y archivo</h2>
-  <ul>
-    <li>Violeta de la marca: <b>#8D0B7B</b>. El logo es vectorial y las letras van incluidas en el PDF.</li>
-    <li>Sin sangrado: el diseño queda 8 mm adentro del borde de la hoja.</li>
-  </ul>
-</section>`
-
 const CSS = `
 @font-face { font-family: Ubuntu; font-weight: 400; src: url('${pathToFileURL(join(publico, 'fuentes', 'Ubuntu-Regular.ttf'))}'); }
 @font-face { font-family: Ubuntu; font-weight: 500; src: url('${pathToFileURL(join(publico, 'fuentes', 'Ubuntu-Medium.ttf'))}'); }
@@ -200,13 +162,6 @@ html, body { margin: 0; padding: 0; background: #fff; font-family: Ubuntu, sans-
 .pagina:last-child { page-break-after: auto; break-after: auto; }
 .dibujo { display: block; width: 210mm; height: 297mm; font-family: Ubuntu, sans-serif; }
 .cls-1 { fill: ${MARCA}; }
-.texto { padding: 20mm 22mm; font-size: 10.5pt; line-height: 1.45; }
-.texto h1 { margin: 0; font-size: 17pt; color: ${MARCA}; }
-.texto .bajada { margin: 1mm 0 6mm; font-size: 9.5pt; color: #555; }
-.texto h2 { margin: 6mm 0 1.5mm; font-size: 11.5pt; }
-.texto p { margin: 0 0 2mm; }
-.texto ul { margin: 0; padding-left: 5mm; }
-.texto li { margin-bottom: 1.2mm; }
 `
 
 const estilosLogo = readFileSync(join(publico, 'marca', 'logo.svg'), 'utf8').match(/<style>(.*?)<\/style>/s)[1]
@@ -219,7 +174,7 @@ mkdirSync(join(publico, 'remito-r'), { recursive: true })
 
 const htmlPdf = join(temporal, 'plantilla.html')
 const htmlFondo = join(temporal, 'fondo.html')
-writeFileSync(htmlPdf, documento(hoja('ORIGINAL', true) + hoja('DUPLICADO', true) + INDICACIONES))
+writeFileSync(htmlPdf, documento(hoja('ORIGINAL', true) + hoja('DUPLICADO', true)))
 writeFileSync(htmlFondo, documento(hoja('ORIGINAL', false)))
 writeFileSync(join(temporal, 'vista.html'), documento(hoja('ORIGINAL', true)))
 
