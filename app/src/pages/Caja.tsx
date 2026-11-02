@@ -1115,7 +1115,14 @@ function PanelCobro({
           }}
         />
       )}
-      <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-borde">
+      {/*
+        `shrink-0`: con overflow-hidden, en esta columna de alto fijo la
+        tarjeta se achicaba para dejarle lugar al cobro y cortaba lo de
+        abajo —los últimos renglones y la lista de «Agregar un producto»—
+        en un monitor bajo, como el de la caja 2 (02/11). Si no entra, la
+        pantalla se desplaza.
+      */}
+      <div className="shrink-0 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-borde">
         <div className="flex items-baseline justify-between border-b border-borde px-5 py-3">
           <div>
             <p className="font-mono text-xs text-piedra-400">{venta.codigo}</p>

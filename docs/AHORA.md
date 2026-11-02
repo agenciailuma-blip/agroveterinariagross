@@ -121,6 +121,14 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 
 ---
 
+## Lo último que pasó — 2 de noviembre: en la caja 2 no aparecía la lista para agregar un producto
+
+**Visto por Lucas en la caja 2:** al tocar *Agregar un producto* y escribir, no aparecía ninguna lista. En el Mostrador de la misma PC el buscador andaba, y arriba decía *Al día*.
+
+- **La causa:** la tarjeta de la venta y la de *¿Cómo paga?* están apiladas en una columna del alto de la pantalla. La de la venta tiene `overflow-hidden`, y eso la deja achicarse: en un monitor bajo cedía el lugar al cobro y cortaba lo de abajo, que es donde aparece la lista. **Con muchos renglones, también los últimos quedaban tapados.**
+- **El arreglo:** la tarjeta ya no se achica ([`Caja.tsx`](../app/src/pages/Caja.tsx), `shrink-0`). Si no entra, la pantalla se desplaza.
+- **Verificado en la app**, con los mismos estilos de la pantalla a 1062 × 846: sin el arreglo, la tarjeta queda en **286 px** y la lista, entera afuera; con el arreglo, **592 px**, la lista se ve y la pantalla se desplaza. La búsqueda en sí andaba: contra la copia local, nombre y código devuelven productos. **No se vio en la caja 2**, porque probarlo en la caja de verdad pide asignar una terminal. **842 verdes** y los tipos sin errores. **Va en la próxima versión.** Mientras tanto, Ctrl y − achica la vista y todo entra.
+
 ## Lo último que pasó — 30 de octubre: el manual, al día con la fase 3
 
 - **El manual** ([`docs/manual/`](manual/Manual%20del%20Sistema%20-%20Agroveterinaria%20Gross.pdf)) pasó a 28 pantallas, en el orden del menú. Suma Traslados, Mayorista, Recibos, Fiados, Facturas emitidas y Percepciones, y lo nuevo de Mostrador, Caja, Clientes, Facturación, Remitos, Presupuestos y Configuración. Incluye el **paso a paso del remito R**.
