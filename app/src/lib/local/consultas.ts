@@ -98,6 +98,7 @@ export async function buscarProductosLocal(texto: string): Promise<ProductoVenta
         condicion_iva: p!.condicion_iva as ProductoVenta['condicion_iva'],
         cantidad,
         ...(p!.envase_id ? { sueltas } : {}),
+        precio_en_cada_venta: p!.precio_en_cada_venta === true,
         estado: await estadoDeStock(cantidad, p!.id, p!.categoria_id),
       }
     }),

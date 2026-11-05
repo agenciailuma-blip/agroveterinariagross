@@ -137,7 +137,7 @@ export default function ProductoEditor({
   tiendaPendiente,
   onCrearSuelta,
 }: Props) {
-  const botonGuardar = useBotonConAtajo('F9')
+  const botonGuardar = useBotonConAtajo('F10')
   const [codigoBarra, setCodigoBarra] = useState('')
   const refNombre = useRef<HTMLInputElement>(null)
 
@@ -356,6 +356,26 @@ export default function ProductoEditor({
               )}
             </div>
           )}
+
+          {/*
+            Un producto que en la góndola son muchos: «Accesorios varios»
+            es la pelotita, el silbato y la correa, cada uno con su precio.
+            Pedido en la reunión del 05/11.
+          */}
+          <label className="col-span-2 flex items-start gap-2 text-sm text-piedra-700 sm:col-span-4">
+            <input
+              type="checkbox"
+              checked={estado.campos.precio_en_cada_venta ?? false}
+              onChange={(e) => set({ precio_en_cada_venta: e.target.checked })}
+              className="mt-0.5 size-4 rounded border-borde text-marca-600 focus:ring-marca-500"
+            />
+            <span>
+              Precio en cada venta
+              <span className="block text-xs text-piedra-500">
+                Al venderlo se pregunta el precio, y cada vez que se agrega va en un renglón aparte.
+              </span>
+            </span>
+          </label>
 
           {/* De dónde salió el costo: cada compra, con su proveedor. */}
           {!esNuevo && estado.campos.id && <HistorialDeCostos productoId={estado.campos.id} />}
@@ -838,7 +858,7 @@ export default function ProductoEditor({
           className={`flex-1 ${boton.principal}`}
         >
           {guardando ? 'Guardando…' : 'Revisado y siguiente'}
-          {!guardando && <TeclaAtajo tecla="F9" clara />}
+          {!guardando && <TeclaAtajo tecla="F10" clara />}
         </button>
         <button
           onClick={() => onGuardar(false, false)}

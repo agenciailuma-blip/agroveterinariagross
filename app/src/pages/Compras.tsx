@@ -303,7 +303,7 @@ function FormularioDeCompra({
   onListo: (id: string) => void
   onCancelar: () => void
 }) {
-  const botonGuardar = useBotonConAtajo('F9')
+  const botonGuardar = useBotonConAtajo('F10')
   const proveedores = useQuery({ queryKey: ['proveedores'], queryFn: () => listarProveedores() })
   const tipos = useQuery({ queryKey: ['tipos-de-compra'], queryFn: tiposParaCompra })
   const alicuotas = useQuery({ queryKey: ['alicuotas-iva'], queryFn: alicuotasDeIva })
@@ -680,7 +680,7 @@ function FormularioDeCompra({
             className={boton.principal}
           >
             {guardar.isPending ? 'Guardando…' : 'Guardar la factura'}
-            {!guardar.isPending && <TeclaAtajo tecla="F9" clara />}
+            {!guardar.isPending && <TeclaAtajo tecla="F10" clara />}
           </button>
         </div>
       </div>

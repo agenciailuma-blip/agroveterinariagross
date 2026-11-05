@@ -1,5 +1,6 @@
 import { esPrecioAConvenir } from '@/lib/api/remitoInterno'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import type { KeyboardEvent } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useTerminal } from '@/lib/terminal'
 import { IdentificarOperador, useOperador } from '@/components/IdentificarOperador'
@@ -9,7 +10,7 @@ import {
   clienteConsumidorFinal,
   enviarACaja,
   esFraccionable,
-  pasoCantidad,
+  leerCantidad,
 } from '@/lib/api/ventas'
 import type { ClienteVenta, LineaVenta, ProductoVenta } from '@/lib/api/ventas'
 import { clienteDesdeArca } from '@/lib/api/clientes'
@@ -34,6 +35,7 @@ import LineaLibre from '@/components/LineaLibre'
 import type { DatosLineaLibre } from '@/components/LineaLibre'
 import { useAtajo, useBotonConAtajo } from '@/lib/atajos'
 import { TeclaAtajo } from '@/components/Atajos'
+import { primeroElCodigoExacto, useEscribirEnElBuscador, useListaConFlechas } from '@/lib/buscador'
 
 const BORRADOR = 'gross.venta-en-curso'
 
@@ -91,13 +93,13 @@ export default function PuntoDeVenta() {
   const [pasoEnvio, setPasoEnvio] = useState<string | null>(null)
   const busqueda = useRef<HTMLInputElement>(null)
 
-  // F2 vuelve al buscador, F3 abre el del cliente y F9 manda a caja.
+  // F2 vuelve al buscador, F3 abre el del cliente y F10 manda a caja.
   useAtajo('F2', () => {
     busqueda.current?.focus()
     busqueda.current?.select()
   })
   useAtajo('F3', () => setBuscandoCliente(true))
-  const botonEnviar = useBotonConAtajo('F9')
+  const botonEnviar = useBotonConAtajo('F10')
 
   /*
     La rebaja que está esperando el PIN que la autorice.
@@ -130,8 +132,10 @@ export default function PuntoDeVenta() {
     servidor para saber cómo agregar un producto.
   */
   const [pedirCantidad, setPedirCantidad] = useState(false)
+  const [decimalesEnTodos, setDecimalesEnTodos] = useState(false)
   useEffect(() => {
     valorConfig('ventas.pedir_cantidad_al_agregar', 1).then((v) => setPedirCantidad(v === 1))
+    valorConfig('ventas.decimales_en_todos', 0).then((v) => setDecimalesEnTodos(v === 1))
   }, [copiaLocalLista])
 
   /*
@@ -182,6 +186,70 @@ export default function PuntoDeVenta() {
     enabled: buscandoCliente,
   })
 
+  /*
+    El teclado del mostrador, pedido en la reunión del 05/11 (ver
+    lib/buscador.ts): flechas y Enter en los resultados, una letra en
+    cualquier lado vuelve a buscar, y Tab va del buscador al cliente.
+  */
+  const encontrados = useMemo(
+    () => primeroElCodigoExacto(resultados.data ?? [], debounced),
+    [resultados.data, debounced],
+  )
+  const flechasProductos = useListaConFlechas(encontrados, (p) => void agregar(p))
+  useEscribirEnElBuscador(busqueda)
+
+  const botonCliente = useRef<HTMLButtonElement>(null)
+  const zonaDePago = useRef<HTMLDivElement>(null)
+
+  /*
+    Enter antes de que aparezca la lista. El lector de códigos manda el
+    código y el Enter enseguida, antes de que la búsqueda termine: se
+    busca ahí mismo lo escrito y, si es uno solo —el código de barra, el
+    código exacto—, entra. Si son varios, se muestra la lista ya.
+  */
+  async function agregarLoEscrito() {
+    const escrito = texto.trim()
+    if (!escrito) return
+    const lista = primeroElCodigoExacto(await buscarProductosVenta(escrito), escrito)
+    if (lista.length === 1 || lista[0]?.codigo.trim().toLowerCase() === escrito.toLowerCase()) {
+      await agregar(lista[0])
+      return
+    }
+    setDebounced(escrito)
+  }
+
+  function teclasDelBuscador(e: KeyboardEvent<HTMLInputElement>) {
+    // Del buscador al cliente: los renglones se saltean. Elegido el
+    // cliente, el próximo paso es cómo paga y enviar a caja.
+    if (e.key === 'Tab' && !e.shiftKey) {
+      e.preventDefault()
+      if (buscandoCliente) document.getElementById('buscador-de-cliente')?.focus()
+      else botonCliente.current?.focus()
+      return
+    }
+    const listaAlDia = debounced === texto.trim() && !resultados.isFetching
+    if (e.key === 'Enter' && !listaAlDia) {
+      e.preventDefault()
+      void agregarLoEscrito()
+      return
+    }
+    flechasProductos.teclas(e)
+  }
+
+  /*
+    Elegido el cliente, el cursor va a cómo paga si ya hay productos: es
+    lo que sigue antes de enviar. Sin productos, vuelve al buscador.
+  */
+  function elegirCliente(c: ClienteVenta) {
+    setCliente(c)
+    setBuscandoCliente(false)
+    setTextoCliente('')
+    const primerMedio = zonaDePago.current?.querySelector<HTMLButtonElement>('button:not(:disabled)')
+    if (lineas.length && primerMedio) primerMedio.focus()
+    else busqueda.current?.focus()
+  }
+  const flechasClientes = useListaConFlechas(clientes.data, elegirCliente)
+
   const precios = useQuery({ queryKey: ['precios'], queryFn: cargarPrecios, staleTime: 300_000 })
 
   const listaTarjeta = precios.data?.listas.find((l) => !l.es_predeterminada)
@@ -213,11 +281,37 @@ export default function PuntoDeVenta() {
     renovar()
     setError(null)
 
+    /*
+      «Accesorios varios» y los demás que en la góndola son muchos: el
+      precio se pregunta acá y es el de este renglón. Va como precio de
+      lista del renglón —igual que una línea escrita a mano—, así que no
+      pide motivo: nadie se aparta de un precio, el precio es éste.
+    */
+    let precio = p.precio_venta
+    if (p.precio_en_cada_venta) {
+      const escrito = await pedirNumero({
+        titulo: p.nombre_interno,
+        detalle: 'Cada uno va en su renglón, con su precio.',
+        etiqueta: 'Precio',
+        aceptar: 'Seguir',
+      })
+      if (escrito === null) {
+        busqueda.current?.focus()
+        return
+      }
+      if (!(escrito > 0)) {
+        setError('El precio tiene que ser mayor que cero.')
+        busqueda.current?.focus()
+        return
+      }
+      precio = Math.round(escrito * 100) / 100
+    }
+
     let cuantos = 1
     if (pedirCantidad) {
       const pedido = await pedirNumero({
         titulo: p.nombre_interno,
-        detalle: `${moneda.format(p.precio_venta)} por ${p.unidad_medida} · quedan ${numero.format(p.cantidad)}${
+        detalle: `${moneda.format(precio)} por ${p.unidad_medida} · quedan ${numero.format(p.cantidad)}${
           p.sueltas !== undefined ? ` (${numero.format(p.sueltas)} sueltas)` : ''
         }`,
         etiqueta: '¿Cuántos?',
@@ -238,14 +332,20 @@ export default function PuntoDeVenta() {
       }
       // Un collar no se vende por mitades. Mismo criterio que al
       // corregir la cantidad en la lista.
-      cuantos = esFraccionable(p.unidad_medida) ? pedido : Math.round(pedido)
+      cuantos = esFraccionable(p.unidad_medida, decimalesEnTodos) ? pedido : Math.round(pedido)
+      if (cuantos <= 0) {
+        setError(`${p.nombre_interno} se vende por unidad: la cantidad va sin decimales.`)
+        busqueda.current?.focus()
+        return
+      }
     }
 
     setLineas((prev) => {
-      const existente = prev.find((l) => l.producto_id === p.producto_id)
+      // El de precio en cada venta nunca se suma: cada uno es otra cosa de la góndola.
+      const existente = !p.precio_en_cada_venta && prev.find((l) => l.producto_id === p.producto_id && !l.precio_en_cada_venta)
       if (existente) {
         return prev.map((l) =>
-          l.producto_id === p.producto_id ? { ...l, cantidad: l.cantidad + cuantos } : l,
+          l.id === existente.id ? { ...l, cantidad: l.cantidad + cuantos } : l,
         )
       }
       return [
@@ -257,13 +357,14 @@ export default function PuntoDeVenta() {
           descripcion: p.nombre_interno,
           unidad_medida: p.unidad_medida,
           cantidad: cuantos,
-          precio_original: p.precio_venta,
-          precio_unitario: p.precio_venta,
+          precio_original: precio,
+          precio_unitario: precio,
           motivo_modificacion: null,
           autorizado_por: null,
           alicuota_iva_id: p.alicuota_iva_id,
           condicion_iva: p.condicion_iva,
           stock_disponible: p.cantidad,
+          ...(p.precio_en_cada_venta ? { precio_en_cada_venta: true } : {}),
         },
       ]
     })
@@ -383,7 +484,7 @@ export default function PuntoDeVenta() {
               // Un collar o un frasco no se venden por mitades. Se
               // redondea acá y no sólo con el paso del campo, porque
               // tipear a mano también tiene que respetarlo.
-              cantidad: esFraccionable(l.unidad_medida) ? cantidad : Math.round(cantidad),
+              cantidad: esFraccionable(l.unidad_medida, decimalesEnTodos) ? cantidad : Math.round(cantidad),
             }
           : l,
       ),
@@ -640,7 +741,7 @@ export default function PuntoDeVenta() {
   /*
     El remito interno, para el cliente de cuenta corriente que se lleva
     la mercadería y el precio se arregla después. Con la marca «Precio a
-    convenir» es lo primero que se ofrece, con su F9; mandarlo a la caja
+    convenir» es lo primero que se ofrece, con su F10; mandarlo a la caja
     queda abajo. Sin la marca, al revés.
   */
   const aConvenir = esPrecioAConvenir(cliente)
@@ -673,7 +774,7 @@ export default function PuntoDeVenta() {
               ) : (
                 <>
                   Remito interno · precio después
-                  {aConvenir && <TeclaAtajo tecla="F9" clara />}
+                  {aConvenir && <TeclaAtajo tecla="F10" clara />}
                 </>
               )}
             </button>
@@ -739,6 +840,7 @@ export default function PuntoDeVenta() {
             autoFocus
             value={texto}
             onChange={(e) => setTexto(e.target.value)}
+            onKeyDown={teclasDelBuscador}
             placeholder="Escaneá un código de barra o buscá por nombre…"
             className="w-full min-w-0 rounded-xl border border-borde bg-white py-3 pr-4 pl-4 text-lg text-tinta shadow-sm outline-none focus:border-marca-500 focus:ring-2 focus:ring-marca-500/20"
           />
@@ -752,6 +854,8 @@ export default function PuntoDeVenta() {
           */}
           <button
             onClick={() => setEscribiendoLinea(true)}
+            // El Tab del buscador va al cliente, no acá: se llega con el mouse.
+            tabIndex={-1}
             title="Escribir una línea que no está en el catálogo"
             className="shrink-0 rounded-xl border border-borde bg-white px-4 text-sm font-medium text-piedra-600 shadow-sm hover:bg-piedra-50 hover:text-marca-700"
           >
@@ -759,18 +863,28 @@ export default function PuntoDeVenta() {
           </button>
 
           {debounced.length >= 2 && (
-            <div className="absolute top-full right-0 left-0 z-20 mt-1 max-h-80 overflow-y-auto rounded-xl bg-white shadow-lg ring-1 ring-borde">
+            <div
+              ref={(el) => {
+                flechasProductos.lista.current = el
+              }}
+              className="absolute top-full right-0 left-0 z-20 mt-1 max-h-80 overflow-y-auto rounded-xl bg-white shadow-lg ring-1 ring-borde"
+            >
               {resultados.isPending && (
                 <p className="px-4 py-3 text-sm text-piedra-400">Buscando…</p>
               )}
               {!resultados.isPending && !resultados.data?.length && (
                 <p className="px-4 py-3 text-sm text-piedra-400">Sin resultados.</p>
               )}
-              {resultados.data?.map((p) => (
+              {encontrados.map((p, i) => (
                 <button
                   key={p.producto_id}
                   onClick={() => agregar(p)}
-                  className="flex w-full items-center justify-between gap-4 border-b border-piedra-100 px-4 py-2.5 text-left last:border-0 hover:bg-marca-50"
+                  onMouseMove={() => flechasProductos.setMarcado(i)}
+                  tabIndex={-1}
+                  data-marcado={i === flechasProductos.marcado}
+                  className={`flex w-full items-center justify-between gap-4 border-b border-piedra-100 px-4 py-2.5 text-left last:border-0 ${
+                    i === flechasProductos.marcado ? 'bg-marca-50' : ''
+                  }`}
                 >
                   <div className="min-w-0">
                     <p className="truncate font-medium text-tinta">{p.nombre_interno}</p>
@@ -860,13 +974,10 @@ export default function PuntoDeVenta() {
                           )}
                         </td>
                         <td className="px-1.5 py-2.5 @sm:px-3">
-                          <input
-                            type="number"
-                            min="0"
-                            step={pasoCantidad(l.unidad_medida)}
-                            value={l.cantidad}
-                            onChange={(e) => cambiarCantidad(l.id, Number(e.target.value))}
-                            className="w-full rounded-lg border border-borde px-2 py-1 text-center tabular-nums outline-none focus:border-marca-500"
+                          <CampoCantidad
+                            valor={l.cantidad}
+                            decimales={esFraccionable(l.unidad_medida, decimalesEnTodos)}
+                            onCambio={(n) => cambiarCantidad(l.id, n)}
                           />
                           {esFraccionable(l.unidad_medida) && (
                             <p className="mt-0.5 text-center text-xs text-piedra-400">
@@ -941,26 +1052,43 @@ export default function PuntoDeVenta() {
           {buscandoCliente ? (
             <div>
               <input
+                id="buscador-de-cliente"
                 autoFocus
                 value={textoCliente}
                 onChange={(e) => {
                   setTextoCliente(e.target.value)
                   setErrorArca(null)
                 }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') {
+                    e.preventDefault()
+                    setBuscandoCliente(false)
+                    setTimeout(() => botonCliente.current?.focus())
+                    return
+                  }
+                  if (flechasClientes.teclas(e)) return
+                  // Un CUIT que no está entre los clientes: Enter lo trae de ARCA.
+                  if (e.key === 'Enter') document.getElementById('traer-de-arca')?.click()
+                }}
                 placeholder="Nombre, documento o CUIT…"
                 className="w-full rounded-lg border border-borde px-2.5 py-1.5 text-sm outline-none focus:border-marca-500"
               />
-              <div className="mt-1 max-h-56 overflow-y-auto">
-                {clientes.data?.map((c) => (
+              <div
+                ref={(el) => {
+                  flechasClientes.lista.current = el
+                }}
+                className="mt-1 max-h-56 overflow-y-auto"
+              >
+                {clientes.data?.map((c, i) => (
                   <button
                     key={c.id}
-                    onClick={() => {
-                      setCliente(c)
-                      setBuscandoCliente(false)
-                      setTextoCliente('')
-                      busqueda.current?.focus()
-                    }}
-                    className="block w-full rounded px-2 py-1.5 text-left text-sm hover:bg-marca-50"
+                    onClick={() => elegirCliente(c)}
+                    onMouseMove={() => flechasClientes.setMarcado(i)}
+                    tabIndex={-1}
+                    data-marcado={i === flechasClientes.marcado}
+                    className={`block w-full rounded px-2 py-1.5 text-left text-sm ${
+                      i === flechasClientes.marcado ? 'bg-marca-50' : ''
+                    }`}
                   >
                     <span className="font-medium text-tinta">{c.nombre}</span>
                     {c.numero_documento && (
@@ -988,11 +1116,9 @@ export default function PuntoDeVenta() {
                         setErrorArca(r.error)
                         return
                       }
-                      setCliente(r.cliente as ClienteVenta)
-                      setBuscandoCliente(false)
-                      setTextoCliente('')
-                      busqueda.current?.focus()
+                      elegirCliente(r.cliente as ClienteVenta)
                     }}
+                    id="traer-de-arca"
                     disabled={consultandoArca}
                     className="mt-1 block w-full rounded-lg bg-marca-50 px-2 py-1.5 text-left text-sm font-medium text-marca-700 ring-1 ring-marca-200 hover:bg-marca-100 disabled:opacity-60"
                   >
@@ -1013,8 +1139,9 @@ export default function PuntoDeVenta() {
             </div>
           ) : (
             <button
+              ref={botonCliente}
               onClick={() => setBuscandoCliente(true)}
-              className="w-full rounded-lg px-2 py-1.5 text-left hover:bg-piedra-50"
+              className="w-full rounded-lg px-2 py-1.5 text-left hover:bg-piedra-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-marca-500"
             >
               <span className="font-medium text-tinta">{cliente?.nombre ?? 'Cargando…'}</span>
               {cliente && cliente.descuento_porcentaje > 0 && (
@@ -1053,7 +1180,7 @@ export default function PuntoDeVenta() {
             <p className="mb-2 text-xs font-medium tracking-wide text-piedra-400 uppercase">
               ¿Cómo va a pagar?
             </p>
-            <div className="flex flex-wrap gap-1.5">
+            <div ref={zonaDePago} className="flex flex-wrap gap-1.5">
               {mediosParaElegir(medios)
                 .filter((m) => m.tipo !== 'cuenta_corriente' || cliente?.cuenta_corriente)
                 .flatMap((m: MedioPago) =>
@@ -1217,7 +1344,7 @@ Se muestra en la cola del cajero. Si no hace falta, dejalo vacío.`,
           ) : (
             <>
               Enviar a caja
-              {!aConvenir && <TeclaAtajo tecla="F9" clara />}
+              {!aConvenir && <TeclaAtajo tecla="F10" clara />}
             </>
           )}
         </button>
@@ -1310,5 +1437,68 @@ function ElegirTerminal({
         )}
       </div>
     </div>
+  )
+}
+
+// Hasta tres decimales —0,374 kg— y sin el punto de los miles, que se leería como coma.
+const formatoCantidad = new Intl.NumberFormat('es-AR', { maximumFractionDigits: 3, useGrouping: false })
+
+/*
+  La cantidad de un renglón.
+
+  Es un campo de texto y no numérico para aceptar la coma: el vendedor
+  escribe «0,374» como se escribe acá, y el campo numérico del
+  navegador la toma o no según cómo esté configurada la PC.
+
+  Mientras se escribe, sólo se aplica lo que ya es una cantidad: «0,»
+  todavía no es nada, y aplicar el 0 borraría el renglón a mitad de
+  camino. Un 0 o un campo vacío se resuelven al salir: el 0 quita el
+  renglón, como siempre; vacío vuelve a lo que había.
+*/
+function CampoCantidad({
+  valor,
+  decimales,
+  onCambio,
+}: {
+  valor: number
+  decimales: boolean
+  onCambio: (cantidad: number) => void
+}) {
+  const [texto, setTexto] = useState(() => formatoCantidad.format(valor))
+  const enfocado = useRef(false)
+
+  // Lo que cambia desde afuera —un escaneo más del mismo producto— se ve.
+  useEffect(() => {
+    if (!enfocado.current) setTexto(formatoCantidad.format(valor))
+  }, [valor])
+
+  return (
+    <input
+      type="text"
+      inputMode={decimales ? 'decimal' : 'numeric'}
+      value={texto}
+      onFocus={(e) => {
+        enfocado.current = true
+        e.currentTarget.select()
+      }}
+      onChange={(e) => {
+        const escrito = e.target.value
+        // Sin decimales, la coma y el punto no entran: un collar no se parte.
+        if (!decimales && /[.,]/.test(escrito)) return
+        setTexto(escrito)
+        const n = leerCantidad(escrito)
+        if (n !== null && n > 0) onCambio(n)
+      }}
+      onBlur={() => {
+        enfocado.current = false
+        const n = leerCantidad(texto)
+        if (n === 0) onCambio(0)
+        else setTexto(formatoCantidad.format(valor))
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') e.currentTarget.blur()
+      }}
+      className="w-full rounded-lg border border-borde px-2 py-1 text-center tabular-nums outline-none focus:border-marca-500"
+    />
   )
 }

@@ -146,8 +146,8 @@ function Ventana({ pendiente }: { pendiente: Pendiente }) {
     }
   }
 
-  // F9 acepta, como el botón: también para la pregunta que se abre al enviar a caja.
-  useAtajo('F9', () => {
+  // F10 acepta, como el botón: también para la pregunta que se abre al enviar a caja.
+  useAtajo('F10', () => {
     if (puedeAceptar) cerrar(true)
   })
 
@@ -199,11 +199,21 @@ function Ventana({ pendiente }: { pendiente: Pendiente }) {
             ) : (
               <input
                 ref={entrada as React.RefObject<HTMLInputElement>}
-                type={campo.clase === 'numero' ? 'number' : 'text'}
-                step={campo.clase === 'numero' ? '0.01' : undefined}
+                /*
+                  El número va en un campo de texto: el numérico del
+                  navegador se come la coma —«0,5» quedaba «05», cinco
+                  kilos en vez de medio, visto el 05/11—. Acá entran
+                  cifras y una sola coma o punto, y los dos son decimal,
+                  como ya lo era el punto en el campo numérico.
+                */
+                type="text"
+                inputMode={campo.clase === 'numero' ? 'decimal' : undefined}
                 value={valor}
                 placeholder={campo.ejemplo}
-                onChange={(e) => setValor(e.target.value)}
+                onChange={(e) => {
+                  if (campo.clase === 'numero' && !/^\d*[.,]?\d*$/.test(e.target.value)) return
+                  setValor(e.target.value)
+                }}
                 className="w-full rounded-lg border border-borde bg-white px-3 py-2 text-sm text-tinta focus:border-marca-500 focus:ring-1 focus:ring-marca-500 focus:outline-none"
               />
             )}

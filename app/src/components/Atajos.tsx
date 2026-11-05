@@ -42,9 +42,9 @@ export function ListaDeAtajos() {
 }
 
 function Ayuda({ onCerrar }: { onCerrar: () => void }) {
-  // Mientras está abierta, F1 la cierra y F9 no aprieta nada de atrás.
+  // Mientras está abierta, F1 la cierra y F10 no aprieta nada de atrás.
   useAtajo('F1', onCerrar)
-  useAtajo('F9', onCerrar)
+  useAtajo('F10', onCerrar)
   useEffect(() => {
     const alTeclado = (e: KeyboardEvent) => e.key === 'Escape' && onCerrar()
     window.addEventListener('keydown', alTeclado)

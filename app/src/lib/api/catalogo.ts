@@ -41,6 +41,8 @@ export interface ProductoDetalle {
   margen_sobre_costo: number | null
   unidad_medida: string
   permite_fraccionamiento: boolean
+  /** Un producto que representa muchos: el precio se pone al venderlo y cada uno va en su renglón. */
+  precio_en_cada_venta: boolean
   es_producto_veterinario: boolean
   requiere_receta: boolean
   es_fitosanitario: boolean

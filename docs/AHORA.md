@@ -1,5 +1,5 @@
 ---
-actualizado: 2026-10-29
+actualizado: 2026-11-05
 estado: en curso
 ---
 
@@ -11,6 +11,8 @@ estado: en curso
 ---
 
 ## Dónde está todo, hoy
+
+**Construida: 0.20.0** (05/11) — **falta publicarla**. **El mostrador después de la reunión del 05/11**: F10 en lugar de F9, el buscador con flechas y Enter, una letra en cualquier lado vuelve a buscar, el Tab del buscador va al cliente, la cantidad con coma (0,374 kg) y *precio en cada venta* para los accesorios. Trae también el arreglo de la caja 2 del 02/11. **La base ya está aplicada.** Ver *Lo último que pasó* y [`reunion-lucas-2026-11-05.md`](reunion-lucas-2026-11-05.md). **852 pruebas verdes en la app.**
 
 **Publicada: 0.19.13** (30/10, 10:15), verificada en Cloudflare: `latest.json` dice 0.19.13, el instalador está y el programa publicado trae lo nuevo. **El remito R sobre la hoja de imprenta**: la plantilla para la gráfica ([`docs/remito-r/`](remito-r/Remito%20R%20-%20Plantilla%20para%20la%20imprenta.pdf)), la impresión de sólo lo que cambia, las tandas en Configuración y las hojas arruinadas. Además, **la marca *Precio a convenir***, **la planilla de la lista mayorista** y **anular un recibo**. **La base ya está aplicada.** Ver *Lo último que pasó*. **842 pruebas verdes en la app.**
 
@@ -120,6 +122,39 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 🟡 **Lo que la venta tardaba en llegar a la caja sin internet** — arreglado el 05/10 y publicado en la 0.13.4, **sin probar en el local**. El mostrador le pasaba las ventas a la caja una vez por minuto, y la caja miraba su cola cada ocho segundos: hasta 68 segundos con el cliente esperando. Y llegaba de a partes porque, mientras la cabecera intentaba subir al servidor —hasta doce segundos sin internet—, salían los renglones solos. Ahora la venta sale al segundo y medio de apretar *Enviar a caja* (y otra vez a los catorce, por si el intento de subir tardó), viaja entera o espera entera, y la caja la muestra apenas llega. Se comprueba en el próximo corte: la venta tiene que aparecer en la caja en un par de segundos y completa.
 
 ---
+
+## Lo último que pasó — 5 de noviembre: el mostrador, después de verlo en uso
+
+De la reunión con Lucas y un vendedor ([`reunion-lucas-2026-11-05.md`](reunion-lucas-2026-11-05.md)). Va en la **0.20.0**.
+
+- **F10 hace lo principal** en todas las pantallas (enviar a caja, cobrar, guardar, aceptar), como en el sistema anterior. Era F9 ([`atajos.ts`](../app/src/lib/atajos.ts)).
+- **El buscador con el teclado** ([`buscador.ts`](../app/src/lib/buscador.ts)), en el Mostrador, su buscador de clientes y el de la Caja:
+  - las flechas recorren y Enter elige;
+  - si después de recorrer se escribe, empieza una búsqueda nueva;
+  - en el Mostrador, una letra o un número apretado fuera de un campo va al buscador y reemplaza lo anterior;
+  - el código exacto va primero;
+  - **el lector de códigos con Enter agrega solo**: antes había que tocar el resultado.
+- **El Tab del buscador va al cliente**, y elegido el cliente el cursor va a *¿Cómo va a pagar?*.
+- **Alimento suelto:** los 2.281 productos estaban como «unidad», y la unidad redondea. **63 pasaron a kilo y 23 a litro**: los que dicen «x kg» o «x LT» sin número delante. La cantidad es un campo de texto que acepta la coma. **La ventana de «¿Cuántos?» se comía la coma** (0,5 quedaba 5): arreglado. Nueva opción **Decimales en todos los productos**, en Configuración → El local, apagada.
+- **Precio en cada venta:** una marca en la ficha. Al agregar el producto se pregunta el precio, y cada vez va en un renglón aparte, sin motivo. Marcados: Accesorios, Juguetes, Comederos, Repuestos, Raticida y Servicios «varios».
+- **La base** ([`20261105120000_el_mostrador_del_05_11.sql`](../supabase/migrations/20261105120000_el_mostrador_del_05_11.sql), aplicada). La copia local vuelve a bajar los productos una vez (versión 6).
+- **Verificado en el mostrador real**, con la sesión de un usuario:
+  - flechas y Enter;
+  - el código 1368 con Enter;
+  - «acces» tecleado con el foco en *Efectivo* fue al buscador;
+  - Tab: buscador → cliente → *Efectivo*;
+  - 0,374 kg da $ 1.683, y 1,25 kg da $ 5.625;
+  - dos Accesorios a $ 3.500 y $ 1.500, en renglones separados;
+  - un producto por unidad no acepta coma;
+  - F10 acepta una pregunta;
+  - a 375 px no se desplaza nada.
+
+  La venta de prueba se descartó sin enviarla. **852 verdes** y los tipos sin errores.
+- **Sin hacer:**
+  - en la Caja, agregar un producto de *precio en cada venta* entra con el precio de la ficha, y hay que cambiarlo a mano;
+  - las demás pantallas con buscador (Órdenes internas, listas) todavía no tienen flechas;
+  - **atar cada suelto a su bolsa** lo hace Lucas desde la ficha, en *Caja y suelto*: así, al vender suelto sin stock suelto, se abre una bolsa sola.
+- **El manual**, al día: F10, el teclado, la venta por kilo y el precio en cada venta, con el PDF regenerado. Con Edge abierto, el comando de `COMO-SE-GENERA.md` no escribe nada y no avisa: hace falta agregarle `--user-data-dir` con una carpeta aparte.
 
 ## Lo último que pasó — 2 de noviembre: en la caja 2 no aparecía la lista para agregar un producto
 

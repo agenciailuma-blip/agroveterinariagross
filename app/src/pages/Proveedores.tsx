@@ -265,7 +265,7 @@ function FichaProveedor({
   onCerrar: () => void
   onGuardado: () => void
 }) {
-  const botonGuardar = useBotonConAtajo('F9')
+  const botonGuardar = useBotonConAtajo('F10')
   const [form, setForm] = useState<Partial<Proveedor>>(proveedor ?? PROVEEDOR_NUEVO)
   const [error, setError] = useState<string | null>(null)
 
@@ -482,7 +482,7 @@ function FichaProveedor({
             className="rounded-lg bg-marca-700 px-3.5 py-2 text-sm font-medium text-white hover:bg-marca-800 disabled:opacity-40"
           >
             {guardar.isPending ? 'Guardando…' : 'Guardar'}
-            {!guardar.isPending && <TeclaAtajo tecla="F9" clara />}
+            {!guardar.isPending && <TeclaAtajo tecla="F10" clara />}
           </button>
         </div>
       </div>

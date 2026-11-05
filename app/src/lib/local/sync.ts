@@ -50,7 +50,7 @@ const MAESTROS: Definicion[] = [
     tabla: 'producto',
     origen: 'producto',
     columnas:
-      'id, codigo, nombre_interno, nombre_publico, precio_venta, costo, margen_sobre_costo, unidad_medida, alicuota_iva_id, condicion_iva, categoria_id, marca_id, activo, revisado_en, actualizado_en, eliminado_en, envase_id, cantidad_por_envase',
+      'id, codigo, nombre_interno, nombre_publico, precio_venta, costo, margen_sobre_costo, unidad_medida, alicuota_iva_id, condicion_iva, categoria_id, marca_id, activo, revisado_en, actualizado_en, eliminado_en, envase_id, cantidad_por_envase, precio_en_cada_venta',
     mapear: (f) => ({
       ...f,
       busqueda: normalizar(`${f.codigo ?? ''} ${f.nombre_interno ?? ''} ${f.nombre_publico ?? ''}`),
@@ -488,12 +488,16 @@ async function bajarColaCaja() {
       de OBTech. Se vuelve a bajar todo lo que viene por cursor.
   5 — 29/10: el saldo de cuenta corriente suma los cargos impagos, para
       que la caja frene sin conexión al que debe vencido.
+  6 — 05/11: el producto suma «precio en cada venta», y unos 90
+      productos pasan a vender por kilo o por litro. Las dos cosas las
+      tiene que saber el mostrador sin internet.
 */
-const VERSION_BAJADA = 5
+const VERSION_BAJADA = 6
 const TABLAS_DE_LA_VERSION_2 = ['cliente']
 const TABLAS_DE_LA_VERSION_3 = ['producto', 'umbral']
 const TABLAS_DE_LA_VERSION_4 = [...MAESTROS.map((m) => m.tabla), ...REFERENCIAS.map((r) => `referencia:${r}`)]
 const TABLAS_DE_LA_VERSION_5 = ['saldo_cuenta_corriente']
+const TABLAS_DE_LA_VERSION_6 = ['producto']
 
 async function rebajarLoQueCambio() {
   const marca = await db.cursor.get('version_bajada')
@@ -507,6 +511,7 @@ async function rebajarLoQueCambio() {
   }
   if (guardada < 4) await db.cursor.bulkDelete(TABLAS_DE_LA_VERSION_4)
   if (guardada < 5) await db.cursor.bulkDelete(TABLAS_DE_LA_VERSION_5)
+  if (guardada < 6) await db.cursor.bulkDelete(TABLAS_DE_LA_VERSION_6)
 
   await db.cursor.put({
     tabla: 'version_bajada',

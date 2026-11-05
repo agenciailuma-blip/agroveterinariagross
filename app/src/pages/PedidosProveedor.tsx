@@ -235,7 +235,7 @@ function ArmarPedido({
   onCancelar: () => void
   onError: (e: string | null) => void
 }) {
-  const botonPedir = useBotonConAtajo('F9')
+  const botonPedir = useBotonConAtajo('F10')
   const [proveedorId, setProveedorId] = useState('')
   const [pedir, setPedir] = useState<Record<string, number>>({})
   const [observacion, setObservacion] = useState('')
@@ -418,7 +418,7 @@ function ArmarPedido({
               className={boton.principal}
             >
               {hacer.isPending ? 'Haciendo el pedido…' : 'Hacer el pedido'}
-              {!hacer.isPending && <TeclaAtajo tecla="F9" clara />}
+              {!hacer.isPending && <TeclaAtajo tecla="F10" clara />}
             </button>
           </div>
         </>

@@ -12,11 +12,13 @@ import { useEffect, useRef } from 'react'
   no escriben nada, así que andan aunque el cursor esté en un campo, y
   no chocan con el lector de códigos, que manda números y Enter.
 
-  Una regla para no tener que memorizar mucho: F9 hace lo principal de
+  Una regla para no tener que memorizar mucho: F10 hace lo principal de
   la pantalla —enviar a caja, cobrar, guardar, aceptar—. Si el botón
-  está apagado, F9 tampoco hace nada.
+  está apagado, F10 tampoco hace nada.
 
-  Propuesta del 05/10, para que Lucas la revise. Cambiar una tecla es
+  Propuesta del 05/10, para que Lucas la revise. Era F9; el 05/11 pasó
+  a F10 porque en el sistema anterior F10 es «Aceptar» en todas las
+  pantallas y el local ya lo tiene en los dedos. Cambiar una tecla es
   cambiar esta tabla.
   ─────────────────────────────────────────────────────────────
 */
@@ -36,7 +38,7 @@ export const ATAJOS: { donde: string; atajos: Atajo[] }[] = [
       { teclas: 'F6', que: 'Ir a Clientes' },
       { teclas: 'F7', que: 'Ir a Productos' },
       { teclas: 'F8', que: 'Ir a Stock' },
-      { teclas: 'F9', que: 'Lo principal de la pantalla: enviar a caja, cobrar, guardar o aceptar' },
+      { teclas: 'F10', que: 'Lo principal de la pantalla: enviar a caja, cobrar, guardar o aceptar' },
       { teclas: 'Esc', que: 'Cerrar la ventana abierta, o cancelar' },
     ],
   },
@@ -46,14 +48,14 @@ export const ATAJOS: { donde: string; atajos: Atajo[] }[] = [
       { teclas: 'F2', que: 'Volver al buscador de productos' },
       { teclas: 'F3', que: 'Elegir el cliente' },
       { teclas: 'F11', que: 'Asociar productos: que la factura los muestre bajo un concepto' },
-      { teclas: 'F9', que: 'Enviar a caja. Otra vez F9 la manda sin nombre' },
+      { teclas: 'F10', que: 'Enviar a caja. Otra vez F10 la manda sin nombre' },
     ],
   },
   {
     donde: 'En la Caja',
     atajos: [
       { teclas: 'F3', que: 'Pasar a la próxima venta de la cola' },
-      { teclas: 'F9', que: 'Cobrar' },
+      { teclas: 'F10', que: 'Cobrar' },
     ],
   },
   {
@@ -61,7 +63,7 @@ export const ATAJOS: { donde: string; atajos: Atajo[] }[] = [
     atajos: [
       { teclas: 'Enter del teclado numérico', que: 'Pasar al campo siguiente' },
       { teclas: 'Tab · Mayús + Tab', que: 'Campo siguiente · campo anterior' },
-      { teclas: 'F9', que: 'Guardar' },
+      { teclas: 'F10', que: 'Guardar' },
     ],
   },
 ]
@@ -79,7 +81,7 @@ export const IR_A: { tecla: string; a: string; permiso: string }[] = [
   Los de cada pantalla, en una pila.
 
   Gana el último que se registró: una ventana que se abre encima de la
-  pantalla se queda con F9 mientras está abierta —aceptar la pregunta,
+  pantalla se queda con F10 mientras está abierta —aceptar la pregunta,
   no volver a apretar el botón de atrás— y al cerrarse se lo devuelve.
 */
 const pila: { tecla: string; accion: () => void }[] = []

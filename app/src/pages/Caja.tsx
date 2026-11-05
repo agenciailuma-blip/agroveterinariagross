@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTerminal } from '@/lib/terminal'
@@ -47,6 +47,7 @@ import { faltaEnFiado, fiadoVacio } from '@/lib/api/fiados'
 import { moneda, numero } from '@/lib/tipos'
 import { useAtajo, useBotonConAtajo } from '@/lib/atajos'
 import { TeclaAtajo } from '@/components/Atajos'
+import { primeroElCodigoExacto, useListaConFlechas } from '@/lib/buscador'
 
 /** Con qué documento sale la venta. Ver marcar_documentacion_venta() en la base. */
 type Documentacion = 'fiscal' | 'no_fiscal' | 'a_facturar'
@@ -1029,7 +1030,7 @@ function PanelCobro({
   onCobrar: () => void
   onCancelar: () => void
 }) {
-  const botonCobrar = useBotonConAtajo('F9')
+  const botonCobrar = useBotonConAtajo('F10')
   const [agregando, setAgregando] = useState(false)
   const [descontando, setDescontando] = useState(false)
 
@@ -1611,7 +1612,7 @@ function PanelCobro({
                 : documentacion === 'a_facturar'
                   ? 'A cuenta, factura después'
                   : 'Cobrar'}
-            {!cobrando && <TeclaAtajo tecla="F9" clara />}
+            {!cobrando && <TeclaAtajo tecla="F10" clara />}
           </button>
           <button
             onClick={onCancelar}
@@ -1810,6 +1811,9 @@ function BuscadorParaAgregar({
     queryFn: () => buscarProductosVenta(texto),
     enabled: texto.trim().length > 1,
   })
+  // Flechas y Enter, como en el mostrador (ver lib/buscador.ts).
+  const encontrados = useMemo(() => primeroElCodigoExacto(resultados.data ?? [], texto), [resultados.data, texto])
+  const flechas = useListaConFlechas(encontrados, (p) => onElegir(p.producto_id))
 
   return (
     <div>
@@ -1818,7 +1822,10 @@ function BuscadorParaAgregar({
           autoFocus
           value={texto}
           onChange={(e) => setTexto(e.target.value)}
-          onKeyDown={(e) => e.key === 'Escape' && onCancelar()}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') onCancelar()
+            else flechas.teclas(e)
+          }}
           placeholder="Escaneá un código de barra o buscá por nombre…"
           className="flex-1 rounded-lg border border-borde px-3 py-2 text-sm"
         />
@@ -1829,13 +1836,23 @@ function BuscadorParaAgregar({
           Cancelar
         </button>
       </div>
-      {(resultados.data?.length ?? 0) > 0 && (
-        <ul className="mt-2 max-h-48 overflow-y-auto rounded-lg ring-1 ring-borde">
-          {resultados.data!.map((p: ProductoVenta) => (
+      {encontrados.length > 0 && (
+        <ul
+          ref={(el) => {
+            flechas.lista.current = el
+          }}
+          className="mt-2 max-h-48 overflow-y-auto rounded-lg ring-1 ring-borde"
+        >
+          {encontrados.map((p: ProductoVenta, i) => (
             <li key={p.producto_id} className="border-b border-piedra-100 last:border-0">
               <button
                 onClick={() => onElegir(p.producto_id)}
-                className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm hover:bg-piedra-50"
+                onMouseMove={() => flechas.setMarcado(i)}
+                tabIndex={-1}
+                data-marcado={i === flechas.marcado}
+                className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm ${
+                  i === flechas.marcado ? 'bg-marca-50' : ''
+                }`}
               >
                 <span className="min-w-0 flex-1 truncate text-tinta">{p.nombre_interno}</span>
                 <span className="tabular-nums text-piedra-500">

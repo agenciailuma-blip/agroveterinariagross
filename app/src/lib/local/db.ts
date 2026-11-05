@@ -45,6 +45,8 @@ export interface ProductoLocal {
   */
   envase_id?: string | null
   cantidad_por_envase?: number | null
+  /** Falta en lo bajado antes del 05/11, hasta que se vuelve a bajar: «no está» es «no». */
+  precio_en_cada_venta?: boolean | null
   /** Se calcula al guardar, para poder buscar sin acentos ni mayúsculas. */
   busqueda: string
 }

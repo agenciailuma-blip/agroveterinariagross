@@ -25,7 +25,7 @@ type Pestania = 'datos' | 'cuenta'
 type Vista = 'todos' | 'vencidos'
 
 export default function Clientes() {
-  const botonGuardar = useBotonConAtajo('F9')
+  const botonGuardar = useBotonConAtajo('F10')
   const { tienePermiso } = useAuth()
   const qc = useQueryClient()
 
@@ -399,7 +399,7 @@ export default function Clientes() {
                   className="w-full rounded-lg bg-marca-700 px-4 py-2.5 text-sm font-medium text-white hover:bg-marca-600 disabled:opacity-40"
                 >
                   {guardar.isPending ? 'Guardando…' : creando ? 'Crear cliente' : 'Guardar cambios'}
-                  {!guardar.isPending && <TeclaAtajo tecla="F9" clara />}
+                  {!guardar.isPending && <TeclaAtajo tecla="F10" clara />}
                 </button>
               </div>
             )}

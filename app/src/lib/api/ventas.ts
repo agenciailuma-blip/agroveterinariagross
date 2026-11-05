@@ -34,6 +34,11 @@ export interface ProductoVenta {
   /** Sólo en una suelta: cuántas hay sueltas de verdad, sin abrir nada. */
   sueltas?: number
   estado: EstadoStock
+  /*
+    Un producto que en la góndola son muchos («Accesorios varios»): el
+    precio se pregunta al agregarlo y cada vez va en un renglón aparte.
+  */
+  precio_en_cada_venta?: boolean
 }
 
 export interface ClienteVenta {
@@ -56,12 +61,28 @@ export interface ClienteVenta {
 */
 const UNIDADES_ENTERAS = new Set(['unidad', 'bolsa', 'caja'])
 
-export function esFraccionable(unidad: string) {
-  return !UNIDADES_ENTERAS.has(unidad)
+/*
+  `enTodos` es la opción de Configuración «Decimales en todos los
+  productos»: Lucas la pidió el 05/11 para vender sin tener que corregir
+  la unidad de cada producto. Apagada, manda la unidad.
+*/
+export function esFraccionable(unidad: string, enTodos = false) {
+  return enTodos || !UNIDADES_ENTERAS.has(unidad)
 }
 
-export function pasoCantidad(unidad: string) {
-  return esFraccionable(unidad) ? 0.01 : 1
+export function pasoCantidad(unidad: string, enTodos = false) {
+  return esFraccionable(unidad, enTodos) ? 0.01 : 1
+}
+
+/*
+  Una cantidad escrita a la argentina o con punto: «0,374», «0.5», «2».
+  Nulo si no es un número. El campo de la cantidad es de texto y no
+  numérico justamente para aceptar la coma, que es como se escribe acá.
+*/
+export function leerCantidad(texto: string): number | null {
+  const limpio = texto.trim().replace(',', '.')
+  if (!limpio || limpio === '.' || !/^\d*\.?\d*$/.test(limpio)) return null
+  return Number(limpio)
 }
 
 export interface LineaVenta {
@@ -102,6 +123,8 @@ export interface LineaVenta {
   stock_disponible: number
   /** Productos asociados: el concepto bajo el que lo muestra la factura. */
   concepto?: string | null
+  /** Renglón de un producto de precio en cada venta: no se le suman otros del mismo producto. */
+  precio_en_cada_venta?: boolean
 }
 
 /*
@@ -191,7 +214,10 @@ async function buscarProductosServidor(texto: string): Promise<ProductoVenta[]> 
   if (error) throw new Error(error.message)
 
   // La vista no expone condicion_iva; se completa desde producto.
-  type FilaVista = Omit<ProductoVenta, 'condicion_iva' | 'sueltas'> & { envase_id: string | null; disponible: number }
+  type FilaVista = Omit<ProductoVenta, 'condicion_iva' | 'sueltas' | 'precio_en_cada_venta'> & {
+    envase_id: string | null
+    disponible: number
+  }
   const filas = ((data ?? []) as FilaVista[]).map(({ envase_id, disponible, ...f }) =>
     envase_id ? { ...f, cantidad: Number(disponible), sueltas: Number(f.cantidad) } : f,
   )
@@ -199,16 +225,17 @@ async function buscarProductosServidor(texto: string): Promise<ProductoVenta[]> 
 
   const { data: condiciones } = await supabase
     .from('producto')
-    .select('id, condicion_iva')
+    .select('id, condicion_iva, precio_en_cada_venta')
     .in(
       'id',
       filas.map((f) => f.producto_id),
     )
 
-  const mapa = new Map((condiciones ?? []).map((c) => [c.id as string, c.condicion_iva as string]))
+  const mapa = new Map((condiciones ?? []).map((c) => [c.id as string, c]))
   return filas.map((f) => ({
     ...f,
-    condicion_iva: (mapa.get(f.producto_id) ?? 'gravado') as ProductoVenta['condicion_iva'],
+    condicion_iva: (mapa.get(f.producto_id)?.condicion_iva ?? 'gravado') as ProductoVenta['condicion_iva'],
+    precio_en_cada_venta: mapa.get(f.producto_id)?.precio_en_cada_venta === true,
   }))
 }
 

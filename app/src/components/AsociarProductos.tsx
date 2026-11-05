@@ -37,8 +37,8 @@ export default function AsociarProductos({
     if (!marcadas.size || !concepto) return
     onAsociar([...marcadas], concepto)
   }
-  // Mientras está abierta, F9 asocia y no manda la venta a caja.
-  useAtajo('F9', asociar)
+  // Mientras está abierta, F10 asocia y no manda la venta a caja.
+  useAtajo('F10', asociar)
   useAtajo('F11', onCerrar)
   useEffect(() => {
     const alTeclado = (e: KeyboardEvent) => e.key === 'Escape' && onCerrar()
@@ -127,7 +127,7 @@ export default function AsociarProductos({
             className="rounded-lg bg-marca-700 px-4 py-2 text-sm font-medium text-white hover:bg-marca-600 disabled:opacity-40"
           >
             {concepto ? `${concepto} · ${moneda.format(total)}` : 'Asociar'}
-            <TeclaAtajo tecla="F9" clara />
+            <TeclaAtajo tecla="F10" clara />
           </button>
         </div>
       </div>

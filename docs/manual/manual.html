@@ -245,7 +245,9 @@
       </ul>
 
       <div class="nota verde"><b>El cliente nuevo, con el CUIT y nada más.</b> Si se escribe en el buscador de clientes un CUIT que no está cargado, aparece <i>Traer de ARCA y agregarlo</i>: el sistema le pregunta a ARCA el nombre o la razón social, el domicilio y <b>la condición frente al IVA</b>, da de alta al cliente y lo deja elegido. La tarjeta dice, por ejemplo, <i>Responsable Inscripto · Factura A</i>. No hace falta preguntarle al cliente si es responsable inscripto: con que diga «factura A» y dé su CUIT, alcanza.</div>
-      <div class="nota"><b>Remito interno · precio después.</b> Para el cliente de cuenta corriente al que el precio se le define más tarde. Descuenta stock, se imprime para firmar y no pasa por la caja. Lleva sólo productos del catálogo. Los precios se ponen después en <b>Facturación → Pendientes de facturar</b>. Si el cliente tiene la marca <b>Precio a convenir</b> en su ficha, el remito interno pasa a ser el botón principal, con F9, y <i>Enviar a caja</i> queda abajo. Sin la marca, también se puede hacer.</div>
+      <div class="nota"><b>Remito interno · precio después.</b> Para el cliente de cuenta corriente al que el precio se le define más tarde. Descuenta stock, se imprime para firmar y no pasa por la caja. Lleva sólo productos del catálogo. Los precios se ponen después en <b>Facturación → Pendientes de facturar</b>. Si el cliente tiene la marca <b>Precio a convenir</b> en su ficha, el remito interno pasa a ser el botón principal, con F10, y <i>Enviar a caja</i> queda abajo. Sin la marca, también se puede hacer.</div>
+      <div class="nota"><b>Venta por kilo o por litro.</b> En los productos que se venden por peso o por volumen, la cantidad acepta decimales: <i>0,5</i> o <i>0,374</i>, con coma. Los que se venden por unidad no se parten, salvo que se encienda <i>Decimales en todos los productos</i> en Configuración.</div>
+      <div class="nota"><b>Precio en cada venta.</b> Un producto que en la góndola son muchos —<i>Accesorios varios</i>— lleva esa marca en su ficha. Al agregarlo se pregunta el precio, y cada vez va en un renglón aparte con el suyo.</div>
       <div class="nota"><b>Productos asociados (F11).</b> Se marcan los renglones y se elige el concepto. La venta guarda los productos reales: de ellos salen el stock, la caja y el IVA. La factura, el comprobante interno y el presupuesto muestran un renglón por concepto, por el total, o uno por alícuota si el concepto mezcla. El remito muestra lo que se llevó. Al abrir la factura en pantalla, debajo del concepto se ve cada producto con un ✓, que no sale impreso. Los conceptos se editan en <b>Configuración → El local</b>.</div>
       <div class="nota"><b>Cliente con deuda vencida.</b> Al elegirlo aparece el aviso con cuánto debe y desde cuándo. La venta a cuenta corriente no avanza hasta que un encargado la autoriza con su PIN, y queda anotado quién la dejó pasar. También funciona sin conexión.</div>
       <div class="nota"><b>La línea escrita a mano</b> es para lo que se pide especialmente y se vende una vez: no crea nada en el catálogo y no mueve stock. Se le pregunta el IVA porque puede terminar en una factura. Si algo se vende dos veces, va al catálogo.</div>
@@ -836,15 +838,17 @@
     <tr><td><b>F3</b></td><td>En el Mostrador, elegir el cliente. En la Caja, pasar a la próxima venta de la cola</td></tr>
     <tr><td><b>F4</b></td><td>Ir a la Caja</td></tr>
     <tr><td><b>F6 · F7 · F8</b></td><td>Ir a Clientes · Productos · Stock</td></tr>
-    <tr><td><b>F9</b></td><td>Lo principal de la pantalla: <b>enviar a caja</b>, <b>cobrar</b>, <b>guardar</b> o <b>aceptar</b>. Al enviar a caja, la segunda vez F9 la manda sin nombre</td></tr>
+    <tr><td><b>F10</b></td><td>Lo principal de la pantalla: <b>enviar a caja</b>, <b>cobrar</b>, <b>guardar</b> o <b>aceptar</b>. Al enviar a caja, la segunda vez F10 la manda sin nombre</td></tr>
     <tr><td><b>F11</b></td><td>En el Mostrador, asociar productos a un concepto</td></tr>
     <tr><td><b>Esc</b></td><td>Cerrar la ventana abierta, o cancelar</td></tr>
     <tr><td><b>Enter del teclado numérico</b></td><td>En los formularios de carga, pasar al campo siguiente</td></tr>
-    <tr><td><b>Tab · Mayús + Tab</b></td><td>Campo siguiente · campo anterior, en cualquier pantalla</td></tr>
+    <tr><td><b>Tab · Mayús + Tab</b></td><td>Campo siguiente · campo anterior, en cualquier pantalla. En el Mostrador, el Tab del buscador va directo al cliente</td></tr>
+    <tr><td><b>Flechas · Enter</b></td><td>En un buscador, recorrer los resultados y elegir el marcado</td></tr>
+    <tr><td><b>Una letra o un número</b></td><td>En el Mostrador, desde cualquier lugar de la pantalla, empieza una búsqueda nueva: no hace falta volver al buscador ni borrar la anterior</td></tr>
   </table>
 
-  <div class="nota"><b>F9 respeta al botón.</b> Hace exactamente lo mismo que apretar el botón principal, que lleva la tecla escrita al lado. Si el botón está apagado —porque falta un dato, o porque ya se está guardando—, F9 tampoco hace nada.</div>
-  <div class="nota"><b>El Enter grande queda como siempre.</b> El que pasa de campo es el del teclado numérico: se cargan los números y se avanza con la misma mano. El Enter grande es el que manda el lector después de cada código, y por eso no mueve el cursor. En el último campo de un formulario, el Enter numérico no hace nada: guardar es F9.</div>
+  <div class="nota"><b>F10 respeta al botón.</b> Hace exactamente lo mismo que apretar el botón principal, que lleva la tecla escrita al lado. Si el botón está apagado —porque falta un dato, o porque ya se está guardando—, F10 tampoco hace nada.</div>
+  <div class="nota"><b>El Enter grande queda como siempre.</b> El que pasa de campo es el del teclado numérico: se cargan los números y se avanza con la misma mano. El Enter grande es el que manda el lector después de cada código, y por eso no mueve el cursor. En el último campo de un formulario, el Enter numérico no hace nada: guardar es F10.</div>
 
   <h2 class="titulo-bloque" style="margin-top:8mm">Trabajar sin internet</h2>
   <div class="subrayado"></div>
