@@ -1,7 +1,7 @@
 ---
 fecha: 2026-11-05
 con: Lucas Gross y un vendedor
-estado: mostrador hecho (0.20.0); caja pendiente; traslados para más adelante
+estado: mostrador hecho (0.20.0); caja hecha (0.21.0); traslados para más adelante
 ---
 
 # Reunión del 5/11 — lo que salió de ver el sistema en uso
@@ -11,7 +11,7 @@ Nueve pedidos. Abajo, cada uno con lo que se encontró en el código y en la bas
 | Punto | Estado |
 |---|---|
 | 1. Fotos en la tienda | Del lado de la web: hay que pedírselo |
-| 2. Ingresos, egresos y cierre de caja | Pendiente: es lo próximo |
+| 2. Ingresos, egresos y cierre de caja | ✅ 0.21.0: ingresos y egresos, el cierre por medio de pago, la planilla A4 y los cierres anteriores |
 | 3. Buscar con el teclado | ✅ 0.20.0 en Mostrador y Caja; faltan las demás pantallas |
 | 4 y 5. Alimento suelto | ✅ 0.20.0: 86 productos a kilo o litro, coma en la cantidad, opción para todos. Falta atar cada suelto a su bolsa |
 | 6. F10 | ✅ 0.20.0, en todas las pantallas |
@@ -41,7 +41,7 @@ Nueve pedidos. Abajo, cada uno con lo que se encontró en el código y en la bas
 - **Cierre:** contado y cuenta corriente por separado (facturas, notas de débito y de crédito, recibos), ingresos y egresos manuales, cantidad de comprobantes, importe rendido.
 - **Planilla impresa:** ingresos, egresos por tipo con subtotal, y el detalle por medio de pago (efectivo, crédito, débito, transferencia, QR).
 
-**A decidir:** si el *pago a proveedores* descuenta de la cuenta del proveedor, o es sólo plata que sale del cajón. Si el *anticipo de haberes* queda anotado por empleado.
+**Cómo quedó (0.21.0):** el *pago a proveedores* también baja la cuenta del proveedor, como pago a cuenta; sin proveedor es un acreedor y sólo sale del cajón. El *anticipo de haberes* queda anotado con el empleado. Los cheques salen sólo en un pago a proveedor (endosados). Falta en la planilla: las notas de crédito y devoluciones del turno.
 
 ## 3. Buscar con el teclado
 

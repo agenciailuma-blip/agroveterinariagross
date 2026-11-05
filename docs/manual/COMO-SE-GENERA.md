@@ -7,8 +7,10 @@
 **Cómo se regenera** (Windows, con el Edge que ya viene instalado):
 
 ```bash
-"C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe" --headless=new --disable-gpu --no-pdf-header-footer --print-to-pdf="D:\\00 ILUMA\\Dev Code\\Sistema Gross\\docs\\manual\\Manual del Sistema - Agroveterinaria Gross.pdf" "file:///D:/00 ILUMA/Dev Code/Sistema Gross/docs/manual/manual.html"
+"C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe" --headless=new --disable-gpu --no-pdf-header-footer --user-data-dir="C:\Users\Public\edge-manual" --print-to-pdf="D:\\00 ILUMA\\Dev Code\\Sistema Gross\\docs\\manual\\Manual del Sistema - Agroveterinaria Gross.pdf" "file:///D:/00 ILUMA/Dev Code/Sistema Gross/docs/manual/manual.html"
 ```
+
+Con Edge abierto, sin `--user-data-dir` no escribe nada y no avisa. La carpeta tiene que ir en forma de Windows (`C:\...`): una ruta `/tmp/...` tampoco anda.
 
 La marca y las tipografías salen de `app/public/marca` y `app/public/fuentes`, así que el manual usa exactamente lo mismo que el sistema. **No hay que duplicar los archivos acá.**
 

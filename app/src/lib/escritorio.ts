@@ -82,6 +82,11 @@ export function abrirNoFiscal(id: string): Promise<void> {
   return abrirDocumento(`/no-fiscal/${id}`, `no-fiscal-${id}`, 'Comprobante no fiscal')
 }
 
+/** La planilla del cierre, aparte: la Caja queda a la vista para abrir la del turno siguiente. */
+export function abrirPlanillaCaja(cajaId: string): Promise<void> {
+  return abrirDocumento(`/caja/planilla/${cajaId}`, `planilla-caja-${cajaId}`, 'Planilla de caja')
+}
+
 /*
   ─────────────────────────────────────────────────────────────
   La red del local

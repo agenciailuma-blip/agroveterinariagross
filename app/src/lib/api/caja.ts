@@ -602,19 +602,3 @@ export async function cerrarCaja(cajaId: string, terminalId: string, montoDeclar
   const filas = (data ?? []) as ResultadoCierre[]
   return filas[0]
 }
-
-export async function resumenCaja(cajaId: string) {
-  const [ventas, movimientos] = await Promise.all([
-    supabase
-      .from('venta')
-      .select('id, total')
-      .eq('caja_id', cajaId)
-      .eq('estado', 'cobrada'),
-    supabase.from('caja_movimiento').select('importe').eq('caja_id', cajaId),
-  ])
-  return {
-    ventas: ventas.data?.length ?? 0,
-    facturado: (ventas.data ?? []).reduce((s, v) => s + Number(v.total), 0),
-    movimientos: (movimientos.data ?? []).reduce((s, m) => s + Number(m.importe), 0),
-  }
-}

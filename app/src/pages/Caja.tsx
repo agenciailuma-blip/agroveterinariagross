@@ -6,20 +6,20 @@ import { useSync } from '@/lib/local/SyncProvider'
 import { useAuth } from '@/auth/AuthProvider'
 import { IdentificarOperador, useOperador } from '@/components/IdentificarOperador'
 import DescuentoEnCaja from '@/components/DescuentoEnCaja'
+import CierreDeCaja from '@/components/CierreDeCaja'
+import MovimientosCaja from '@/components/MovimientosCaja'
 import {
   abrirCaja,
   ajustarTotal,
   aplicarLista,
   autorizarVencidoEnCaja,
   cajaAbierta,
-  cerrarCaja,
   cobrar,
   deudaVencida,
   editarVentaEnCaja,
   listarVentasEnCola,
   obtenerVentaCompleta,
   percepcionACobrar,
-  resumenCaja,
   saldoCuentaCorriente,
 } from '@/lib/api/caja'
 import type { PagoNuevo, VentaCompleta } from '@/lib/api/caja'
@@ -40,7 +40,7 @@ import {
   puedeImprimirSolo,
 } from '@/lib/comprobante/imprimirDirecto'
 import { emitirConCaeaLocal, sePuedeEmitirConCaea } from '@/lib/local/caea'
-import { chequeVacio, chequesDeLaCaja, faltaEnCheque } from '@/lib/api/cheques'
+import { chequeVacio, faltaEnCheque } from '@/lib/api/cheques'
 import CamposCheque from '@/components/CamposCheque'
 import CamposFiado from '@/components/CamposFiado'
 import { faltaEnFiado, fiadoVacio } from '@/lib/api/fiados'
@@ -87,6 +87,7 @@ export default function Caja() {
     mail?: string
   } | null>(null)
   const [cerrando, setCerrando] = useState(false)
+  const [conMovimientos, setConMovimientos] = useState(false)
   const [errorEdicion, setErrorEdicion] = useState<string | null>(null)
   /*
     El ticket sale solo al cobrar, así que lo único que hay que contar es
@@ -683,12 +684,24 @@ export default function Caja() {
           </div>
         </div>
 
+        {/* La plata que entra o sale del cajón sin ser una venta: gastos, anticipos, pagos, retiros. */}
+        {tienePermiso('caja.movimientos') && (
+          <button
+            onClick={() => setConMovimientos(true)}
+            className="rounded-xl bg-white px-4 py-2.5 text-sm font-medium text-piedra-600 ring-1 ring-borde hover:bg-piedra-50"
+          >
+            Ingresos y egresos
+          </button>
+        )}
         <button
           onClick={() => setCerrando(true)}
           className="rounded-xl bg-white px-4 py-2.5 text-sm font-medium text-piedra-600 ring-1 ring-borde hover:bg-piedra-50"
         >
           Cerrar caja
         </button>
+        <Link to="/caja/cierres" className="text-center text-xs text-marca-700 hover:underline">
+          Cierres anteriores
+        </Link>
       </div>
 
       <div className="min-w-0 flex-1">
@@ -892,11 +905,14 @@ export default function Caja() {
         ) : null}
       </div>
 
+      {conMovimientos && caja.data && (
+        <MovimientosCaja cajaId={caja.data.id} onCerrar={() => setConMovimientos(false)} />
+      )}
+
       {cerrando && caja.data && (
-        <ModalCierre
+        <CierreDeCaja
           cajaId={caja.data.id}
           terminalId={terminal.id}
-          montoInicial={caja.data.monto_inicial}
           onCerrada={() => {
             setCerrando(false)
             limpiar()
@@ -1621,147 +1637,6 @@ function PanelCobro({
             Volver
           </button>
         </div>
-      </div>
-    </div>
-  )
-}
-
-function ModalCierre({
-  cajaId,
-  terminalId,
-  montoInicial,
-  onCerrada,
-  onCancelar,
-}: {
-  cajaId: string
-  terminalId: string
-  montoInicial: number
-  onCerrada: () => void
-  onCancelar: () => void
-}) {
-  const [declarado, setDeclarado] = useState('')
-  const [resultado, setResultado] = useState<{ esperado: number; diferencia: number } | null>(null)
-  const [error, setError] = useState<string | null>(null)
-
-  const resumen = useQuery({ queryKey: ['resumen-caja', cajaId], queryFn: () => resumenCaja(cajaId) })
-  const cheques = useQuery({ queryKey: ['cheques-caja', cajaId], queryFn: () => chequesDeLaCaja(cajaId) })
-
-  const cerrar = useMutation({
-    mutationFn: () => cerrarCaja(cajaId, terminalId, Number(declarado) || 0),
-    onSuccess: (r) => setResultado({ esperado: r.esperado, diferencia: r.diferencia }),
-    onError: (e) => setError(e instanceof Error ? e.message : 'No se pudo cerrar.'),
-  })
-
-  return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-tinta/50 p-4">
-      <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-        <h2 className="font-semibold text-tinta">Cerrar caja</h2>
-
-        {resultado ? (
-          <div className="mt-4 space-y-3">
-            <dl className="space-y-1.5 text-sm">
-              <div className="flex justify-between">
-                <dt className="text-piedra-500">El sistema esperaba</dt>
-                <dd className="tabular-nums text-tinta">{moneda.format(resultado.esperado)}</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-piedra-500">Contaste</dt>
-                <dd className="tabular-nums text-tinta">{moneda.format(Number(declarado))}</dd>
-              </div>
-              <div
-                className={`flex justify-between border-t border-borde pt-1.5 font-medium ${
-                  Math.abs(resultado.diferencia) < 0.01
-                    ? 'text-verde-700'
-                    : resultado.diferencia > 0
-                      ? 'text-marca-700'
-                      : 'text-red-700'
-                }`}
-              >
-                <dt>Diferencia</dt>
-                <dd className="tabular-nums">{moneda.format(resultado.diferencia)}</dd>
-              </div>
-            </dl>
-            <button
-              onClick={onCerrada}
-              className="w-full rounded-lg bg-marca-700 px-4 py-2.5 font-medium text-white hover:bg-marca-600"
-            >
-              Listo
-            </button>
-          </div>
-        ) : (
-          <>
-            <dl className="mt-3 space-y-1 text-sm text-piedra-600">
-              <div className="flex justify-between">
-                <dt>Monto inicial</dt>
-                <dd className="tabular-nums">{moneda.format(montoInicial)}</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt>Ventas cobradas</dt>
-                <dd className="tabular-nums">{resumen.data?.ventas ?? '—'}</dd>
-              </div>
-            </dl>
-
-            {/*
-              Los cheques no se cuentan con el efectivo —no son plata del
-              cajón—, pero se entregan con el cierre. La lista es para
-              mirar que el papel que se entrega es el mismo que entró.
-            */}
-            {(cheques.data?.length ?? 0) > 0 && (
-              <div className="mt-4 rounded-lg bg-piedra-50 px-3 py-2 ring-1 ring-borde">
-                <p className="text-xs font-medium text-piedra-600">
-                  Cheques del turno: entregalos con el cierre. No se cuentan con el efectivo.
-                </p>
-                <ul className="mt-1 space-y-0.5 text-xs text-piedra-600">
-                  {cheques.data!.map((c, i) => (
-                    <li key={i} className="flex justify-between gap-2">
-                      <span className="min-w-0 truncate">
-                        {c.nombre}
-                        {c.cliente ? ` · ${c.cliente}` : ''}
-                      </span>
-                      <span className="shrink-0 tabular-nums">{moneda.format(c.importe)}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            <label className="mt-4 block">
-              <span className="mb-1 block text-xs font-medium text-piedra-600">
-                ¿Cuánto efectivo hay en la caja?
-              </span>
-              <input
-                type="number"
-                step="0.01"
-                autoFocus
-                value={declarado}
-                onChange={(e) => setDeclarado(e.target.value)}
-                className="w-full rounded-lg border border-borde px-3 py-2.5 text-right text-lg tabular-nums outline-none focus:border-marca-500"
-              />
-              <span className="mt-1 block text-xs text-piedra-400">
-                Contalo antes de mirar el número que espera el sistema. Si no, el arqueo no sirve
-                para nada.
-              </span>
-            </label>
-
-            {error && <p className="mt-3 text-sm text-red-700">{error}</p>}
-
-            <div className="mt-4 flex gap-2">
-              <button
-                onClick={() => cerrar.mutate()}
-                disabled={declarado === '' || cerrar.isPending}
-                className="flex-1 rounded-lg bg-marca-700 px-4 py-2.5 font-medium text-white hover:bg-marca-600 disabled:opacity-40"
-              >
-                {cerrar.isPending ? 'Cerrando…' : 'Cerrar caja'}
-              </button>
-              <button
-                onClick={onCancelar}
-                className="rounded-lg px-4 py-2.5 text-sm font-medium text-piedra-500 hover:bg-piedra-100"
-              >
-                Cancelar
-              </button>
-            </div>
-          </>
-        )}
       </div>
     </div>
   )

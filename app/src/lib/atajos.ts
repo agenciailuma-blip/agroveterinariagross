@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import type { RefObject } from 'react'
 
 /*
   ─────────────────────────────────────────────────────────────
@@ -106,6 +107,35 @@ export function useAtajo(tecla: string, accion: () => void, activo = true) {
       if (i >= 0) pila.splice(i, 1)
     }
   }, [tecla, activo])
+}
+
+/*
+  Esc cierra la ventana.
+
+  No alcanza con escucharlo en la ventana misma: cuando desaparece lo que
+  tenía el cursor —un formulario que se cerró, un botón que se apagó— el
+  cursor vuelve al fondo de la página y la tecla ya no pasa por la
+  ventana. Visto el 05/11 en Ingresos y egresos: el segundo Esc no hacía
+  nada. Se escucha en toda la página, salvo que la tecla venga de otra
+  ventana encima (una pregunta de confirmar), que se cierra sola.
+*/
+export function useEscapeCierra(ventana: RefObject<HTMLElement | null>, accion: () => void, activo = true) {
+  const actual = useRef(accion)
+  useEffect(() => {
+    actual.current = accion
+  })
+  useEffect(() => {
+    if (!activo) return
+    function alTeclado(e: KeyboardEvent) {
+      if (e.key !== 'Escape' || e.defaultPrevented) return
+      const desde = e.target instanceof Node ? e.target : null
+      const enOtraVentana = desde && desde !== document.body && !ventana.current?.contains(desde)
+      if (enOtraVentana) return
+      actual.current()
+    }
+    window.addEventListener('keydown', alTeclado)
+    return () => window.removeEventListener('keydown', alTeclado)
+  }, [ventana, activo])
 }
 
 /*

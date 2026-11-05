@@ -12,7 +12,9 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Construida: 0.20.0** (05/11) — **falta publicarla**. **El mostrador después de la reunión del 05/11**: F10 en lugar de F9, el buscador con flechas y Enter, una letra en cualquier lado vuelve a buscar, el Tab del buscador va al cliente, la cantidad con coma (0,374 kg) y *precio en cada venta* para los accesorios. Trae también el arreglo de la caja 2 del 02/11. **La base ya está aplicada.** Ver *Lo último que pasó* y [`reunion-lucas-2026-11-05.md`](reunion-lucas-2026-11-05.md). **852 pruebas verdes en la app.**
+**Construida: 0.21.0** (05/11) — **falta publicarla**. **Ingresos, egresos y el cierre de caja**, pedidos en la reunión del 05/11: gastos, anticipos de haberes, pagos a proveedores (también en su cuenta, en efectivo o con cheques de la cartera), retiros de socios, *saldo de caja anterior* y *no incluir en el cierre*; el cierre con el detalle por medio de pago, la planilla A4 y los cierres anteriores. **La base ya está aplicada.** Trae también todo lo de la 0.20.0. Ver *Lo último que pasó*. **857 pruebas verdes en la app.**
+
+**Construida antes: 0.20.0** (05/11), sin publicar: va adentro de la 0.21.0. **El mostrador después de la reunión del 05/11**: F10 en lugar de F9, el buscador con flechas y Enter, una letra en cualquier lado vuelve a buscar, el Tab del buscador va al cliente, la cantidad con coma (0,374 kg) y *precio en cada venta* para los accesorios. Trae también el arreglo de la caja 2 del 02/11. **La base ya está aplicada.** Ver *Lo último que pasó* y [`reunion-lucas-2026-11-05.md`](reunion-lucas-2026-11-05.md). **852 pruebas verdes en la app.**
 
 **Publicada: 0.19.13** (30/10, 10:15), verificada en Cloudflare: `latest.json` dice 0.19.13, el instalador está y el programa publicado trae lo nuevo. **El remito R sobre la hoja de imprenta**: la plantilla para la gráfica ([`docs/remito-r/`](remito-r/Remito%20R%20-%20Plantilla%20para%20la%20imprenta.pdf)), la impresión de sólo lo que cambia, las tandas en Configuración y las hojas arruinadas. Además, **la marca *Precio a convenir***, **la planilla de la lista mayorista** y **anular un recibo**. **La base ya está aplicada.** Ver *Lo último que pasó*. **842 pruebas verdes en la app.**
 
@@ -122,6 +124,31 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 🟡 **Lo que la venta tardaba en llegar a la caja sin internet** — arreglado el 05/10 y publicado en la 0.13.4, **sin probar en el local**. El mostrador le pasaba las ventas a la caja una vez por minuto, y la caja miraba su cola cada ocho segundos: hasta 68 segundos con el cliente esperando. Y llegaba de a partes porque, mientras la cabecera intentaba subir al servidor —hasta doce segundos sin internet—, salían los renglones solos. Ahora la venta sale al segundo y medio de apretar *Enviar a caja* (y otra vez a los catorce, por si el intento de subir tardó), viaja entera o espera entera, y la caja la muestra apenas llega. Se comprueba en el próximo corte: la venta tiene que aparecer en la caja en un par de segundos y completa.
 
 ---
+
+## Lo último que pasó — 5 de noviembre: ingresos, egresos y el cierre de caja
+
+De la misma reunión ([`reunion-lucas-2026-11-05.md`](reunion-lucas-2026-11-05.md), punto 2). Va en la **0.21.0**.
+
+- **Ingresos y egresos**, un botón nuevo en la Caja ([`MovimientosCaja.tsx`](../app/src/components/MovimientosCaja.tsx)), con permiso propio *Registrar ingresos y egresos de caja* (Administrador, Encargado y Cajero):
+  - ingresos: *ingreso a caja* y *saldo de caja anterior*;
+  - egresos: *gasto autorizado*, *anticipo de haberes* (con el empleado), *pago a proveedor o acreedor* y *retiro de socios*;
+  - **el pago a un proveedor es el mismo pago de Proveedores**, a cuenta: baja la deuda y las facturas se imputan desde ahí. Con cheques de la cartera, quedan endosados. Sin proveedor es un acreedor y sólo sale del cajón. Hace falta además el permiso de pagar proveedores;
+  - los cheques salen **sólo en un pago a proveedor**: es el único destino que la cartera sabe registrar. Un cheque que se lleva un socio se deposita o se endosa desde Cheques;
+  - *no incluir en el cierre* lo deja anotado sin contar para el efectivo;
+  - se anula con la caja abierta, con motivo. Si era un pago a proveedor, el pago también se anula y los cheques vuelven a la cartera. Y si el pago se anula desde Proveedores con la caja abierta, el egreso se anula solo;
+  - necesita internet, como abrir y cerrar.
+- **El cierre** ([`CierreDeCaja.tsx`](../app/src/components/CierreDeCaja.tsx)) sigue a ciegas. Cerrado, muestra de dónde sale el efectivo esperado, lo contado, la diferencia y cada medio de pago de las ventas y de las cobranzas.
+- **La planilla de caja** en A4 ([`PlanillaCajaImprimible.tsx`](../app/src/pages/PlanillaCajaImprimible.tsx)): el efectivo, las ventas por medio de pago y por comprobante, los recibos, los ingresos y egresos por tipo con su subtotal, los cheques y las firmas. Con la caja abierta no dice el efectivo esperado.
+- **Cierres anteriores** ([`CierresDeCaja.tsx`](../app/src/pages/CierresDeCaja.tsx)): los turnos con su diferencia, y la planilla de cualquiera.
+- **El recibo ahora sabe en qué caja se cobró**, así el cierre muestra también lo cobrado con transferencia o cheques. Los anteriores se completaron hasta donde se podía (fiados y efectivo).
+- **La base** ([`20261105150000_ingresos_egresos_y_cierre_de_caja.sql`](../supabase/migrations/20261105150000_ingresos_egresos_y_cierre_de_caja.sql), aplicada). El efectivo esperado se calcula en un solo lugar, el mismo para el cierre y la planilla.
+- **Probado como usuario** en la base, con todo deshecho al final: ingreso +1.000; un gasto *fuera del cierre* no cuenta; sin descripción o sin empleado → no; pago a proveedor en efectivo → queda el pago a cuenta y baja el efectivo; mandado dos veces → uno solo; con cheque → endosado, sin tocar el efectivo; anulado → el cheque vuelve a la cartera; anular el pago desde Proveedores → el egreso se anula; un recibo por transferencia → queda en la caja; cerrar → el cierre y el resumen dan el mismo número; con la caja cerrada → no se carga nada.
+- **En pantalla**, sin grabar nada (la caja abierta es la del local): el formulario con proveedor, cheques de la cartera y empleados; Esc cierra el formulario y después la ventana; la planilla de la caja abierta; los cierres; a 375 px no se desplaza nada. **El detalle después de cerrar no se vio en pantalla**: no había una caja para cerrar sin cerrar la del local. **857 verdes** y los tipos sin errores.
+- **Sin hacer:**
+  - **QR tiene marcado *Entra al arqueo de caja***, en Precios → medios de pago. Si el QR se cobra a una cuenta, infla el efectivo esperado: hay que desmarcarlo;
+  - las notas de crédito y devoluciones del turno todavía no están en la planilla;
+  - el ingreso no pide fecha: es la del turno.
+- **El manual**, al día, con el PDF regenerado.
 
 ## Lo último que pasó — 5 de noviembre: el mostrador, después de verlo en uso
 

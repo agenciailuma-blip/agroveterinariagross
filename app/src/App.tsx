@@ -51,6 +51,8 @@ import Recibos from '@/pages/Recibos'
 import Fiados from '@/pages/Fiados'
 import FiadoFicha from '@/pages/FiadoFicha'
 import ReciboImprimible from '@/pages/ReciboImprimible'
+import PlanillaCajaImprimible from '@/pages/PlanillaCajaImprimible'
+import CierresDeCaja from '@/pages/CierresDeCaja'
 import Traslados from '@/pages/Traslados'
 import TrasladosHoja from '@/pages/TrasladosHoja'
 
@@ -159,6 +161,7 @@ function Rutas() {
         <Route path="proveedores/importar" element={<ImportarSaldos tipo="fichas_proveedores" />} />
         <Route path="ventas" element={<PuntoDeVenta />} />
         <Route path="caja" element={<Caja />} />
+        <Route path="caja/cierres" element={<CierresDeCaja />} />
         <Route path="pedidos" element={<PedidosWeb />} />
         <Route path="traslados" element={<Traslados />} />
         <Route path="mayorista" element={<Mayorista />} />
@@ -192,6 +195,7 @@ function Rutas() {
       <Route path="no-fiscal/:id" element={<NoFiscalImprimible />} />
       <Route path="remito-r/:id" element={<RemitoRImprimible />} />
       <Route path="recibo/:id" element={<ReciboImprimible />} />
+      <Route path="caja/planilla/:id" element={<PlanillaCajaImprimible />} />
       <Route path="traslados/hoja" element={<TrasladosHoja />} />
       <Route path="orden-interna/:id" element={<OrdenInternaImprimible />} />
       <Route path="pedido-proveedor/:id" element={<PedidoProveedorImprimible />} />

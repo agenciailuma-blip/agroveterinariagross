@@ -241,14 +241,6 @@ export async function historialDe(chequeId: string): Promise<MovimientoCheque[]>
   return (data ?? []) as unknown as MovimientoCheque[]
 }
 
-export async function chequesDeLaCaja(cajaId: string) {
-  const { data, error } = await supabase.rpc('cheques_de_la_caja', { p_caja_id: cajaId })
-  if (error) throw new Error(error.message)
-  return ((data ?? []) as { nombre: string; importe: number; fecha_pago: string; cliente: string | null }[]).map(
-    (c) => ({ ...c, importe: Number(c.importe) }),
-  )
-}
-
 /*
   ─────────────────────────────────────────────────────────────
   Lo que mueve la cartera
