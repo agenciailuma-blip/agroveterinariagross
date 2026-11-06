@@ -315,7 +315,9 @@ export async function aplicarLista(
   "sacale una unidad" aplicado dos veces saca dos.
 
   No se manda ningún precio, y eso es el límite de la decisión B1 hecho
-  código: lo acordado por el vendedor no se toca por este camino.
+  código: lo acordado por el vendedor no se toca por este camino. La
+  única excepción es una línea nueva de un producto de precio en cada
+  venta, que no tiene otro precio que el que se escribe.
 */
 export async function editarVentaEnCaja(
   ventaId: string,
@@ -329,6 +331,7 @@ export async function editarVentaEnCaja(
       venta_linea_id: l.venta_linea_id,
       producto_id: l.producto_id,
       cantidad: l.cantidad,
+      ...(l.precio ? { precio: l.precio } : {}),
     })),
     p_cajero_id: cajeroId,
     p_terminal_id: terminalId,

@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useParams } from 'react-router-dom'
 import { datosEmisor } from '@/lib/api/comprobante'
-import { agruparMovimientos, cuentaParaElCierre, resumenDeCaja } from '@/lib/api/cierreCaja'
+import { agruparMovimientos, comoSeDevolvio, cuentaParaElCierre, resumenDeCaja } from '@/lib/api/cierreCaja'
 import type { PorMedio, ResumenCaja } from '@/lib/api/cierreCaja'
 import { enCastellano } from '@/lib/errores'
 import { boton } from '@/estilos'
@@ -13,8 +13,9 @@ import { moneda } from '@/lib/tipos'
 
   La hoja A4 del sistema anterior, pedida en la reunión del 05/11: el
   arqueo del efectivo, cada medio de pago de las ventas y de las
-  cobranzas, los ingresos y egresos con su subtotal por tipo, los
-  cheques que se entregan, y lugar para las firmas.
+  cobranzas, los ingresos y egresos con su subtotal por tipo, las
+  notas de crédito y devoluciones del turno, los cheques que se
+  entregan, y lugar para las firmas.
 
   Se puede imprimir con la caja abierta —para mirar cómo viene el
   turno—, pero entonces no dice cuánto efectivo espera el sistema: el
@@ -206,6 +207,44 @@ function Hoja({ r, comercio }: { r: ResumenCaja; comercio: string }) {
                 <td className="py-0.5 text-right tabular-nums">{moneda.format(d.total)}</td>
               </tr>
             ))}
+          </tbody>
+        </table>
+      )}
+
+      <Titulo>Notas de crédito y devoluciones</Titulo>
+      {r.devoluciones.length === 0 ? (
+        <p className="text-piedra-600">Ninguna.</p>
+      ) : (
+        <table className="w-full border-collapse">
+          <thead>
+            <tr className="text-left">
+              <th className="py-0.5 pr-2 font-bold">Hora</th>
+              <th className="py-0.5 pr-2 font-bold">Comprobante</th>
+              <th className="py-0.5 pr-2 font-bold">Cliente y venta</th>
+              <th className="py-0.5 text-right font-bold">Importe</th>
+            </tr>
+          </thead>
+          <tbody>
+            {r.devoluciones.map((d, i) => (
+              <tr key={i} className="border-t border-piedra-200 align-top">
+                <td className="py-0.5 pr-2 tabular-nums">{hora(d.ocurrido_en)}</td>
+                <td className="py-0.5 pr-2 [overflow-wrap:anywhere]">{comoSeDevolvio(d)}</td>
+                <td className="py-0.5 pr-2 [overflow-wrap:anywhere]">
+                  {[d.cliente, d.venta].filter(Boolean).join(' · ')}
+                  {d.motivo && <span className="block text-[10px] text-piedra-600">{d.motivo}</span>}
+                </td>
+                <td className="py-0.5 text-right tabular-nums">{moneda.format(d.importe)}</td>
+              </tr>
+            ))}
+            <tr className="border-t border-black font-bold">
+              <td />
+              <td className="py-0.5 pr-2" colSpan={2}>
+                Total
+              </td>
+              <td className="py-0.5 text-right tabular-nums">
+                {moneda.format(r.devoluciones.reduce((s, d) => s + d.importe, 0))}
+              </td>
+            </tr>
           </tbody>
         </table>
       )}

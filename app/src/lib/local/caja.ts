@@ -513,6 +513,12 @@ export interface LineaDeseada {
   venta_linea_id: string | null
   producto_id: string | null
   cantidad: number
+  /**
+    Sólo en una línea nueva de un producto de precio en cada venta: el
+    precio que se escribió. Para cualquier otro producto se ignora, igual
+    que en el servidor.
+  */
+  precio?: number | null
 }
 
 /*
@@ -579,7 +585,9 @@ export async function editarVentaLocal(
     const p = d.producto_id ? await db.producto.get(d.producto_id) : undefined
     if (!p) throw new Error('Ese producto no está en esta computadora.')
 
-    const base = Number(p.precio_venta)
+    const base = p.precio_en_cada_venta && d.precio && d.precio > 0
+      ? Math.round(d.precio * 100) / 100
+      : Number(p.precio_venta)
     quedan.push({
       id: crypto.randomUUID(),
       venta_id: ventaId,

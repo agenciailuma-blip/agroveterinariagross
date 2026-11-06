@@ -28,6 +28,7 @@ import { enCastellano } from '@/lib/errores'
 import { useTerminal } from '@/lib/terminal'
 import { moneda, numero } from '@/lib/tipos'
 import { boton, botonChico, campo, campoDeFiltro, tarjeta } from '@/estilos'
+import { useListaConFlechas } from '@/lib/buscador'
 import { avanzarConEnter } from '@/lib/teclado'
 
 /*
@@ -428,6 +429,13 @@ function Buscador({
     entrada.current?.focus()
   }
 
+  /*
+    Enter busca. Ya con los resultados de lo escrito a la vista, las
+    flechas los recorren y Enter agrega el marcado; si se cambió el texto,
+    Enter vuelve a buscar.
+  */
+  const flechas = useListaConFlechas(buscado && texto.trim() === buscado ? resultados.data : undefined, elegir)
+
   // Con el lector llega un código exacto y un solo resultado: entra solo.
   // Si el texto es exactamente el código de barras o el código interno,
   // no hace falta elegirlo de una lista de uno.
@@ -449,6 +457,7 @@ function Buscador({
           value={texto}
           onChange={(e) => setTexto(e.target.value)}
           onKeyDown={(e) => {
+            if (flechas.teclas(e)) return
             if (e.key === 'Enter') {
               e.preventDefault()
               setAlta(false)
@@ -461,12 +470,16 @@ function Buscador({
       </label>
 
       {buscado && resultados.data && (
-        <div className="mt-2 rounded-lg ring-1 ring-borde">
-          {resultados.data.map((p) => (
+        <div ref={(el) => { flechas.lista.current = el }} className="mt-2 rounded-lg ring-1 ring-borde">
+          {resultados.data.map((p, i) => (
             <button
               key={p.producto_id}
               onClick={() => elegir(p)}
-              className="flex w-full items-center justify-between gap-3 border-b border-piedra-50 px-3 py-2 text-left text-sm last:border-0 hover:bg-marca-50"
+              onMouseMove={() => flechas.setMarcado(i)}
+              data-marcado={i === flechas.marcado}
+              className={`flex w-full items-center justify-between gap-3 border-b border-piedra-50 px-3 py-2 text-left text-sm last:border-0 ${
+                i === flechas.marcado ? 'bg-marca-50' : 'hover:bg-marca-50'
+              }`}
             >
               <span className="text-tinta">{p.nombre_interno}</span>
               <span className="font-mono text-xs text-piedra-400">{p.codigo}</span>

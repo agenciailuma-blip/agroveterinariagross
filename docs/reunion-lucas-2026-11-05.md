@@ -12,7 +12,7 @@ Nueve pedidos. Abajo, cada uno con lo que se encontró en el código y en la bas
 |---|---|
 | 1. Fotos en la tienda | Del lado de la web: hay que pedírselo |
 | 2. Ingresos, egresos y cierre de caja | ✅ 0.21.0: ingresos y egresos, el cierre por medio de pago, la planilla A4 y los cierres anteriores |
-| 3. Buscar con el teclado | ✅ 0.20.0 en Mostrador y Caja; faltan las demás pantallas |
+| 3. Buscar con el teclado | ✅ 0.20.0 en Mostrador y Caja; 0.21.1 en Remitos, Órdenes internas, Recepción y Mayorista |
 | 4 y 5. Alimento suelto | ✅ 0.20.0: 86 productos a kilo o litro, coma en la cantidad, opción para todos. Falta atar cada suelto a su bolsa |
 | 6. F10 | ✅ 0.20.0, en todas las pantallas |
 | 7. Tab del mostrador | ✅ 0.20.0 |
@@ -41,7 +41,7 @@ Nueve pedidos. Abajo, cada uno con lo que se encontró en el código y en la bas
 - **Cierre:** contado y cuenta corriente por separado (facturas, notas de débito y de crédito, recibos), ingresos y egresos manuales, cantidad de comprobantes, importe rendido.
 - **Planilla impresa:** ingresos, egresos por tipo con subtotal, y el detalle por medio de pago (efectivo, crédito, débito, transferencia, QR).
 
-**Cómo quedó (0.21.0):** el *pago a proveedores* también baja la cuenta del proveedor, como pago a cuenta; sin proveedor es un acreedor y sólo sale del cajón. El *anticipo de haberes* queda anotado con el empleado. Los cheques salen sólo en un pago a proveedor (endosados). Falta en la planilla: las notas de crédito y devoluciones del turno.
+**Cómo quedó (0.21.0):** el *pago a proveedores* también baja la cuenta del proveedor, como pago a cuenta; sin proveedor es un acreedor y sólo sale del cajón. El *anticipo de haberes* queda anotado con el empleado. Los cheques salen sólo en un pago a proveedor (endosados). Las notas de crédito y devoluciones del turno entraron en la 0.21.1.
 
 ## 3. Buscar con el teclado
 

@@ -5,6 +5,7 @@ import type { LineaRemito, VentaParaRemitir } from '@/lib/api/noFiscal'
 import { buscarClientes, buscarProductosVenta } from '@/lib/api/ventas'
 import type { ClienteVenta, ProductoVenta } from '@/lib/api/ventas'
 import { moneda, numero } from '@/lib/tipos'
+import { primeroElCodigoExacto, useListaConFlechas } from '@/lib/buscador'
 
 /*
   ─────────────────────────────────────────────────────────────
@@ -83,6 +84,7 @@ export default function NuevoRemito({
     setLocalidad(v.cliente_localidad ?? '')
     setContacto(v.cliente_telefono ?? '')
   }
+  const flechasVenta = useListaConFlechas(ventas.data, elegirVenta)
 
   const emitir = useMutation({
     mutationFn: async () => {
@@ -167,6 +169,7 @@ export default function NuevoRemito({
                 autoFocus
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
+                onKeyDown={(e) => flechasVenta.teclas(e)}
                 placeholder="Buscar por código de venta…"
                 className={claseInput + ' mt-3'}
               />
@@ -178,12 +181,16 @@ export default function NuevoRemito({
                     No hay ventas sin remito para mostrar.
                   </p>
                 ) : (
-                  <ul>
-                    {ventas.data!.map((v) => (
+                  <ul ref={(el) => { flechasVenta.lista.current = el }}>
+                    {ventas.data!.map((v, i) => (
                       <li key={v.id} className="border-b border-piedra-100 last:border-0">
                         <button
                           onClick={() => elegirVenta(v)}
-                          className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm hover:bg-piedra-50"
+                          onMouseMove={() => flechasVenta.setMarcado(i)}
+                          data-marcado={i === flechasVenta.marcado}
+                          className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm ${
+                            i === flechasVenta.marcado ? 'bg-marca-50' : 'hover:bg-piedra-50'
+                          }`}
                         >
                           <span className="font-medium tabular-nums text-tinta">{v.codigo}</span>
                           <span className="min-w-0 flex-1 truncate text-piedra-600">
@@ -380,6 +387,11 @@ function DeCero({
     campoProducto.current?.focus()
   }
 
+  const flechasCliente = useListaConFlechas(clientes.data, (c) => onCliente(c))
+  // Mientras la búsqueda se pone al día, Enter no elige de lo anterior ni repite el que se acaba de agregar.
+  const resultados = primeroElCodigoExacto(productos.data ?? [], debounced)
+  const flechasProducto = useListaConFlechas(textoProducto.trim() === debounced ? resultados : undefined, agregarProducto)
+
   function agregarLibre() {
     const desc = libre.descripcion.trim()
     const cant = Number(libre.cantidad)
@@ -409,6 +421,7 @@ function DeCero({
           autoFocus
           value={textoCliente}
           onChange={(e) => setTextoCliente(e.target.value)}
+          onKeyDown={(e) => flechasCliente.teclas(e)}
           placeholder="Buscar cliente por nombre, CUIT o código…"
           className={claseInput + ' mt-3'}
         />
@@ -418,12 +431,16 @@ function DeCero({
           ) : (clientes.data?.length ?? 0) === 0 ? (
             <p className="p-4 text-sm text-piedra-500">No se encontró ningún cliente.</p>
           ) : (
-            <ul>
-              {clientes.data!.map((c) => (
+            <ul ref={(el) => { flechasCliente.lista.current = el }}>
+              {clientes.data!.map((c, i) => (
                 <li key={c.id} className="border-b border-piedra-100 last:border-0">
                   <button
                     onClick={() => onCliente(c)}
-                    className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm hover:bg-piedra-50"
+                    onMouseMove={() => flechasCliente.setMarcado(i)}
+                    data-marcado={i === flechasCliente.marcado}
+                    className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm ${
+                      i === flechasCliente.marcado ? 'bg-marca-50' : 'hover:bg-piedra-50'
+                    }`}
                   >
                     <span className="min-w-0 flex-1 truncate font-medium text-tinta">
                       {c.nombre}
@@ -462,16 +479,24 @@ function DeCero({
           autoFocus
           value={textoProducto}
           onChange={(e) => setTextoProducto(e.target.value)}
+          onKeyDown={(e) => flechasProducto.teclas(e)}
           placeholder="Buscar un producto del catálogo…"
           className={claseInput}
         />
-        {(productos.data?.length ?? 0) > 0 && (
-          <ul className="mt-1 max-h-44 overflow-y-auto rounded-lg ring-1 ring-borde">
-            {productos.data!.map((p) => (
+        {resultados.length > 0 && (
+          <ul
+            ref={(el) => { flechasProducto.lista.current = el }}
+            className="mt-1 max-h-44 overflow-y-auto rounded-lg ring-1 ring-borde"
+          >
+            {resultados.map((p, i) => (
               <li key={p.producto_id} className="border-b border-piedra-100 last:border-0">
                 <button
                   onClick={() => agregarProducto(p)}
-                  className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm hover:bg-piedra-50"
+                  onMouseMove={() => flechasProducto.setMarcado(i)}
+                  data-marcado={i === flechasProducto.marcado}
+                  className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm ${
+                    i === flechasProducto.marcado ? 'bg-marca-50' : 'hover:bg-piedra-50'
+                  }`}
                 >
                   <span className="min-w-0 flex-1 truncate text-tinta">{p.nombre_interno}</span>
                   <span className="shrink-0 text-xs text-piedra-400">

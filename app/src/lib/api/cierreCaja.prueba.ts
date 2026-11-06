@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { agruparMovimientos, cuentaParaElCierre, pideDescripcion } from '@/lib/api/cierreCaja'
+import { agruparMovimientos, comoSeDevolvio, cuentaParaElCierre, pideDescripcion } from '@/lib/api/cierreCaja'
 import type { MovimientoCaja } from '@/lib/api/cierreCaja'
 
 /*
@@ -67,5 +67,19 @@ describe('la descripción', () => {
     expect(pideDescripcion('gasto')).toBe(true)
     expect(pideDescripcion('anticipo_haberes')).toBe(false)
     expect(pideDescripcion('retiro_socios')).toBe(false)
+  })
+})
+
+describe('las notas de crédito y devoluciones del turno', () => {
+  it('la nota de crédito dice su número, y su estado sólo si todavía no está autorizada', () => {
+    const nc = { tipo: 'nota_credito' as const, comprobante: 'Nota de Crédito B 0001-00000004', entera: true }
+    expect(comoSeDevolvio({ ...nc, estado: 'autorizado' })).toBe('Nota de Crédito B 0001-00000004')
+    expect(comoSeDevolvio({ ...nc, estado: 'pendiente' })).toBe('Nota de Crédito B 0001-00000004 (pendiente)')
+  })
+
+  it('sin factura no hay nota: dice si se devolvió una parte o se anuló entera', () => {
+    const sin = { comprobante: null, estado: null }
+    expect(comoSeDevolvio({ ...sin, tipo: 'devolucion', entera: false })).toBe('Devolución parcial, sin factura')
+    expect(comoSeDevolvio({ ...sin, tipo: 'anulacion', entera: true })).toBe('Anulada entera, sin factura')
   })
 })

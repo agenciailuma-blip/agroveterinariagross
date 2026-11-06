@@ -23,6 +23,7 @@ import type { EstadoOrden, RenglonOrden, Sector } from '@/lib/api/ordenesInterna
 import { numeroDePedido } from '@/lib/api/pedidosProveedor'
 import { enCastellano } from '@/lib/errores'
 import { numero } from '@/lib/tipos'
+import { primeroElCodigoExacto, useListaConFlechas } from '@/lib/buscador'
 import { boton, botonChico } from '@/estilos'
 
 /*
@@ -541,6 +542,23 @@ function Editor({
     setTexto('')
   }
 
+  function elegirCliente(c: { id: string; nombre: string; telefono: string | null }) {
+    set({ clienteId: c.id, clienteNombre: c.nombre, contacto: form.contacto || c.telefono || '' })
+    setTextoCliente('')
+  }
+
+  /*
+    Las flechas y Enter recorren sólo lo que corresponde a lo escrito:
+    mientras la búsqueda se pone al día, Enter no elige un resultado de
+    lo anterior —ni vuelve a sumar el que se acaba de agregar—.
+  */
+  const resultados = primeroElCodigoExacto(productos.data ?? [], debounced)
+  const flechas = useListaConFlechas(texto.trim() === debounced ? resultados : undefined, agregarProducto)
+  const flechasCliente = useListaConFlechas(
+    textoCliente.trim() === debouncedCliente ? clientes.data : undefined,
+    elegirCliente,
+  )
+
   function agregarLibre() {
     set({
       lineas: [
@@ -588,30 +606,31 @@ function Editor({
           <input
             value={texto}
             onChange={(e) => setTexto(e.target.value)}
-            onKeyDown={(e) => {
-              // Enter con un solo resultado lo agrega: es el lector de códigos.
-              if (e.key === 'Enter' && productos.data?.length === 1) {
-                e.preventDefault()
-                agregarProducto(productos.data[0])
-              }
-            }}
+            onKeyDown={(e) => flechas.teclas(e)}
             placeholder="Buscar por código, nombre o escaneando"
             className={claseInput}
           />
           {debounced && (
-            <div className="absolute top-full right-0 left-0 z-20 mt-1 max-h-64 overflow-y-auto rounded-lg bg-white shadow-lg ring-1 ring-borde">
+            <div
+              ref={(el) => { flechas.lista.current = el }}
+              className="absolute top-full right-0 left-0 z-20 mt-1 max-h-64 overflow-y-auto rounded-lg bg-white shadow-lg ring-1 ring-borde"
+            >
               {productos.isPending && <p className="px-3 py-2 text-xs text-piedra-400">Buscando…</p>}
               {!productos.isPending && !productos.data?.length && (
                 <p className="px-3 py-2 text-xs text-piedra-400">
                   No está en el catálogo. Agregalo como renglón libre, abajo.
                 </p>
               )}
-              {productos.data?.map((p) => (
+              {resultados.map((p, i) => (
                 <button
                   key={p.id}
                   type="button"
                   onClick={() => agregarProducto(p)}
-                  className="block w-full border-b border-piedra-100 px-3 py-2 text-left last:border-0 hover:bg-marca-50"
+                  onMouseMove={() => flechas.setMarcado(i)}
+                  data-marcado={i === flechas.marcado}
+                  className={`block w-full border-b border-piedra-100 px-3 py-2 text-left last:border-0 ${
+                    i === flechas.marcado ? 'bg-marca-50' : 'hover:bg-marca-50'
+                  }`}
                 >
                   <span className="block truncate text-sm text-tinta">{p.nombre_interno}</span>
                   <span className="font-mono text-xs text-piedra-400">{p.codigo}</span>
@@ -709,20 +728,25 @@ function Editor({
               <input
                 value={textoCliente}
                 onChange={(e) => setTextoCliente(e.target.value)}
+                onKeyDown={(e) => flechasCliente.teclas(e)}
                 placeholder="Buscar por nombre, DNI o teléfono"
                 className={claseInput}
               />
               {debouncedCliente.length > 1 && !!clientes.data?.length && (
-                <div className="absolute top-full right-0 left-0 z-20 mt-1 max-h-56 overflow-y-auto rounded-lg bg-white shadow-lg ring-1 ring-borde">
-                  {clientes.data.map((c) => (
+                <div
+                  ref={(el) => { flechasCliente.lista.current = el }}
+                  className="absolute top-full right-0 left-0 z-20 mt-1 max-h-56 overflow-y-auto rounded-lg bg-white shadow-lg ring-1 ring-borde"
+                >
+                  {clientes.data.map((c, i) => (
                     <button
                       key={c.id}
                       type="button"
-                      onClick={() => {
-                        set({ clienteId: c.id, clienteNombre: c.nombre, contacto: form.contacto || c.telefono || '' })
-                        setTextoCliente('')
-                      }}
-                      className="block w-full border-b border-piedra-100 px-3 py-2 text-left last:border-0 hover:bg-marca-50"
+                      onClick={() => elegirCliente(c)}
+                      onMouseMove={() => flechasCliente.setMarcado(i)}
+                      data-marcado={i === flechasCliente.marcado}
+                      className={`block w-full border-b border-piedra-100 px-3 py-2 text-left last:border-0 ${
+                        i === flechasCliente.marcado ? 'bg-marca-50' : 'hover:bg-marca-50'
+                      }`}
                     >
                       <span className="block truncate text-sm text-tinta">{c.nombre}</span>
                       {c.telefono && <span className="text-xs text-piedra-400">{c.telefono}</span>}

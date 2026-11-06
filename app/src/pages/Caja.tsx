@@ -7,6 +7,7 @@ import { useAuth } from '@/auth/AuthProvider'
 import { IdentificarOperador, useOperador } from '@/components/IdentificarOperador'
 import DescuentoEnCaja from '@/components/DescuentoEnCaja'
 import CierreDeCaja from '@/components/CierreDeCaja'
+import { pedirNumero } from '@/components/Dialogo'
 import MovimientosCaja from '@/components/MovimientosCaja'
 import {
   abrirCaja,
@@ -886,16 +887,36 @@ export default function Caja() {
                 ),
               )
             }
-            onAgregar={(productoId) =>
+            onAgregar={async (p) => {
+              /*
+                «Accesorios varios» y los demás de precio en cada venta:
+                el precio se pregunta, como en el mostrador. Antes entraba
+                el de la ficha y había que corregirlo a mano.
+              */
+              let precio: number | null = null
+              if (p.precio_en_cada_venta) {
+                const escrito = await pedirNumero({
+                  titulo: p.nombre_interno,
+                  detalle: 'Cada uno va en su renglón, con su precio.',
+                  etiqueta: 'Precio',
+                  aceptar: 'Agregar',
+                })
+                if (escrito === null) return
+                if (!(escrito > 0)) {
+                  setErrorEdicion('El precio tiene que ser mayor que cero.')
+                  return
+                }
+                precio = Math.round(escrito * 100) / 100
+              }
               editar.mutate([
                 ...lineasCon((l) => ({
                   venta_linea_id: l.id,
                   producto_id: null,
                   cantidad: l.cantidad,
                 })),
-                { venta_linea_id: null, producto_id: productoId, cantidad: 1 },
+                { venta_linea_id: null, producto_id: p.producto_id, cantidad: 1, precio },
               ])
-            }
+            }}
             error={error}
             onElegirMedio={elegirMedio}
             onAjustar={(nuevo, motivo) => ajustar.mutate({ nuevo, motivo })}
@@ -1039,7 +1060,7 @@ function PanelCobro({
   errorEdicion: string | null
   onCantidad: (lineaId: string, cantidad: number) => void
   onQuitar: (lineaId: string) => void
-  onAgregar: (productoId: string) => void
+  onAgregar: (producto: ProductoVenta) => void
   error: string | null
   onElegirMedio: (m: MedioPago, cuotas?: number) => void
   onAjustar: (nuevoTotal: number, motivo: string) => void
@@ -1233,9 +1254,9 @@ function PanelCobro({
           <div className="border-t border-piedra-100 px-5 py-3">
             {agregando ? (
               <BuscadorParaAgregar
-                onElegir={(productoId) => {
+                onElegir={(producto) => {
                   setAgregando(false)
-                  onAgregar(productoId)
+                  onAgregar(producto)
                 }}
                 onCancelar={() => setAgregando(false)}
               />
@@ -1676,7 +1697,7 @@ function BuscadorParaAgregar({
   onElegir,
   onCancelar,
 }: {
-  onElegir: (productoId: string) => void
+  onElegir: (producto: ProductoVenta) => void
   onCancelar: () => void
 }) {
   const [texto, setTexto] = useState('')
@@ -1688,7 +1709,7 @@ function BuscadorParaAgregar({
   })
   // Flechas y Enter, como en el mostrador (ver lib/buscador.ts).
   const encontrados = useMemo(() => primeroElCodigoExacto(resultados.data ?? [], texto), [resultados.data, texto])
-  const flechas = useListaConFlechas(encontrados, (p) => onElegir(p.producto_id))
+  const flechas = useListaConFlechas(encontrados, (p) => onElegir(p))
 
   return (
     <div>
@@ -1721,7 +1742,7 @@ function BuscadorParaAgregar({
           {encontrados.map((p: ProductoVenta, i) => (
             <li key={p.producto_id} className="border-b border-piedra-100 last:border-0">
               <button
-                onClick={() => onElegir(p.producto_id)}
+                onClick={() => onElegir(p)}
                 onMouseMove={() => flechas.setMarcado(i)}
                 tabIndex={-1}
                 data-marcado={i === flechas.marcado}

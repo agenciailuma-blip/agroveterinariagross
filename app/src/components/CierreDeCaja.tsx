@@ -72,6 +72,14 @@ export default function CierreDeCaja({
             <Efectivo r={r} />
             <Medios titulo="Ventas por medio de pago" medios={r.ventas.por_medio} />
             {r.cobranzas.por_medio.length > 0 && <Medios titulo="Cobranzas por medio de pago" medios={r.cobranzas.por_medio} />}
+            {r.devoluciones.length > 0 && (
+              <dl className="text-sm text-piedra-600">
+                <Fila
+                  nombre={`Notas de crédito y devoluciones (${r.devoluciones.length})`}
+                  valor={moneda.format(r.devoluciones.reduce((s, d) => s + d.importe, 0))}
+                />
+              </dl>
+            )}
             <div className="flex flex-wrap gap-2">
               <button onClick={() => void abrirPlanillaCaja(cajaId)} className={boton.secundario}>
                 Imprimir planilla

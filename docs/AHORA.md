@@ -12,9 +12,11 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Construida: 0.21.0** (05/11) — **falta publicarla**. **Ingresos, egresos y el cierre de caja**, pedidos en la reunión del 05/11: gastos, anticipos de haberes, pagos a proveedores (también en su cuenta, en efectivo o con cheques de la cartera), retiros de socios, *saldo de caja anterior* y *no incluir en el cierre*; el cierre con el detalle por medio de pago, la planilla A4 y los cierres anteriores. **La base ya está aplicada.** Trae también todo lo de la 0.20.0. Ver *Lo último que pasó*. **857 pruebas verdes en la app.**
+**Construida: 0.21.1** (05/11) — **falta publicarla**. **Lo chico que quedó de la reunión del 05/11**: en la Caja, agregar un producto de *precio en cada venta* pregunta el precio; flechas y Enter en los buscadores de Remitos, Órdenes internas, Recepción de mercadería y Mayorista; y las notas de crédito y devoluciones del turno en el cierre y en la planilla de caja. **La base ya está aplicada.** Ver *Lo último que pasó*. **859 pruebas verdes en la app.**
 
-**Construida antes: 0.20.0** (05/11), sin publicar: va adentro de la 0.21.0. **El mostrador después de la reunión del 05/11**: F10 en lugar de F9, el buscador con flechas y Enter, una letra en cualquier lado vuelve a buscar, el Tab del buscador va al cliente, la cantidad con coma (0,374 kg) y *precio en cada venta* para los accesorios. Trae también el arreglo de la caja 2 del 02/11. **La base ya está aplicada.** Ver *Lo último que pasó* y [`reunion-lucas-2026-11-05.md`](reunion-lucas-2026-11-05.md). **852 pruebas verdes en la app.**
+**Publicada: 0.21.0** (05/11), verificada en Cloudflare: `latest.json` dice 0.21.0. **Ingresos, egresos y el cierre de caja**, pedidos en la reunión del 05/11: gastos, anticipos de haberes, pagos a proveedores (también en su cuenta, en efectivo o con cheques de la cartera), retiros de socios, *saldo de caja anterior* y *no incluir en el cierre*; el cierre con el detalle por medio de pago, la planilla A4 y los cierres anteriores. **La base ya está aplicada.** Trae también todo lo de la 0.20.0. Ver *Lo último que pasó*. **857 pruebas verdes en la app.**
+
+**Publicada con la 0.21.0: 0.20.0** (05/11). **El mostrador después de la reunión del 05/11**: F10 en lugar de F9, el buscador con flechas y Enter, una letra en cualquier lado vuelve a buscar, el Tab del buscador va al cliente, la cantidad con coma (0,374 kg) y *precio en cada venta* para los accesorios. Trae también el arreglo de la caja 2 del 02/11. **La base ya está aplicada.** Ver *Lo último que pasó* y [`reunion-lucas-2026-11-05.md`](reunion-lucas-2026-11-05.md). **852 pruebas verdes en la app.**
 
 **Publicada: 0.19.13** (30/10, 10:15), verificada en Cloudflare: `latest.json` dice 0.19.13, el instalador está y el programa publicado trae lo nuevo. **El remito R sobre la hoja de imprenta**: la plantilla para la gráfica ([`docs/remito-r/`](remito-r/Remito%20R%20-%20Plantilla%20para%20la%20imprenta.pdf)), la impresión de sólo lo que cambia, las tandas en Configuración y las hojas arruinadas. Además, **la marca *Precio a convenir***, **la planilla de la lista mayorista** y **anular un recibo**. **La base ya está aplicada.** Ver *Lo último que pasó*. **842 pruebas verdes en la app.**
 
@@ -125,6 +127,26 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 
 ---
 
+## Lo último que pasó — 5 de noviembre: lo chico que quedó de la reunión
+
+De la misma reunión ([`reunion-lucas-2026-11-05.md`](reunion-lucas-2026-11-05.md)). Va en la **0.21.1**.
+
+- **En la Caja, el precio en cada venta**: agregar a una venta en la cola un producto marcado *precio en cada venta* pregunta el precio, como en el mostrador. Cada uno va en su renglón. Funciona también sin internet.
+  - La base ([`20261105170000_precio_en_cada_venta_en_la_caja.sql`](../supabase/migrations/20261105170000_precio_en_cada_venta_en_la_caja.sql), aplicada) usa el precio que llega sólo si el producto es de precio en cada venta: por este camino no se le cambia el precio a ningún otro. Sin precio, el de la ficha, así una caja que todavía no se actualizó sigue pudiendo agregar.
+  - **Probado en la base**, con todo deshecho: el precio escrito entra; sin precio, el de la ficha; a un producto común no le cambia el precio aunque se mande uno. **En pantalla no se probó**: habría que tocar una venta de la cola del local.
+- **Flechas y Enter en los buscadores que faltaban** ([`buscador.ts`](../app/src/lib/buscador.ts)): Remitos (la venta, el cliente y el producto), Órdenes internas (el producto y el cliente), Recepción de mercadería y Mayorista (el cliente y el producto).
+  - En Recepción, Enter sigue buscando; ya con los resultados a la vista, las flechas los recorren y Enter agrega el marcado.
+  - Mientras la búsqueda se pone al día, Enter no elige de lo anterior ni vuelve a sumar lo que se acaba de agregar.
+  - El código exacto va primero, como en el mostrador.
+- **Las notas de crédito y devoluciones del turno**, en el cierre y en la planilla de caja ([`20261105180000_devoluciones_en_el_cierre_de_caja.sql`](../supabase/migrations/20261105180000_devoluciones_en_el_cierre_de_caja.sql), aplicada):
+  - una devolución no queda atada a una caja —se hace desde Facturación, muchas veces de una venta de otro día—: se toma lo que pasó mientras la caja estuvo abierta;
+  - entran las notas de crédito (parciales o enteras), la devolución parcial de una venta sin factura y la venta cobrada sin factura anulada entera;
+  - **no suman ni restan en el efectivo**. Si se le devolvió plata al cliente de una venta de otro turno, se carga como egreso.
+  - **Probado como usuario**, con todo deshecho: una devolución parcial sin factura y una anulación aparecen, la caja abierta sigue sin mostrar el efectivo esperado. En la caja de prueba de agosto a noviembre salen las 7 notas de crédito que tiene.
+- **Verificado:** **859 verdes**, 2 nuevas, una rota a propósito y atrapada; los tipos sin errores. **En pantalla**, sin guardar nada: la planilla con las notas de crédito, a 375 px sin desplazarse; Órdenes internas (flechas, Enter agrega el marcado, un segundo Enter no lo repite) y Remitos.
+- **Visto de paso, sin tocar:** si se anula una venta cobrada de una caja **ya cerrada**, la planilla de esa caja impresa después muestra otro efectivo esperado: se recalcula, y lo contado y la diferencia quedaron guardados.
+- **El manual**, al día, con el PDF regenerado.
+
 ## Lo último que pasó — 5 de noviembre: ingresos, egresos y el cierre de caja
 
 De la misma reunión ([`reunion-lucas-2026-11-05.md`](reunion-lucas-2026-11-05.md), punto 2). Va en la **0.21.0**.
@@ -146,7 +168,7 @@ De la misma reunión ([`reunion-lucas-2026-11-05.md`](reunion-lucas-2026-11-05.m
 - **En pantalla**, sin grabar nada (la caja abierta es la del local): el formulario con proveedor, cheques de la cartera y empleados; Esc cierra el formulario y después la ventana; la planilla de la caja abierta; los cierres; a 375 px no se desplaza nada. **El detalle después de cerrar no se vio en pantalla**: no había una caja para cerrar sin cerrar la del local. **857 verdes** y los tipos sin errores.
 - **Sin hacer:**
   - **QR tiene marcado *Entra al arqueo de caja***, en Precios → medios de pago. Si el QR se cobra a una cuenta, infla el efectivo esperado: hay que desmarcarlo;
-  - las notas de crédito y devoluciones del turno todavía no están en la planilla;
+  - ~~las notas de crédito y devoluciones del turno todavía no están en la planilla~~ → 0.21.1;
   - el ingreso no pide fecha: es la del turno.
 - **El manual**, al día, con el PDF regenerado.
 

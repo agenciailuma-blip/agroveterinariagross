@@ -68,6 +68,28 @@ export interface MovimientoCaja {
   cheques: { nombre: string; importe: number; fecha_pago: string }[]
 }
 
+export interface Devolucion {
+  ocurrido_en: string
+  tipo: 'nota_credito' | 'devolucion' | 'anulacion'
+  /** Tipo, letra y número de la nota de crédito. Sin factura no hay. */
+  comprobante: string | null
+  estado: string | null
+  cliente: string | null
+  venta: string | null
+  importe: number
+  motivo: string | null
+  entera: boolean
+}
+
+/** Qué se ve en la columna del comprobante. */
+export function comoSeDevolvio(d: Pick<Devolucion, 'tipo' | 'comprobante' | 'estado' | 'entera'>): string {
+  if (d.tipo === 'nota_credito') {
+    const estado = d.estado && d.estado !== 'autorizado' ? ` (${d.estado})` : ''
+    return (d.comprobante ?? 'Nota de crédito') + estado
+  }
+  return d.entera ? 'Anulada entera, sin factura' : 'Devolución parcial, sin factura'
+}
+
 export interface PorMedio {
   medio: string
   cantidad: number
@@ -101,6 +123,11 @@ export interface ResumenCaja {
   }
   movimientos: MovimientoCaja[]
   cheques_recibidos: { nombre: string; importe: number; fecha_pago: string; cliente: string | null }[]
+  /**
+   * Lo que se devolvió mientras la caja estuvo abierta, de esta venta o
+   * de otra. Es para mirar: no suma ni resta en el efectivo.
+   */
+  devoluciones: Devolucion[]
   efectivo: {
     inicial: number
     ventas: number
@@ -142,6 +169,8 @@ function aNumeros(r: ResumenCaja): ResumenCaja {
       cheques: m.cheques.map((c) => ({ ...c, importe: n(c.importe) })),
     })),
     cheques_recibidos: r.cheques_recibidos.map((c) => ({ ...c, importe: n(c.importe) })),
+    // Una caja abierta antes de la 0.21.1 en otra terminal puede no traerlas.
+    devoluciones: (r.devoluciones ?? []).map((d) => ({ ...d, importe: n(d.importe) })),
     efectivo: {
       inicial: n(r.efectivo.inicial),
       ventas: n(r.efectivo.ventas),

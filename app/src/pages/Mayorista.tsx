@@ -12,6 +12,7 @@ import { abrirComprobante, abrirNoFiscal, abrirRemitoR } from '@/lib/escritorio'
 import { enCastellano } from '@/lib/errores'
 import { moneda, numero } from '@/lib/tipos'
 import { boton, botonChico, campo, tarjeta } from '@/estilos'
+import { useListaConFlechas } from '@/lib/buscador'
 import { MarcaProforma } from '@/pages/MayoristaClientes'
 import {
   agregarLinea,
@@ -378,6 +379,8 @@ function ArmarPedido({
     () => (buscarProducto.trim() ? buscarProductos(catalogo.data?.datos ?? [], buscarProducto).slice(0, 30) : []),
     [catalogo.data, buscarProducto],
   )
+  const flechasCliente = useListaConFlechas(encontrados, (c) => setClienteId(c.id))
+  const flechas = useListaConFlechas(productos, (p) => setLineas((l) => agregarLinea(l, p, 1)))
 
   async function alMandar() {
     if (!cliente || lineas.length === 0) return
@@ -433,6 +436,7 @@ function ArmarPedido({
             autoFocus
             value={buscarCliente}
             onChange={(e) => setBuscarCliente(e.target.value)}
+            onKeyDown={(e) => flechasCliente.teclas(e)}
             placeholder="Nombre, localidad o ruta"
             className={campo}
           />
@@ -447,12 +451,14 @@ function ArmarPedido({
               No hay clientes mayoristas con ese nombre. Se dan de alta en la pestaña Clientes.
             </p>
           ) : (
-            <ul className="divide-y divide-piedra-100">
-              {encontrados.map((c) => (
+            <ul ref={(el) => { flechasCliente.lista.current = el }} className="divide-y divide-piedra-100">
+              {encontrados.map((c, i) => (
                 <li key={c.id}>
                   <button
                     onClick={() => setClienteId(c.id)}
-                    className="flex w-full flex-wrap items-center justify-between gap-x-3 gap-y-0.5 py-2.5 text-left hover:bg-marca-50/40"
+                    onMouseMove={() => flechasCliente.setMarcado(i)}
+                    data-marcado={i === flechasCliente.marcado}
+                    className={'flex w-full flex-wrap items-center justify-between gap-x-3 gap-y-0.5 py-2.5 text-left ' + (i === flechasCliente.marcado ? 'bg-marca-50' : 'hover:bg-marca-50/40')}
                   >
                     <span className="min-w-0">
                       <span className="block truncate font-medium text-tinta">{c.nombre}</span>
@@ -496,6 +502,7 @@ function ArmarPedido({
           <input
             value={buscarProducto}
             onChange={(e) => setBuscarProducto(e.target.value)}
+            onKeyDown={(e) => flechas.teclas(e)}
             placeholder="Buscar por nombre o código"
             className={campo}
           />
@@ -508,12 +515,17 @@ function ArmarPedido({
             <p className="text-sm text-piedra-500">La lista mayorista todavía no tiene productos: se cargan en el local.</p>
           )}
           {productos.length > 0 && (
-            <ul className="max-h-80 divide-y divide-piedra-100 overflow-y-auto rounded-lg ring-1 ring-borde">
-              {productos.map((p) => (
+            <ul
+              ref={(el) => { flechas.lista.current = el }}
+              className="max-h-80 divide-y divide-piedra-100 overflow-y-auto rounded-lg ring-1 ring-borde"
+            >
+              {productos.map((p, i) => (
                 <li key={p.producto_id}>
                   <button
                     onClick={() => setLineas((l) => agregarLinea(l, p, 1))}
-                    className="flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left hover:bg-marca-50/40"
+                    onMouseMove={() => flechas.setMarcado(i)}
+                    data-marcado={i === flechas.marcado}
+                    className={'flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left ' + (i === flechas.marcado ? 'bg-marca-50' : 'hover:bg-marca-50/40')}
                   >
                     <span className="min-w-0">
                       <span className="block text-sm text-tinta">{p.nombre}</span>
