@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { lazy, Suspense, useMemo, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/auth/AuthProvider'
@@ -20,13 +20,18 @@ import {
   type DatosClienteMayorista,
 } from '@/lib/api/mayorista'
 
+// El mapa pesa: se carga recién cuando alguien lo abre.
+const MapaDeClientes = lazy(() => import('@/components/MapaDeClientes'))
+
 /*
   ─────────────────────────────────────────────────────────────
   Los clientes mayoristas
 
   Lo que el vendedor mira antes de salir a la ruta y parado en la puerta
   del cliente: quién está por esa ruta, quién debe y desde cuándo, cómo
-  llegar, y llamarlo o escribirle sin copiar el número.
+  llegar, y llamarlo o escribirle sin copiar el número. En *Mapa*, los
+  mismos clientes —con los mismos filtros— en un mapa, cada uno con su
+  pin: rojo si tiene algo vencido.
 
   Son los clientes de siempre con la marca de mayorista: el que también
   compra en el mostrador tiene una sola cuenta, no dos. En el local se
@@ -46,6 +51,7 @@ export default function MayoristaClientes() {
   const [texto, setTexto] = useState('')
   const [ruta, setRuta] = useState('')
   const [soloConVencido, setSoloConVencido] = useState(false)
+  const [vista, setVista] = useState<'lista' | 'mapa'>('lista')
   const [editando, setEditando] = useState<ClienteMayorista | 'nuevo' | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
 
@@ -65,6 +71,7 @@ export default function MayoristaClientes() {
   const rutas = useMemo(() => rutasDe(todos), [todos])
   const filas = useMemo(() => filtrarClientes(todos, { texto, ruta, soloConVencido }), [todos, texto, ruta, soloConVencido])
   const veDeuda = todos.some((c) => c.saldo !== null)
+  const conUbicacion = useMemo(() => filas.filter((c) => c.latitud != null && c.longitud != null), [filas])
 
   if (!puedeVer) {
     return (
@@ -115,6 +122,25 @@ export default function MayoristaClientes() {
       )}
 
       <div className="flex flex-wrap gap-2">
+        <div className="flex gap-1 rounded-lg bg-piedra-100 p-1" role="group" aria-label="Cómo ver los clientes">
+          {(
+            [
+              ['lista', 'Lista'],
+              ['mapa', 'Mapa'],
+            ] as const
+          ).map(([v, nombre]) => (
+            <button
+              key={v}
+              onClick={() => setVista(v)}
+              aria-pressed={vista === v}
+              className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
+                vista === v ? 'bg-white text-tinta shadow-sm' : 'text-piedra-500 hover:text-tinta'
+              }`}
+            >
+              {nombre}
+            </button>
+          ))}
+        </div>
         <input
           value={texto}
           onChange={(e) => setTexto(e.target.value)}
@@ -157,6 +183,28 @@ export default function MayoristaClientes() {
               ? 'Todavía no hay clientes mayoristas. Se marcan desde su ficha en Clientes, o se dan de alta acá.'
               : 'Ningún cliente con esos filtros.'}
           </p>
+        </div>
+      ) : vista === 'mapa' ? (
+        <div className="space-y-2">
+          {conUbicacion.length < filas.length && (
+            <p className="text-xs text-piedra-500">
+              {filas.length - conUbicacion.length === 1
+                ? '1 cliente no tiene la ubicación guardada'
+                : `${filas.length - conUbicacion.length} clientes no tienen la ubicación guardada`}
+              : se guarda desde su ficha, parado en el local.
+            </p>
+          )}
+          {!navigator.onLine && <p className="text-xs text-amber-800">Sin señal el plano no se ve, pero los pines sí.</p>}
+          <Suspense fallback={<p className="text-sm text-piedra-500">Cargando el mapa…</p>}>
+            <MapaDeClientes
+              clientes={conUbicacion}
+              onElegir={(c) => {
+                // A la lista, con ese cliente: ahí están el pedido, el cobro y el teléfono.
+                setTexto(c.nombre)
+                setVista('lista')
+              }}
+            />
+          </Suspense>
         </div>
       ) : (
         <ul className="space-y-2">

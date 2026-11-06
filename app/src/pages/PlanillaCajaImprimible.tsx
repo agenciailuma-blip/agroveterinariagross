@@ -20,6 +20,9 @@ import { moneda } from '@/lib/tipos'
   Se puede imprimir con la caja abierta —para mirar cómo viene el
   turno—, pero entonces no dice cuánto efectivo espera el sistema: el
   arqueo se hace a ciegas.
+
+  La de una caja cerrada sale del resumen guardado al cerrarla: impresa
+  otro día dice lo mismo. Lo que se anuló después va aparte, al final.
   ─────────────────────────────────────────────────────────────
 */
 
@@ -316,6 +319,31 @@ function Hoja({ r, comercio }: { r: ResumenCaja; comercio: string }) {
                 <td />
                 <td className="py-0.5 text-right tabular-nums">{moneda.format(totalCheques)}</td>
               </tr>
+            </tbody>
+          </table>
+        </>
+      )}
+
+      {(r.despues_del_cierre?.length ?? 0) > 0 && (
+        <>
+          <Titulo>Anulado después del cierre</Titulo>
+          <p className="mb-1 text-piedra-600">Los números de arriba son los del cierre: esto no los cambia.</p>
+          <table className="w-full border-collapse">
+            <tbody>
+              {r.despues_del_cierre!.map((c, i) => (
+                <tr key={i} className="border-t border-piedra-200 align-top">
+                  <td className="py-0.5 pr-2 tabular-nums">{fechaHora(c.ocurrido_en)}</td>
+                  <td className="py-0.5 pr-2 [overflow-wrap:anywhere]">
+                    {c.tipo === 'venta_anulada' ? 'Venta' : 'Recibo'} {c.numero}
+                    {c.cliente && ` · ${c.cliente}`}
+                    {c.motivo && <span className="block text-[10px] text-piedra-600">{c.motivo}</span>}
+                    {c.efectivo > 0 && (
+                      <span className="block text-[10px] text-piedra-600">En efectivo: {moneda.format(c.efectivo)}</span>
+                    )}
+                  </td>
+                  <td className="py-0.5 text-right tabular-nums">{moneda.format(c.importe)}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </>

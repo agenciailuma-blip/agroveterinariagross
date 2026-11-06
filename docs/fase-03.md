@@ -1,6 +1,6 @@
 ---
 actualizado: 2026-10-28
-estado: en construcción — Mayorista, primera entrega hecha el 28/10; contestadas siete de las ocho preguntas, falta la de los conceptos fijos
+estado: construida — el mapa del mayorista, lo último, en la 0.21.2 (06/11); falta la pregunta de los conceptos fijos y, del remito R, la muestra de la gráfica y el CAI
 ---
 
 # Fase 03 — lo que pidió Lucas el 26/10
@@ -187,7 +187,7 @@ Para que Facundo salga a la calle la semana del 2/11. Va en la **0.18.0**.
 - **El freno al cliente con deuda vencida** (respuesta 7): Facundo arma y manda el pedido igual, con el aviso a la vista. En el local, el pedido de un cliente con vencido dice cuánto y desde cuándo, y **no se factura ni sale sin factura hasta que un encargado lo autoriza**: con un clic si es el encargado quien está en la computadora, o con **su PIN** si se acerca. Queda anotado quién lo autorizó y cuánto debía. El permiso nuevo, *Autorizar la venta a cuenta corriente de un cliente con deuda vencida*, lo tienen Encargado y Administrador.
 
 **Lo que falta del mayorista**, en este orden:
-1. **El pin en el mapa** con todos los clientes (hoy cada uno tiene su «Cómo llegar») y **las estadísticas** (5.5).
+1. ~~**El pin en el mapa** con todos los clientes y **las estadísticas** (5.5).~~ Las estadísticas, en la 0.19.12; el mapa, en la 0.21.2: *Mayorista → Clientes → Mapa*.
 2. ~~**La planilla** para cargar la lista mayorista de a muchos.~~ Publicada en la 0.19.13.
 3. ~~**Anular un recibo**: hoy un recibo emitido por error se compensa a mano en la cuenta corriente.~~ Publicada en la 0.19.13.
 

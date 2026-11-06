@@ -90,6 +90,17 @@ export function comoSeDevolvio(d: Pick<Devolucion, 'tipo' | 'comprobante' | 'est
   return d.entera ? 'Anulada entera, sin factura' : 'Devolución parcial, sin factura'
 }
 
+export interface CambioDespuesDelCierre {
+  ocurrido_en: string
+  tipo: 'venta_anulada' | 'recibo_anulado'
+  numero: string
+  cliente: string | null
+  importe: number
+  /** Lo que de eso había entrado al cajón. */
+  efectivo: number
+  motivo: string | null
+}
+
 export interface PorMedio {
   medio: string
   cantidad: number
@@ -128,6 +139,13 @@ export interface ResumenCaja {
    * de otra. Es para mirar: no suma ni resta en el efectivo.
    */
   devoluciones: Devolucion[]
+  /**
+   * Sólo en una caja cerrada: sus ventas y recibos que se anularon
+   * después. Los números de arriba son los del cierre y no cambian.
+   */
+  despues_del_cierre?: CambioDespuesDelCierre[]
+  /** Las cajas cerradas antes de la 0.21.2 no tienen el resumen guardado. */
+  guardado_al_cerrar?: boolean
   efectivo: {
     inicial: number
     ventas: number
@@ -171,6 +189,8 @@ function aNumeros(r: ResumenCaja): ResumenCaja {
     cheques_recibidos: r.cheques_recibidos.map((c) => ({ ...c, importe: n(c.importe) })),
     // Una caja abierta antes de la 0.21.1 en otra terminal puede no traerlas.
     devoluciones: (r.devoluciones ?? []).map((d) => ({ ...d, importe: n(d.importe) })),
+    despues_del_cierre: (r.despues_del_cierre ?? []).map((c) => ({ ...c, importe: n(c.importe), efectivo: n(c.efectivo) })),
+    guardado_al_cerrar: r.guardado_al_cerrar,
     efectivo: {
       inicial: n(r.efectivo.inicial),
       ventas: n(r.efectivo.ventas),

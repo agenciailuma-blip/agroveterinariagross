@@ -12,7 +12,9 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Construida: 0.21.1** (05/11) — **falta publicarla**. **Lo chico que quedó de la reunión del 05/11**: en la Caja, agregar un producto de *precio en cada venta* pregunta el precio; flechas y Enter en los buscadores de Remitos, Órdenes internas, Recepción de mercadería y Mayorista; y las notas de crédito y devoluciones del turno en el cierre y en la planilla de caja. **La base ya está aplicada.** Ver *Lo último que pasó*. **859 pruebas verdes en la app.**
+**Construida: 0.21.2** (06/11) — **falta publicarla**. **La planilla de una caja cerrada ya no cambia** —se guarda al cerrar; lo anulado después va aparte— y **el mapa de los clientes mayoristas**, en *Mayorista → Clientes*. Con el mapa queda construida toda la fase 3. **La base ya está aplicada.** Ver *Lo último que pasó*. **859 pruebas verdes en la app.**
+
+**Publicada: 0.21.1** (06/11, 09:25), verificada en Cloudflare: `latest.json` dice 0.21.1. **Lo chico que quedó de la reunión del 05/11**: en la Caja, agregar un producto de *precio en cada venta* pregunta el precio; flechas y Enter en los buscadores de Remitos, Órdenes internas, Recepción de mercadería y Mayorista; y las notas de crédito y devoluciones del turno en el cierre y en la planilla de caja. **La base ya está aplicada.** Ver *Lo último que pasó*. **859 pruebas verdes en la app.**
 
 **Publicada: 0.21.0** (05/11), verificada en Cloudflare: `latest.json` dice 0.21.0. **Ingresos, egresos y el cierre de caja**, pedidos en la reunión del 05/11: gastos, anticipos de haberes, pagos a proveedores (también en su cuenta, en efectivo o con cheques de la cartera), retiros de socios, *saldo de caja anterior* y *no incluir en el cierre*; el cierre con el detalle por medio de pago, la planilla A4 y los cierres anteriores. **La base ya está aplicada.** Trae también todo lo de la 0.20.0. Ver *Lo último que pasó*. **857 pruebas verdes en la app.**
 
@@ -127,6 +129,25 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 
 ---
 
+## Lo último que pasó — 6 de noviembre: la planilla de una caja cerrada y el mapa del mayorista
+
+Va en la **0.21.2**.
+
+- **La planilla de una caja cerrada ya no cambia** ([`20261106100000_la_planilla_de_una_caja_cerrada_no_cambia.sql`](../supabase/migrations/20261106100000_la_planilla_de_una_caja_cerrada_no_cambia.sql), aplicada). Se vio el 05/11: el resumen se recalculaba cada vez, así que si después de cerrar se anulaba una venta o un recibo de ese turno, la planilla impresa otro día decía otras ventas y otro efectivo esperado, con lo contado y la diferencia de antes.
+  - Al cerrar se guarda el resumen tal como quedó, y la planilla de una caja cerrada sale de ahí.
+  - Lo que se anuló después va al final, en *Anulado después del cierre*, con cuánto de eso era efectivo.
+  - Las cajas cerradas antes no tienen el resumen guardado: se calculan como antes, pero con el efectivo esperado del cierre.
+  - **Probado como usuario**, cerrando la caja abierta adentro de una prueba que se deshace: el resumen queda guardado; anulada una de sus ventas, las ventas en efectivo siguen en $46.600 —recalculando como antes habrían bajado a $24.800— y la venta aparece aparte. **En pantalla**, la planilla de la caja vieja sigue igual. La sección *Anulado después del cierre* no se vio: ninguna caja real tiene un caso.
+- **El mapa de los clientes mayoristas** (fase 3, 5.1), en *Mayorista → Clientes*, con el botón *Lista · Mapa* ([`MapaDeClientes.tsx`](../app/src/components/MapaDeClientes.tsx)):
+  - los mismos clientes que la lista, con los mismos filtros; rojo el que tiene algo vencido, verde el resto;
+  - el cartelito tiene el nombre, la localidad y la ruta, lo vencido y *Cómo llegar*; tocar el nombre vuelve a la lista con ese cliente;
+  - dice cuántos no tienen la ubicación guardada;
+  - planos de OpenStreetMap, sin costo por uso; las ubicaciones siguen en la base, así que cambiar de mapa no obliga a cargarlas de nuevo. Sin señal no se ve el plano;
+  - **hoy hay un solo cliente mayorista, sin ubicación**: el mapa sale vacío hasta que Facundo las guarde desde la ficha, parado en cada local.
+  - **En pantalla**, con cuatro clientes simulados en el navegador —sin guardar nada—: los pines, el cartelito, un nombre con signos raros que no se rompe, el filtro por ruta y tocar el nombre; a 375 px no se desplaza nada.
+- **Verificado:** **859 verdes** y los tipos sin errores.
+- **El manual**, al día, con el PDF regenerado.
+
 ## Lo último que pasó — 5 de noviembre: lo chico que quedó de la reunión
 
 De la misma reunión ([`reunion-lucas-2026-11-05.md`](reunion-lucas-2026-11-05.md)). Va en la **0.21.1**.
@@ -144,7 +165,7 @@ De la misma reunión ([`reunion-lucas-2026-11-05.md`](reunion-lucas-2026-11-05.m
   - **no suman ni restan en el efectivo**. Si se le devolvió plata al cliente de una venta de otro turno, se carga como egreso.
   - **Probado como usuario**, con todo deshecho: una devolución parcial sin factura y una anulación aparecen, la caja abierta sigue sin mostrar el efectivo esperado. En la caja de prueba de agosto a noviembre salen las 7 notas de crédito que tiene.
 - **Verificado:** **859 verdes**, 2 nuevas, una rota a propósito y atrapada; los tipos sin errores. **En pantalla**, sin guardar nada: la planilla con las notas de crédito, a 375 px sin desplazarse; Órdenes internas (flechas, Enter agrega el marcado, un segundo Enter no lo repite) y Remitos.
-- **Visto de paso, sin tocar:** si se anula una venta cobrada de una caja **ya cerrada**, la planilla de esa caja impresa después muestra otro efectivo esperado: se recalcula, y lo contado y la diferencia quedaron guardados.
+- **Visto de paso:** si se anula una venta cobrada de una caja **ya cerrada**, la planilla de esa caja impresa después muestra otro efectivo esperado. → Arreglado en la 0.21.2.
 - **El manual**, al día, con el PDF regenerado.
 
 ## Lo último que pasó — 5 de noviembre: ingresos, egresos y el cierre de caja
