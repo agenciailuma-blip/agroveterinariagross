@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTerminal } from '@/lib/terminal'
@@ -1070,6 +1070,10 @@ function PanelCobro({
   const botonCobrar = useBotonConAtajo('F10')
   const [agregando, setAgregando] = useState(false)
   const [descontando, setDescontando] = useState(false)
+  // Parte en un medio y parte en otro: se baja el importe del primero y
+  // el resto se completa. El botón lleva el cursor a ese importe.
+  const primerImporte = useRef<HTMLInputElement>(null)
+  const [dividiendo, setDividiendo] = useState(false)
 
   const usables = mediosParaElegir(medios).filter(
     (m) => m.tipo !== 'cuenta_corriente' || venta.cliente?.cuenta_corriente,
@@ -1420,6 +1424,7 @@ function PanelCobro({
                           ),
                         )
                       }
+                      ref={i === 0 ? primerImporte : undefined}
                       aria-label={`Importe en ${mp?.nombre ?? 'este medio'}`}
                       className="w-36 rounded-lg border border-borde bg-white px-2.5 py-1.5 text-right tabular-nums outline-none focus:border-marca-500"
                     />
@@ -1482,6 +1487,27 @@ function PanelCobro({
                   + Otro cheque
                 </button>
               )}
+
+            {pagos.length === 1 && Math.abs(diferencia) <= 0.009 && (
+              <div>
+                <button
+                  onClick={() => {
+                    setDividiendo(true)
+                    primerImporte.current?.focus()
+                    primerImporte.current?.select()
+                  }}
+                  className="text-sm font-medium text-marca-700 hover:underline"
+                >
+                  Dividir el pago
+                </button>
+                {dividiendo && (
+                  <p className="mt-1 text-xs text-piedra-500">
+                    Poné cuánto paga con {medios.find((x) => x.id === pagos[0].medio_pago_id)?.nombre ?? 'este medio'} y
+                    elegí con qué completa el resto.
+                  </p>
+                )}
+              </div>
+            )}
 
             {Math.abs(diferencia) > 0.009 && (
               <div className="flex items-center justify-between rounded-lg bg-amber-50 px-3 py-2 text-sm ring-1 ring-amber-200">

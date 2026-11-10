@@ -33,6 +33,9 @@ windows = { version = "0.61", features = [
   # La llave de la base local se guarda en el Administrador de credenciales.
   "Win32_Foundation",
   "Win32_Security_Credentials",
+  # Los enlaces de WhatsApp y del mapa se abren con el navegador de la PC.
+  "Win32_UI_Shell",
+  "Win32_UI_WindowsAndMessaging",
 ] }
 
 # El instalador pesa bastante menos y arranca más rápido optimizando

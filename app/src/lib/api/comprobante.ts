@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { condicionDeVenta } from '@/lib/comprobante/condicionDeVenta'
 import { agruparPorConcepto } from '@/lib/conceptos'
 
 export interface LineaComprobante {
@@ -47,6 +48,8 @@ export interface ComprobanteCompleto {
   receptor_documento_sigla: string
   receptor_condicion: string
   receptor_domicilio: string | null
+  /** «Contado», «Cuenta corriente» o las dos. Vacío si no se sabe: no se imprime. */
+  condicion_venta?: string
   neto_gravado: number
   neto_no_gravado: number
   exento: number
@@ -153,7 +156,7 @@ async function desdeElServidor(id: string): Promise<ComprobanteCompleto> {
     ventas = (agrupadas ?? []).map((a) => a.venta_id as string)
   }
 
-  const [lineas, alicuotas, tributos, emisor] = await Promise.all([
+  const [lineas, alicuotas, tributos, emisor, pagos] = await Promise.all([
     ventas.length
       ? supabase
           .from('venta_linea')
@@ -171,6 +174,10 @@ async function desdeElServidor(id: string): Promise<ComprobanteCompleto> {
       .select('descripcion, base_imponible, alicuota, importe')
       .eq('comprobante_id', id),
     datosEmisor(),
+    // Con qué se cobró: de ahí sale la condición de venta.
+    ventas.length
+      ? supabase.from('venta_pago').select('medio:medio_pago_id(tipo)').in('venta_id', ventas)
+      : Promise.resolve({ data: [] }),
   ])
 
   return {
@@ -190,6 +197,11 @@ async function desdeElServidor(id: string): Promise<ComprobanteCompleto> {
     receptor_documento_sigla: doc?.sigla ?? '',
     receptor_condicion: cond?.descripcion ?? '',
     receptor_domicilio: c.receptor_domicilio as string | null,
+    condicion_venta: condicionDeVenta(
+      ((pagos.data ?? []) as { medio: unknown }[]).map(
+        (p) => (uno(p.medio as never) as { tipo: string } | null)?.tipo,
+      ),
+    ),
     neto_gravado: Number(c.neto_gravado),
     neto_no_gravado: Number(c.neto_no_gravado),
     exento: Number(c.exento),

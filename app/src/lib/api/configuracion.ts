@@ -94,6 +94,7 @@ export const CLAVES_EMISOR = [
   'comercio.telefono',
   'comercio.ingresos_brutos',
   'comercio.inicio_actividades',
+  'comercio.pie',
   'comercio.logo',
 ] as const
 

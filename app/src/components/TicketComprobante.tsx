@@ -1,6 +1,7 @@
 import type { ComprobanteCompleto } from '@/lib/api/comprobante'
 import { fechaCorta, horaDe, presentacionDe } from '@/lib/comprobante/presentacion'
 import { moneda, numero } from '@/lib/tipos'
+import { lineasDelPie } from '@/lib/comprobante/escpos'
 
 /*
   El comprobante en rollo de 80 mm — el formato del mostrador.
@@ -71,6 +72,7 @@ export default function TicketComprobante({
       <Dato k="Domicilio" v={c.receptor_domicilio || 'n/n'} />
       <Dato k={identificado ? c.receptor_documento_sigla : 'CUIT/DNI'} v={c.receptor_documento || ''} />
       <Dato k="Condición de IVA" v={c.receptor_condicion} />
+      {c.condicion_venta && <Dato k="Condición de venta" v={c.condicion_venta} />}
 
       {/* ── Detalle ──
           Cada renglón ocupa dos líneas: la descripción entera arriba y
@@ -146,6 +148,14 @@ export default function TicketComprobante({
       )}
 
       {qr && <img src={qr} alt="Código QR del comprobante" className="mx-auto mt-2 w-[26mm]" />}
+
+      {lineasDelPie(c.emisor.pie).length > 0 && (
+        <div className="mt-2 text-center">
+          {lineasDelPie(c.emisor.pie).map((l, i) => (
+            <p key={i} className="break-words">{l}</p>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

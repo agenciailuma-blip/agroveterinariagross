@@ -1,6 +1,6 @@
 ---
 actualizado: 2026-10-28
-estado: construida — el mapa del mayorista, lo último, en la 0.21.2 (06/11); falta la pregunta de los conceptos fijos y, del remito R, la muestra de la gráfica y el CAI
+estado: construida — el mapa del mayorista, lo último, en la 0.21.2 (06/11); los conceptos fijos, conformes el 06/11; del remito R falta la muestra de la gráfica y el CAI
 ---
 
 # Fase 03 — lo que pidió Lucas el 26/10
@@ -101,10 +101,11 @@ El cliente de siempre: la persona que lleva el alimento del perro, la oficina. S
 - **En el Mostrador, F11**: se marcan los renglones y se elige el concepto. La venta guarda los productos reales —stock, caja e IVA salen de ellos— y cada renglón dice bajo qué concepto se imprime.
 - **La factura, el comprobante interno y el presupuesto** muestran un renglón por concepto, por el total; en la factura, uno por alícuota si el concepto mezcla. **El remito** sigue mostrando lo que se llevó.
 - **Al abrir la factura en pantalla**, debajo del concepto se ve cada producto real con un ✓. No sale impreso.
-- **Los conceptos** se editan en Configuración. Arrancan con Repuestos pulverizadora, Fumigación y Veneno, hasta que Lucas conteste la pregunta 8.
+- **Los conceptos** se editan en Configuración: Repuestos pulverizadora, Fumigación y Veneno. **Lucas quedó conforme así** (audio del 06/11): no hay que cambiar nada.
+- **A futuro, si se agrega un concepto**, se carga en Configuración y queda disponible en F11; no hace falta tocar el sistema. Si los productos de un concepto mezclan alícuotas, la factura lo muestra en un renglón por alícuota.
 - **Sobre el IVA:** como a ARCA le van los totales por alícuota de los productos reales, el IVA declarado coincide siempre. Lo que sigue en pie del aviso de abajo es que el texto de la factura describe otra cosa.
 
-> ⚠️ **Para decirlo una vez, antes de construirlo.** Una factura que dice «Repuestos pulverizadora» por alimento de perro **describe otra cosa de la que salió**. Y este diseño guarda la prueba: el stock dice Royal Canin y la factura dice repuesto. Además, si los productos reales tienen **otra alícuota de IVA** que el concepto (un 10,5 % metido en un renglón de 21 %), el IVA declarado no coincide. Es decisión de Lucas y es una práctica común; **conviene que Armando la mire** antes de usarla, y que el concepto tome la alícuota de los productos que agrupa.
+> ⚠️ **Para decirlo una vez, antes de construirlo.** Una factura que dice «Repuestos pulverizadora» por alimento de perro **describe otra cosa de la que salió**. Y este diseño guarda la prueba: el stock dice Royal Canin y la factura dice repuesto. Además, si los productos reales tienen **otra alícuota de IVA** que el concepto (un 10,5 % metido en un renglón de 21 %), el IVA declarado no coincide. Es decisión de Lucas y es una práctica común. Lo de la alícuota quedó resuelto: la factura usa la de los productos que agrupa. **El 06/11 se decidió no pedirle a Armando que lo revise**: queda así.
 
 ---
 
@@ -314,14 +315,14 @@ Eso pide **recorrer el sistema entero** con esa vara —cada circuito de punta a
 |---|---|---|---|
 | 1 | Remito interno: ¿cada remito por separado o varios juntos? | **Las dos**, según cuántos pedidos haya | Punto 2 |
 | 2 | Remito interno: ¿factura o comprobante interno? | **Las dos** | Punto 2 |
-| 3 | Remito logístico: ¿imprenta o autoimpresor? | **Sin imprenta**: Gross pide el CAI en ARCA y el sistema imprime el remito entero | Punto 4 y [`tramite-remito-r.md`](tramite-remito-r.md) |
+| 3 | Remito logístico: ¿imprenta o autoimpresor? | ~~Sin imprenta~~ → **cambió el 29/10, con Armando: hojas de imprenta con CAI**, y el sistema imprime sobre ellas | Punto 4 y [`tramite-remito-r.md`](tramite-remito-r.md) |
 | 4 | Fiado: ¿pasa por la caja? | **Sí**, y la deuda va a *Fiados*: la cuenta de cada persona, con pagos parciales | Punto 7 |
 | 5 | ¿Qué ve Facundo? | **Un punto medio, y Lucas lo ajusta desde Configuración** | Punto 5 |
 | 6 | Orden de traslado: ¿qué es? | **Traslado de animales**, vivos o muertos: eutanasia, operación | Punto 6 |
 | 7 | Cliente con vencidos: ¿avisa o frena? | **Avisa y frena**; el encargado autoriza con su PIN | Punto 1 |
-| 8 | Productos asociados: ¿qué conceptos fijos? | 🟡 **Pendiente**: Francisco se lo pregunta en detalle | Punto 3 — no frena el resto; los conceptos se cargan como productos y se pueden sumar después |
+| 8 | Productos asociados: ¿qué conceptos fijos? | ✅ **Así como quedó** (audio del 06/11): Repuestos pulverizadora, Fumigación y Veneno. Si después hace falta otro, se suma desde Configuración | Punto 3 |
 
-**Quedan dos cosas abiertas:** la 8, y que **Armando confirme la modalidad del punto de venta de remitos** (primer paso de [`tramite-remito-r.md`](tramite-remito-r.md)).
+~~Queda una cosa abierta: que Armando confirme la modalidad del punto de venta de remitos.~~ **Contestado por Armando el 29/10:** hojas de imprenta con CAI (punto 4). Del remito R falta la hoja de muestra de la imprenta y el CAI de la primera tanda.
 
 ---
 

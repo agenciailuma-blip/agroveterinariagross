@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Fragment, useEffect, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import QRCode from 'qrcode'
+import { lineasDelPie } from '@/lib/comprobante/escpos'
 import { obtenerComprobanteCompleto, registrarImpresion } from '@/lib/api/comprobante'
 import type { ComprobanteCompleto } from '@/lib/api/comprobante'
 import { urlQrDe } from '@/lib/comprobante/imprimirDirecto'
@@ -329,6 +330,7 @@ function Hoja({ c, qr }: { c: ComprobanteCompleto; qr: string | null }) {
           <Dato k="Apellido y Nombre / Razón social" v={c.receptor_nombre} />
           <Dato k="Condición frente al IVA" v={c.receptor_condicion} />
           <Dato k="Domicilio" v={c.receptor_domicilio || '—'} />
+          {c.condicion_venta && <Dato k="Condición de venta" v={c.condicion_venta} />}
         </dl>
       </div>
 
@@ -463,6 +465,14 @@ function Hoja({ c, qr }: { c: ComprobanteCompleto; qr: string | null }) {
           </p>
         </div>
       </div>
+
+      {lineasDelPie(c.emisor.pie).length > 0 && (
+        <div className="mt-3 text-center">
+          {lineasDelPie(c.emisor.pie).map((l, i) => (
+            <p key={i}>{l}</p>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

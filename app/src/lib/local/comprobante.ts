@@ -1,7 +1,8 @@
 import { db } from '@/lib/local/db'
-import { abrirComprobante } from '@/lib/local/cifrado'
+import { abrirComprobante, descifrarObjeto } from '@/lib/local/cifrado'
 import type { ComprobanteCompleto } from '@/lib/api/comprobante'
 import { agruparPorConcepto } from '@/lib/conceptos'
+import { condicionDeVenta } from '@/lib/comprobante/condicionDeVenta'
 
 /*
   ─────────────────────────────────────────────────────────────
@@ -27,12 +28,34 @@ export async function emisorLocal(): Promise<Record<string, string>> {
   return emisor
 }
 
+/*
+  La condición de venta de lo cobrado sin conexión. Los pagos esperan en
+  la cola, en el lote de la venta, hasta que suben; si ya subieron, no
+  quedan acá y el renglón no se imprime.
+*/
+async function condicionDeVentaLocal(ventaId: string | null | undefined): Promise<string> {
+  if (!ventaId) return ''
+  try {
+    const [operaciones, medios] = await Promise.all([
+      db.outbox.where('lote').equals(ventaId).toArray(),
+      db.medio_pago.toArray(),
+    ])
+    const tipo = new Map(medios.map((m) => [m.id, m.tipo]))
+    const pagos = await Promise.all(
+      operaciones.filter((o) => o.tabla === 'venta_pago').map((o) => descifrarObjeto(o.datos)),
+    )
+    return condicionDeVenta(pagos.map((p) => tipo.get(String(p.medio_pago_id))))
+  } catch {
+    return ''
+  }
+}
+
 export async function obtenerComprobanteLocal(id: string): Promise<ComprobanteCompleto | null> {
   const guardado = await db.comprobante.get(id)
   if (!guardado) return null
   const c = await abrirComprobante(guardado)
 
-  const [alicuotas, tributos, lineas, tipo, condicion, documento, porcentajes, emisor] =
+  const [alicuotas, tributos, lineas, tipo, condicion, documento, porcentajes, emisor, condicionVenta] =
     await Promise.all([
       db.comprobante_alicuota.where('comprobante_id').equals(id).toArray(),
       db.comprobante_tributo.where('comprobante_id').equals(id).toArray(),
@@ -42,6 +65,7 @@ export async function obtenerComprobanteLocal(id: string): Promise<ComprobanteCo
       db.tipo_documento.get(c.receptor_tipo_documento_id),
       db.alicuota_iva.toArray(),
       emisorLocal(),
+      condicionDeVentaLocal(c.venta_id),
     ])
 
   const porcentaje = new Map(porcentajes.map((a) => [a.id, Number(a.porcentaje)]))
@@ -62,6 +86,7 @@ export async function obtenerComprobanteLocal(id: string): Promise<ComprobanteCo
     receptor_documento_sigla: documento?.sigla ?? '',
     receptor_condicion: condicion?.descripcion ?? '',
     receptor_domicilio: c.receptor_domicilio,
+    condicion_venta: condicionVenta,
     neto_gravado: Number(c.neto_gravado),
     neto_no_gravado: Number(c.neto_no_gravado),
     exento: Number(c.exento),

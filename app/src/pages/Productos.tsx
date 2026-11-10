@@ -16,6 +16,7 @@ import {
 import type { FilaListado, Referencias } from '@/lib/api/catalogo'
 import { listarDepositos, stockPorDeposito } from '@/lib/api/depositos'
 import ProductoEditor from '@/components/ProductoEditor'
+import { siguienteCodigo } from '@/lib/api/codigos'
 import SubirFotos from '@/components/SubirFotos'
 import BuscarFotos from '@/components/BuscarFotos'
 import BotonBajarPlanilla from '@/components/BotonBajarPlanilla'
@@ -384,6 +385,12 @@ export default function Productos() {
     setSeleccionado(null)
     setForm(FORM_VACIO)
     setErrorGuardado(null)
+    // El código que sigue, como sugerencia. Si mientras llega ya se
+    // escribió uno, o se abrió otra ficha, no se pisa nada.
+    siguienteCodigo('producto').then((codigo) => {
+      if (!codigo) return
+      setForm((f) => (f.campos.codigo ? f : { ...f, campos: { ...f.campos, codigo } }))
+    })
   }
 
   /*

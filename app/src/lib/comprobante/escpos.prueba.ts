@@ -111,6 +111,24 @@ function importes(texto: string): number[] {
 }
 
 describe('el ticket que sale por la impresora', () => {
+  it('dice la condición de venta debajo de la condición de IVA', () => {
+    const t = comoTexto(ticketEscPos(comprobante({ condicion_venta: 'Cuenta corriente' }), null))
+    expect(t).toContain('Condición de venta: Cuenta corriente')
+    expect(t.indexOf('Condición de venta')).toBeGreaterThan(t.indexOf('Condición de IVA'))
+  })
+
+  it('sin condición de venta conocida no imprime el renglón', () => {
+    const t = comoTexto(ticketEscPos(comprobante(), null))
+    expect(t).not.toContain('Condición de venta')
+  })
+
+  it('cierra con la leyenda al pie, renglón por renglón', () => {
+    const emisor = { ...EMISOR, pie: 'Compra fácil, rápido y seguro en:\nwww.agroveterinariagross.com.ar\n' }
+    const t = comoTexto(ticketEscPos(comprobante({ emisor }), null))
+    expect(t).toContain('Compra fácil, rápido y seguro en:\nwww.agroveterinariagross.com.ar\n')
+    expect(t.indexOf('www.agroveterinariagross')).toBeGreaterThan(t.indexOf('CAE Nro'))
+  })
+
   it('lleva los datos del emisor que ARCA exige', () => {
     const t = comoTexto(ticketEscPos(comprobante(), null))
     expect(t).toContain('GROSS ERNESTO HUGO')

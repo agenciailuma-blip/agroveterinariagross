@@ -1,7 +1,7 @@
 ---
 fecha: 2026-11-05
 con: Lucas Gross y un vendedor
-estado: mostrador hecho (0.20.0); caja hecha (0.21.0); traslados para más adelante
+estado: mostrador hecho (0.20.0); caja hecha (0.21.0); fotos avisadas a la web; sueltos los ata Lucas; traslados para más adelante
 ---
 
 # Reunión del 5/11 — lo que salió de ver el sistema en uso
@@ -10,14 +10,14 @@ Nueve pedidos. Abajo, cada uno con lo que se encontró en el código y en la bas
 
 | Punto | Estado |
 |---|---|
-| 1. Fotos en la tienda | Del lado de la web: hay que pedírselo |
+| 1. Fotos en la tienda | Del lado de la web: ✅ avisado |
 | 2. Ingresos, egresos y cierre de caja | ✅ 0.21.0: ingresos y egresos, el cierre por medio de pago, la planilla A4 y los cierres anteriores |
 | 3. Buscar con el teclado | ✅ 0.20.0 en Mostrador y Caja; 0.21.1 en Remitos, Órdenes internas, Recepción y Mayorista |
-| 4 y 5. Alimento suelto | ✅ 0.20.0: 86 productos a kilo o litro, coma en la cantidad, opción para todos. Falta atar cada suelto a su bolsa |
+| 4 y 5. Alimento suelto | ✅ 0.20.0: 86 productos a kilo o litro, coma en la cantidad, opción para todos. Atar cada suelto a su bolsa lo hace Lucas, a mano y de a poco (06/11) |
 | 6. F10 | ✅ 0.20.0, en todas las pantallas |
 | 7. Tab del mostrador | ✅ 0.20.0 |
 | 8. Accesorios | ✅ 0.20.0: *precio en cada venta* |
-| 9. Traslados y calendario | Para más adelante, sin número de fase |
+| 9. Traslados y calendario | Para más adelante, sin número de fase. Francisco lo explica cuando llegue el momento |
 
 ## 1. Las fotos no aparecen en la tienda
 
@@ -28,7 +28,7 @@ Nueve pedidos. Abajo, cada uno con lo que se encontró en el código y en la bas
 - La web muestra el producto **sin foto y como «Solo consulta»**: tiene datos viejos del producto entero, no sólo de la foto.
 - La tienda consulta la API todo el tiempo (último uso, 5/11 18:02).
 
-**Conclusión:** la tienda lee, pero no actualiza los productos que ya tenía. Hay que pedírselo a la web: que tome los cambios de los productos existentes (foto, *solo consultar*, precio) y que haga una lectura completa una vez para ponerse al día.
+**Conclusión:** la tienda lee, pero no actualiza los productos que ya tenía. Hay que pedírselo a la web: que tome los cambios de los productos existentes (foto, *solo consultar*, precio) y que haga una lectura completa una vez para ponerse al día. **Avisado a la web.**
 
 ## 2. Ingresos y egresos de caja, y el cierre con detalle
 
@@ -73,4 +73,4 @@ Hoy el Tab pasa por *Escribir*, cada renglón (cantidad, %, precio, quitar) y re
 
 **Queda para más adelante** (sin número de fase): era un desarrollo pensado para después.
 
-El Calendario de hoy es **de plata** (cheques, vencimientos de clientes y proveedores). No tiene traslados. **Falta aclarar** qué se quiere: que cada traslado aparezca en su día del calendario y que desde un día se pueda crear un traslado, o que se conecte a un calendario externo (Google Calendar).
+El Calendario de hoy es **de plata** (cheques, vencimientos de clientes y proveedores). No tiene traslados. Cuando llegue el momento, Francisco explica qué se quiere y se desarrolla.

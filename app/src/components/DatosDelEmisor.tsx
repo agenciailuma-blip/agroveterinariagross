@@ -112,7 +112,7 @@ export default function DatosDelEmisor() {
     <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-borde" onKeyDown={avanzarConEnter}>
       <h2 className="font-medium text-tinta">Datos del emisor</h2>
       <p className="mt-1 text-sm text-piedra-500">
-        Lo que va impreso en el encabezado de toda factura, tanto en el ticket como en la hoja A4.
+        Lo que va impreso en el encabezado y al pie de todo comprobante, tanto en el ticket como en la hoja A4.
       </p>
 
       {faltan.length > 0 && (
@@ -132,6 +132,15 @@ export default function DatosDelEmisor() {
             />
           </label>
         ))}
+        <label className="col-span-2 block">
+          <span className="mb-1 block text-xs font-medium text-piedra-600">Leyenda al pie</span>
+          <textarea
+            value={campos['comercio.pie'] ?? ''}
+            onChange={(e) => setCampos({ ...campos, 'comercio.pie': e.target.value })}
+            rows={2}
+            className={`${claseInput} resize-none`}
+          />
+        </label>
       </div>
 
       <div className="mt-4 flex flex-col gap-4 border-t border-borde pt-4 sm:flex-row sm:items-start">

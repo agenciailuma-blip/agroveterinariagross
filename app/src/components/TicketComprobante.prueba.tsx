@@ -94,6 +94,23 @@ function importes(html: string): number[] {
 }
 
 describe('ticket de 80 mm', () => {
+  it('dice la condición de venta, y cierra con la leyenda al pie', () => {
+    const emisor = { ...EMISOR, pie: 'Compra fácil, rápido y seguro en:\nwww.agroveterinariagross.com.ar' }
+    const html = renderToStaticMarkup(
+      <TicketComprobante c={comprobante({ condicion_venta: 'Contado', emisor })} qr={null} />,
+    )
+    expect(html).toContain('Condición de venta:</span> Contado')
+    expect(html).toContain('<p class="break-words">Compra fácil, rápido y seguro en:</p>')
+    expect(html).toContain('<p class="break-words">www.agroveterinariagross.com.ar</p>')
+    expect(html.indexOf('agroveterinariagross.com.ar')).toBeGreaterThan(html.indexOf('CAE Nro'))
+  })
+
+  it('sin condición de venta ni leyenda, no deja renglones vacíos', () => {
+    const html = renderToStaticMarkup(<TicketComprobante c={comprobante()} qr={null} />)
+    expect(html).not.toContain('Condición de venta')
+    expect(html).not.toContain('text-center"><p')
+  })
+
   it('imprime los datos del emisor que ARCA exige en el encabezado', () => {
     const html = renderToStaticMarkup(<TicketComprobante c={comprobante()} qr={null} />)
     expect(html).toContain('GROSS ERNESTO HUGO')

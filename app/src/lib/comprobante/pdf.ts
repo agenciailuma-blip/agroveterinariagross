@@ -5,6 +5,7 @@ import { LEYENDA_NO_FISCAL } from '@/lib/api/noFiscal'
 import { numeroRecibo, type ReciboCompleto } from '@/lib/api/recibos'
 import { importeEnLetras } from '@/lib/enLetras'
 import { presentacionDe } from '@/lib/comprobante/presentacion'
+import { lineasDelPie } from '@/lib/comprobante/escpos'
 import { moneda, numero } from '@/lib/tipos'
 
 /*
@@ -152,13 +153,14 @@ export async function facturaEnPdf(c: ComprobanteCompleto, urlQr: string | null)
   y -= altoEnc + 6
 
   /* ── Receptor ── */
-  const altoRec = 40
+  const altoRec = c.condicion_venta ? 54 : 40
   caja(p, izq, y - altoRec, ancho, altoRec, 1.6)
   const colDer = medio + 10
   dato(p, identificado ? c.receptor_documento_sigla : 'Documento', identificado ? c.receptor_documento! : 'Consumidor final sin identificar', izq + 10, y - 15)
   dato(p, 'Apellido y Nombre / Razón social', recortar(c.receptor_nombre, normal, 8.5, ancho / 2 - 160), colDer, y - 15)
   dato(p, 'Condición frente al IVA', c.receptor_condicion, izq + 10, y - 29)
   dato(p, 'Domicilio', recortar(c.receptor_domicilio || '—', normal, 8.5, ancho / 2 - 60), colDer, y - 29)
+  if (c.condicion_venta) dato(p, 'Condición de venta', c.condicion_venta, izq + 10, y - 43)
   y -= altoRec + 6
 
   /* ── Detalle ── */
@@ -184,7 +186,9 @@ export async function facturaEnPdf(c: ComprobanteCompleto, urlQr: string | null)
   cols.reduce((x, col) => (xs.push(x), x + col.a), izq)
 
   const FILA = 12
-  const reservaFinal = 190
+  // Lo que ocupa el cierre: totales, QR y CAE, y la leyenda al pie.
+  const renglonesDelPie = lineasDelPie(c.emisor.pie).length
+  const reservaFinal = 190 + (renglonesDelPie ? 8 + renglonesDelPie * 12 : 0)
   let inicioTabla = y
 
   const encabezadoTabla = () => {
@@ -270,6 +274,14 @@ export async function facturaEnPdf(c: ComprobanteCompleto, urlQr: string | null)
   escribir(p, 'ARCA — Comprobante Autorizado', izq + ladoQr + 14, y - 8 - ladoQr / 2, 9, true)
   aLaDerecha(p, `${c.modalidad === 'caea' ? 'CAEA' : 'CAE'} N°: ${c.cae ?? '—'}`, der, y - 8 - ladoQr / 2 + 6, 9, true)
   aLaDerecha(p, `Fecha de Vto.: ${c.cae_vencimiento ? fecha(c.cae_vencimiento) : '—'}`, der, y - 8 - ladoQr / 2 - 7, 9, true)
+
+  /* ── Leyenda al pie, centrada debajo del QR ── */
+  let yPie = y - 8 - ladoQr - 16
+  for (const l of lineasDelPie(c.emisor.pie)) {
+    const t = seguro(l)
+    escribir(p, l, medio - normal.widthOfTextAtSize(t, 9) / 2, yPie, 9)
+    yPie -= 12
+  }
 
   return doc.save()
 }

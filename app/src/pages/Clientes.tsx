@@ -10,6 +10,7 @@ import {
   referenciasFiscales,
 } from '@/lib/api/clientes'
 import type { Cliente } from '@/lib/api/clientes'
+import { siguienteCodigo } from '@/lib/api/codigos'
 import ClienteEditor from '@/components/ClienteEditor'
 import CuentaCorriente from '@/components/CuentaCorriente'
 import ListaVencidos from '@/components/ListaVencidos'
@@ -119,6 +120,12 @@ export default function Clientes() {
     setForm(CLIENTE_NUEVO)
     setPestania('datos')
     setError(null)
+    // El código que sigue, como sugerencia. Si mientras llega ya se
+    // escribió uno, o se abrió otra ficha, no se pisa nada.
+    siguienteCodigo('cliente').then((codigo) => {
+      if (!codigo) return
+      setForm((f) => (f.codigo || f.id ? f : { ...f, codigo }))
+    })
   }
 
   function cerrar() {

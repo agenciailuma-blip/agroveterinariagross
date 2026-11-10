@@ -1,5 +1,5 @@
 ---
-actualizado: 2026-11-05
+actualizado: 2026-11-06
 estado: en curso
 ---
 
@@ -128,6 +128,22 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 🟡 **Lo que la venta tardaba en llegar a la caja sin internet** — arreglado el 05/10 y publicado en la 0.13.4, **sin probar en el local**. El mostrador le pasaba las ventas a la caja una vez por minuto, y la caja miraba su cola cada ocho segundos: hasta 68 segundos con el cliente esperando. Y llegaba de a partes porque, mientras la cabecera intentaba subir al servidor —hasta doce segundos sin internet—, salían los renglones solos. Ahora la venta sale al segundo y medio de apretar *Enviar a caja* (y otra vez a los catorce, por si el intento de subir tardó), viaja entera o espera entera, y la caja la muestra apenas llega. Se comprueba en el próximo corte: la venta tiene que aparecer en la caja en un par de segundos y completa.
 
 ---
+
+## Lo último que pasó — 10 de noviembre: los audios de Lucas
+
+Seis pedidos por WhatsApp, revisados uno por uno en [`audios-lucas-2026-11-10.md`](audios-lucas-2026-11-10.md), con el borrador de respuesta. **Hechos, sin publicar:**
+
+- **WhatsApp de fiados abría la carpeta Documentos.** El programa le pasaba el enlace al Explorador de Windows, que con más de 260 caracteres (el mensaje armado los pasa) abre una carpeta. Ahora lo abre Windows con el navegador ([`enlaces.rs`](../app/src-tauri/src/enlaces.rs)). Reproducido y verificado en la PC de desarrollo con la función real.
+- **El código siguiente** en *Nuevo producto* y *Nuevo cliente*: el mayor de los numéricos más uno, editable. Visto en pantalla: 3668 y 4004.
+- **«Dividir el pago»** en la caja: lleva el cursor al importe para bajarlo y completar con otro medio. Sin ver en pantalla.
+- **La condición de venta** (*Contado*, *Cuenta corriente* o las dos) en el ticket, el A4, el PDF y la pantalla, y **la leyenda al pie** con la web, configurable en *Datos del emisor*. Vistas en pantalla con facturas reales.
+- **La base ya está aplicada:** [`codigo_siguiente_y_pie_del_comprobante`](../supabase/migrations/20261110120000_codigo_siguiente_y_pie_del_comprobante.sql). **869 pruebas verdes** y los tipos sin errores.
+- 🟡 **Espera el OK de Francisco:** vender y cobrar en la misma PC (punto 6). Y un riesgo que ya existe: dos cajas facturando por contingencia en el mismo corte pueden repetir el número.
+
+## Lo último que pasó — 6 de noviembre: lo que contestó Lucas, y pendientes que se cerraron
+
+- **Sueltos y bolsas: los ata Lucas, a mano y de a poco.** No quiere una carga masiva. Antes de atar el alimento tiene que ordenar los sueltos —hoy tiene un solo *Evolution x kg* y bolsas de mordida grande y pequeña; un solo *Livra gato* para gatito, urinario y esterilizado— y ver cómo registra el alimento que se usa para los animales internados. Quiere hacerlo con los chicos, de a poco, para que lo aprendan. **Empieza por las pastillas** (caja, tableta, pastilla), también a mano. La propuesta de parejas queda en [`sueltos-y-bolsas.md`](sueltos-y-bolsas.md) sólo como referencia. **En la base no se ató nada.**
+- **Sacados de los pendientes:** Cloudflare Images (ya cancelado), traslados y calendario (Francisco lo explica cuando llegue el momento), el stock del depósito en el mostrador sin internet (es para cuando abra el segundo local, muy a futuro) y las fotos de la tienda (ya se le avisó a la web).
 
 ## Lo último que pasó — 6 de noviembre: la planilla de una caja cerrada y el mapa del mayorista
 
@@ -522,7 +538,7 @@ Lucas trajo **ocho pedidos nuevos**, en su cuaderno y explicados en dos audios: 
 - **El remito logístico lleva CAI, no CAE.** El 26/10 se había decidido imprimirlo entero desde el sistema; **el 29/10 Armando contestó que para eso hay que ser autoimpresor y Gross no llega al volumen** que pide ARCA. Va en **hojas A4 de imprenta, con CAI y por duplicado**, y el sistema imprime sobre ellas: ver el punto 4 de [`fase-03.md`](fase-03.md). Falta una hoja de muestra de la imprenta.
 - **Siete de las ocho preguntas, contestadas el 26/10** (están en el documento). Falta qué conceptos fijos llevan los productos asociados. La modalidad del remito R la contestó Armando el 29/10: hojas de imprenta.
 - **Las listas de precios ya admiten un precio fijo por producto** —no sólo porcentaje, como se dijo en el audio—. Falta la pantalla para cargarlo.
-- ⚠️ **Los productos asociados** hacen una factura que describe otra cosa de la que salió. Avisado una vez en el documento; conviene que lo mire Armando.
+- **Los productos asociados** hacen una factura que describe otra cosa de la que salió. Avisado una vez en el documento; el 06/11 se decidió no pedirle a Armando que lo revise.
 - **Los mensajes masivos van en la fase siguiente**, con el CRM.
 
 **Anotado para hacer aparte: la auditoría de integralidad.** Lucas quiere menos saltos entre pantallas —el pedido llega, depósito da el ok, un clic arma el remito, otro factura, todo en el mismo lugar— y que lo hecho igual se vea desde Remitos o Comprobantes. Pide recorrer el sistema entero con esa vara; está descripto al final de [`fase-03.md`](fase-03.md).
@@ -537,7 +553,7 @@ Las fotos, las láminas y la transcripción: [`referencias/pedidos-lucas-2026-10
 - **Sin mails del dominio:** se borraron los MX y el SPF del reenvío de Cloudflare de la cuenta anterior, y el comodín `*`.
 - **Resend, verificado** (23/10). **El remitente del sistema es `Agroveterinaria Gross <notificaciones@agroveterinariagross.com.ar>`** —«notificaciones» y no «facturas», porque va a mandar más que facturas—: desde ahora las facturas por mail **les llegan a los clientes**. 🟡 **Pendiente: `correo.responder_a`**, la casilla del local que recibe las respuestas de los clientes. **Se carga cuando se creen los mails del dominio** (decidido el 23/10). Hasta entonces, si un cliente contesta, la respuesta va a `notificaciones@` y no la lee nadie; el mail no invita a responder.
 - ✅ **`https://empresa.agroveterinariagross.com.ar`**: la versión web del sistema, conectada al proyecto `gross-sistema` de Cloudflare Pages (*Custom domains*) y verificada el 23/10: abre el sistema con certificado válido y sirve las actualizaciones. `gross-sistema.pages.dev` sigue andando igual, y es de donde se actualizan las PC. El isotipo de los mails sale ahora de este dominio (`correo.logo`). El sistema no manda enlaces por mail, así que en Supabase no hubo que tocar nada.
-- 🟡 **La cuenta vieja de Cloudflare** le factura a Lucas 5 US$ por mes de Cloudflare Images. Conviene pedirle al desarrollador que lo cancele.
+- ✅ ~~**La cuenta vieja de Cloudflare** le factura a Lucas 5 US$ por mes de Cloudflare Images.~~ **Cancelado** (06/11).
 
 ## Lo último que pasó — 22 de octubre: el mostrador no encontraba Credelio
 
@@ -1527,7 +1543,7 @@ El detalle completo —por qué el nombre se guarda por terminal, qué hace el d
    - **El menú de la izquierda tiene demasiadas entradas.** La referencia es OBTech —pocas secciones arriba y submenús con varias opciones—, como ejemplo de orden y no para copiarlo. La idea a evaluar: agrupar lo que se usa junto (Stock, Inventario y Transferencias como pestañas de una sección; Proveedores, Compras y Cuentas proveedores en otra; Facturación, Remitos y Presupuestos en otra). Transferencias ya quedó sin entrada propia a propósito, para no sumarle una más.
    - **Configuración se hizo larga hacia abajo.** Revisar cada sección y separar por pestañas donde haga falta, para que se vea de un vistazo qué se hace en cada una.
    - **Ninguna pantalla con scroll horizontal**, en ningún ancho: es regla desde el 30/09. Medido ese día a 375 px, **se desplazan hacia el costado** Compras (636 px en 343), Facturación (641), Presupuestos (793), Remitos (785), Precios (402), Proveedores (481), Cuentas proveedores (423) y Usuarios (497). Todas son anteriores a los depósitos.
-10. 🟢 **Cuando abra el segundo local: que el mostrador sin internet muestre el stock de su depósito.** Hoy la copia local de cada PC tiene el total, y es lo que ve el mostrador al buscar. No cambia lo que se descuenta —eso lo decide la base al subir la venta—, sólo el número que se lee en pantalla. Se deja para ese momento porque toca la sincronización, que hoy anda.
+10. ~~**Cuando abra el segundo local: que el mostrador sin internet muestre el stock de su depósito.**~~ Sacado de los pendientes el 06/11: es muy a futuro. Lo técnico queda en [[Lo construido, en detalle]].
 11. ~~🟡 **Cheques: recibidos, endosados a proveedores y propios.**~~ ✅ **Construido el 30/09**, con las cuatro respuestas de Lucas y el calendario de recibos. Falta verlo en pantalla y publicarlo. [`cheques.md`](cheques.md).
 12. ~~🟡 **El historial de costos por proveedor**~~ ✅ **Construido el 30/09**: el desplegable en la ficha del producto y Compras → Costos. Falta verlo en pantalla y publicarlo.
 13. ~~🟡 **Los datos bancarios de cada proveedor: CBU, CVU o alias.**~~ ✅ **Construido el 30/09**: en la ficha del proveedor, y listos para copiar en el pago por transferencia. Falta verlo en pantalla y publicarlo.

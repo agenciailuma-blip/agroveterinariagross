@@ -73,6 +73,14 @@ describe('el PDF de la factura', () => {
     expect(pdfValido(await facturaEnPdf(rara, null))).toBe(true)
   })
 
+  it('con condición de venta y leyenda al pie sale igual, también largo', async () => {
+    const emisor = { ...factura().emisor, pie: 'Compra fácil, rápido y seguro en:\nwww.agroveterinariagross.com.ar' }
+    const corta = await facturaEnPdf(factura(2, { condicion_venta: 'Cuenta corriente', emisor }), null)
+    expect(pdfValido(corta)).toBe(true)
+    expect((await PDFDocument.load(corta)).getPageCount()).toBe(1)
+    expect(pdfValido(await facturaEnPdf(factura(90, { condicion_venta: 'Contado', emisor }), null))).toBe(true)
+  })
+
   it('el base64 vuelve a ser el mismo PDF', async () => {
     const bytes = await facturaEnPdf(factura(), null)
     const vuelta = Uint8Array.from(atob(aBase64(bytes)), (ch) => ch.charCodeAt(0))

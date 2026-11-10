@@ -23,13 +23,26 @@ pub fn abrir_enlace(url: String) -> Result<(), String> {
 
     #[cfg(windows)]
     {
-        // El Explorador abre una dirección web con el navegador elegido
-        // en Windows. Se le pasa como un solo argumento, sin consola de
-        // por medio: los «&» del mensaje no se interpretan.
-        std::process::Command::new("explorer")
-            .arg(&url)
-            .spawn()
-            .map_err(|e| format!("No se pudo abrir el navegador: {e}"))?;
+        // Windows abre la dirección con el navegador elegido, igual que
+        // si se la pegara en «Ejecutar». No se usa `explorer <url>`: el
+        // Explorador la toma como una ruta de archivo y, pasados los 260
+        // caracteres (un aviso de fiado los pasa), abre la carpeta
+        // Documentos en vez del navegador. Tampoco hay consola de por
+        // medio: los «&» del mensaje no se interpretan.
+        use windows::core::{w, HSTRING};
+        use windows::Win32::UI::Shell::ShellExecuteW;
+        use windows::Win32::UI::WindowsAndMessaging::SW_SHOWNORMAL;
+
+        let destino = HSTRING::from(url.as_str());
+        let resultado =
+            unsafe { ShellExecuteW(None, w!("open"), &destino, None, None, SW_SHOWNORMAL) };
+        // Por contrato de Windows, 32 o menos es un error.
+        if resultado.0 as isize <= 32 {
+            return Err(format!(
+                "No se pudo abrir el navegador (código {}).",
+                resultado.0 as isize
+            ));
+        }
         Ok(())
     }
 

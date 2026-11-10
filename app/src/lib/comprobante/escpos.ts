@@ -199,6 +199,14 @@ export function ticketDePrueba(nombreComercio: string): Uint8Array {
   return c.bytes()
 }
 
+/** La leyenda al pie de Datos del emisor, renglón por renglón y sin los vacíos. */
+export function lineasDelPie(pie: string | undefined): string[] {
+  return (pie ?? '')
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean)
+}
+
 export function ticketEscPos(comp: ComprobanteCompleto, urlQr: string | null): Uint8Array {
   const { esA, porcentajeDe, sinIva, codigo, identificado } = presentacionDe(comp)
   const e = comp.emisor
@@ -237,6 +245,7 @@ export function ticketEscPos(comp: ComprobanteCompleto, urlQr: string | null): U
     `${identificado ? comp.receptor_documento_sigla : 'CUIT/DNI'}: ${comp.receptor_documento || ''}`,
   )
   c.linea(`Condición de IVA: ${comp.receptor_condicion}`)
+  if (comp.condicion_venta) c.linea(`Condición de venta: ${comp.condicion_venta}`)
 
   // ── Detalle ──
   c.separador()
@@ -290,6 +299,15 @@ export function ticketEscPos(comp: ComprobanteCompleto, urlQr: string | null): U
   if (urlQr) {
     c.linea()
     c.alinear(1).qr(urlQr).alinear(0)
+  }
+
+  // ── Leyenda al pie ──
+  const pie = lineasDelPie(e.pie)
+  if (pie.length) {
+    c.linea()
+    c.alinear(1)
+    for (const l of pie) c.linea(l)
+    c.alinear(0)
   }
 
   c.cortar()
