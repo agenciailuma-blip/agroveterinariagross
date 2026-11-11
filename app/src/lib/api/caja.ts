@@ -105,74 +105,100 @@ export interface PagoNuevo {
   terminal asignada— que una consulta al arranque dejaba la aplicación
   entera esperando sin conexión.
 
-  Acá es lo mismo: si la caja no sabe que está abierta, no puede cobrar
-  aunque todo lo demás funcione. Se guarda al abrirla y se lee de ahí
-  cuando el servidor no contesta.
+  Acá es lo mismo: si el puesto no sabe que la caja está abierta, no
+  puede cobrar aunque todo lo demás funcione. Se guarda cada vez que el
+  servidor contesta y se lee de ahí cuando no contesta.
+
+  La caja es una sola para todo el local: la plata está en un solo cajón
+  y todos los puestos cobran contra ella. Por eso no se busca por
+  terminal.
 */
 const CLAVE_CAJA = 'gross.caja'
 
-function recordarCaja(terminalId: string, caja: Caja | null) {
-  if (caja) localStorage.setItem(`${CLAVE_CAJA}.${terminalId}`, JSON.stringify(caja))
-  else localStorage.removeItem(`${CLAVE_CAJA}.${terminalId}`)
+function recordarCaja(caja: Caja | null) {
+  try {
+    if (caja) localStorage.setItem(CLAVE_CAJA, JSON.stringify(caja))
+    else localStorage.removeItem(CLAVE_CAJA)
+    for (const k of Object.keys(localStorage)) if (k.startsWith(`${CLAVE_CAJA}.`)) localStorage.removeItem(k)
+  } catch {
+    // Sin lugar para guardarla: se vuelve a preguntar la próxima vez.
+  }
 }
 
-function cajaRecordada(terminalId: string): Caja | null {
+function cajaRecordada(): Caja | null {
   try {
-    const crudo = localStorage.getItem(`${CLAVE_CAJA}.${terminalId}`)
+    // La versión anterior la guardaba por terminal: si la actualización
+    // llega sin internet, sirve la que dejó.
+    const crudo =
+      localStorage.getItem(CLAVE_CAJA) ??
+      Object.keys(localStorage)
+        .filter((k) => k.startsWith(`${CLAVE_CAJA}.`))
+        .map((k) => localStorage.getItem(k))
+        .find(Boolean) ??
+      null
     return crudo ? (JSON.parse(crudo) as Caja) : null
   } catch {
     return null
   }
 }
 
-export async function cajaAbierta(terminalId: string): Promise<Caja | null> {
+export async function cajaAbierta(): Promise<Caja | null> {
   if (navigator.onLine) {
+    // La más reciente: mientras convivan puestos con la versión anterior
+    // puede haber más de una abierta, y no tiene que romper.
     const { data, error } = await supabase
       .from('caja')
       .select('id, terminal_id, cajero_id, estado, monto_inicial, abierta_en')
-      .eq('terminal_id', terminalId)
       .eq('estado', 'abierta')
+      .order('abierta_en', { ascending: false })
+      .limit(1)
       .maybeSingle<Caja>()
 
     // Sólo se cree la respuesta del servidor si de verdad contestó. Una
     // consulta que falla no significa "no hay caja abierta": significa
     // que no sabemos, y en ese caso vale lo último que sí supimos.
     if (!error) {
-      recordarCaja(terminalId, data)
+      recordarCaja(data)
       return data
     }
   }
-  return cajaRecordada(terminalId)
+  return cajaRecordada()
 }
+
+type RespuestaConPin<T> = ({ ok: true } & T) | { ok: false; error: string }
 
 /*
   Abrir la caja SÍ necesita internet, y es a propósito.
 
-  Es una operación de una vez por turno, al empezar el día, y crea el
-  contenedor contra el que después se arquea. Dejar que dos terminales
-  abran cajas distintas sin coordinar, o que se abra una caja que el
-  servidor nunca va a conocer, arruina el cierre del turno — que es
-  justamente el momento en que se cuenta la plata.
+  Es una operación de una vez por día, y crea el contenedor contra el que
+  después se arquea. Una caja que el servidor nunca conoció arruina el
+  cierre, que es justamente el momento en que se cuenta la plata.
+
+  La abre el encargado con su PIN: el local entra con un solo usuario, y
+  quién abrió lo dice el PIN. La terminal es la PC donde se abrió; de su
+  punto de venta salen las facturas.
 
   Cobrar sin conexión sí funciona, porque eso pasa en medio de la
   atención y no se puede frenar.
 */
-export async function abrirCaja(terminalId: string, cajeroId: string, montoInicial: number) {
+export async function abrirCaja(terminalId: string, montoInicial: number, pin: string) {
   if (!navigator.onLine) {
     throw new Error(
-      'Para abrir la caja hace falta internet. Si ya estaba abierta antes de que se cortara, podés seguir cobrando igual.',
+      'Para abrir la caja hace falta internet. Si ya estaba abierta antes de que se cortara, se puede seguir cobrando igual.',
     )
   }
 
-  const { data, error } = await supabase
-    .from('caja')
-    .insert({ terminal_id: terminalId, cajero_id: cajeroId, monto_inicial: montoInicial })
-    .select('id, terminal_id, cajero_id, estado, monto_inicial, abierta_en')
-    .single<Caja>()
+  const { data, error } = await supabase.rpc('abrir_caja', {
+    p_terminal_id: terminalId,
+    p_monto_inicial: montoInicial,
+    p_pin: pin,
+  })
   if (error) throw new Error(`No se pudo abrir la caja: ${error.message}`)
+  const r = data as RespuestaConPin<{ caja: Caja }>
+  if (!r.ok) throw new Error(r.error)
 
-  recordarCaja(terminalId, data)
-  return data
+  recordarCaja(r.caja)
+  return r.caja
 }
 
 /*
@@ -579,7 +605,7 @@ export interface ResultadoCierre {
   registrar produce una diferencia de caja que no existe y que después
   alguien tiene que explicar.
 */
-export async function cerrarCaja(cajaId: string, terminalId: string, montoDeclarado: number) {
+export async function cerrarCaja(cajaId: string, montoDeclarado: number, pin: string) {
   if (!navigator.onLine) {
     throw new Error('Para cerrar la caja hace falta internet: el arqueo se calcula en el servidor.')
   }
@@ -595,13 +621,16 @@ export async function cerrarCaja(cajaId: string, terminalId: string, montoDeclar
     }
   }
 
-  const { data, error } = await supabase.rpc('cerrar_caja', {
+  // La cierra el encargado con su PIN, igual que la abre.
+  const { data, error } = await supabase.rpc('cerrar_caja_con_pin', {
     p_caja_id: cajaId,
     p_monto_declarado: montoDeclarado,
+    p_pin: pin,
   })
   if (error) throw new Error(error.message)
+  const r = data as RespuestaConPin<ResultadoCierre & { cerro: string }>
+  if (!r.ok) throw new Error(r.error)
 
-  recordarCaja(terminalId, null)
-  const filas = (data ?? []) as ResultadoCierre[]
-  return filas[0]
+  recordarCaja(null)
+  return r
 }

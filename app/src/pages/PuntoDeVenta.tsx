@@ -14,7 +14,9 @@ import {
 } from '@/lib/api/ventas'
 import type { ClienteVenta, LineaVenta, ProductoVenta } from '@/lib/api/ventas'
 import { clienteDesdeArca } from '@/lib/api/clientes'
-import { autorizarVencidoEnCaja, deudaVencida } from '@/lib/api/caja'
+import { autorizarVencidoEnCaja, cajaAbierta, deudaVencida } from '@/lib/api/caja'
+import type { Operador } from '@/lib/api/ventas'
+import CobroDeVenta from '@/components/CobroDeVenta'
 import { cuitValido } from '@/lib/api/cheques'
 import { cargarPrecios, mediosParaElegir, previsualizarPrecio } from '@/lib/api/precios'
 import type { MedioPago } from '@/lib/api/precios'
@@ -50,6 +52,24 @@ export default function PuntoDeVenta() {
   const { operador, identificar, salir, renovar } = useOperador()
   const { listo: copiaLocalLista, enLinea, sincronizando } = useSync()
   const { tienePermiso } = useAuth()
+
+  /*
+    Vender y cobrar en el mismo puesto, aprobado el 11/11.
+
+    La venta se arma igual que siempre y se manda a la caja; en vez de
+    esperar en la cola, se cobra ahí mismo. Quien puso el PIN queda como
+    vendedor y como cajero. El efectivo va al cajón de la caja del local,
+    que es una sola para todos los puestos.
+
+    Se guarda el operador del momento: el cobro tiene que quedar a nombre
+    de quien vendió aunque el PIN se venza mientras tanto.
+  */
+  const [cobrando, setCobrando] = useState<{
+    ventaId: string | null
+    codigo: string
+    cajaId: string
+    operador: Operador
+  } | null>(null)
 
   const [lineas, setLineas] = useState<LineaVenta[]>(() => {
     try {
@@ -668,6 +688,58 @@ export default function PuntoDeVenta() {
     },
   })
 
+  const cobrarAca = useMutation({
+    mutationFn: async () => {
+      const caja = await cajaAbierta()
+      if (!caja) throw new Error('La caja no está abierta: la abre el encargado desde Caja.')
+      const v = await enviarACaja(
+        {
+          clienteId: cliente!.id,
+          vendedorId: operador!.usuario_id,
+          terminalId: terminal!.id,
+          terminalPrefijo: terminal!.prefijo ?? 'T',
+          lineas,
+          observaciones: null,
+          nombreParaLlamar: null,
+          listaPrecioId: medio?.lista_precio_id ?? null,
+          medioPagoId: medioAnticipado,
+          cuotas: cuotasAnticipadas,
+        },
+        setPasoEnvio,
+      )
+      // Con conexión, que la venta llegue antes de cobrarla: el cobro y la
+      // factura se arman en el servidor sobre ella.
+      if (navigator.onLine) await subirPendientes()
+      return { venta: v, caja }
+    },
+    onSuccess: ({ venta, caja }) => {
+      setPasoEnvio(null)
+      setLineas([])
+      setMedioAnticipado(null)
+      setCuotasAnticipadas(1)
+      setError(null)
+      setCobrando({ ventaId: venta.id, codigo: venta.codigo, cajaId: caja.id, operador: operador! })
+    },
+    onError: (e) => {
+      setPasoEnvio(null)
+      setError(e instanceof Error ? e.message : 'No se pudo cobrar.')
+    },
+  })
+
+  /*
+    Se cierra el cobro: el PIN también, como al enviar a caja, para que
+    la próxima venta quede a nombre de quien la haga.
+  */
+  function terminarCobro(sinCobrar: boolean) {
+    if (sinCobrar && cobrando) {
+      setExito(`Venta ${cobrando.codigo} sin cobrar: quedó en la cola de la caja`)
+      setTimeout(() => setExito(null), 5000)
+    }
+    setCobrando(null)
+    salir()
+    busqueda.current?.focus()
+  }
+
   if (cargandoTerminal) return <p className="text-sm text-piedra-500">Cargando…</p>
 
   if (!terminal) return <ElegirTerminal disponibles={disponibles} onElegir={elegir} />
@@ -700,6 +772,40 @@ export default function PuntoDeVenta() {
       </div>
     )
   }
+
+  /*
+    Cobrando en el puesto. Va antes de pedir el PIN: si se vence mientras
+    se cobra, el cobro sigue a nombre de quien vendió.
+  */
+  if (cobrando)
+    return (
+      <div className="flex flex-col gap-3 lg:h-full">
+        <div>
+          <h1 className="text-xl font-semibold tracking-tight text-tinta">Cobrar venta {cobrando.codigo}</h1>
+          <p className="text-sm text-piedra-500">
+            {terminal.nombre} · <span className="font-medium text-tinta">{cobrando.operador.nombre}</span>
+          </p>
+        </div>
+        <div className="min-w-0 flex-1">
+          <CobroDeVenta
+            ventaId={cobrando.ventaId}
+            cajaId={cobrando.cajaId}
+            terminal={terminal}
+            operador={cobrando.operador}
+            sinVenta={
+              <div className="grid place-items-center gap-3 rounded-xl border border-dashed border-borde bg-white/60 py-10">
+                <p className="text-sm text-piedra-500">Venta {cobrando.codigo} cobrada.</p>
+                <button autoFocus onClick={() => terminarCobro(false)} className={PRINCIPAL}>
+                  Nueva venta
+                </button>
+              </div>
+            }
+            onTerminada={() => setCobrando((c) => (c ? { ...c, ventaId: null } : c))}
+            onCancelar={() => terminarCobro(true)}
+          />
+        </div>
+      </div>
+    )
 
   if (!operador) {
     return (
@@ -1307,6 +1413,16 @@ export default function PuntoDeVenta() {
 
         {aConvenir && bloqueRemitoInterno}
 
+        {tienePermiso('ventas.cobrar') && (
+          <button
+            onClick={() => cobrarAca.mutate()}
+            disabled={!lineas.length || !cliente || cobrarAca.isPending || enviar.isPending || presupuestar.isPending}
+            className={aConvenir ? SECUNDARIO : PRINCIPAL}
+          >
+            {cobrarAca.isPending ? `Preparando… ${pasoEnvio ?? ''}` : 'Cobrar'}
+          </button>
+        )}
+
         <button
           onClick={async () => {
             /*
@@ -1336,15 +1452,15 @@ Se muestra en la cola del cajero. Si no hace falta, dejalo vacío.`,
             enviar.mutate(nombre || null)
           }}
           ref={aConvenir ? undefined : botonEnviar}
-          disabled={!lineas.length || !cliente || enviar.isPending || presupuestar.isPending}
-          className={aConvenir ? SECUNDARIO : PRINCIPAL}
+          disabled={!lineas.length || !cliente || enviar.isPending || presupuestar.isPending || cobrarAca.isPending}
+          className={aConvenir || tienePermiso('ventas.cobrar') ? SECUNDARIO : PRINCIPAL}
         >
           {enviar.isPending ? (
             `Enviando… ${pasoEnvio ?? ''}`
           ) : (
             <>
               Enviar a caja
-              {!aConvenir && <TeclaAtajo tecla="F10" clara />}
+              {!aConvenir && <TeclaAtajo tecla="F10" clara={!tienePermiso('ventas.cobrar')} />}
             </>
           )}
         </button>

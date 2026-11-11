@@ -426,8 +426,8 @@ function ModalCobrarFiado({
     (m) => !['fiado', 'cuenta_corriente', 'cheque'].includes(m.tipo),
   )
   const caja = useQuery({
-    queryKey: ['caja', terminal?.id],
-    queryFn: () => cajaAbierta(terminal!.id),
+    queryKey: ['caja'],
+    queryFn: () => cajaAbierta(),
     enabled: !!terminal,
   })
   const cajaId = caja.data?.id ?? null

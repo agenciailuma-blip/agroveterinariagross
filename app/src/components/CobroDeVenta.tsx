@@ -1,0 +1,1591 @@
+import { useEffect, useMemo, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
+import type { Terminal } from '@/lib/terminal'
+import type { Operador } from '@/lib/api/ventas'
+import { Link } from 'react-router-dom'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useSync } from '@/lib/local/SyncProvider'
+import { useAuth } from '@/auth/AuthProvider'
+import DescuentoEnCaja from '@/components/DescuentoEnCaja'
+import { pedirNumero } from '@/components/Dialogo'
+import {
+  ajustarTotal,
+  aplicarLista,
+  autorizarVencidoEnCaja,
+  cobrar,
+  deudaVencida,
+  editarVentaEnCaja,
+  obtenerVentaCompleta,
+  percepcionACobrar,
+  saldoCuentaCorriente,
+} from '@/lib/api/caja'
+import type { PagoNuevo, VentaCompleta } from '@/lib/api/caja'
+import type { Vencido } from '@/lib/vencido'
+import AvisoVencido from '@/components/AvisoVencido'
+import type { LineaDeseada } from '@/lib/local/caja'
+import { buscarProductosVenta } from '@/lib/api/ventas'
+import type { ProductoVenta } from '@/lib/api/ventas'
+import { cargarPrecios, mediosParaElegir } from '@/lib/api/precios'
+import type { MedioPago } from '@/lib/api/precios'
+import { facturarVenta } from '@/lib/api/facturacion'
+import { mandarSolaACuentaCorriente } from '@/lib/api/facturaPorMail'
+import { emitirNoFiscal, marcarDocumentacion, numeroNoFiscal } from '@/lib/api/noFiscal'
+import { abrirComprobante, abrirNoFiscal } from '@/lib/escritorio'
+import {
+  imprimirComprobante,
+  imprimirNoFiscal,
+  puedeImprimirSolo,
+} from '@/lib/comprobante/imprimirDirecto'
+import { emitirConCaeaLocal, sePuedeEmitirConCaea } from '@/lib/local/caea'
+import { chequeVacio, faltaEnCheque } from '@/lib/api/cheques'
+import CamposCheque from '@/components/CamposCheque'
+import CamposFiado from '@/components/CamposFiado'
+import { faltaEnFiado, fiadoVacio } from '@/lib/api/fiados'
+import { moneda, numero } from '@/lib/tipos'
+import { useBotonConAtajo } from '@/lib/atajos'
+import { TeclaAtajo } from '@/components/Atajos'
+import { primeroElCodigoExacto, useListaConFlechas } from '@/lib/buscador'
+
+/** Con qué documento sale la venta. Ver marcar_documentacion_venta() en la base. */
+type Documentacion = 'fiscal' | 'no_fiscal' | 'a_facturar'
+/*
+  El cobro de una venta: medio de pago, descuento, con o sin factura,
+  cobrar, facturar e imprimir.
+
+  Lo usan la Caja, con la venta elegida de la cola, y el Mostrador, que
+  cobra en el acto la venta que acaba de armar (pedido de Lucas del
+  10/11: vender y cobrar en la misma pantalla). Es el mismo cobro en los
+  dos lados a propósito: dos maneras de cobrar serían dos lugares donde
+  la percepción, el recargo o el cheque pueden salir distinto.
+
+  Los avisos de lo que pasó (cobrada y facturada, sin factura, factura
+  pendiente, ticket que no salió) quedan a la vista después de cobrar,
+  aunque ya no haya venta elegida.
+*/
+export default function CobroDeVenta({
+  ventaId: seleccionada,
+  cajaId,
+  terminal,
+  operador,
+  sinVenta,
+  onTerminada,
+  onCancelar,
+}: {
+  ventaId: string | null
+  cajaId: string
+  terminal: Terminal | null
+  operador: Operador
+  /** Lo que se ve cuando no hay ninguna venta elegida. */
+  sinVenta?: ReactNode
+  /** Cobrada: la venta ya no está para cobrar. */
+  onTerminada: () => void
+  /** Se dejó sin cobrar. */
+  onCancelar: () => void
+}) {
+  const { tienePermiso } = useAuth()
+  const { enLinea } = useSync()
+  const qc = useQueryClient()
+
+  const [pagos, setPagos] = useState<PagoNuevo[]>([])
+  const [medioPrincipal, setMedioPrincipal] = useState<string | null>(null)
+  const [cuotas, setCuotas] = useState(1)
+  const [error, setError] = useState<string | null>(null)
+  const [facturaPendiente, setFacturaPendiente] = useState<string | null>(null)
+  /*
+    La elección de documentación, antes de cobrar.
+
+    Arranca siempre en 'fiscal' y hay que elegir salirse. Lo contrario
+    —recordar la última elección, por ejemplo— haría que una venta salga
+    sin factura porque la anterior salió así, y eso no puede pasar por
+    inercia.
+  */
+  const [documentacion, setDocumentacion] = useState<Documentacion>('fiscal')
+  const [noFiscalEmitido, setNoFiscalEmitido] = useState<{ texto: string; id: string } | null>(
+    null,
+  )
+  const [listoParaImprimir, setListoParaImprimir] = useState<{
+    codigo: string
+    cae: string
+    comprobanteId: string | null
+    /** Emitida por contingencia: el código es un CAEA y falta informarla. */
+    caea: boolean
+    /** Lo que pasó con el mail de la factura a cuenta corriente, cuando vuelve. */
+    mail?: string
+  } | null>(null)
+  const [errorEdicion, setErrorEdicion] = useState<string | null>(null)
+  /*
+    El ticket sale solo al cobrar, así que lo único que hay que contar es
+    cuando NO salió. Un cartel de "imprimiendo" que aparece y desaparece
+    no lo alcanza a leer nadie; uno de "no salió" hay que leerlo sí o sí,
+    porque el cliente está esperando el papel.
+  */
+  const [errorImpresion, setErrorImpresion] = useState<string | null>(null)
+  /*
+    La plata ya entró y falta el comprobante. Pedir el CAE puede tardar
+    lo que tarde ARCA —hasta treinta y cinco segundos—, y mientras tanto
+    el botón decía «Cobrando…»: el cajero creía que el cobro no había
+    pasado y el cliente esperaba por algo que ya estaba hecho.
+  */
+  const [cobrada, setCobrada] = useState(false)
+  // El encargado que dejó pasar, con su PIN, la venta a cuenta corriente
+  // de un cliente con deuda vencida. Vale para la venta elegida.
+  const [autorizoVencido, setAutorizoVencido] = useState<{ usuario_id: string; nombre: string } | null>(null)
+
+
+  const precios = useQuery({ queryKey: ['precios'], queryFn: cargarPrecios, staleTime: 300_000 })
+
+  const venta = useQuery({
+    queryKey: ['venta', seleccionada],
+    queryFn: () => obtenerVentaCompleta(seleccionada!),
+    enabled: !!seleccionada,
+  })
+
+  const saldo = useQuery({
+    queryKey: ['saldo-cc', venta.data?.cliente?.id],
+    queryFn: () => saldoCuentaCorriente(venta.data!.cliente!.id),
+    enabled: !!venta.data?.cliente?.id && venta.data.cliente.cuenta_corriente,
+  })
+
+  const vencido = useQuery({
+    queryKey: ['vencido-cc', venta.data?.cliente?.id],
+    queryFn: () => deudaVencida(venta.data!.cliente!.id),
+    enabled: !!venta.data?.cliente?.id && venta.data.cliente.cuenta_corriente,
+  })
+
+  const medios = precios.data?.medios ?? []
+
+  /*
+    La percepción de IIBB, que va con la factura a donde vaya la plata
+    (regla del 28/09). Sólo le toca a un Responsable Inscripto, y a él la
+    venta siempre sale con factura: el total que ve el cajero ya la
+    incluye, y ése es el precio final que se le dice al cliente.
+
+    Se vuelve a preguntar cada vez que cambia el total, porque se calcula
+    sobre el neto: un descuento o un recargo la mueven.
+  */
+  const esResponsableInscripto = venta.data?.cliente?.condicion_iva_id === 1
+  const percepcion = useQuery({
+    queryKey: ['percepcion-venta', seleccionada, venta.data?.total],
+    queryFn: () => percepcionACobrar(seleccionada!),
+    enabled: !!venta.data && esResponsableInscripto,
+  })
+  const percepcionAhora =
+    esResponsableInscripto && documentacion === 'fiscal' ? (percepcion.data ?? 0) : 0
+
+  /** Lo que la venta cuesta después de un cambio, con su percepción si le toca. */
+  async function conPercepcion(total: number): Promise<number> {
+    // Sólo con factura ahora: si se factura después, la percepción la
+    // calcula la factura y entra a la cuenta en ese momento.
+    if (!esResponsableInscripto || documentacion !== 'fiscal') return total
+    return Math.round((total + (await percepcionACobrar(seleccionada!))) * 100) / 100
+  }
+
+  /*
+    Al elegir con qué se paga, la venta se recalcula con la lista de ese
+    medio y con el recargo de ese plan de cuotas. Siempre desde el precio
+    acordado, así cambiar de opinión no acumula recargos ni pisa las
+    rebajas del vendedor.
+
+    El recargo entra en el PRECIO de la venta, no en el importe del pago.
+    Sumarlo al pago —como estaba hasta el 17/09— dejaba la venta valiendo
+    menos que lo que el cliente pagaba, y como el cobro exige que los
+    pagos cierren con el total, cobrar en cuotas era imposible: saltaba
+    "Los pagos exceden el total" y el botón quedaba apagado.
+  */
+  const aplicar = useMutation({
+    mutationFn: async ({ m, n }: { m: MedioPago; n: number }) => {
+      const recargo = m.medio_pago_cuota.find((c) => c.cuotas === n)?.recargo_porcentaje ?? 0
+      const total = await aplicarLista(seleccionada!, m.lista_precio_id, Number(recargo) || 0)
+      return { total: await conPercepcion(total) }
+    },
+    onSuccess: ({ total }, { m, n }) => {
+      setPagos([
+        {
+          medio_pago_id: m.id,
+          importe: total,
+          cuotas: n,
+          referencia: null,
+          ...(m.tipo === 'cheque' ? { datos_cheque: chequeVacio(venta.data?.cliente?.nombre) } : {}),
+          ...(m.tipo === 'fiado' ? { datos_fiado: fiadoVacio() } : {}),
+        },
+      ])
+      qc.invalidateQueries({ queryKey: ['venta', seleccionada] })
+      /*
+        La cola también, o queda mostrando el total anterior.
+
+        Visto probando el recargo el 17/09: la tarjeta lo subía a $7.040
+        en el detalle y la lista de la izquierda seguía diciendo $6.400.
+        Dos números distintos para la misma venta, en la misma pantalla,
+        es de las cosas que hacen que el cajero deje de creerle al
+        sistema y saque la cuenta a mano.
+      */
+      qc.invalidateQueries({ queryKey: ['cola-caja'] })
+      setError(null)
+    },
+    onError: (e) => setError(e instanceof Error ? e.message : 'No se pudo aplicar la lista.'),
+  })
+
+  function elegirMedio(m: MedioPago, n = 1) {
+    setMedioPrincipal(m.id)
+    setCuotas(n)
+    aplicar.mutate({ m, n })
+  }
+
+  const ajustar = useMutation({
+    mutationFn: async ({ nuevo, motivo }: { nuevo: number; motivo: string }) =>
+      conPercepcion(await ajustarTotal(seleccionada!, nuevo, motivo, operador!.usuario_id)),
+    onSuccess: (nuevoTotal) => {
+      setPagos((prev) =>
+        prev.length === 1 ? [{ ...prev[0], importe: nuevoTotal }] : prev,
+      )
+      qc.invalidateQueries({ queryKey: ['venta', seleccionada] })
+      setError(null)
+    },
+    onError: (e) => setError(e instanceof Error ? e.message : 'No se pudo ajustar.'),
+  })
+
+  /*
+    Corregir la venta con el cliente adelante.
+
+    Se manda la venta entera como tiene que quedar, no el cambio: es lo
+    que hace que reintentarla desde la bandeja de salida sea inofensiva.
+    Los pagos se limpian porque el total cambió, y cobrar con el importe
+    viejo es justamente lo que el servidor va a rechazar.
+  */
+  const editar = useMutation({
+    mutationFn: (lineas: LineaDeseada[]) =>
+      editarVentaEnCaja(seleccionada!, lineas, operador!.usuario_id, terminal?.id ?? null),
+    onSuccess: () => {
+      setPagos([])
+      setMedioPrincipal(null)
+      setCuotas(1)
+      setErrorEdicion(null)
+      qc.invalidateQueries({ queryKey: ['venta', seleccionada] })
+      qc.invalidateQueries({ queryKey: ['cola-caja'] })
+    },
+    onError: (e) =>
+      setErrorEdicion(e instanceof Error ? e.message : 'No se pudo corregir la venta.'),
+  })
+
+  /** Las líneas de ahora, con un cambio aplicado encima. */
+  function lineasCon(cambio: (l: VentaCompleta['venta_linea'][number]) => LineaDeseada | null) {
+    return (venta.data?.venta_linea ?? [])
+      .map(cambio)
+      .filter((l): l is LineaDeseada => l !== null)
+  }
+
+  const totalACobrar = Math.round(((venta.data?.total ?? 0) + percepcionAhora) * 100) / 100
+  const totalPagos = pagos.reduce((s, p) => s + p.importe, 0)
+  const diferencia = Math.round((totalPagos - totalACobrar) * 100) / 100
+
+  /*
+    Si la percepción llega después de elegir el medio —la consulta tarda
+    más que el recálculo—, el único pago se lleva al total nuevo. Con
+    varios pagos no se toca nada: el cajero los armó a mano y el cartel
+    de «falta cubrir» le dice cuánto.
+  */
+  useEffect(() => {
+    if (pagos.length !== 1 || !esResponsableInscripto || percepcion.data === undefined) return
+    const sola = Math.round((venta.data?.total ?? 0) * 100) / 100
+    const conElla = Math.round((sola + percepcion.data) * 100) / 100
+    // También al revés: si pasa a «factura después», la percepción sale.
+    const importe = pagos[0].importe
+    if ((Math.abs(importe - sola) < 0.01 || Math.abs(importe - conElla) < 0.01) &&
+        Math.abs(importe - totalACobrar) >= 0.01) {
+      setPagos([{ ...pagos[0], importe: totalACobrar }])
+    }
+  }, [pagos, percepcion.data, totalACobrar, esResponsableInscripto, venta.data?.total])
+
+  /*
+    Cobrar y facturar son dos cosas distintas, y el orden importa.
+
+    Una vez que cobrar_venta() volvió bien, la plata entró, el stock se
+    descontó y la deuda quedó registrada. Nada de lo que pase después
+    con ARCA puede deshacer eso. Por eso el pedido de CAE va adentro de
+    su propio try: si ARCA no responde, la venta queda cobrada igual y
+    el comprobante espera en la cola de Facturación.
+
+    Al revés —fallar el cobro porque ARCA está caído— dejaría al cliente
+    parado en el mostrador con la mercadería en la mano.
+  */
+  const cobrarVenta = useMutation({
+    mutationFn: async () => {
+      const codigo = venta.data?.codigo
+      // Sin factura ahora: sin factura del todo, o a cuenta para facturar
+      // después. Las dos se marcan antes y salen con comprobante interno.
+      const sinFactura = documentacion !== 'fiscal'
+
+      /*
+        La marca va ANTES del cobro, y es a propósito.
+
+        Los candados —el permiso, y la cuenta corriente para facturar
+        después— los verifica la base. Si esta venta no podía cobrarse
+        así, tiene que fallar ahora, con el cliente todavía sin pagar; no
+        después, con la plata adentro y un documento que no se puede
+        emitir.
+      */
+      if (sinFactura) await marcarDocumentacion(seleccionada!, documentacion)
+
+      const { subida } = await cobrar(
+        seleccionada!,
+        cajaId,
+        operador!.usuario_id,
+        pagos,
+        autorizoVencido?.usuario_id ?? null,
+      )
+      setCobrada(true)
+
+      /*
+        Sin conexión, la factura la emite ESTA terminal con el CAEA.
+
+        Es para lo que existe el CAEA: el código lo entrega ARCA por
+        adelantado, una vez por quincena, justamente para poder seguir
+        facturando cuando su servicio no está disponible. Acá se usa,
+        sale el papel, y la factura sube tal cual cuando vuelve internet.
+
+        Si no se puede —no es la caja, no bajó el CAEA, se eligió sin
+        factura— la venta queda cobrada igual y la factura, pendiente.
+        Cobrar nunca se bloquea por esto.
+      */
+      if (!subida) {
+        if (!sinFactura) {
+          const permiso = await sePuedeEmitirConCaea(terminal?.tipo === 'caja')
+          if (permiso.puede) {
+            try {
+              const emitido = await emitirConCaeaLocal(seleccionada!, {
+                usuarioId: operador!.usuario_id,
+                terminalId: terminal?.id ?? null,
+                motivo: 'Sin conexión',
+              })
+              return {
+                codigo,
+                cae: emitido.cae,
+                comprobanteId: emitido.id,
+                noFiscal: null as { id: string; numero: string } | null,
+                conCaea: true,
+                problema: null as string | null,
+              }
+            } catch (e) {
+              return {
+                codigo,
+                cae: null,
+                comprobanteId: null,
+                noFiscal: null,
+                conCaea: false,
+                problema:
+                  e instanceof Error
+                    ? `no se pudo emitir por contingencia (${e.message}). Se factura sola cuando vuelva la conexión.`
+                    : 'no se pudo emitir por contingencia. Se factura sola cuando vuelva la conexión.',
+              }
+            }
+          }
+        }
+
+        return {
+          codigo,
+          cae: null,
+          comprobanteId: null,
+          noFiscal: null as { id: string; numero: string } | null,
+          conCaea: false,
+          problema:
+            'la venta quedó guardada en esta computadora y se va a facturar sola cuando vuelva la conexión.',
+        }
+      }
+
+      if (sinFactura) {
+        try {
+          /*
+            El número sale de la emisión, no de una consulta al servidor.
+
+            Sin conexión no hay a quién preguntarle, y el cajero necesita
+            el número igual: es lo único que puede nombrarle al cliente.
+          */
+          const emitido = await emitirNoFiscal(
+            seleccionada!,
+            'comprobante_interno',
+            terminal?.id ?? null,
+            { serie: terminal?.prefijo ?? null },
+          )
+          return {
+            codigo,
+            cae: null,
+            comprobanteId: null,
+            noFiscal: {
+              id: emitido.id,
+              numero: numeroNoFiscal('comprobante_interno', emitido.serie, emitido.numero),
+            },
+            conCaea: false,
+            problema: null as string | null,
+          }
+        } catch (e) {
+          return {
+            codigo,
+            cae: null,
+            comprobanteId: null,
+            noFiscal: null,
+            conCaea: false,
+            problema:
+              e instanceof Error
+                ? `no se pudo emitir el comprobante interno: ${e.message}`
+                : 'no se pudo emitir el comprobante interno.',
+          }
+        }
+      }
+
+      try {
+        const { cae, comprobanteId } = await facturarVenta(seleccionada!)
+        return { codigo, cae, comprobanteId, noFiscal: null, conCaea: false, problema: null as string | null }
+      } catch (e) {
+        return {
+          codigo,
+          cae: null,
+          comprobanteId: null,
+          noFiscal: null,
+          conCaea: false,
+          problema: e instanceof Error ? e.message : 'ARCA no respondió.',
+        }
+      }
+    },
+    onSuccess: ({ codigo, cae, comprobanteId, noFiscal, problema, conCaea }) => {
+      if (problema) {
+        setFacturaPendiente(`Venta ${codigo} cobrada, pero la factura quedó pendiente: ${problema}`)
+      } else if (noFiscal) {
+        // Igual que con la factura: el papel queda a un clic, no
+        // escondido en otra pantalla. El cliente está parado adelante.
+        setNoFiscalEmitido({
+          id: noFiscal.id,
+          texto:
+            documentacion === 'a_facturar'
+              ? `Venta ${codigo} a cuenta corriente, para facturar después. Comprobante interno ${noFiscal.numero}.`
+              : `Venta ${codigo} cobrada sin factura. Comprobante interno ${noFiscal.numero}.`,
+        })
+        imprimirSolo(() => imprimirNoFiscal(noFiscal.id, terminal))
+      } else {
+        /*
+          El comprobante queda a un clic, no escondido en otra pantalla.
+
+          El cajero tiene que entregarle algo al cliente que está parado
+          adelante: mandarlo a buscarlo a Facturación es una pantalla de
+          más en el peor momento. No se abre solo porque el navegador
+          bloquea las ventanas que no abrió una persona.
+        */
+        setListoParaImprimir({ codigo: codigo ?? '', cae: cae ?? '', comprobanteId, caea: conCaea })
+        if (comprobanteId) imprimirSolo(() => imprimirComprobante(comprobanteId, terminal))
+        /*
+          A cuenta corriente, la factura le sale sola por mail al cliente.
+          No se espera: el cajero sigue con el próximo, y el cartel verde
+          dice a quién salió cuando termina. Con CAEA no hay internet.
+        */
+        if (comprobanteId && !conCaea) {
+          void mandarSolaACuentaCorriente(comprobanteId).then((mail) => {
+            if (mail) setListoParaImprimir((l) => (l?.comprobanteId === comprobanteId ? { ...l, mail } : l))
+          })
+        }
+      }
+      limpiar()
+      onTerminada()
+      qc.invalidateQueries({ queryKey: ['cola-caja'] })
+      qc.invalidateQueries({ queryKey: ['resumen-caja'] })
+      qc.invalidateQueries({ queryKey: ['comprobantes'] })
+      qc.invalidateQueries({ queryKey: ['ventas-sin-facturar'] })
+    },
+    onError: (e) => setError(e instanceof Error ? e.message : 'No se pudo cobrar.'),
+    onSettled: () => setCobrada(false),
+  })
+
+  /*
+    Mandar el ticket a la impresora del mostrador, sin pedir permiso.
+
+    No se espera a que termine: el cajero ya puede seguir con el próximo
+    cliente. Y no se toca el cartel verde si falla — se agrega uno
+    aparte, porque la venta está cobrada igual y el comprobante se puede
+    imprimir a mano con el botón que quedó al lado.
+
+    Desde el navegador, o en una PC sin impresora elegida, no se intenta
+    nada: ahí el botón de siempre es el único camino.
+  */
+  function imprimirSolo(hacerlo: () => Promise<void>) {
+    setErrorImpresion(null)
+    if (!puedeImprimirSolo(terminal)) return
+    hacerlo().catch((e) =>
+      setErrorImpresion(
+        e instanceof Error
+          ? `El ticket no salió: ${e.message}`
+          : 'El ticket no salió por la impresora del mostrador.',
+      ),
+    )
+  }
+
+  function limpiar() {
+    setPagos([])
+    setMedioPrincipal(null)
+    setCuotas(1)
+    setError(null)
+    setDocumentacion('fiscal')
+    setAutorizoVencido(null)
+  }
+
+  useEffect(() => {
+    setPagos([])
+    setMedioPrincipal(null)
+    setCuotas(1)
+    setError(null)
+    setAutorizoVencido(null)
+    // Cada venta decide de nuevo. Que la anterior se haya cobrado sin
+    // factura no dice nada de esta, y arrastrar la elección haría que
+    // una venta salga sin factura porque nadie miró el selector.
+    setDocumentacion('fiscal')
+  }, [seleccionada])
+
+  /*
+    Si se corta internet con "sin factura" ya elegido, vuelve a factura.
+
+    Marcar la venta necesita servidor. Sin esto, el cajero apretaría
+    Cobrar y fallaría el cobro entero —no la marca, el cobro— justo en el
+    momento en que el sistema tiene que seguir funcionando igual. Prefiere
+    cobrar de más con factura que no cobrar.
+  */
+  useEffect(() => {
+    if (!enLinea) setDocumentacion('fiscal')
+  }, [enLinea])
+
+  /*
+    Lo que el vendedor ya preguntó, queda elegido.
+
+    El vendedor le pregunta al cliente cómo va a pagar porque lo necesita
+    para decirle el precio. Si la caja arranca en blanco, el cajero
+    vuelve a preguntar lo mismo con el cliente adelante — y encima puede
+    elegir otro medio y cobrar un precio distinto del que se dijo.
+
+    Queda igual de editable: la tarjeta puede no pasar.
+  */
+  const ventaId = venta.data?.id
+  const previsto = venta.data?.medio_pago_previsto_id
+  useEffect(() => {
+    if (!previsto || !medios.length || medioPrincipal) return
+    const m = medios.find((x) => x.id === previsto)
+    if (m) elegirMedio(m, venta.data?.cuotas_previstas ?? 1)
+    // Sólo al abrir la venta: después manda lo que elija el cajero.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ventaId, previsto, medios.length])
+
+  return (
+    <>
+      {/*
+        El ticket no salió. La venta está cobrada igual —eso ya pasó—,
+        así que esto no es un error del cobro: es un aviso de que hay
+        que imprimir a mano con el botón de al lado.
+      */}
+      {errorImpresion && (
+        <div className="mb-3 flex items-center justify-between gap-3 rounded-xl bg-amber-50 px-4 py-3 ring-1 ring-amber-200">
+          <p className="text-sm text-amber-900">{errorImpresion}</p>
+          <button
+            onClick={() => setErrorImpresion(null)}
+            className="rounded-lg px-3 py-1.5 text-sm font-medium text-amber-800 hover:bg-amber-100"
+          >
+            Entendido
+          </button>
+        </div>
+      )}
+
+      {/* Cobrado y facturado: lo único que falta es entregarlo. */}
+      {listoParaImprimir && (
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-verde-50 px-4 py-3 ring-1 ring-verde-200">
+          <div className="min-w-0">
+            <p className="font-medium text-verde-900">
+              Venta {listoParaImprimir.codigo} cobrada y facturada
+              {listoParaImprimir.caea && ' por contingencia'}
+            </p>
+            {/*
+              Con CAEA se dice que es CAEA y qué falta. El cajero tiene
+              que poder contestarle al cliente por qué el papel dice
+              otra cosa, y de paso queda claro que la factura es válida
+              —el código lo dio ARCA por adelantado—, no un borrador.
+            */}
+            <p className="text-xs text-verde-800">
+              {listoParaImprimir.caea ? 'CAEA ' : 'CAE '}
+              {listoParaImprimir.cae}
+              {listoParaImprimir.caea && ' · se le informa a ARCA cuando vuelva internet'}
+            </p>
+            {listoParaImprimir.mail && (
+              <p
+                className={`text-xs ${
+                  listoParaImprimir.mail.startsWith('Salió') ? 'text-verde-800' : 'text-amber-800'
+                }`}
+              >
+                {listoParaImprimir.mail}
+              </p>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {listoParaImprimir.comprobanteId && (
+              <button
+                onClick={() => abrirComprobante(listoParaImprimir.comprobanteId!)}
+                className="rounded-lg bg-verde-600 px-4 py-2 text-sm font-medium text-white hover:bg-verde-500"
+              >
+                {/*
+                  Cuando el ticket ya salió solo, el botón sigue estando
+                  pero dice otra cosa: es para el cliente que pide una
+                  copia o para la hoja A4, no el paso que falta.
+                */}
+                {puedeImprimirSolo(terminal) ? 'Ver o reimprimir' : 'Imprimir comprobante'}
+              </button>
+            )}
+            <button
+              onClick={() => setListoParaImprimir(null)}
+              className="rounded-lg px-3 py-2 text-sm font-medium text-verde-800 hover:bg-verde-100"
+            >
+              Listo
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/*
+        Cobrada sin factura, a propósito.
+
+        Va en gris y no en verde ni en ámbar: no es un éxito que
+        festejar ni un problema que resolver, es una constancia. El
+        número está para que el cajero pueda nombrarlo si el cliente
+        pregunta.
+      */}
+      {noFiscalEmitido && (
+        <div className="mb-3 flex items-start gap-3 rounded-xl bg-piedra-50 px-4 py-3 ring-1 ring-borde">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium text-tinta">{noFiscalEmitido.texto}</p>
+            <p className="text-xs text-piedra-500">
+              No es una factura y no tiene CAE. Queda registrado con tu nombre.
+            </p>
+          </div>
+          <button
+            onClick={() => abrirNoFiscal(noFiscalEmitido.id)}
+            className="shrink-0 rounded-lg bg-tinta px-3 py-2 text-sm font-medium text-white hover:bg-tinta/90"
+          >
+            Imprimir
+          </button>
+          <button
+            onClick={() => setNoFiscalEmitido(null)}
+            className="rounded p-1 text-piedra-500 hover:bg-piedra-100"
+            aria-label="Entendido"
+          >
+            <svg className="size-4" fill="none" viewBox="0 0 24 24" strokeWidth={2.2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
+
+      {/*
+        Este aviso NO se va solo. La venta se cobró pero no tiene
+        comprobante: alguien tiene que enterarse y resolverlo, no que
+        se le desvanezca de la pantalla mientras atiende al que sigue.
+      */}
+      {facturaPendiente && (
+        <div className="mb-3 flex items-start gap-3 rounded-xl bg-amber-50 px-4 py-3 ring-1 ring-amber-200">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium text-amber-900">{facturaPendiente}</p>
+            <Link to="/facturacion" className="text-xs text-amber-800 underline">
+              Ir a Facturación para reintentar
+            </Link>
+          </div>
+          <button
+            onClick={() => setFacturaPendiente(null)}
+            className="rounded p-1 text-amber-700 hover:bg-amber-100"
+            aria-label="Entendido"
+          >
+            <svg className="size-4" fill="none" viewBox="0 0 24 24" strokeWidth={2.2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
+
+      {!seleccionada ? (
+        (sinVenta ?? null)
+      ) : venta.isPending ? (
+        <p className="text-sm text-piedra-500">Cargando venta…</p>
+      ) : venta.data ? (
+        <PanelCobro
+          venta={venta.data}
+          medios={medios}
+          medioPrincipal={medioPrincipal}
+          cuotas={cuotas}
+          pagos={pagos}
+          setPagos={setPagos}
+          diferencia={diferencia}
+          percepcion={percepcionAhora}
+          calculandoPercepcion={esResponsableInscripto && percepcion.isPending}
+          saldoActual={saldo.data ?? 0}
+          vencido={vencido.data ?? null}
+          autorizoVencido={autorizoVencido}
+          onAutorizarVencido={async (pin) => setAutorizoVencido(await autorizarVencidoEnCaja(pin, terminal!.id))}
+          aplicando={aplicar.isPending}
+          cobrando={cobrarVenta.isPending}
+          cobrada={cobrada}
+          ajustando={ajustar.isPending}
+          puedeAjustar={tienePermiso('ventas.ajustar_total')}
+          documentacion={documentacion}
+          onDocumentacion={setDocumentacion}
+          puedeVenderSinFactura={tienePermiso('facturacion.vender_sin_factura')}
+          enLinea={enLinea}
+          puedeEditar={tienePermiso('ventas.editar_en_caja')}
+          editando={editar.isPending}
+          errorEdicion={errorEdicion}
+          onCantidad={(lineaId, cantidad) => {
+            if (cantidad < 1) return
+            editar.mutate(
+              lineasCon((l) => ({
+                venta_linea_id: l.id,
+                producto_id: null,
+                cantidad: l.id === lineaId ? cantidad : l.cantidad,
+              })),
+            )
+          }}
+          onQuitar={(lineaId) =>
+            editar.mutate(
+              lineasCon((l) =>
+                l.id === lineaId
+                  ? null
+                  : { venta_linea_id: l.id, producto_id: null, cantidad: l.cantidad },
+              ),
+            )
+          }
+          onAgregar={async (p) => {
+            /*
+              «Accesorios varios» y los demás de precio en cada venta:
+              el precio se pregunta, como en el mostrador. Antes entraba
+              el de la ficha y había que corregirlo a mano.
+            */
+            let precio: number | null = null
+            if (p.precio_en_cada_venta) {
+              const escrito = await pedirNumero({
+                titulo: p.nombre_interno,
+                detalle: 'Cada uno va en su renglón, con su precio.',
+                etiqueta: 'Precio',
+                aceptar: 'Agregar',
+              })
+              if (escrito === null) return
+              if (!(escrito > 0)) {
+                setErrorEdicion('El precio tiene que ser mayor que cero.')
+                return
+              }
+              precio = Math.round(escrito * 100) / 100
+            }
+            editar.mutate([
+              ...lineasCon((l) => ({
+                venta_linea_id: l.id,
+                producto_id: null,
+                cantidad: l.cantidad,
+              })),
+              { venta_linea_id: null, producto_id: p.producto_id, cantidad: 1, precio },
+            ])
+          }}
+          error={error}
+          onElegirMedio={elegirMedio}
+          onAjustar={(nuevo, motivo) => ajustar.mutate({ nuevo, motivo })}
+          onCobrar={() => cobrarVenta.mutate()}
+          onCancelar={() => {
+            limpiar()
+            onCancelar()
+          }}
+        />
+      ) : venta.error ? (
+        <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 ring-1 ring-red-200">
+          {venta.error instanceof Error ? venta.error.message : 'No se pudo abrir la venta.'}
+        </p>
+      ) : null}
+    </>
+  )
+}
+
+function PanelCobro({
+  venta,
+  medios,
+  medioPrincipal,
+  cuotas,
+  pagos,
+  setPagos,
+  diferencia,
+  percepcion,
+  calculandoPercepcion,
+  saldoActual,
+  vencido,
+  autorizoVencido,
+  onAutorizarVencido,
+  aplicando,
+  cobrando,
+  cobrada,
+  ajustando,
+  puedeAjustar,
+  documentacion,
+  onDocumentacion,
+  puedeVenderSinFactura,
+  enLinea,
+  puedeEditar,
+  editando,
+  errorEdicion,
+  onCantidad,
+  onQuitar,
+  onAgregar,
+  error,
+  onElegirMedio,
+  onAjustar,
+  onCobrar,
+  onCancelar,
+}: {
+  venta: VentaCompleta
+  medios: MedioPago[]
+  medioPrincipal: string | null
+  cuotas: number
+  pagos: PagoNuevo[]
+  setPagos: (p: PagoNuevo[]) => void
+  diferencia: number
+  percepcion: number
+  calculandoPercepcion: boolean
+  saldoActual: number
+  vencido: Vencido | null
+  autorizoVencido: { usuario_id: string; nombre: string } | null
+  onAutorizarVencido: (pin: string) => Promise<void>
+  aplicando: boolean
+  cobrando: boolean
+  /** Ya cobrada, esperando el comprobante. */
+  cobrada: boolean
+  ajustando: boolean
+  puedeAjustar: boolean
+  documentacion: Documentacion
+  onDocumentacion: (d: Documentacion) => void
+  puedeVenderSinFactura: boolean
+  enLinea: boolean
+  puedeEditar: boolean
+  editando: boolean
+  errorEdicion: string | null
+  onCantidad: (lineaId: string, cantidad: number) => void
+  onQuitar: (lineaId: string) => void
+  onAgregar: (producto: ProductoVenta) => void
+  error: string | null
+  onElegirMedio: (m: MedioPago, cuotas?: number) => void
+  onAjustar: (nuevoTotal: number, motivo: string) => void
+  onCobrar: () => void
+  onCancelar: () => void
+}) {
+  const botonCobrar = useBotonConAtajo('F10')
+  const [agregando, setAgregando] = useState(false)
+  const [descontando, setDescontando] = useState(false)
+  // Parte en un medio y parte en otro: se baja el importe del primero y
+  // el resto se completa. El botón lleva el cursor a ese importe.
+  const primerImporte = useRef<HTMLInputElement>(null)
+  const [dividiendo, setDividiendo] = useState(false)
+
+  const usables = mediosParaElegir(medios).filter(
+    (m) => m.tipo !== 'cuenta_corriente' || venta.cliente?.cuenta_corriente,
+  )
+
+  // Lo que el vendedor dejó anotado, para que el cajero no vuelva a
+  // preguntarlo y para que se note si termina cobrando con otra cosa.
+  const mPrevisto = medios.find((m) => m.id === venta.medio_pago_previsto_id)
+  const avisoPrevisto = mPrevisto
+    ? mPrevisto.admite_cuotas && (venta.cuotas_previstas ?? 1) > 1
+      ? `${mPrevisto.nombre} · ${venta.cuotas_previstas} cuotas`
+      : mPrevisto.nombre
+    : null
+  const medio = medios.find((m) => m.id === medioPrincipal)
+  const esCuentaCorriente = medio?.tipo === 'cuenta_corriente'
+  const tipoDe = (id: string) => medios.find((x) => x.id === id)?.tipo
+  // Un cheque sin banco, número o fecha no se cobra: después el cliente
+  // ya no está para preguntarle.
+  const chequeIncompleto = pagos.some(
+    (p) => tipoDe(p.medio_pago_id) === 'cheque' && (!p.datos_cheque || faltaEnCheque(p.datos_cheque)),
+  )
+  // Sin DNI y nombre no hay a quién cobrarle después.
+  const faltaFiado = pagos
+    .filter((p) => tipoDe(p.medio_pago_id) === 'fiado')
+    .map((p) => (p.datos_fiado ? faltaEnFiado(p.datos_fiado) : 'Faltan los datos de quien se lo lleva.'))
+    .find(Boolean)
+  // El que de verdad quedó aplicado a los precios, no el de la tabla:
+  // si el recalculo todavía no volvió, el cartel diría una cosa y el
+  // total mostraría otra.
+  const recargoAplicado = Number(venta.recargo_porcentaje ?? 0)
+  // 1 es "IVA Responsable Inscripto" en la tabla de ARCA.
+  const esResponsableInscripto = venta.cliente?.condicion_iva_id === 1
+  const nuevoSaldo = saldoActual + (pagos.find((p) => p.medio_pago_id === medio?.id)?.importe ?? 0)
+  /*
+    Con qué documento puede salir la venta.
+
+    · Sin factura: con permiso, a cualquier cliente. También a un
+      Responsable Inscripto: Lucas pidió el 20/10 que en la caja estén
+      siempre las dos opciones. La base pide el mismo permiso.
+    · A cuenta, factura después: a quien tiene cuenta corriente, también
+      a un Responsable Inscripto. La factura sale igual, más tarde
+      (pedido del 28/09).
+  */
+  const opciones: [Documentacion, string, string][] = [
+    ['fiscal', 'Con factura', 'Factura de ARCA con CAE'],
+    ...(puedeVenderSinFactura
+      ? [['no_fiscal', 'Sin factura', 'Comprobante interno'] as [Documentacion, string, string]]
+      : []),
+    ...(venta.cliente?.cuenta_corriente
+      ? [['a_facturar', 'Factura después', 'A cuenta corriente'] as [Documentacion, string, string]]
+      : []),
+  ]
+
+  /*
+    Respuesta 7 de Lucas: a quien debe vencido no se le suma deuda sin
+    que un encargado lo autorice con su PIN. Cuenta cualquier parte que
+    vaya a cuenta corriente, no sólo el medio principal: la base mira
+    todos los pagos.
+  */
+  const vaACuentaCorriente = pagos.some(
+    (p) => tipoDe(p.medio_pago_id) === 'cuenta_corriente' && Number(p.importe) > 0,
+  )
+  const debeVencido = !!venta.cliente?.cuenta_corriente && (vencido?.monto ?? 0) > 0
+  const frenadoPorVencido = debeVencido && vaACuentaCorriente && !autorizoVencido
+
+  const excede =
+    esCuentaCorriente &&
+    venta.cliente?.limite_credito != null &&
+    nuevoSaldo > venta.cliente.limite_credito
+
+  return (
+    <div className="flex h-full flex-col gap-4">
+      {descontando && (
+        <DescuentoEnCaja
+          totalActual={venta.total}
+          trabajando={ajustando}
+          onCerrar={() => setDescontando(false)}
+          onAplicar={(nuevo, motivo) => {
+            setDescontando(false)
+            onAjustar(nuevo, motivo)
+          }}
+        />
+      )}
+      {/*
+        `shrink-0`: con overflow-hidden, en esta columna de alto fijo la
+        tarjeta se achicaba para dejarle lugar al cobro y cortaba lo de
+        abajo —los últimos renglones y la lista de «Agregar un producto»—
+        en un monitor bajo, como el de la caja 2 (02/11). Si no entra, la
+        pantalla se desplaza.
+      */}
+      <div className="shrink-0 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-borde">
+        <div className="flex items-baseline justify-between border-b border-borde px-5 py-3">
+          <div>
+            <p className="font-mono text-xs text-piedra-400">{venta.codigo}</p>
+            <p className="font-medium text-tinta">{venta.cliente?.nombre}</p>
+          </div>
+          <p className="text-xs text-piedra-400">vendió {venta.vendedor?.nombre}</p>
+        </div>
+        {/*
+          Dos renglones por producto, no una fila de tabla.
+
+          Una tabla con columnas fijas necesita un ancho que la caja no
+          siempre tiene: el panel de cobro es angosto, y con los botones
+          de cantidad sumados los importes se montaban unos sobre otros
+          y el botón de quitar quedaba fuera de la pantalla.
+
+          Así la descripción se lleva el ancho que necesite y los números
+          quedan alineados a la derecha, entre en la pantalla que entre.
+        */}
+        <ul className="divide-y divide-piedra-100 text-sm">
+          {venta.venta_linea.map((l) => (
+            <li key={l.id} className="px-5 py-2.5">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-tinta">{l.descripcion}</p>
+                  {l.motivo_modificacion && (
+                    <p className="text-xs text-marca-700">
+                      Precio modificado: {l.motivo_modificacion}
+                    </p>
+                  )}
+                  {l.concepto && <p className="text-xs text-marca-700">Se factura como {l.concepto}</p>}
+                </div>
+                {puedeEditar && venta.venta_linea.length > 1 && (
+                  <button
+                    onClick={() => onQuitar(l.id)}
+                    disabled={editando}
+                    aria-label={`Sacar ${l.descripcion} de la venta`}
+                    className="shrink-0 rounded p-1 text-piedra-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-40"
+                  >
+                    <svg className="size-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+
+              <div className="mt-1 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                {puedeEditar ? (
+                  <div className="flex items-center gap-1">
+                    <BotonCantidad
+                      etiqueta={`Quitar uno de ${l.descripcion}`}
+                      onClick={() => onCantidad(l.id, l.cantidad - 1)}
+                      disabled={editando || l.cantidad <= 1}
+                    >
+                      −
+                    </BotonCantidad>
+                    <span className="w-8 text-center tabular-nums text-tinta">
+                      {numero.format(l.cantidad)}
+                    </span>
+                    <BotonCantidad
+                      etiqueta={`Agregar uno de ${l.descripcion}`}
+                      onClick={() => onCantidad(l.id, l.cantidad + 1)}
+                      disabled={editando}
+                    >
+                      +
+                    </BotonCantidad>
+                    <span className="ml-1 whitespace-nowrap text-piedra-500">
+                      × {moneda.format(l.precio_unitario)}
+                    </span>
+                  </div>
+                ) : (
+                  <span className="whitespace-nowrap tabular-nums text-piedra-500">
+                    {numero.format(l.cantidad)} × {moneda.format(l.precio_unitario)}
+                  </span>
+                )}
+                <span className="ml-auto whitespace-nowrap font-medium tabular-nums text-tinta">
+                  {moneda.format(l.cantidad * l.precio_unitario)}
+                </span>
+              </div>
+            </li>
+          ))}
+        </ul>
+
+        {/*
+          Agregar acá y no mandarlo de vuelta al mostrador.
+
+          "Ponele también una bolsa de alimento" pasa todo el tiempo, y
+          la alternativa —que el cajero arme una segunda venta por un
+          chicle— deja dos comprobantes para una sola compra.
+        */}
+        {puedeEditar && (
+          <div className="border-t border-piedra-100 px-5 py-3">
+            {agregando ? (
+              <BuscadorParaAgregar
+                onElegir={(producto) => {
+                  setAgregando(false)
+                  onAgregar(producto)
+                }}
+                onCancelar={() => setAgregando(false)}
+              />
+            ) : (
+              <button
+                onClick={() => setAgregando(true)}
+                disabled={editando}
+                className="text-sm font-medium text-marca-700 hover:underline disabled:opacity-40"
+              >
+                + Agregar un producto
+              </button>
+            )}
+            {errorEdicion && (
+              <p role="alert" className="mt-2 text-xs text-red-700">
+                {errorEdicion}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-borde">
+        <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+          <p className="text-xs font-medium tracking-wide text-piedra-400 uppercase">¿Cómo paga?</p>
+          {avisoPrevisto && (
+            <p className="text-xs text-marca-700">
+              El vendedor anotó: <strong>{avisoPrevisto}</strong>
+            </p>
+          )}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {usables.map((m) =>
+            m.admite_cuotas ? (
+              Array.from({ length: m.cuotas_maximas }, (_, i) => i + 1).map((n) => (
+                <button
+                  key={`${m.id}-${n}`}
+                  onClick={() => onElegirMedio(m, n)}
+                  disabled={aplicando}
+                  className={`rounded-lg px-3.5 py-2 text-sm font-medium ring-1 transition-colors disabled:opacity-50 ${
+                    medioPrincipal === m.id && cuotas === n
+                      ? 'bg-marca-700 text-white ring-marca-700'
+                      : 'bg-white text-piedra-600 ring-borde hover:bg-piedra-50'
+                  }`}
+                >
+                  {m.nombre} · {n} {n === 1 ? 'cuota' : 'cuotas'}
+                </button>
+              ))
+            ) : (
+              <button
+                key={m.id}
+                onClick={() => onElegirMedio(m)}
+                disabled={aplicando}
+                className={`rounded-lg px-3.5 py-2 text-sm font-medium ring-1 transition-colors disabled:opacity-50 ${
+                  medioPrincipal === m.id
+                    ? 'bg-marca-700 text-white ring-marca-700'
+                    : 'bg-white text-piedra-600 ring-borde hover:bg-piedra-50'
+                }`}
+              >
+                {m.nombre}
+              </button>
+            ),
+          )}
+        </div>
+
+        {medio && (
+          <div className="mt-4 space-y-3 border-t border-borde pt-4">
+            <div className="flex items-baseline justify-between">
+              <span className="font-medium text-tinta">Total a cobrar</span>
+              <div className="flex items-baseline gap-3">
+                {puedeAjustar && (
+                  <button
+                    onClick={() => setDescontando(true)}
+                    disabled={ajustando || aplicando}
+                    className="text-sm font-medium text-marca-700 hover:underline disabled:opacity-40"
+                  >
+                    {ajustando ? 'Aplicando…' : 'Descuento'}
+                  </button>
+                )}
+                <span className="text-2xl font-semibold tabular-nums text-tinta">
+                  {moneda.format(Math.round((venta.total + percepcion) * 100) / 100)}
+                </span>
+              </div>
+            </div>
+
+            {/*
+              La percepción, a la vista y aparte. Es el número que el
+              cajero le dice al cliente antes de facturar: sin el
+              desglose, un total más alto que el del mostrador parece un
+              error.
+            */}
+            {percepcion > 0 && (
+              <div className="rounded-lg bg-piedra-50 px-3 py-2 text-sm ring-1 ring-borde">
+                <div className="flex justify-between text-piedra-600">
+                  <span>Productos</span>
+                  <span className="tabular-nums">{moneda.format(venta.total)}</span>
+                </div>
+                <div className="flex justify-between text-piedra-600">
+                  <span>Percepción IIBB Misiones</span>
+                  <span className="tabular-nums">{moneda.format(percepcion)}</span>
+                </div>
+                <p className="mt-1 text-xs text-piedra-500">
+                  Es Responsable Inscripto: la factura A lleva la percepción, y se cobra con ella
+                  {esCuentaCorriente ? ' — en cuenta corriente, la deuda es la factura entera' : ''}.
+                </p>
+              </div>
+            )}
+            {calculandoPercepcion && (
+              <p className="text-xs text-piedra-500">Calculando la percepción de IIBB…</p>
+            )}
+
+            {/*
+              Por qué el total subió. El recargo va adentro del precio
+              —así lo cobra Gross y así lo pidió el contador—, y un total
+              que cambia solo, sin decir por qué, es lo que hace que el
+              cajero desconfíe del sistema y saque la cuenta a mano.
+            */}
+            {recargoAplicado > 0 && (
+              <p className="rounded-lg bg-piedra-50 px-3 py-2 text-xs text-piedra-600 ring-1 ring-borde">
+                Incluye <strong>{numero.format(recargoAplicado)}%</strong> de recargo por{' '}
+                {cuotas === 1 ? '1 cuota' : `${cuotas} cuotas`}. De contado serían{' '}
+                {moneda.format(Math.round((venta.total / (1 + recargoAplicado / 100)) * 100) / 100)}.
+              </p>
+            )}
+
+            {/*
+              Si ya hubo un ajuste a mano y después se cambia el medio de
+              pago, el importe se rescala en proporción. Conviene avisarlo:
+              cuando la tarjeta no pasa y se termina pagando en efectivo,
+              la rebaja normalmente se vuelve a conversar.
+            */}
+            {venta.venta_linea.some((l) => l.motivo_modificacion) && (
+              <p className="rounded-lg bg-marca-50 px-3 py-2 text-xs text-marca-800 ring-1 ring-marca-200">
+                Esta venta tiene precios ajustados a mano. Si cambiás el medio de pago se recalculan
+                en proporción — verificá el total antes de cobrar.
+              </p>
+            )}
+
+            {pagos.map((p, i) => {
+              const mp = medios.find((x) => x.id === p.medio_pago_id)
+              const esCheque = mp?.tipo === 'cheque'
+              const esFiado = mp?.tipo === 'fiado'
+              return (
+                <div
+                  key={i}
+                  className={esCheque || esFiado ? 'space-y-2 rounded-lg bg-piedra-50 p-3 ring-1 ring-borde' : ''}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="flex-1 text-sm text-piedra-600">
+                      {mp?.nombre}
+                      {esCheque && pagos.filter((x) => x.medio_pago_id === p.medio_pago_id).length > 1 &&
+                        ` ${pagos.slice(0, i + 1).filter((x) => x.medio_pago_id === p.medio_pago_id).length}`}
+                    </span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={p.importe}
+                      onChange={(e) =>
+                        setPagos(
+                          pagos.map((x, j) =>
+                            j === i ? { ...x, importe: Number(e.target.value) || 0 } : x,
+                          ),
+                        )
+                      }
+                      ref={i === 0 ? primerImporte : undefined}
+                      aria-label={`Importe en ${mp?.nombre ?? 'este medio'}`}
+                      className="w-36 rounded-lg border border-borde bg-white px-2.5 py-1.5 text-right tabular-nums outline-none focus:border-marca-500"
+                    />
+                    {pagos.length > 1 && (
+                      <button
+                        onClick={() => setPagos(pagos.filter((_, j) => j !== i))}
+                        className="rounded p-1 text-piedra-300 hover:bg-red-50 hover:text-red-600"
+                        aria-label="Quitar"
+                      >
+                        <svg className="size-4" fill="none" viewBox="0 0 24 24" strokeWidth={2.2} stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                  {/*
+                    Lo que dice el papel, acá y ahora. Es la única vez que
+                    el cheque está en la mano de alguien del sistema antes
+                    de ir al cajón: después el cliente ya se fue.
+                  */}
+                  {esCheque && (
+                    <CamposCheque
+                      valor={p.datos_cheque ?? chequeVacio(venta.cliente?.nombre)}
+                      onChange={(d) => setPagos(pagos.map((x, j) => (j === i ? { ...x, datos_cheque: d } : x)))}
+                    />
+                  )}
+                  {esFiado && (
+                    <CamposFiado
+                      valor={p.datos_fiado ?? fiadoVacio()}
+                      onChange={(d) => setPagos(pagos.map((x, j) => (j === i ? { ...x, datos_fiado: d } : x)))}
+                    />
+                  )}
+                </div>
+              )
+            })}
+
+            {/*
+              Varios cheques para una sola compra es lo común: el cliente
+              trae dos o tres de distintas fechas. Cada uno es su propio
+              pago, con sus datos.
+            */}
+            {pagos.some((p) => medios.find((x) => x.id === p.medio_pago_id)?.tipo === 'cheque') &&
+              diferencia < -0.009 && (
+                <button
+                  onClick={() => {
+                    const cheque = medios.find((x) => x.tipo === 'cheque')!
+                    setPagos([
+                      ...pagos,
+                      {
+                        medio_pago_id: cheque.id,
+                        importe: Math.round(-diferencia * 100) / 100,
+                        cuotas: 1,
+                        referencia: null,
+                        datos_cheque: chequeVacio(venta.cliente?.nombre),
+                      },
+                    ])
+                  }}
+                  className="text-sm font-medium text-marca-700 hover:underline"
+                >
+                  + Otro cheque
+                </button>
+              )}
+
+            {pagos.length === 1 && Math.abs(diferencia) <= 0.009 && (
+              <div>
+                <button
+                  onClick={() => {
+                    setDividiendo(true)
+                    primerImporte.current?.focus()
+                    primerImporte.current?.select()
+                  }}
+                  className="text-sm font-medium text-marca-700 hover:underline"
+                >
+                  Dividir el pago
+                </button>
+                {dividiendo && (
+                  <p className="mt-1 text-xs text-piedra-500">
+                    Poné cuánto paga con {medios.find((x) => x.id === pagos[0].medio_pago_id)?.nombre ?? 'este medio'} y
+                    elegí con qué completa el resto.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {Math.abs(diferencia) > 0.009 && (
+              <div className="flex items-center justify-between rounded-lg bg-amber-50 px-3 py-2 text-sm ring-1 ring-amber-200">
+                <span className="text-amber-800">
+                  {diferencia < 0 ? 'Falta cubrir' : 'Los pagos exceden el total en'}
+                </span>
+                <span className="font-medium tabular-nums text-amber-900">
+                  {moneda.format(Math.abs(diferencia))}
+                </span>
+              </div>
+            )}
+
+            {diferencia < -0.009 && (
+              <div className="flex flex-wrap gap-1.5">
+                <span className="self-center text-xs text-piedra-500">Completar con:</span>
+                {usables
+                  .filter((m) => !pagos.some((p) => p.medio_pago_id === m.id))
+                  .map((m) => (
+                    <button
+                      key={m.id}
+                      onClick={() =>
+                        setPagos([
+                          ...pagos,
+                          {
+                            medio_pago_id: m.id,
+                            importe: Math.round(-diferencia * 100) / 100,
+                            cuotas: 1,
+                            referencia: null,
+                            ...(m.tipo === 'cheque' ? { datos_cheque: chequeVacio(venta.cliente?.nombre) } : {}),
+                            ...(m.tipo === 'fiado' ? { datos_fiado: fiadoVacio() } : {}),
+                          },
+                        ])
+                      }
+                      className="rounded-full px-2.5 py-1 text-xs font-medium text-marca-700 ring-1 ring-borde hover:bg-marca-50"
+                    >
+                      {m.nombre}
+                    </button>
+                  ))}
+              </div>
+            )}
+
+            {esCuentaCorriente && venta.cliente && (
+              <div
+                className={`rounded-lg px-3 py-2 text-xs ring-1 ${
+                  excede
+                    ? 'bg-red-50 text-red-800 ring-red-200'
+                    : 'bg-piedra-50 text-piedra-600 ring-borde'
+                }`}
+              >
+                Saldo actual {moneda.format(saldoActual)} · queda en {moneda.format(nuevoSaldo)}
+                {venta.cliente.limite_credito != null &&
+                  ` · límite ${moneda.format(venta.cliente.limite_credito)}`}
+                {excede && ' — excede el límite, la caja va a rechazar el cobro.'}
+              </div>
+            )}
+          </div>
+        )}
+
+        {debeVencido && (
+          <AvisoVencido
+            vencido={vencido!}
+            aCuentaCorriente={vaACuentaCorriente}
+            autorizo={autorizoVencido}
+            onAutorizar={onAutorizarVencido}
+          />
+        )}
+
+        {error && (
+          <p role="alert" className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 ring-1 ring-red-200">
+            {error}
+          </p>
+        )}
+
+        {/*
+          Con qué documento sale la venta.
+
+          Sólo aparece si el permiso lo habilita: emitir un presupuesto o
+          un remito es operación diaria, pero decidir que una venta no
+          lleve factura es una decisión del dueño. La base pide el mismo
+          permiso; esto sólo evita ofrecer lo que va a fallar.
+        */}
+        {opciones.length > 1 && (
+          <div className="mt-4 rounded-lg border border-borde p-1">
+            <div className={`grid gap-1 ${opciones.length === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
+              {opciones.map(([valor, titulo, detalle]) => (
+                <button
+                  key={valor}
+                  type="button"
+                  aria-pressed={documentacion === valor}
+                  disabled={valor !== 'fiscal' && !enLinea}
+                  onClick={() => {
+                    onDocumentacion(valor)
+                    // Factura después va entera a la cuenta: se elige sola.
+                    const cc = medios.find((m) => m.tipo === 'cuenta_corriente')
+                    if (valor === 'a_facturar' && cc && medio?.id !== cc.id) onElegirMedio(cc)
+                  }}
+                  className={`rounded-md px-3 py-2 text-left transition disabled:opacity-40 ${
+                    documentacion === valor
+                      ? valor === 'fiscal'
+                        ? 'bg-verde-600 text-white'
+                        : 'bg-tinta text-white'
+                      : 'text-piedra-500 enabled:hover:bg-piedra-100'
+                  }`}
+                >
+                  <span className="block text-sm font-medium">{titulo}</span>
+                  <span
+                    className={`block text-[11px] ${
+                      documentacion === valor ? 'text-white/70' : 'text-piedra-400'
+                    }`}
+                  >
+                    {detalle}
+                  </span>
+                </button>
+              ))}
+            </div>
+            {!enLinea && (
+              <p className="px-3 pb-1.5 pt-2 text-[11px] leading-snug text-piedra-500">
+                Sin conexión sólo se puede cobrar con factura. Podés cobrar igual: la factura se
+                emite sola cuando vuelva internet.
+              </p>
+            )}
+            {enLinea && documentacion === 'a_facturar' && (
+              <p className="px-3 pb-1.5 pt-2 text-[11px] leading-snug text-piedra-500">
+                Va entera a la cuenta corriente y sale un comprobante interno. La factura la emite
+                el encargado después, desde Facturación → Por facturar: sola o junto con otras
+                ventas del cliente.
+                {esResponsableInscripto && ' La percepción de IIBB, si le toca, va en esa factura.'}
+              </p>
+            )}
+          </div>
+        )}
+
+        <div className="mt-4 flex gap-2">
+          <button
+            ref={botonCobrar}
+            onClick={onCobrar}
+            disabled={
+              !medio || Math.abs(diferencia) > 0.009 || cobrando || aplicando || calculandoPercepcion ||
+              (documentacion === 'a_facturar' && !esCuentaCorriente) || chequeIncompleto || frenadoPorVencido ||
+              !!faltaFiado
+            }
+            title={
+              chequeIncompleto
+                ? 'Faltan datos del cheque: banco, número y fecha de pago.'
+                : faltaFiado
+                  ? faltaFiado
+                  : frenadoPorVencido
+                  ? 'Debe vencido: lo tiene que autorizar un encargado con su PIN.'
+                  : undefined
+            }
+            className={`flex-1 rounded-lg px-4 py-3 font-medium text-white disabled:opacity-40 ${
+              documentacion !== 'fiscal'
+                ? 'bg-tinta hover:bg-tinta/90'
+                : 'bg-verde-600 hover:bg-verde-500'
+            }`}
+          >
+            {cobrando
+              ? cobrada
+                ? documentacion === 'fiscal'
+                  ? 'Cobrada · facturando…'
+                  : 'Cobrada · sacando el comprobante…'
+                : 'Cobrando…'
+              : documentacion === 'no_fiscal'
+                ? 'Cobrar sin factura'
+                : documentacion === 'a_facturar'
+                  ? 'A cuenta, factura después'
+                  : 'Cobrar'}
+            {!cobrando && <TeclaAtajo tecla="F10" clara />}
+          </button>
+          <button
+            onClick={onCancelar}
+            className="rounded-lg px-4 py-3 text-sm font-medium text-piedra-500 hover:bg-piedra-100"
+          >
+            Volver
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function BotonCantidad({
+  children,
+  etiqueta,
+  onClick,
+  disabled,
+}: {
+  children: React.ReactNode
+  etiqueta: string
+  onClick: () => void
+  disabled: boolean
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={etiqueta}
+      className="size-6 rounded border border-borde text-piedra-600 hover:bg-piedra-100 disabled:opacity-40"
+    >
+      {children}
+    </button>
+  )
+}
+
+/*
+  Buscar el producto que el cliente sumó en la caja.
+
+  Es el mismo buscador del mostrador —mismo índice, mismos códigos de
+  barra— para que el cajero no tenga que aprender otro y para que un
+  escaneo se comporte igual de los dos lados.
+*/
+function BuscadorParaAgregar({
+  onElegir,
+  onCancelar,
+}: {
+  onElegir: (producto: ProductoVenta) => void
+  onCancelar: () => void
+}) {
+  const [texto, setTexto] = useState('')
+
+  const resultados = useQuery({
+    queryKey: ['buscar-para-agregar', texto],
+    queryFn: () => buscarProductosVenta(texto),
+    enabled: texto.trim().length > 1,
+  })
+  // Flechas y Enter, como en el mostrador (ver lib/buscador.ts).
+  const encontrados = useMemo(() => primeroElCodigoExacto(resultados.data ?? [], texto), [resultados.data, texto])
+  const flechas = useListaConFlechas(encontrados, (p) => onElegir(p))
+
+  return (
+    <div>
+      <div className="flex gap-2">
+        <input
+          autoFocus
+          value={texto}
+          onChange={(e) => setTexto(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') onCancelar()
+            else flechas.teclas(e)
+          }}
+          placeholder="Escaneá un código de barra o buscá por nombre…"
+          className="flex-1 rounded-lg border border-borde px-3 py-2 text-sm"
+        />
+        <button
+          onClick={onCancelar}
+          className="rounded-lg px-3 py-2 text-sm font-medium text-piedra-500 hover:bg-piedra-100"
+        >
+          Cancelar
+        </button>
+      </div>
+      {encontrados.length > 0 && (
+        <ul
+          ref={(el) => {
+            flechas.lista.current = el
+          }}
+          className="mt-2 max-h-48 overflow-y-auto rounded-lg ring-1 ring-borde"
+        >
+          {encontrados.map((p: ProductoVenta, i) => (
+            <li key={p.producto_id} className="border-b border-piedra-100 last:border-0">
+              <button
+                onClick={() => onElegir(p)}
+                onMouseMove={() => flechas.setMarcado(i)}
+                tabIndex={-1}
+                data-marcado={i === flechas.marcado}
+                className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm ${
+                  i === flechas.marcado ? 'bg-marca-50' : ''
+                }`}
+              >
+                <span className="min-w-0 flex-1 truncate text-tinta">{p.nombre_interno}</span>
+                <span className="tabular-nums text-piedra-500">
+                  {moneda.format(p.precio_venta)}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}

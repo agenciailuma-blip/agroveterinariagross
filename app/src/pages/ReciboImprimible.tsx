@@ -72,8 +72,8 @@ function AnularRecibo({ r }: { r: ReciboCompleto }) {
   const puede = tienePermiso('cuentacorriente.anular_recibo')
 
   const caja = useQuery({
-    queryKey: ['caja', terminal?.id],
-    queryFn: () => cajaAbierta(terminal!.id),
+    queryKey: ['caja'],
+    queryFn: () => cajaAbierta(),
     enabled: puede && r.paso_por_caja && !!terminal,
   })
   const cajaId = caja.data?.id ?? null

@@ -155,18 +155,19 @@ A quién se le compra cada producto. Y, sobre todo, **cómo cambiarle el precio 
 
 ## 7 · Ventas (punto de venta)
 
-El mostrador. Arma la venta y la manda a la caja.
+El mostrador. Arma la venta y la cobra ahí mismo, o la manda a la caja.
 
 | | |
 |---|---|
 | **Contiene** | La venta en curso. |
-| **Qué hago** | Identificarme con **PIN** · buscar o escanear productos · **escribir una línea que no está en el catálogo** · cambiar cantidades · **rebajar el precio de una línea, por monto o por porcentaje** · elegir el cliente · anticipar con qué va a pagar · **enviar a caja** o **hacer un presupuesto** · descartar la venta. |
+| **Qué hago** | Identificarme con **PIN** · buscar o escanear productos · **escribir una línea que no está en el catálogo** · cambiar cantidades · **rebajar el precio de una línea, por monto o por porcentaje** · elegir el cliente · anticipar con qué va a pagar · **cobrar en el puesto**, **enviar a caja** o **hacer un presupuesto** · descartar la venta. |
 | **Qué veo** | El detalle con precios y subtotal · **el total en efectivo y con tarjeta al mismo tiempo** · aviso si no hay stock suficiente · el borrador se conserva si la pantalla se refresca por accidente. |
 | **Qué exporto** | El **presupuesto impreso**, en ticket de 80 mm o en hoja A4, para que el cliente se lo lleve. |
 
-**Tres cosas que conviene explicar:**
+**Cuatro cosas que conviene explicar:**
 
-- **El PIN se cierra al enviar la venta.** Cada vendedor vuelve a identificarse. No es seguridad de contraseña —son cuatro dígitos tipeados en un mostrador lleno de gente—: es **atribución**. Sin esto, el primero que pone su PIN a la mañana queda como autor de todo lo que carga cualquiera.
+- **«Cobrar» cobra, factura e imprime en el mismo puesto**, con la misma pantalla de cobro que la Caja: medio de pago, pago dividido, con o sin factura, descuento, cheque, fiado y cuenta corriente. **Quien puso el PIN queda como vendedor y como cajero.** El efectivo va al cajón: la caja es una sola para todo el local. Si se cancela, la venta queda en la cola de la Caja. Si la caja no está abierta, avisa que primero la abra el encargado. Aparece para los usuarios que pueden cobrar; el resto sólo envía a caja.
+- **El PIN se cierra al enviar o cobrar la venta.** Cada vendedor vuelve a identificarse. No es seguridad de contraseña —son cuatro dígitos tipeados en un mostrador lleno de gente—: es **atribución**. Sin esto, el primero que pone su PIN a la mañana queda como autor de todo lo que carga cualquiera.
 - **Pide un nombre para llamar al cliente.** Se puede dejar vacío. Aparece en la cola de la caja, para que el cajero llame a la persona en vez de cantar un número.
 - **Rebajar un precio pide motivo y PIN.** El motivo sale de una lista (*descuento por cantidad, vencimiento próximo, bonificación especial*) para que después se pueda contar. Y **quien pone el PIN queda como responsable de la rebaja, que puede no ser el vendedor** — eso es lo que permite que un encargado se acerque y autorice.
 
@@ -178,17 +179,18 @@ El mostrador. Arma la venta y la manda a la caja.
 
 ## 8 · Caja
 
-Cobra lo que el mostrador armó, y cierra el turno.
+Cobra lo que el mostrador mandó, abre y cierra la caja del local, y carga ingresos y egresos.
 
 | | |
 |---|---|
-| **Contiene** | La cola de ventas esperando cobro, y la caja del turno. |
-| **Qué hago** | **Abrir la caja** con el monto inicial · elegir una venta de la cola · **corregir la venta** (quitar, cambiar cantidades, agregar) · elegir el medio de pago y las cuotas · **hacer un descuento**, por porcentaje o llevando el total a un número, con motivo de lista · elegir **con factura o sin factura** · **cobrar** · cobrar cuenta corriente · **cerrar la caja** con el arqueo. |
-| **Qué veo** | La cola con el nombre para llamar a cada cliente · el detalle de la venta · el total actualizado según el medio de pago · el saldo de cuenta corriente del cliente y su límite · al cerrar, lo esperado contra lo declarado y **la diferencia**. |
+| **Contiene** | La cola de ventas esperando cobro, y la caja del día. |
+| **Qué hago** | **Abrir la caja** con el monto inicial y el PIN del encargado · elegir una venta de la cola · **corregir la venta** (quitar, cambiar cantidades, agregar) · elegir el medio de pago y las cuotas · **hacer un descuento**, por porcentaje o llevando el total a un número, con motivo de lista · elegir **con factura o sin factura** · **cobrar** · cobrar cuenta corriente · **cerrar la caja** con el arqueo y el PIN del encargado. |
+| **Qué veo** | La cola con el nombre para llamar a cada cliente · el detalle de la venta · el total actualizado según el medio de pago · el saldo de cuenta corriente del cliente y su límite · al cerrar, lo esperado contra lo declarado, **la diferencia** y **quién cobró cada cosa**. |
 | **Qué exporto** | El **comprobante impreso** —factura, ticket no fiscal o comprobante interno— en ticket de 80 mm o A4. |
 
 **Lo que hay que saber:**
 
+- **Hay una sola caja para todo el local**, porque la plata está en un solo cajón. Se abre una vez a la mañana y se cierra una vez a la noche, desde cualquier PC; todos los puestos cobran contra ella. **La abre y la cierra el encargado con su PIN**, y queda anotado quién abrió y quién cerró. El arqueo junta lo cobrado en todos los puestos y muestra cuánto cobró cada uno, y cuánto de eso en efectivo.
 - **Al cobrar se factura solo.** Si ARCA falla, **la venta queda cobrada igual** y el comprobante espera en la cola: hacer fallar el cobro por una caída de ARCA dejaría al cliente parado con la mercadería en la mano. El cajero ve un aviso ámbar con enlace a Facturación.
 - **"Sin factura" tiene permiso propio**, que no tienen ni el Cajero ni el Vendedor. Se ofrece a cualquier cliente, **también a un Responsable Inscripto**: sin factura no lleva percepción y él no puede descargar el IVA de esa compra.
 - **Se cobra sin internet.** Lo que sí necesita conexión es **abrir** y **cerrar** la caja — arquear con la mitad de las ventas sin registrar produce una diferencia que no existe y que después alguien tiene que explicar.

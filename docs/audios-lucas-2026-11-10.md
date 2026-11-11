@@ -91,6 +91,13 @@ Para Lucas cambia esto: **la caja se abre una vez a la mañana** (o la pide el p
 
 ### La pregunta que define el tiempo: ¿cuántos cajones de plata hay?
 
+✅ **Contestado por Francisco el 10/11: hay un solo cajón.** Va la opción **B**. La propuesta para Lucas, en [`propuesta-vender-y-cobrar.md`](propuesta-vender-y-cobrar.md). Lo que implica por dentro:
+
+- **La caja deja de estar atada a la PC.** Hoy la base exige una caja abierta por terminal (`caja_abierta_unica` sobre `terminal_id`). Pasa a ser **una caja abierta por local**, y cada cobro guarda el cajero y la terminal desde la que se hizo (`venta.cajero_id` y `terminal_origen_id` ya existen).
+- **Cada PC tiene que saber cuál es la caja abierta**, también sin conexión. Se baja con la sincronización al abrirla. Una PC que no la tiene todavía avisa que la caja no está abierta en vez de cobrar contra nada.
+- **El cierre y la planilla juntan los cobros de todas las PC**, con un detalle por cajero y por puesto. Lo de ingresos, egresos, recibos y cheques del turno va a la misma caja.
+- **La pantalla Caja** sigue sirviendo para abrir, cerrar, ingresos y egresos, y la cola de lo que se mandó a caja.
+
 - **A · Un cajón por puesto.** Cada PC tiene su plata y rinde su propia caja. **Es lo que el sistema ya hace:** cada puesto se da de alta como caja y cierra su arqueo. El arqueo y la planilla no cambian. **1 semana** (5 días de trabajo + la prueba en el local).
 - **B · Un solo cajón para todos.** Varias PC cobran contra la misma plata. Hay que **separar la caja de la PC**: una caja del local que se abre una vez y a la que cobran todas, con un solo arqueo al final que junta lo de todas y dice quién cobró cada cosa. Cambian la apertura, el cierre, la planilla y el cobro sin conexión, porque cada PC tiene que saber cuál es la caja abierta. **2 semanas.**
 
@@ -109,7 +116,7 @@ Si se arranca por A y después se pasa a B, no se tira nada: el botón *Cobrar* 
 - **Con un solo cajón (B): dos semanas.**
 - En los dos casos, **una visita al local** para probarlo con las PC de verdad antes de arrancar.
 
-**No se empieza sin el OK de Francisco al enfoque.**
+✅ **Aprobado por Francisco el 11/11 y construido:** una sola caja, todos cobran desde su puesto, el encargado abre y cierra con su PIN, PIN en cada venta y un solo usuario para entrar en el local. El detalle, en la entrada del 11/11 de [`AHORA.md`](AHORA.md).
 
 ---
 

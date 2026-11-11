@@ -66,8 +66,8 @@ export default function CuentaCorriente({
   })
 
   const caja = useQuery({
-    queryKey: ['caja', terminal?.id],
-    queryFn: () => cajaAbierta(terminal!.id),
+    queryKey: ['caja'],
+    queryFn: () => cajaAbierta(),
     enabled: !!terminal,
   })
 

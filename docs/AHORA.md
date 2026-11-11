@@ -129,6 +129,16 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 
 ---
 
+## Lo último que pasó — 11 de noviembre: vender y cobrar en el mismo puesto, con una sola caja
+
+Aprobado por Francisco el 11/11: todos cobran desde su puesto, el efectivo va al único cajón, **el encargado abre y cierra la caja con su PIN**, PIN en cada venta y **un solo usuario** para entrar al sistema en el local. Propuesta: [`propuesta-vender-y-cobrar.md`](propuesta-vender-y-cobrar.md). **Hecho, sin publicar:**
+
+- **Base** ([`una_sola_caja_para_el_local`](../supabase/migrations/20261111100000_una_sola_caja_para_el_local.sql), **aplicada**): `abrir_caja` y `cerrar_caja_con_pin` piden el PIN de alguien con permiso para abrir o cerrar; queda anotado quién cerró (`cerrada_por`); el resumen trae *Quién cobró* (`por_cajero`) y lo ve quien cobra. **Probado** con [`pruebas/una-sola-caja.sql`](../supabase/pruebas/una-sola-caja.sql): 13 comprobaciones, deshechas al final.
+- ⚠️ **La regla de una sola caja abierta** ([`20261111100100_una_sola_caja_abierta.sql`](../supabase/migrations/20261111100100_una_sola_caja_abierta.sql)) **NO está aplicada**: va **el día que se publica**, porque con la versión anterior la Caja 2 no podría abrir la suya. Antes de aplicarla tiene que haber una sola caja abierta.
+- **App:** la caja abierta es la del local, no la de cada PC ([`caja.ts`](../app/src/lib/api/caja.ts)); abrir y cerrar piden el PIN del encargado; la Caja ya no exige una terminal de tipo caja; el cobro salió a [`CobroDeVenta.tsx`](../app/src/components/CobroDeVenta.tsx) y lo usan la Caja y el botón **Cobrar** del mostrador; el cierre muestra *Quién cobró* y quién cerró. **869 pruebas verdes** y los tipos sin errores. **No se vio en pantalla**: hace falta un PIN real y abrir o cerrar la caja de verdad.
+- **Para hacer en el local (Usuarios):** crear el usuario compartido con rol Cajero; sacarle al rol Cajero *abrir caja* y *cerrar caja*, así sólo abren y cierran el Encargado y el Administrador; ponerle PIN al Encargado.
+- **Riesgos que quedan:** un cobro sin internet sobre una caja que otro puesto cerró mientras tanto queda en la caja cerrada; el stock de una venta cobrada en un mostrador se descuenta como de la PC donde se abrió la caja; la contingencia de ARCA sigue siendo sólo desde PC de tipo caja (los puntos de venta por puesto los tramita el contador); mientras se cobra en el mostrador, la venta se ve un momento en la cola de la Caja.
+
 ## Lo último que pasó — 10 de noviembre: los audios de Lucas
 
 Seis pedidos por WhatsApp, revisados uno por uno en [`audios-lucas-2026-11-10.md`](audios-lucas-2026-11-10.md), con el borrador de respuesta. **Hechos, sin publicar:**
@@ -138,7 +148,7 @@ Seis pedidos por WhatsApp, revisados uno por uno en [`audios-lucas-2026-11-10.md
 - **«Dividir el pago»** en la caja: lleva el cursor al importe para bajarlo y completar con otro medio. Sin ver en pantalla.
 - **La condición de venta** (*Contado*, *Cuenta corriente* o las dos) en el ticket, el A4, el PDF y la pantalla, y **la leyenda al pie** con la web, configurable en *Datos del emisor*. Vistas en pantalla con facturas reales.
 - **La base ya está aplicada:** [`codigo_siguiente_y_pie_del_comprobante`](../supabase/migrations/20261110120000_codigo_siguiente_y_pie_del_comprobante.sql). **869 pruebas verdes** y los tipos sin errores.
-- 🟡 **Espera el OK de Francisco:** vender y cobrar en la misma PC (punto 6). Y un riesgo que ya existe: dos cajas facturando por contingencia en el mismo corte pueden repetir el número.
+- ✅ **Vender y cobrar en la misma PC (punto 6):** aprobado el 11/11, ver la entrada de arriba. Y un riesgo que ya existe: dos cajas facturando por contingencia en el mismo corte pueden repetir el número.
 
 ## Lo último que pasó — 6 de noviembre: lo que contestó Lucas, y pendientes que se cerraron
 

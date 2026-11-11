@@ -113,6 +113,8 @@ export interface ResumenCaja {
     id: string
     terminal: string | null
     cajero: string | null
+    /** Quien la cerró con su PIN. Vacío en las cajas cerradas antes de la caja única. */
+    cerro?: string | null
     estado: 'abierta' | 'cerrada'
     abierta_en: string
     cerrada_en: string | null
@@ -126,6 +128,8 @@ export interface ResumenCaja {
     total: number
     anuladas: number
     por_medio: PorMedio[]
+    /** Quién cobró cada cosa y cuánto de eso fue efectivo. No viene en cierres viejos. */
+    por_cajero?: { cajero: string; cantidad: number; total: number; efectivo: number }[]
     por_documentacion: { documentacion: 'fiscal' | 'no_fiscal' | 'a_facturar'; cantidad: number; total: number }[]
   }
   cobranzas: {
@@ -175,6 +179,7 @@ function aNumeros(r: ResumenCaja): ResumenCaja {
       ...r.ventas,
       total: n(r.ventas.total),
       por_medio: r.ventas.por_medio.map((m) => ({ ...m, importe: n(m.importe) })),
+      por_cajero: (r.ventas.por_cajero ?? []).map((c) => ({ ...c, total: n(c.total), efectivo: n(c.efectivo) })),
       por_documentacion: r.ventas.por_documentacion.map((d) => ({ ...d, total: n(d.total) })),
     },
     cobranzas: {

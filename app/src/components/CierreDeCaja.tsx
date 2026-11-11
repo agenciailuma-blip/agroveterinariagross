@@ -27,23 +27,24 @@ import { moneda } from '@/lib/tipos'
 
 export default function CierreDeCaja({
   cajaId,
-  terminalId,
   onCerrada,
   onCancelar,
 }: {
   cajaId: string
-  terminalId: string
   onCerrada: () => void
   onCancelar: () => void
 }) {
   const [declarado, setDeclarado] = useState('')
+  // La cierra el encargado: el local entra con un solo usuario y quién
+  // cerró lo dice el PIN.
+  const [pin, setPin] = useState('')
   const [cerrada, setCerrada] = useState(false)
 
   const resumen = useQuery({ queryKey: ['resumen-de-caja', cajaId], queryFn: () => resumenDeCaja(cajaId) })
   const r = resumen.data
 
   const cerrar = useMutation({
-    mutationFn: () => cerrarCaja(cajaId, terminalId, leerCantidad(declarado) ?? 0),
+    mutationFn: () => cerrarCaja(cajaId, leerCantidad(declarado) ?? 0, pin),
     onSuccess: async () => {
       // Ya cerrada, el resumen trae lo que esperaba el sistema.
       await resumen.refetch()
@@ -71,6 +72,7 @@ export default function CierreDeCaja({
           <div className="mt-4 space-y-4">
             <Efectivo r={r} />
             <Medios titulo="Ventas por medio de pago" medios={r.ventas.por_medio} />
+            <PorCajero r={r} />
             {r.cobranzas.por_medio.length > 0 && <Medios titulo="Cobranzas por medio de pago" medios={r.cobranzas.por_medio} />}
             {r.devoluciones.length > 0 && (
               <dl className="text-sm text-piedra-600">
@@ -93,7 +95,7 @@ export default function CierreDeCaja({
           <form
             onSubmit={(e) => {
               e.preventDefault()
-              if (declarado !== '' && !cerrar.isPending) cerrar.mutate()
+              if (declarado !== '' && pin !== '' && !cerrar.isPending) cerrar.mutate()
             }}
           >
             <dl className="mt-3 space-y-1 text-sm text-piedra-600">
@@ -143,6 +145,18 @@ export default function CierreDeCaja({
               </span>
             </label>
 
+            <label className="mt-4 block">
+              <span className="mb-1 block text-xs font-medium text-piedra-600">PIN del encargado</span>
+              <input
+                type="password"
+                inputMode="numeric"
+                autoComplete="off"
+                value={pin}
+                onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
+                className="w-full rounded-lg border border-borde px-3 py-2.5 text-center text-lg tracking-widest outline-none focus:border-marca-500"
+              />
+            </label>
+
             {(cerrar.isError || resumen.isError) && (
               <p role="alert" className="mt-3 text-sm text-red-700">
                 {enCastellano(cerrar.error ?? resumen.error, 'No se pudo cerrar.')}
@@ -150,7 +164,7 @@ export default function CierreDeCaja({
             )}
 
             <div className="mt-4 flex gap-2">
-              <button type="submit" disabled={declarado === '' || cerrar.isPending} className={`${boton.principal} flex-1 py-2.5`}>
+              <button type="submit" disabled={declarado === '' || pin === '' || cerrar.isPending} className={`${boton.principal} flex-1 py-2.5`}>
                 {cerrar.isPending ? 'Cerrando…' : 'Cerrar caja'}
               </button>
               <button type="button" onClick={onCancelar} className={boton.suave}>
@@ -198,6 +212,31 @@ function Efectivo({ r }: { r: ResumenCaja }) {
           <dt>Diferencia</dt>
           <dd className="tabular-nums">{moneda.format(diferencia)}</dd>
         </div>
+      </dl>
+    </div>
+  )
+}
+
+/** Una caja para todos los puestos: quién cobró cada cosa. */
+function PorCajero({ r }: { r: ResumenCaja }) {
+  const filas = r.ventas.por_cajero ?? []
+  if (filas.length < 2 && !r.caja.cerro) return null
+  return (
+    <div>
+      <p className="mb-1 text-xs font-medium tracking-wide text-piedra-400 uppercase">Quién cobró</p>
+      <dl className="space-y-1 text-sm text-piedra-600">
+        {filas.map((c) => (
+          <div key={c.cajero} className="flex justify-between gap-3">
+            <dt className="min-w-0 truncate">
+              {c.cajero} ({c.cantidad})
+            </dt>
+            <dd className="shrink-0 text-right tabular-nums">
+              {moneda.format(c.total)}
+              {c.efectivo > 0 && <span className="block text-xs text-piedra-400">{moneda.format(c.efectivo)} en efectivo</span>}
+            </dd>
+          </div>
+        ))}
+        {r.caja.cerro && <p className="pt-1 text-xs text-piedra-500">La cerró {r.caja.cerro}.</p>}
       </dl>
     </div>
   )
