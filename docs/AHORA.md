@@ -12,7 +12,22 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Construida: 0.21.2** (06/11) — **falta publicarla**. **La planilla de una caja cerrada ya no cambia** —se guarda al cerrar; lo anulado después va aparte— y **el mapa de los clientes mayoristas**, en *Mayorista → Clientes*. Con el mapa queda construida toda la fase 3. **La base ya está aplicada.** Ver *Lo último que pasó*. **859 pruebas verdes en la app.**
+**Construida: 0.22.1** (11/11) — **la publica Francisco**. En la pantalla de cobro, **F9 elige *Con factura* y F11 *Sin factura*** (F10 sigue cobrando); las teclas se ven en los botones y en la ayuda (F1). *Factura después* no tiene tecla. Sólo pantalla: la base no cambia. **No se probó en la app con una venta real.**
+
+> **Revisado el 11/11, antes de publicar: el ticket al cobrar desde un mostrador.** Caja 1 (`POS80 Printer(2)`) y Mostrador 1 (`\\DESKTOP-O4R9STD\POS80 Printer(2)`, la de la caja compartida) tienen impresora: ahí sale solo. **Mostrador 2 y Caja 2 no tienen ninguna**: cobran y facturan, pero el ticket no sale y **la pantalla no avisa** (se decidió publicar así). Antes de que cobren, en esa PC: *Configuración → Impresora del mostrador*, elegir la POS80 y *Prueba*. Sin internet, un mostrador cobra sin ticket: la factura queda pendiente (con CAEA emite sólo la caja). Caja 1 tiene dos ventas de hoy sin impresión registrada (CAJA1-000057 y 000059): preguntar si salió el papel.
+
+**Publicada: 0.22.0** (11/11, 15:29), verificada en Cloudflare: `latest.json` dice 0.22.0. **Falta aplicar la regla de una sola caja abierta** cuando las 4 PC actualicen (la columna `terminal.version_app` no se llena: hay que preguntar en el local). **Vender y cobrar en el mismo puesto, con una sola caja para el local**, más los audios de Lucas del 10/11 (WhatsApp de fiados, código siguiente, *Dividir el pago*, condición de venta y leyenda al pie). Trae también todo lo de la 0.21.2, que no llegó a salir. **La base ya está aplicada, salvo la regla de una sola caja abierta, que va el mismo día.** Ver *Lo último que pasó* y abajo *El día que se publica la 0.22.0*. **870 pruebas verdes en la app.**
+
+**El día que se publica la 0.22.0**, en este orden:
+
+1. **En Usuarios:** crear el usuario compartido del local con rol **Cajero**; sacarle al rol Cajero *Abrir caja* y *Cerrar caja*; **ponerle PIN al Encargado** (hoy no tiene). Sin el PIN de alguien con permiso, nadie abre la caja.
+2. **Que quede una sola caja abierta**, o ninguna. Hoy está abierta la de la Caja 1 desde el 03/11.
+3. ✅ **Publicada el 11/11.** `npm --prefix app run escritorio:publicar` desde Git Bash, o `npm.cmd` desde PowerShell (ver *Cómo arrancar* → *Publicar una corrección*).
+4. **Aplicar** [`20261111100100_una_sola_caja_abierta.sql`](../supabase/migrations/20261111100100_una_sola_caja_abierta.sql) apenas las PC tomen la versión. Antes no: con la 0.21 cada caja abre la suya.
+5. **En cada PC:** *Actualizar ahora*, entrar con el usuario compartido y probar: abrir con el PIN del encargado, cobrar una venta desde un mostrador (F10 y F10), cancelar otra y verla en la cola de la Caja, cerrar con el PIN.
+6. **Contarle a Lucas** que para quien cobra F10 es *Cobrar* y *Enviar a caja* pasa a F9.
+
+**Construida: 0.21.2** (06/11) — **no llegó a publicarse: va con la 0.22.0**. **La planilla de una caja cerrada ya no cambia** —se guarda al cerrar; lo anulado después va aparte— y **el mapa de los clientes mayoristas**, en *Mayorista → Clientes*. Con el mapa queda construida toda la fase 3. **La base ya está aplicada.** Ver *Lo último que pasó*. **859 pruebas verdes en la app.**
 
 **Publicada: 0.21.1** (06/11, 09:25), verificada en Cloudflare: `latest.json` dice 0.21.1. **Lo chico que quedó de la reunión del 05/11**: en la Caja, agregar un producto de *precio en cada venta* pregunta el precio; flechas y Enter en los buscadores de Remitos, Órdenes internas, Recepción de mercadería y Mayorista; y las notas de crédito y devoluciones del turno en el cierre y en la planilla de caja. **La base ya está aplicada.** Ver *Lo último que pasó*. **859 pruebas verdes en la app.**
 

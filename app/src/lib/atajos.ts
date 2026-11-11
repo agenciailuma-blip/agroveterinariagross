@@ -61,6 +61,14 @@ export const ATAJOS: { donde: string; atajos: Atajo[] }[] = [
     ],
   },
   {
+    donde: 'Al cobrar, en la Caja o en el Mostrador',
+    atajos: [
+      { teclas: 'F9', que: 'Con factura' },
+      { teclas: 'F11', que: 'Sin factura' },
+      { teclas: 'F10', que: 'Cobrar' },
+    ],
+  },
+  {
     donde: 'En los formularios de carga',
     atajos: [
       { teclas: 'Enter del teclado numérico', que: 'Pasar al campo siguiente' },

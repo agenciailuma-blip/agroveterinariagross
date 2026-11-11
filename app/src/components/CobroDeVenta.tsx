@@ -42,7 +42,7 @@ import CamposCheque from '@/components/CamposCheque'
 import CamposFiado from '@/components/CamposFiado'
 import { faltaEnFiado, fiadoVacio } from '@/lib/api/fiados'
 import { moneda, numero } from '@/lib/tipos'
-import { useBotonConAtajo } from '@/lib/atajos'
+import { useAtajo, useBotonConAtajo } from '@/lib/atajos'
 import { TeclaAtajo } from '@/components/Atajos'
 import { primeroElCodigoExacto, useListaConFlechas } from '@/lib/buscador'
 
@@ -928,6 +928,24 @@ function PanelCobro({
       : []),
   ]
 
+  const elegirDocumentacion = (valor: Documentacion) => {
+    onDocumentacion(valor)
+    // Factura después va entera a la cuenta: se elige sola.
+    const cc = medios.find((m) => m.tipo === 'cuenta_corriente')
+    if (valor === 'a_facturar' && cc && medio?.id !== cc.id) onElegirMedio(cc)
+  }
+
+  /*
+    Con o sin factura desde el teclado, a los costados de F10: F9 con
+    factura, F11 sin factura, y F10 cobra. Sólo si la opción está a la
+    vista y se puede elegir, igual que el botón.
+  */
+  const teclaDe: Partial<Record<Documentacion, string>> = { fiscal: 'F9', no_fiscal: 'F11' }
+  const elegible = (valor: Documentacion) =>
+    opciones.length > 1 && opciones.some(([v]) => v === valor) && (valor === 'fiscal' || enLinea)
+  useAtajo('F9', () => elegirDocumentacion('fiscal'), elegible('fiscal'))
+  useAtajo('F11', () => elegirDocumentacion('no_fiscal'), elegible('no_fiscal'))
+
   /*
     Respuesta 7 de Lucas: a quien debe vencido no se le suma deuda sin
     que un encargado lo autorice con su PIN. Cuenta cualquier parte que
@@ -1399,12 +1417,7 @@ function PanelCobro({
                   type="button"
                   aria-pressed={documentacion === valor}
                   disabled={valor !== 'fiscal' && !enLinea}
-                  onClick={() => {
-                    onDocumentacion(valor)
-                    // Factura después va entera a la cuenta: se elige sola.
-                    const cc = medios.find((m) => m.tipo === 'cuenta_corriente')
-                    if (valor === 'a_facturar' && cc && medio?.id !== cc.id) onElegirMedio(cc)
-                  }}
+                  onClick={() => elegirDocumentacion(valor)}
                   className={`rounded-md px-3 py-2 text-left transition disabled:opacity-40 ${
                     documentacion === valor
                       ? valor === 'fiscal'
@@ -1413,7 +1426,10 @@ function PanelCobro({
                       : 'text-piedra-500 enabled:hover:bg-piedra-100'
                   }`}
                 >
-                  <span className="block text-sm font-medium">{titulo}</span>
+                  <span className="flex flex-wrap items-center justify-between text-sm font-medium">
+                    {titulo}
+                    {teclaDe[valor] && <TeclaAtajo tecla={teclaDe[valor]} clara={documentacion === valor} />}
+                  </span>
                   <span
                     className={`block text-[11px] ${
                       documentacion === valor ? 'text-white/70' : 'text-piedra-400'
