@@ -15,6 +15,7 @@ import {
 import type { ClienteVenta, LineaVenta, ProductoVenta } from '@/lib/api/ventas'
 import { clienteDesdeArca } from '@/lib/api/clientes'
 import { autorizarVencidoEnCaja, cajaAbierta, deudaVencida } from '@/lib/api/caja'
+import { mandarALaCola } from '@/lib/api/ventas'
 import type { Operador } from '@/lib/api/ventas'
 import CobroDeVenta from '@/components/CobroDeVenta'
 import { cuitValido } from '@/lib/api/cheques'
@@ -47,6 +48,15 @@ const PRINCIPAL =
 const SECUNDARIO =
   'rounded-xl border border-borde px-4 py-2.5 text-sm font-medium text-tinta hover:bg-piedra-50 disabled:opacity-40'
 
+/** El cobro en el puesto que está en curso, recordado por si se cierra el programa. */
+const COBRANDO = 'gross.mostrador.cobrando'
+interface Cobrando {
+  ventaId: string | null
+  codigo: string
+  cajaId: string
+  operador: Operador
+}
+
 export default function PuntoDeVenta() {
   const { terminal, disponibles, cargando: cargandoTerminal, elegir } = useTerminal()
   const { operador, identificar, salir, renovar } = useOperador()
@@ -64,12 +74,31 @@ export default function PuntoDeVenta() {
     Se guarda el operador del momento: el cobro tiene que quedar a nombre
     de quien vendió aunque el PIN se venza mientras tanto.
   */
-  const [cobrando, setCobrando] = useState<{
-    ventaId: string | null
-    codigo: string
-    cajaId: string
-    operador: Operador
-  } | null>(null)
+  const [cobrando, setCobrandoEstado] = useState<Cobrando | null>(() => {
+    try {
+      return JSON.parse(localStorage.getItem(COBRANDO) ?? 'null') as Cobrando | null
+    } catch {
+      return null
+    }
+  })
+  /*
+    Recordado en la máquina: la venta se arma en borrador y no está en
+    la cola. Si el programa se cierra a mitad del cobro, al volver se
+    retoma acá en lugar de quedar perdida.
+  */
+  function setCobrando(c: Cobrando | null | ((c: Cobrando | null) => Cobrando | null)) {
+    setCobrandoEstado((antes) => {
+      const nuevo = typeof c === 'function' ? c(antes) : c
+      try {
+        if (nuevo?.ventaId) localStorage.setItem(COBRANDO, JSON.stringify(nuevo))
+        else localStorage.removeItem(COBRANDO)
+      } catch {
+        // Sin lugar para guardarlo: el cobro sigue igual.
+      }
+      return nuevo
+    })
+  }
+  const puedeCobrar = tienePermiso('ventas.cobrar')
 
   const [lineas, setLineas] = useState<LineaVenta[]>(() => {
     try {
@@ -120,6 +149,12 @@ export default function PuntoDeVenta() {
   })
   useAtajo('F3', () => setBuscandoCliente(true))
   const botonEnviar = useBotonConAtajo('F10')
+  /*
+    F10 es lo principal de la pantalla. Para quien cobra, lo principal es
+    Cobrar —y en la pantalla de cobro F10 confirma, así que F10 y F10
+    cobra—; «Enviar a caja» pasa a F9. Para quien no cobra, sigue en F10.
+  */
+  const botonF9 = useBotonConAtajo('F9')
 
   /*
     La rebaja que está esperando el PIN que la autorice.
@@ -692,8 +727,10 @@ export default function PuntoDeVenta() {
     mutationFn: async () => {
       const caja = await cajaAbierta()
       if (!caja) throw new Error('La caja no está abierta: la abre el encargado desde Caja.')
+      // En borrador: no entra a la cola de la Caja mientras se cobra acá.
       const v = await enviarACaja(
         {
+          estado: 'borrador',
           clienteId: cliente!.id,
           vendedorId: operador!.usuario_id,
           terminalId: terminal!.id,
@@ -730,10 +767,16 @@ export default function PuntoDeVenta() {
     Se cierra el cobro: el PIN también, como al enviar a caja, para que
     la próxima venta quede a nombre de quien la haga.
   */
-  function terminarCobro(sinCobrar: boolean) {
-    if (sinCobrar && cobrando) {
-      setExito(`Venta ${cobrando.codigo} sin cobrar: quedó en la cola de la caja`)
-      setTimeout(() => setExito(null), 5000)
+  async function terminarCobro(sinCobrar: boolean) {
+    if (sinCobrar && cobrando?.ventaId) {
+      try {
+        await mandarALaCola(cobrando.ventaId, cobrando.codigo)
+        setExito(`Venta ${cobrando.codigo} sin cobrar: quedó en la cola de la caja`)
+        setTimeout(() => setExito(null), 5000)
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'No se pudo mandar la venta a la caja.')
+        return
+      }
     }
     setCobrando(null)
     salir()
@@ -795,13 +838,13 @@ export default function PuntoDeVenta() {
             sinVenta={
               <div className="grid place-items-center gap-3 rounded-xl border border-dashed border-borde bg-white/60 py-10">
                 <p className="text-sm text-piedra-500">Venta {cobrando.codigo} cobrada.</p>
-                <button autoFocus onClick={() => terminarCobro(false)} className={PRINCIPAL}>
+                <button autoFocus onClick={() => void terminarCobro(false)} className={PRINCIPAL}>
                   Nueva venta
                 </button>
               </div>
             }
             onTerminada={() => setCobrando((c) => (c ? { ...c, ventaId: null } : c))}
-            onCancelar={() => terminarCobro(true)}
+            onCancelar={() => void terminarCobro(true)}
           />
         </div>
       </div>
@@ -1413,13 +1456,21 @@ export default function PuntoDeVenta() {
 
         {aConvenir && bloqueRemitoInterno}
 
-        {tienePermiso('ventas.cobrar') && (
+        {puedeCobrar && (
           <button
             onClick={() => cobrarAca.mutate()}
+            ref={aConvenir ? undefined : botonEnviar}
             disabled={!lineas.length || !cliente || cobrarAca.isPending || enviar.isPending || presupuestar.isPending}
             className={aConvenir ? SECUNDARIO : PRINCIPAL}
           >
-            {cobrarAca.isPending ? `Preparando… ${pasoEnvio ?? ''}` : 'Cobrar'}
+            {cobrarAca.isPending ? (
+              `Preparando… ${pasoEnvio ?? ''}`
+            ) : (
+              <>
+                Cobrar
+                {!aConvenir && <TeclaAtajo tecla="F10" clara />}
+              </>
+            )}
           </button>
         )}
 
@@ -1451,16 +1502,16 @@ Se muestra en la cola del cajero. Si no hace falta, dejalo vacío.`,
             if (nombre === null) return
             enviar.mutate(nombre || null)
           }}
-          ref={aConvenir ? undefined : botonEnviar}
+          ref={aConvenir ? undefined : puedeCobrar ? botonF9 : botonEnviar}
           disabled={!lineas.length || !cliente || enviar.isPending || presupuestar.isPending || cobrarAca.isPending}
-          className={aConvenir || tienePermiso('ventas.cobrar') ? SECUNDARIO : PRINCIPAL}
+          className={aConvenir || puedeCobrar ? SECUNDARIO : PRINCIPAL}
         >
           {enviar.isPending ? (
             `Enviando… ${pasoEnvio ?? ''}`
           ) : (
             <>
               Enviar a caja
-              {!aConvenir && <TeclaAtajo tecla="F10" clara={!tienePermiso('ventas.cobrar')} />}
+              {!aConvenir && <TeclaAtajo tecla={puedeCobrar ? 'F9' : 'F10'} clara={!puedeCobrar} />}
             </>
           )}
         </button>

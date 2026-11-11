@@ -57,6 +57,27 @@ describe('qué se guarda de lo que llega por la red', () => {
   })
 
   /*
+    El mostrador que cobra arma la venta en borrador. Mientras la cobra
+    no tiene que aparecer en la cola de la caja; si el cobro se cancela,
+    se manda a la cola y ahí sí.
+  */
+  it('la venta que se cobra en el mostrador no va a la cola, salvo que se cancele el cobro', () => {
+    const cobrandose = loQueSeGuarda([venta('v1', 'borrador'), linea('v1', 'Bravecto')], new Set())
+    expect(cobrandose.ventas).toEqual([])
+
+    const cancelada = loQueSeGuarda(
+      [
+        venta('v1', 'borrador'),
+        linea('v1', 'Bravecto'),
+        operacion({ lote: 'v1', orden: 2, tipo: 'rpc', tabla: 'mandar_venta_a_caja', datos: { p_venta_id: 'v1' } }),
+      ],
+      new Set(),
+    )
+    expect(cancelada.ventas.map((v) => [v.id, v.estado])).toEqual([['v1', 'en_caja']])
+    expect(cancelada.lineas.map((l) => l.descripcion)).toEqual(['Bravecto'])
+  })
+
+  /*
     La cabecera viaja sin total, como va al servidor, que lo calcula
     solo. En el local, el 01/10, la cola de la caja mostró «$ NaN» hasta
     que el cajero eligió cómo pagaba.

@@ -142,9 +142,18 @@ export function loQueSeGuarda(
   const esVenta = (o: OperacionAbierta) => o.tipo === 'insert' && o.tabla === 'venta'
   const esLinea = (o: OperacionAbierta) => o.tipo === 'insert' && o.tabla === 'venta_linea'
 
+  // La venta que un mostrador iba a cobrar y no cobró: nació en borrador
+  // y después se mandó a la cola.
+  const mandadasALaCola = new Set(
+    llegan
+      .filter((o) => o.tipo === 'rpc' && o.tabla === 'mandar_venta_a_caja')
+      .map((o) => String(o.datos.p_venta_id)),
+  )
+
   const enCaja = llegan
     .filter(esVenta)
     .map((o) => o.datos as unknown as VentaLocal)
+    .map((v) => (v.estado === 'borrador' && mandadasALaCola.has(v.id) ? { ...v, estado: 'en_caja' } : v))
     .filter((v) => v.estado === 'en_caja' && !yaCobradasAca.has(v.id))
 
   const visibles = new Set(enCaja.map((v) => v.id))

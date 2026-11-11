@@ -511,3 +511,25 @@ async function guardarVenta(
   paso('lista')
   return { id, codigo }
 }
+
+/*
+  La venta que se iba a cobrar en el puesto y no se cobró.
+
+  El mostrador la arma en borrador para que no aparezca en la cola de la
+  Caja mientras la cobra. Si el cobro se cancela, pasa a la cola. Va por
+  la bandeja de salida, detrás de la venta, así anda igual sin conexión;
+  y la copia local cambia ya, para que la Caja de esta PC la vea.
+*/
+export async function mandarALaCola(ventaId: string, codigo: string) {
+  const ahora = new Date().toISOString()
+  await encolar(ventaId, [
+    {
+      tipo: 'rpc',
+      tabla: 'mandar_venta_a_caja',
+      datos: { p_venta_id: ventaId },
+      descripcion: `${codigo} · a la cola de la caja`,
+    },
+  ])
+  await db.venta.update(ventaId, { estado: 'en_caja', enviada_caja_en: ahora })
+  if (navigator.onLine) void subirPendientes()
+}

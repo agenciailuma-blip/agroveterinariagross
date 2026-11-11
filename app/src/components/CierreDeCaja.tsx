@@ -101,6 +101,12 @@ export default function CierreDeCaja({
             <dl className="mt-3 space-y-1 text-sm text-piedra-600">
               <Fila nombre="Monto inicial" valor={r ? moneda.format(r.caja.monto_inicial) : '—'} />
               <Fila nombre="Ventas cobradas" valor={r ? String(r.ventas.cantidad) : '—'} />
+              {(r?.ventas.de_una_caja_cerrada?.cantidad ?? 0) > 0 && (
+                <Fila
+                  nombre="De ellas, llegaron de la caja anterior"
+                  valor={String(r!.ventas.de_una_caja_cerrada!.cantidad)}
+                />
+              )}
               <Fila nombre="Ingresos y egresos cargados" valor={r ? String(movimientos) : '—'} />
             </dl>
 
@@ -220,7 +226,7 @@ function Efectivo({ r }: { r: ResumenCaja }) {
 /** Una caja para todos los puestos: quién cobró cada cosa. */
 function PorCajero({ r }: { r: ResumenCaja }) {
   const filas = r.ventas.por_cajero ?? []
-  if (filas.length < 2 && !r.caja.cerro) return null
+  if (filas.length < 2 && !r.caja.cerro && !r.ventas.de_una_caja_cerrada?.cantidad) return null
   return (
     <div>
       <p className="mb-1 text-xs font-medium tracking-wide text-piedra-400 uppercase">Quién cobró</p>
@@ -236,6 +242,14 @@ function PorCajero({ r }: { r: ResumenCaja }) {
             </dd>
           </div>
         ))}
+        {(r.ventas.de_una_caja_cerrada?.cantidad ?? 0) > 0 && (
+          <p className="pt-1 text-xs text-amber-800">
+            {r.ventas.de_una_caja_cerrada!.cantidad === 1
+              ? 'Una venta cobrada sin internet llegó con la caja anterior ya cerrada'
+              : `${r.ventas.de_una_caja_cerrada!.cantidad} ventas cobradas sin internet llegaron con la caja anterior ya cerrada`}{' '}
+            ({moneda.format(r.ventas.de_una_caja_cerrada!.total)}): están en esta caja.
+          </p>
+        )}
         {r.caja.cerro && <p className="pt-1 text-xs text-piedra-500">La cerró {r.caja.cerro}.</p>}
       </dl>
     </div>

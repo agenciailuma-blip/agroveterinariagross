@@ -130,6 +130,8 @@ export interface ResumenCaja {
     por_medio: PorMedio[]
     /** Quién cobró cada cosa y cuánto de eso fue efectivo. No viene en cierres viejos. */
     por_cajero?: { cajero: string; cantidad: number; total: number; efectivo: number }[]
+    /** Cobradas sin conexión contra una caja que ya se había cerrado, y que entraron en esta. */
+    de_una_caja_cerrada?: { cantidad: number; total: number }
     por_documentacion: { documentacion: 'fiscal' | 'no_fiscal' | 'a_facturar'; cantidad: number; total: number }[]
   }
   cobranzas: {
@@ -180,6 +182,9 @@ function aNumeros(r: ResumenCaja): ResumenCaja {
       total: n(r.ventas.total),
       por_medio: r.ventas.por_medio.map((m) => ({ ...m, importe: n(m.importe) })),
       por_cajero: (r.ventas.por_cajero ?? []).map((c) => ({ ...c, total: n(c.total), efectivo: n(c.efectivo) })),
+      de_una_caja_cerrada: r.ventas.de_una_caja_cerrada
+        ? { cantidad: r.ventas.de_una_caja_cerrada.cantidad, total: n(r.ventas.de_una_caja_cerrada.total) }
+        : undefined,
       por_documentacion: r.ventas.por_documentacion.map((d) => ({ ...d, total: n(d.total) })),
     },
     cobranzas: {
