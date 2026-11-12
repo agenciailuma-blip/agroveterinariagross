@@ -34,7 +34,7 @@ function valorDe(v: unknown): number | string | string[] {
   return typeof v === 'string' && v.trim() !== '' && Number.isFinite(n) ? n : String(v ?? '')
 }
 
-export async function guardarValorConfiguracion(clave: string, valor: number | string | string[]) {
+export async function guardarValorConfiguracion(clave: string, valor: number | string | string[] | boolean) {
   const { error } = await supabase.from('configuracion').update({ valor }).eq('clave', clave)
   if (error) throw new Error(error.message)
 }

@@ -103,6 +103,7 @@ export default function Configuracion() {
           <PuntosDeVenta />
           <TandasRemitoR />
           <PercepcionIibb />
+          <EnvioDeMails />
           <div className="rounded-xl bg-piedra-100 p-4 text-sm text-piedra-600">
             <p className="font-medium text-tinta">Sobre la exclusión por cliente</p>
             <p className="mt-1">
@@ -267,6 +268,63 @@ function PercepcionIibb() {
           </span>
         )}
         {guardar.isError && <span className="text-xs text-red-600">No se pudo guardar. Probá de nuevo.</span>}
+      </div>
+    </div>
+  )
+}
+
+/*
+  El envío de mails (12/11).
+
+  Un solo interruptor para todo lo que el sistema manda por mail:
+  facturas, recibos y pedidos mayoristas, los que salen solos y los del
+  botón. Lo respeta el servidor, así que vale para todas las PC apenas
+  se toca, sin actualizar nada.
+*/
+const CLAVE_ENVIO = 'correo.envio_activo'
+
+function EnvioDeMails() {
+  const qc = useQueryClient()
+  const config = useQuery({
+    queryKey: ['configuracion', CLAVE_ENVIO],
+    queryFn: () => obtenerConfiguracion([CLAVE_ENVIO]),
+  })
+  const activo = config.data ? String(config.data[0]?.valor ?? 'true') !== 'false' : true
+
+  const cambiar = useMutation({
+    mutationFn: (valor: boolean) => guardarValorConfiguracion(CLAVE_ENVIO, valor),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['configuracion', CLAVE_ENVIO] }),
+  })
+
+  return (
+    <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-borde">
+      <h2 className="font-medium text-tinta">Envío de mails</h2>
+      <p className="mt-1 text-sm text-piedra-500">
+        Facturas, recibos y pedidos mayoristas, los que salen solos y los del botón <em>Mandar por mail</em>.
+      </p>
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          role="switch"
+          aria-checked={activo}
+          disabled={config.isLoading || cambiar.isPending}
+          onClick={() => cambiar.mutate(!activo)}
+          className="group flex items-center gap-3 rounded-lg py-1 text-sm font-medium text-tinta focus-visible:ring-2 focus-visible:ring-marca-500/40 focus-visible:outline-none disabled:opacity-50"
+        >
+          <span
+            className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
+              activo ? 'bg-marca-700' : 'bg-piedra-300'
+            }`}
+          >
+            <span
+              className={`inline-block size-5 rounded-full bg-white shadow transition-transform ${
+                activo ? 'translate-x-5.5' : 'translate-x-0.5'
+              }`}
+            />
+          </span>
+          {activo ? 'Prendido: el sistema manda mails' : 'Apagado: no sale ningún mail'}
+        </button>
+        {cambiar.isError && <span className="text-xs text-red-600">No se pudo guardar. Probá de nuevo.</span>}
       </div>
     </div>
   )

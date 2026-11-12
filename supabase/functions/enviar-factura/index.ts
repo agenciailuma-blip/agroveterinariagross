@@ -18,6 +18,8 @@ import { armarMail, armarMailPedido, correoValido, errorDelCorreo, nombreDelPdf,
 // en vez de comprobante_id. Mismo correo, mismo PDF armado en la app;
 // el envío queda anotado en el recibo.
 //
+// Con correo.envio_activo apagado en Configuración (12/11) no manda nada.
+//
 // Y el pedido mayorista (5.3), con pedido_id: apenas llega al local, al
 // cliente le llega el detalle. Sin PDF; el mail lo arma el servidor con
 // lo que hay en la base. Queda anotado en el pedido.
@@ -56,6 +58,17 @@ Deno.serve(async (req: Request) => {
       { global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } } },
     );
     const body = await req.json().catch(() => ({}));
+
+    // El interruptor de Configuración (12/11): apagado, no sale ningún mail, ni solo ni con el botón.
+    const { data: interruptor } = await servidor
+      .from("configuracion")
+      .select("valor")
+      .eq("clave", "correo.envio_activo")
+      .maybeSingle();
+    if (interruptor && (interruptor.valor === false || interruptor.valor === "false")) {
+      return responder({ ok: false, motivo: "apagado", error: "El envío de mails está apagado en Configuración." }, 409);
+    }
+
     const reciboId = body.recibo_id ? String(body.recibo_id) : null;
     if (body.pedido_id) return await mandarPedido(servidor, comoUsuario, body);
 

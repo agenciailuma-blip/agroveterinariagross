@@ -1,5 +1,5 @@
 ---
-actualizado: 2026-11-06
+actualizado: 2026-11-12
 estado: en curso
 ---
 
@@ -11,6 +11,12 @@ estado: en curso
 ---
 
 ## Dónde está todo, hoy
+
+**Construida: 0.22.2** (12/11) — **falta publicarla**. Dos cosas pedidas el 12/11, más el paso a paso de producción para Lucas:
+- **Usuarios con su acceso, sin entrar a Supabase.** En *Administración → Usuarios*: al crear a alguien con correo se le pone la contraseña y ya entra; en cada fila, **Dar acceso**, **Cambiar contraseña**, **Quitar acceso** y **Eliminar** (sale de la lista y se borra su cuenta; lo que hizo queda con su nombre). Si se corrige el correo de alguien que ya entra, la cuenta pasa a entrar con el nuevo. Nadie se quita el acceso ni se elimina a sí mismo, y la base sigue frenando quedarse sin administrador. Lo hace la función nueva **`administrar-usuarios`** (la única con la clave de administrador), **ya desplegada**. Una cuenta creada antes a mano en Supabase con ese correo se toma y se vincula.
+- **El interruptor de mails**, en *Administración → Configuración → Facturación → Envío de mails*. Apagado, no sale ningún mail —facturas, recibos, pedidos mayoristas; solos o con el botón—: lo frena el servidor (`enviar-factura`, ya desplegada) y la base deja de proponer la factura a cuenta corriente que sale sola, así la caja no muestra un error en cada venta. Clave `correo.envio_activo`, **arranca prendido**. **La base ya está aplicada** ([`20261112100000_apagar_el_envio_de_mails.sql`](../supabase/migrations/20261112100000_apagar_el_envio_de_mails.sql)): el interruptor ya frena desde el servidor aunque las PC no actualicen; la pantalla para tocarlo llega con la 0.22.2.
+- **El paso a paso de producción para Lucas**: [`paso-a-produccion.md`](paso-a-produccion.md), y como página para pasarle: https://claude.ai/artifact/A3DnVCWy9MpAzzTZcsLexy (privada: hay que compartírsela).
+- **875 pruebas verdes en la app.** **No se probó en pantalla con sesión** (crear, dar acceso, eliminar, el interruptor): falta entrar y hacerlo una vez.
 
 **Construida: 0.22.1** (11/11) — **la publica Francisco**. En la pantalla de cobro, **F9 elige *Con factura* y F11 *Sin factura*** (F10 sigue cobrando); las teclas se ven en los botones y en la ayuda (F1). *Factura después* no tiene tecla. Sólo pantalla: la base no cambia. **No se probó en la app con una venta real.**
 

@@ -3,9 +3,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/auth/AuthProvider'
 import { confirmar, pedirTexto } from '@/components/Dialogo'
 import {
+  administrarCuenta,
   cambiarPermiso,
   cargarRolesYPermisos,
-  darDeBaja,
+  CLAVE_MINIMA,
   definirPin,
   desbloquearPines,
   guardarUsuario,
@@ -14,7 +15,7 @@ import {
   terminalesBloqueadas,
   USUARIO_NUEVO,
 } from '@/lib/api/usuarios'
-import type { UsuarioAdmin } from '@/lib/api/usuarios'
+import type { AccionDeCuenta, UsuarioAdmin } from '@/lib/api/usuarios'
 import { avanzarConEnter } from '@/lib/teclado'
 
 type Pestania = 'gente' | 'roles'
@@ -87,9 +88,12 @@ function Solapa({
 
 function Personas() {
   const qc = useQueryClient()
+  const { perfil } = useAuth()
   const [editando, setEditando] = useState<string | null>(null)
   const [creando, setCreando] = useState(false)
   const [form, setForm] = useState<Partial<UsuarioAdmin>>(USUARIO_NUEVO)
+  // La contraseña para entrar, sólo al crear: la elige quien administra y se la pasa a la persona.
+  const [clave, setClave] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
 
@@ -106,16 +110,54 @@ function Personas() {
     setTimeout(() => setAviso(null), 3000)
   }
 
+  const original = usuarios.data?.find((u) => u.id === editando) ?? null
+  const conAcceso = !creando && !!original?.auth_user_id
+  const conCorreo = !!form.email?.trim()
+
   const guardar = useMutation({
-    mutationFn: () => guardarUsuario(creando ? null : editando, form),
-    onSuccess: () => {
+    mutationFn: async () => {
+      const id = await guardarUsuario(creando ? null : editando, form)
+      // Una persona nueva con contraseña ya puede entrar.
+      if (creando && conCorreo && clave) {
+        try {
+          await administrarCuenta('dar_acceso', id, clave)
+        } catch (e) {
+          throw new Error(
+            `Se creó la persona, pero no la cuenta para entrar: ${e instanceof Error ? e.message : e} Probá con «Dar acceso» en su fila.`,
+          )
+        }
+        return 'Creada: ya puede entrar con su correo y esa contraseña'
+      }
+      // Si se corrigió el correo de alguien que ya entra, la cuenta pasa a entrar con el nuevo.
+      if (conAcceso && (original?.email ?? '').trim().toLowerCase() !== (form.email ?? '').trim().toLowerCase()) {
+        await administrarCuenta('sincronizar_correo', id)
+        return 'Guardado: ahora entra con el correo nuevo'
+      }
+      return 'Guardado'
+    },
+    onSuccess: (texto) => {
       setError(null)
       setEditando(null)
       setCreando(false)
+      setClave('')
       qc.invalidateQueries({ queryKey: ['usuarios'] })
-      avisar('Guardado')
+      avisar(texto)
     },
-    onError: (e) => setError(e instanceof Error ? e.message : 'No se pudo guardar.'),
+    onError: (e) => {
+      qc.invalidateQueries({ queryKey: ['usuarios'] })
+      setError(e instanceof Error ? e.message : 'No se pudo guardar.')
+    },
+  })
+
+  const cuenta = useMutation({
+    mutationFn: ({ accion, id, clave }: { accion: AccionDeCuenta; id: string; clave?: string; aviso: string }) =>
+      administrarCuenta(accion, id, clave),
+    onSuccess: (_d, v) => {
+      setError(null)
+      qc.invalidateQueries({ queryKey: ['usuarios'] })
+      avisar(v.aviso)
+    },
+    onError: (e) => setError(e instanceof Error ? e.message : 'No se pudo.'),
   })
 
   const pin = useMutation({
@@ -135,15 +177,6 @@ function Personas() {
     },
   })
 
-  const baja = useMutation({
-    mutationFn: (id: string) => darDeBaja(id),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['usuarios'] })
-      avisar('Usuario dado de baja')
-    },
-    onError: (e) => setError(e instanceof Error ? e.message : 'No se pudo dar de baja.'),
-  })
-
   const desbloquear = useMutation({
     mutationFn: desbloquearPines,
     onSuccess: (n) => {
@@ -153,6 +186,7 @@ function Personas() {
   })
 
   function abrir(u: UsuarioAdmin) {
+    setClave('')
     setCreando(false)
     setEditando(u.id)
     setForm(u)
@@ -160,10 +194,31 @@ function Personas() {
   }
 
   function nuevo() {
+    setClave('')
     setCreando(true)
     setEditando(null)
     setForm({ ...USUARIO_NUEVO, rol_id: refs.data?.roles.find((r) => r.nombre === 'Vendedor')?.id })
     setError(null)
+  }
+
+  async function pedirClave(u: UsuarioAdmin) {
+    const nueva = !u.auth_user_id
+    const valor = await pedirTexto({
+      titulo: nueva ? `Acceso para ${u.nombre}` : `Contraseña nueva para ${u.nombre}`,
+      detalle: nueva
+        ? `Va a entrar con ${u.email} y esta contraseña. Pasásela vos.`
+        : `Sigue entrando con ${u.email}. La contraseña anterior deja de servir.`,
+      etiqueta: `Contraseña (al menos ${CLAVE_MINIMA} caracteres)`,
+      minimo: CLAVE_MINIMA,
+      aceptar: nueva ? 'Dar acceso' : 'Cambiar la contraseña',
+    })
+    if (valor === null) return
+    cuenta.mutate({
+      accion: nueva ? 'dar_acceso' : 'cambiar_clave',
+      id: u.id,
+      clave: valor,
+      aviso: nueva ? `${u.nombre} ya puede entrar` : 'Contraseña cambiada',
+    })
   }
 
   async function pedirPin(u: UsuarioAdmin) {
@@ -258,6 +313,20 @@ function Personas() {
                 className={claseInput}
               />
             </label>
+            {creando && conCorreo && (
+              <label className="col-span-4 block sm:col-span-2">
+                <span className="mb-1 block text-xs font-medium text-piedra-600">
+                  Contraseña para entrar{' '}
+                  <span className="font-normal text-piedra-400">(al menos {CLAVE_MINIMA} caracteres; se la pasás vos)</span>
+                </span>
+                <input
+                  value={clave}
+                  onChange={(e) => setClave(e.target.value)}
+                  autoComplete="new-password"
+                  className={claseInput}
+                />
+              </label>
+            )}
             <label className="col-span-2 block">
               <span className="mb-1 block text-xs font-medium text-piedra-600">Teléfono</span>
               <input
@@ -277,10 +346,21 @@ function Personas() {
             </label>
           </div>
 
+          {conAcceso && !conCorreo && (
+            <p className="mt-3 text-xs text-amber-700">
+              Entra al sistema con su correo: no puede quedar vacío. Para que deje de entrar, usá «Quitar acceso».
+            </p>
+          )}
           <div className="mt-4 flex gap-2">
             <button
               onClick={() => guardar.mutate()}
-              disabled={!form.nombre?.trim() || !form.rol_id || guardar.isPending}
+              disabled={
+                !form.nombre?.trim() ||
+                !form.rol_id ||
+                guardar.isPending ||
+                (creando && conCorreo && clave.length > 0 && clave.length < CLAVE_MINIMA) ||
+                (conAcceso && !conCorreo)
+              }
               className="rounded-lg bg-marca-700 px-4 py-2 text-sm font-medium text-white hover:bg-marca-600 disabled:opacity-40"
             >
               {guardar.isPending ? 'Guardando…' : creando ? 'Crear' : 'Guardar'}
@@ -348,21 +428,50 @@ function Personas() {
                       Quitar PIN
                     </button>
                   )}
-                  {u.activo && (
+                  {u.email && u.activo && (
+                    <button
+                      onClick={() => pedirClave(u)}
+                      disabled={cuenta.isPending}
+                      className="whitespace-nowrap text-marca-700 hover:underline disabled:opacity-40"
+                    >
+                      {u.auth_user_id ? 'Cambiar contraseña' : 'Dar acceso'}
+                    </button>
+                  )}
+                  {u.auth_user_id && u.id !== perfil?.id && (
                     <button
                       onClick={async () => {
                         const sigue = await confirmar({
-                          titulo: `¿Dar de baja a ${u.nombre}?`,
+                          titulo: `¿Quitarle el acceso a ${u.nombre}?`,
                           detalle:
-                            'Deja de poder entrar al sistema. Lo que hizo hasta hoy queda registrado con su nombre.',
-                          aceptar: 'Dar de baja',
+                            'Deja de poder iniciar sesión con su correo. Sigue en la lista, con su rol y su PIN, y se le puede volver a dar acceso.',
+                          aceptar: 'Quitar acceso',
                           peligro: true,
                         })
-                        if (sigue) baja.mutate(u.id)
+                        if (sigue) cuenta.mutate({ accion: 'quitar_acceso', id: u.id, aviso: 'Acceso quitado' })
                       }}
-                      className="text-red-600 hover:underline"
+                      disabled={cuenta.isPending}
+                      className="whitespace-nowrap text-piedra-500 hover:underline disabled:opacity-40"
                     >
-                      Baja
+                      Quitar acceso
+                    </button>
+                  )}
+                  {u.id !== perfil?.id && (
+                    <button
+                      onClick={async () => {
+                        const sigue = await confirmar({
+                          titulo: `¿Eliminar a ${u.nombre}?`,
+                          detalle: u.auth_user_id
+                            ? 'Sale de la lista y se borra su cuenta: deja de poder entrar, también en las PC donde tenga la sesión abierta. Lo que hizo hasta hoy queda registrado con su nombre.'
+                            : 'Sale de la lista y deja de poder operar. Lo que hizo hasta hoy queda registrado con su nombre.',
+                          aceptar: 'Eliminar',
+                          peligro: true,
+                        })
+                        if (sigue) cuenta.mutate({ accion: 'eliminar', id: u.id, aviso: `${u.nombre} salió de la lista` })
+                      }}
+                      disabled={cuenta.isPending}
+                      className="text-red-600 hover:underline disabled:opacity-40"
+                    >
+                      Eliminar
                     </button>
                   )}
                   </div>
@@ -377,7 +486,8 @@ function Personas() {
         La cuenta de acceso y el usuario del sistema son cosas distintas.
         Un vendedor de mostrador no necesita cuenta: opera con PIN dentro
         de la sesión de la terminal. Sólo la oficina y las terminales
-        necesitan poder iniciar sesión, y eso se crea aparte.
+        necesitan poder iniciar sesión. Desde el 12/11 esa cuenta se da
+        desde acá (función administrar-usuarios), sin pasar por Supabase.
       */}
       <div className="rounded-xl bg-piedra-100 p-4 text-sm text-piedra-600">
         <p className="font-medium text-tinta">Sobre las cuentas de acceso</p>
@@ -387,8 +497,8 @@ function Personas() {
           poder iniciar sesión.
         </p>
         <p className="mt-1">
-          Esas cuentas todavía se crean desde el panel de Supabase y se vinculan con una consulta.
-          Cuando el sistema esté en producción se reemplaza por una invitación por correo desde acá.
+          Para que alguien inicie sesión, cargale el correo y tocá <strong>Dar acceso</strong>: elegís
+          la contraseña y se la pasás. Si se la olvida, <strong>Cambiar contraseña</strong>.
         </p>
       </div>
     </div>

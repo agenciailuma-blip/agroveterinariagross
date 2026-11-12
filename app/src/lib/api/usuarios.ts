@@ -87,14 +87,6 @@ export async function guardarUsuario(id: string | null, campos: Partial<UsuarioA
   return data.id
 }
 
-export async function darDeBaja(id: string) {
-  const { error } = await supabase
-    .from('usuario')
-    .update({ eliminado_en: new Date().toISOString(), activo: false })
-    .eq('id', id)
-  if (error) throw new Error(traducir(error.message))
-}
-
 export async function definirPin(usuarioId: string, pin: string) {
   const { error } = await supabase.rpc('definir_pin_usuario', {
     p_usuario_id: usuarioId,
@@ -133,6 +125,37 @@ export async function cambiarPermiso(rolId: string, clave: string, activo: boole
       .eq('permiso_clave', clave)
     if (error) throw new Error(traducir(error.message))
   }
+}
+
+/*
+  ─────────────────────────────────────────────────────────────
+  Las cuentas de acceso (12/11)
+
+  La cuenta con la que se inicia sesión la crea, cambia y borra la
+  función administrar-usuarios, que tiene la clave de administrador de
+  Supabase. Antes había que entrar al panel de Supabase.
+  ─────────────────────────────────────────────────────────────
+*/
+/** Lo mismo que pide el servidor (administrar-usuarios/reglas.ts); la prueba lo controla. */
+export const CLAVE_MINIMA = 8
+
+export type AccionDeCuenta = 'dar_acceso' | 'cambiar_clave' | 'quitar_acceso' | 'eliminar' | 'sincronizar_correo'
+
+export async function administrarCuenta(accion: AccionDeCuenta, usuarioId: string, clave?: string): Promise<void> {
+  const { error } = await supabase.functions.invoke('administrar-usuarios', {
+    body: { accion, usuario_id: usuarioId, ...(clave !== undefined ? { clave } : {}) },
+  })
+  if (!error) return
+  const contexto = (error as { context?: Response }).context
+  if (contexto && typeof contexto.json === 'function') {
+    try {
+      const cuerpo = await contexto.json()
+      if (cuerpo?.error) throw new Error(String(cuerpo.error))
+    } catch (e) {
+      if (e instanceof Error && !(e instanceof SyntaxError)) throw e
+    }
+  }
+  throw new Error('No se pudo. Revisá la conexión y probá de nuevo.')
 }
 
 function traducir(mensaje: string) {
