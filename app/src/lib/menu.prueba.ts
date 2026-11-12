@@ -74,8 +74,14 @@ describe('las pestañas que se ven', () => {
       'Stock',
       'Avisos',
       'Inventario',
+      'Entradas y salidas',
     ])
-    expect(pestanasVisibles(seccion('stock'), todo)).toHaveLength(4)
+    expect(pestanasVisibles(seccion('stock'), todo)).toHaveLength(5)
+  })
+
+  it('Entradas y salidas, sólo para quien puede registrarlas', () => {
+    const soloVer = con(['stock.ver'])
+    expect(pestanasVisibles(seccion('stock'), soloVer).map((p) => p.etiqueta)).not.toContain('Entradas y salidas')
   })
 
   it('Tesorería la ve quien maneja la cartera; el cajero recibe cheques pero no la ve', () => {

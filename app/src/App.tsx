@@ -17,6 +17,7 @@ import OrdenInternaImprimible from '@/pages/OrdenInternaImprimible'
 import PedidosProveedor from '@/pages/PedidosProveedor'
 import PedidoProveedorImprimible from '@/pages/PedidoProveedorImprimible'
 import Transferencias from '@/pages/Transferencias'
+import EntradasYSalidas from '@/pages/EntradasYSalidas'
 import Precios from '@/pages/Precios'
 import Proveedores from '@/pages/Proveedores'
 import Compras from '@/pages/Compras'
@@ -152,6 +153,7 @@ function Rutas() {
         <Route path="compras/pedidos" element={<PedidosProveedor />} />
         <Route path="inventario" element={<Inventario />} />
         <Route path="transferencias" element={<Transferencias />} />
+        <Route path="stock/entradas-y-salidas" element={<EntradasYSalidas />} />
         <Route path="precios" element={<Precios />} />
         <Route path="proveedores" element={<Proveedores />} />
         <Route path="compras" element={<Compras />} />

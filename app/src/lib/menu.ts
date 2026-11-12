@@ -128,8 +128,10 @@ export const SECCIONES: Seccion[] = [
   {
     /*
       Se mira qué falta, y si el número no cierra se cuenta; si sobra en
-      un local y falta en el otro, se transfiere. Transferencias aparece
-      recién con dos depósitos: con uno solo no hay adónde mover nada.
+      un local y falta en el otro, se transfiere. Lo que se rompe, se usa
+      en el local o vuelve en un cambio va por Entradas y salidas, con su
+      motivo. Transferencias aparece recién con dos depósitos: con uno
+      solo no hay adónde mover nada.
     */
     id: 'stock',
     etiqueta: 'Stock',
@@ -138,6 +140,7 @@ export const SECCIONES: Seccion[] = [
       { a: '/stock', etiqueta: 'Stock', permiso: 'stock.ver' },
       { a: '/stock/avisos', etiqueta: 'Avisos', permiso: 'stock.ver' },
       { a: '/inventario', etiqueta: 'Inventario', permiso: 'stock.inventariar' },
+      { a: '/stock/entradas-y-salidas', etiqueta: 'Entradas y salidas', permiso: 'stock.ajustar' },
       { a: '/transferencias', etiqueta: 'Transferencias', permiso: 'stock.ver', conVariosDepositos: true },
     ],
   },

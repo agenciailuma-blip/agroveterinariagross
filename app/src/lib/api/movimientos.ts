@@ -60,6 +60,8 @@ const NOMBRES: Record<string, string> = {
   remito: 'Remito',
   retorno_remito: 'Volvió del reparto',
   transferencia: 'Transferencia',
+  entrada: 'Entrada',
+  salida: 'Salida',
 }
 
 export function nombreDelMovimiento(tipo: string): string {
