@@ -1,3 +1,4 @@
+import { PuestoDeEstaPc } from '@/components/PuestoDeEstaPc'
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -46,7 +47,7 @@ const claseInput =
   · El local — las máquinas, cómo se hablan, los depósitos y cómo se
     arma una venta. Vale para todas las PC.
   · Esta computadora — lo que se guarda en la máquina que se tiene
-    adelante: su impresora y su diagnóstico.
+    adelante: qué puesto es, su impresora y su diagnóstico.
 
   La pestaña va en la dirección (?pestana=local), así otra pantalla
   puede mandar directo a los depósitos.
@@ -126,8 +127,9 @@ export default function Configuracion() {
 
       {pestana === 'computadora' && (
         <>
-          <DiagnosticoTerminal />
+          <PuestoDeEstaPc />
           <ImpresoraDelMostrador />
+          <DiagnosticoTerminal />
           {/* La misma lista que abre F1, para encontrarla sin saber que existe F1. */}
           <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-borde">
             <h2 className="font-medium text-tinta">Atajos de teclado</h2>

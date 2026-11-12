@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { revalidarTerminal, type Terminal } from '@/lib/terminal'
+import { conImpresoraDeEstaPc, revalidarTerminal, type Terminal } from '@/lib/terminal'
 
 /*
   Qué terminal queda guardada después de preguntarle al servidor.
@@ -37,5 +37,21 @@ describe('revalidar la terminal guardada', () => {
 
   it('sin terminal guardada no hay nada que revalidar', () => {
     expect(revalidarTerminal(null, [terminal('mos1')])).toBe('sin_cambios')
+  })
+})
+
+describe('la impresora es de la computadora, no del puesto', () => {
+  const delServidor = { ...terminal('caja1'), impresora_windows: 'POS80 de la otra PC' }
+
+  it('la elegida en esta PC pisa a la que trae el puesto', () => {
+    expect(conImpresoraDeEstaPc(delServidor, 'POS80 Printer').impresora_windows).toBe('POS80 Printer')
+  })
+
+  it('elegida «ninguna» en esta PC, queda ninguna aunque el puesto tenga una', () => {
+    expect(conImpresoraDeEstaPc(delServidor, '').impresora_windows).toBeNull()
+  })
+
+  it('si esta PC todavía no eligió, queda la del puesto', () => {
+    expect(conImpresoraDeEstaPc(delServidor, null).impresora_windows).toBe('POS80 de la otra PC')
   })
 })

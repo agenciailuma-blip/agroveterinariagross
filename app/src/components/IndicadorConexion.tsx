@@ -1,3 +1,5 @@
+import { useEffect, useRef, useState } from 'react'
+import { Pendientes } from '@/components/Pendientes'
 import { useSync } from '@/lib/local/SyncProvider'
 import { contarEntrega } from '@/lib/local/red'
 
@@ -14,6 +16,25 @@ import { contarEntrega } from '@/lib/local/red'
 export function IndicadorConexion() {
   const { enLinea, listo, sincronizando, sinSubir, ultimaSync, sincronizar, entrega, entregaEn } =
     useSync()
+
+  /*
+    Con algo esperando, tocar el indicador abre la lista de qué es.
+    Antes decía «3 sin subir» y desde ahí no había forma de ver cuáles
+    eran (12/11): la lista estaba sólo en Inicio.
+  */
+  const [abierto, setAbierto] = useState(false)
+  const caja = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!sinSubir) setAbierto(false)
+  }, [sinSubir])
+  useEffect(() => {
+    if (!abierto) return
+    const cerrar = (e: MouseEvent) => {
+      if (caja.current && !caja.current.contains(e.target as Node)) setAbierto(false)
+    }
+    document.addEventListener('mousedown', cerrar)
+    return () => document.removeEventListener('mousedown', cerrar)
+  }, [abierto])
 
   /*
     Sin internet, lo único que salva a la venta es que llegue a la caja
@@ -53,7 +74,7 @@ export function IndicadorConexion() {
       pulso: true,
     },
     pendiente: {
-      etiqueta: `${sinSubir} sin subir`,
+      etiqueta: `${sinSubir} sin enviar`,
       punto: 'bg-marca-500',
       texto: 'text-marca-800',
       fondo: 'bg-marca-50 ring-marca-200',
@@ -85,7 +106,7 @@ export function IndicadorConexion() {
       ? `Última sincronización: ${ultimaSync.toLocaleTimeString('es-AR')}`
       : 'Todavía no se sincronizó',
     listo ? 'Copia local lista: se puede trabajar sin conexión' : 'Sin copia local todavía',
-    sinSubir > 0 ? `${sinSubir} operaciones esperando subir` : null,
+    sinSubir > 0 ? `${sinSubir} operaciones de esta computadora esperando llegar al servidor` : null,
     // El motivo completo, para poder leerlo sin ir a Configuración.
     cajaNoRecibe ? `La red del local: ${dice.detalle}` : null,
     cajaNoRecibe && dice.queHacer ? dice.queHacer : null,
@@ -94,10 +115,12 @@ export function IndicadorConexion() {
     .join('\n')
 
   return (
+    <div ref={caja} className="relative">
     <button
-      onClick={() => void sincronizar()}
-      disabled={!enLinea || sincronizando}
-      title={`${titulo}\n\nTocá para sincronizar ahora`}
+      onClick={() => (sinSubir > 0 ? setAbierto((a) => !a) : void sincronizar())}
+      disabled={sinSubir === 0 && (!enLinea || sincronizando)}
+      aria-expanded={sinSubir > 0 ? abierto : undefined}
+      title={`${titulo}\n\n${sinSubir > 0 ? 'Tocá para ver cuáles son' : 'Tocá para sincronizar ahora'}`}
       className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium ring-1 transition-colors disabled:cursor-default ${config.fondo} ${config.texto}`}
     >
       <span className="relative flex size-2">
@@ -109,5 +132,11 @@ export function IndicadorConexion() {
       {config.etiqueta}
       {!listo && enLinea && <span className="text-piedra-400">· preparando</span>}
     </button>
+      {abierto && sinSubir > 0 && (
+        <div className="absolute right-0 z-40 mt-2 w-[min(26rem,calc(100vw-2rem))]">
+          <Pendientes />
+        </div>
+      )}
+    </div>
   )
 }

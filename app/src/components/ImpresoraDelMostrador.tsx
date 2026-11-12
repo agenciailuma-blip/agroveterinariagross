@@ -9,7 +9,7 @@ import {
 import { destinoDeImpresion } from '@/lib/comprobante/destino'
 import { ticketDePrueba } from '@/lib/comprobante/escpos'
 import { enEscritorio, imprimirTicket, listarImpresoras } from '@/lib/escritorio'
-import { useTerminal } from '@/lib/terminal'
+import { guardarImpresoraDeEstaPc, useTerminal } from '@/lib/terminal'
 import { boton, campo } from '@/estilos'
 
 /*
@@ -22,8 +22,9 @@ import { boton, campo } from '@/estilos'
   ahí. Un nombre escrito a mano no avisa nada cuando está mal — falla
   recién el día que hay que entregarle un comprobante a un cliente.
 
-  Por eso también se guarda en la terminal y no en la configuración del
-  comercio: el nombre es de la máquina. Y por eso la lista sólo existe
+  Por eso también se guarda en la computadora y no en la configuración
+  del comercio: el nombre es de la máquina. Hasta el 12/11 se guardaba
+  en el puesto, y dos PC elegidas como «Caja 1» se pisaban la impresora. Y por eso la lista sólo existe
   adentro del programa instalado: ninguna página web puede preguntarle al
   sistema qué impresoras tiene.
 */
@@ -31,7 +32,7 @@ import { boton, campo } from '@/estilos'
 
 export default function ImpresoraDelMostrador() {
   const qc = useQueryClient()
-  const { terminal, elegir } = useTerminal()
+  const { terminal } = useTerminal()
   const [elegida, setElegida] = useState('')
   const [host, setHost] = useState('')
   const [puerto, setPuerto] = useState('9100')
@@ -64,17 +65,15 @@ export default function ImpresoraDelMostrador() {
 
   const guardar = useMutation({
     mutationFn: async () => {
-      if (!terminal) throw new Error('Esta máquina todavía no sabe qué terminal es.')
-      await guardarImpresoraDeLaTerminal(terminal.id, elegida)
+      guardarImpresoraDeEstaPc(elegida)
+      /*
+        En el puesto queda sólo como referencia, para el diagnóstico: el
+        que manda es lo guardado en esta PC. Si no hay conexión, no
+        importa.
+      */
+      if (terminal) await guardarImpresoraDeLaTerminal(terminal.id, elegida).catch(() => {})
     },
     onSuccess: () => {
-      /*
-        Se publica la terminal ya corregida sin esperar al servidor: las
-        pantallas de comprobante leen la impresora de acá, y si tuvieran
-        que esperar a la próxima recarga el primer ticket saldría por
-        donde salía antes.
-      */
-      if (terminal) elegir({ ...terminal, impresora_windows: elegida.trim() || null })
       qc.invalidateQueries({ queryKey: ['comprobante'] })
       setError(null)
       setAviso('Guardado')
@@ -147,17 +146,12 @@ export default function ImpresoraDelMostrador() {
           el programa instalado en las computadoras del local — que es lo que permite hablarle a la
           impresora sin pasar por un diálogo.
         </p>
-      ) : !terminal ? (
-        <p className="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900 ring-1 ring-amber-200">
-          Esta máquina todavía no sabe qué terminal es, y la impresora se guarda por terminal.
-          Entrá a Ventas, elegí la terminal de esta PC, y volvé.
-        </p>
       ) : (
         <>
           <div className="mt-4 flex flex-wrap items-end gap-3">
             <label className="block min-w-64 flex-1">
               <span className="mb-1 block text-xs font-medium text-piedra-600">
-                Impresora de {terminal.nombre}
+                Impresora de esta computadora{terminal ? ` (${terminal.nombre})` : ''}
               </span>
               <select
                 value={elegida}

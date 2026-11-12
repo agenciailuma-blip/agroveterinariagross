@@ -97,6 +97,16 @@ export function repartirEnHojas(lineas: DatosDeHoja['lineas'], medir: Medir): Re
   return hojas
 }
 
+const ANCHO_ASOCIADO = 38
+
+/** La letra más grande, entre `maximo` y `minimo`, con la que el texto entra en `ancho` mm. */
+export function tamanoQueEntra(texto: string, ancho: number, maximo: number, minimo: number, medir: Medir): number {
+  for (let tam = maximo; tam > minimo; tam -= 0.5) {
+    if (medir(texto, tam, false) <= ancho) return tam
+  }
+  return minimo
+}
+
 const cantidadComoTexto = (n: number) => n.toLocaleString('es-AR', { maximumFractionDigits: 3 })
 
 /** Los textos de una hoja. `indice` es la hoja, contando desde cero; las unidades van en la última. */
@@ -143,7 +153,15 @@ export function textosDeHoja(
     const unidades = d.lineas.reduce((s, l) => s + l.cantidad, 0)
     textos.push({ x: 198, y: 245, texto: cantidadComoTexto(unidades), tam: 9.5, negrita: true, ancla: 'end' })
   }
-  if (d.asociado) textos.push({ x: 198, y: 266.2, texto: d.asociado, tam: 9.5, ancla: 'end' })
+  /*
+    Desde el 12/11 va con el nombre —«Factura A 0001-00000006»— para que
+    se vea de un vistazo cuál es. Al lado del rótulo «FACTURA / PROFORMA
+    Nº:» quedan unos 38 mm: si no entra, se achica la letra.
+  */
+  if (d.asociado) {
+    const tam = tamanoQueEntra(d.asociado, ANCHO_ASOCIADO, 9.5, 6.5, medir)
+    textos.push({ x: 198, y: 266.2, texto: recortar(d.asociado, ANCHO_ASOCIADO, tam, false, medir), tam, ancla: 'end' })
+  }
   return textos
 }
 

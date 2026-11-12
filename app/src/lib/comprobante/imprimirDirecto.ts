@@ -4,7 +4,7 @@ import { obtenerNoFiscalCompleto } from '@/lib/api/noFiscal'
 import { ticketEscPos } from '@/lib/comprobante/escpos'
 import { ticketNoFiscalEscPos } from '@/lib/comprobante/escposNoFiscal'
 import { destinoDeImpresion } from '@/lib/comprobante/destino'
-import { enEscritorio, imprimirTicket } from '@/lib/escritorio'
+import { abrirComprobante, enEscritorio, imprimirTicket } from '@/lib/escritorio'
 import { urlQrComprobante } from '@/lib/arca/qr'
 import type { Terminal } from '@/lib/terminal'
 
@@ -83,4 +83,25 @@ export async function imprimirNoFiscal(
   if (!destino) throw new Error('Esta computadora todavía no tiene impresora del mostrador.')
 
   await imprimirTicket(ticketNoFiscalEscPos(d), destino)
+}
+
+/*
+  La factura que sale fuera de la caja —al facturar un comprobante
+  interno o lo que quedó por facturar— también se imprime sola (12/11:
+  se facturaba y no salía nada). Con impresora en esta PC, va directo; si
+  no hay o falla, se abre la ventana del comprobante para imprimirla.
+*/
+export async function imprimirOAbrirComprobante(
+  comprobanteId: string,
+  terminal: Terminal | null | undefined,
+): Promise<void> {
+  if (puedeImprimirSolo(terminal)) {
+    try {
+      await imprimirComprobante(comprobanteId, terminal)
+      return
+    } catch {
+      // Sin papel o apagada: que quede a la vista para imprimirla a mano.
+    }
+  }
+  await abrirComprobante(comprobanteId)
 }

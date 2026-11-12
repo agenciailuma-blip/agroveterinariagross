@@ -116,7 +116,7 @@ describe('las pestañas que se ven', () => {
     expect(pestanasVisibles(seccion('mayorista'), con(['mayorista.vender'])).map((p) => p.etiqueta)).not.toContain(
       'Estadísticas',
     )
-    expect(seccionDe('/mayorista/lista')?.pestana.etiqueta).toBe('Lista de precios')
+    expect(seccionDe('/mayorista/lista')?.pestana.etiqueta).toBe('Listas de precios')
     expect(seccionDe('/mayorista')?.pestana.etiqueta).toBe('Pedidos')
   })
 

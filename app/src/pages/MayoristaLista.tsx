@@ -7,13 +7,17 @@ import { boton, botonChico, campoDeFiltro, tarjeta } from '@/estilos'
 import BotonBajarPlanilla from '@/components/BotonBajarPlanilla'
 import { leerArchivo } from '@/lib/importacion/archivo'
 import { leerPlanillaDeLista, type CambioDeLista, type LecturaDeLista } from '@/lib/importacion/listaMayorista'
+import { confirmar, pedirTexto } from '@/components/Dialogo'
 import {
+  bajaListaMayorista,
   bajarPlanillaDeLista,
   buscarParaLista,
   catalogoDeLaLista,
   guardarPrecio,
+  guardarListaMayorista,
   guardarPrecios,
   leerLista,
+  listarListasMayoristas,
   type PrecioMayorista,
   type ProductoParaLista,
 } from '@/lib/api/mayorista'
@@ -30,6 +34,9 @@ import {
 
   Se guarda al salir del campo: son muchos precios, de a uno, y un botón
   por fila sería un clic más en cada uno.
+
+  Desde el 12/11 hay varias listas («Lista 1», «Lista 2»…), una pestaña
+  cada una, y cada cliente compra con la suya (se asigna en Clientes).
   ─────────────────────────────────────────────────────────────
 */
 
@@ -46,13 +53,81 @@ export default function MayoristaLista() {
 
   const puede = tienePermiso('productos.editar_precio')
 
+  const listas = useQuery({ queryKey: ['mayorista-listas'], queryFn: listarListasMayoristas, enabled: puede })
+  const [elegida, setElegida] = useState<string | null>(null)
+  const actual =
+    listas.data?.find((l) => l.id === elegida) ?? listas.data?.find((l) => l.predeterminada) ?? listas.data?.[0] ?? null
+  const listaId = actual?.id ?? null
+
+  function refrescar() {
+    qc.invalidateQueries({ queryKey: ['mayorista-lista'] })
+    qc.invalidateQueries({ queryKey: ['mayorista-listas'] })
+    qc.invalidateQueries({ queryKey: ['mayorista-catalogo'] })
+  }
+
+  const listaNueva = useMutation({
+    mutationFn: ({ id, nombre }: { id: string | null; nombre: string }) => guardarListaMayorista(id, nombre),
+    onSuccess: (id, v) => {
+      setError(null)
+      setAviso(v.id ? `La lista ahora se llama ${v.nombre}.` : `Lista ${v.nombre} creada: agregale productos.`)
+      setElegida(id)
+      refrescar()
+    },
+    onError: (e) => setError(enCastellano(e)),
+  })
+
+  const baja = useMutation({
+    mutationFn: (id: string) => bajaListaMayorista(id),
+    onSuccess: () => {
+      setError(null)
+      setAviso('Lista dada de baja. Sus clientes pasan a la predeterminada.')
+      setElegida(null)
+      refrescar()
+    },
+    onError: (e) => setError(enCastellano(e)),
+  })
+
+  async function crearLista() {
+    const nombre = await pedirTexto({
+      titulo: 'Nueva lista mayorista',
+      etiqueta: 'Nombre',
+      ejemplo: `Lista ${(listas.data?.length ?? 0) + 1}`,
+      minimo: 1,
+      aceptar: 'Crear',
+    })
+    if (nombre) listaNueva.mutate({ id: null, nombre })
+  }
+
+  async function renombrar() {
+    if (!actual) return
+    const nombre = await pedirTexto({
+      titulo: `Cambiar el nombre de ${actual.nombre}`,
+      etiqueta: 'Nombre',
+      ejemplo: actual.nombre,
+      minimo: 1,
+      aceptar: 'Guardar',
+    })
+    if (nombre) listaNueva.mutate({ id: actual.id, nombre })
+  }
+
+  async function darDeBaja() {
+    if (!actual) return
+    const sigue = await confirmar({
+      titulo: `¿Dar de baja ${actual.nombre}?`,
+      detalle: `Sus ${numero.format(actual.clientes)} clientes pasan a comprar con la lista predeterminada. Los pedidos ya hechos no cambian.`,
+      aceptar: 'Dar de baja',
+      peligro: true,
+    })
+    if (sigue) baja.mutate(actual.id)
+  }
+
   async function alElegirPlanilla(archivo: File) {
     setLeyendo(true)
     setAviso(null)
     setError(null)
     setLectura(null)
     try {
-      const [hojas, catalogo] = await Promise.all([leerArchivo(archivo), catalogoDeLaLista()])
+      const [hojas, catalogo] = await Promise.all([leerArchivo(archivo), catalogoDeLaLista(listaId)])
       const leida = hojas.map((h) => leerPlanillaDeLista(h.filas, catalogo)).find((l) => l !== null)
       if (!leida) setError('La planilla tiene que tener las columnas «Código» y «Precio mayorista».')
       else setLectura(leida)
@@ -65,13 +140,15 @@ export default function MayoristaLista() {
 
   const aplicar = useMutation({
     mutationFn: (cambios: CambioDeLista[]) =>
-      guardarPrecios(cambios.map((c) => ({ producto_id: c.producto_id, precio: c.precio }))),
+      guardarPrecios(
+        cambios.map((c) => ({ producto_id: c.producto_id, precio: c.precio })),
+        listaId,
+      ),
     onSuccess: (n) => {
       setError(null)
       setLectura(null)
       setAviso(n === 1 ? 'Se guardó 1 cambio en la lista.' : `Se guardaron ${numero.format(n)} cambios en la lista.`)
-      qc.invalidateQueries({ queryKey: ['mayorista-lista'] })
-      qc.invalidateQueries({ queryKey: ['mayorista-catalogo'] })
+      refrescar()
     },
     onError: (e) => {
       setAviso(null)
@@ -79,7 +156,11 @@ export default function MayoristaLista() {
     },
   })
 
-  const lista = useQuery({ queryKey: ['mayorista-lista'], queryFn: leerLista, enabled: puede })
+  const lista = useQuery({
+    queryKey: ['mayorista-lista', listaId],
+    queryFn: () => leerLista(listaId),
+    enabled: puede && !!listaId,
+  })
   const encontrados = useQuery({
     queryKey: ['mayorista-buscar', buscar],
     queryFn: () => buscarParaLista(buscar),
@@ -87,12 +168,12 @@ export default function MayoristaLista() {
   })
 
   const guardar = useMutation({
-    mutationFn: ({ id, precio }: { id: string; precio: number | null; nombre: string }) => guardarPrecio(id, precio),
+    mutationFn: ({ id, precio }: { id: string; precio: number | null; nombre: string }) =>
+      guardarPrecio(id, precio, listaId),
     onSuccess: (_, v) => {
       setError(null)
       setAviso(v.precio === null ? `${v.nombre}: sacado de la lista.` : `${v.nombre}: ${moneda.format(v.precio)}.`)
-      qc.invalidateQueries({ queryKey: ['mayorista-lista'] })
-      qc.invalidateQueries({ queryKey: ['mayorista-catalogo'] })
+      refrescar()
     },
     onError: (e) => {
       setAviso(null)
@@ -120,13 +201,16 @@ export default function MayoristaLista() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1 basis-64">
-          <h1 className="text-xl font-semibold tracking-tight text-tinta">Lista de precios mayorista</h1>
+          <h1 className="text-xl font-semibold tracking-tight text-tinta">Listas de precios mayoristas</h1>
           <p className="text-sm text-piedra-500">
-            Lo que el vendedor de calle puede ofrecer, y a cuánto. Lo que no está acá, no lo ve.
+            Lo que el vendedor de calle puede ofrecer a cada cliente, y a cuánto. Cada cliente compra con su
+            lista; lo que no está en ella, no lo ve.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <BotonBajarPlanilla bajar={bajarPlanillaDeLista} />
+          <BotonBajarPlanilla
+            bajar={() => bajarPlanillaDeLista(listaId, `lista-mayorista-${actual?.nombre ?? ''}`)}
+          />
           <label className={`${boton.secundario} cursor-pointer`}>
             {leyendo ? 'Leyendo…' : 'Importar planilla'}
             <input
@@ -143,6 +227,51 @@ export default function MayoristaLista() {
           </label>
         </div>
       </div>
+
+      {/* Una pestaña por lista. */}
+      <div className="flex flex-wrap items-center gap-1 border-b border-borde">
+        {(listas.data ?? []).map((l) => (
+          <button
+            key={l.id}
+            onClick={() => {
+              setElegida(l.id)
+              setLectura(null)
+            }}
+            className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium ${
+              l.id === listaId
+                ? 'border-marca-600 text-marca-800'
+                : 'border-transparent text-piedra-500 hover:text-tinta'
+            }`}
+          >
+            {l.nombre}
+            <span className="ml-1 text-xs font-normal text-piedra-400">({numero.format(l.productos)})</span>
+          </button>
+        ))}
+        <button
+          onClick={crearLista}
+          disabled={listaNueva.isPending}
+          className="px-3 py-2 text-sm text-marca-700 hover:underline"
+        >
+          + Nueva lista
+        </button>
+      </div>
+      {actual && (
+        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-piedra-500">
+          <span>
+            {actual.predeterminada ? 'Predeterminada: la usan los clientes sin lista. ' : ''}
+            {numero.format(actual.clientes)} {actual.clientes === 1 ? 'cliente compra' : 'clientes compran'} con
+            esta lista.
+          </span>
+          <button onClick={renombrar} className="text-marca-700 hover:underline">
+            Cambiar el nombre
+          </button>
+          {!actual.predeterminada && (
+            <button onClick={darDeBaja} className="text-red-600 hover:underline">
+              Dar de baja
+            </button>
+          )}
+        </p>
+      )}
 
       {aviso && (
         <p className="rounded-xl bg-verde-50 px-4 py-3 text-sm font-medium text-verde-800 ring-1 ring-verde-200">

@@ -43,12 +43,12 @@ export function Pendientes() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 className="font-medium text-tinta">
-            {sinSubir} {sinSubir === 1 ? 'operación sin subir' : 'operaciones sin subir'}
+            {sinSubir} {sinSubir === 1 ? 'operación sin enviar' : 'operaciones sin enviar'}
           </h2>
           <p className="text-xs text-piedra-500">
             {enLinea
-              ? 'Están guardadas en esta computadora y se envían solas.'
-              : 'Están guardadas en esta computadora. Se envían cuando vuelva la conexión.'}
+              ? 'Se hicieron en esta computadora y todavía no llegaron al servidor: las demás PC no las ven. Se envían solas; si una falla, abajo dice por qué.'
+              : 'Se hicieron en esta computadora sin internet. Se envían solas cuando vuelva la conexión.'}
           </p>
         </div>
         {enLinea && (

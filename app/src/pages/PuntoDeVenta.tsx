@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { esPrecioAConvenir } from '@/lib/api/remitoInterno'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { KeyboardEvent } from 'react'
@@ -962,7 +963,14 @@ export default function PuntoDeVenta() {
           <div>
             <h1 className="text-xl font-semibold tracking-tight text-tinta">Punto de venta</h1>
             <p className="text-sm text-piedra-500">
-              {terminal.nombre} · atiende{' '}
+              <Link
+                to="/configuracion?pestana=computadora"
+                title="Cambiar el puesto de esta computadora"
+                className="hover:text-marca-700 hover:underline"
+              >
+                {terminal.nombre}
+              </Link>{' '}
+              · atiende{' '}
               <span className="font-medium text-tinta">{operador.nombre}</span>
               <button onClick={salir} className="ml-2 text-marca-700 hover:underline">
                 cambiar

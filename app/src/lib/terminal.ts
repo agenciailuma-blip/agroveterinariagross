@@ -9,9 +9,13 @@ export interface Terminal {
   punto_venta_id: string | null
   /*
     La impresora de tickets de ESTA máquina, con el nombre exacto que le
-    da Windows. Viaja con la terminal —y no en la configuración del
-    comercio— porque la misma POS80 se llama «POS80 Printer» en la caja y
+    da Windows. La misma POS80 se llama «POS80 Printer» en la caja y
     «POS80 Printer(2)» en los mostradores.
+
+    Desde el 12/11 la manda la computadora y no el puesto: se guarda en
+    la PC (ver impresoraDeEstaPc) y pisa a la que trae el servidor. Si
+    dos PC quedaban como «Caja 1», cada una tomaba al arrancar la
+    impresora que había elegido la otra.
   */
   impresora_windows: string | null
   /*
@@ -31,6 +35,40 @@ export interface Terminal {
 }
 
 const CLAVE = 'gross.terminal'
+const CLAVE_IMPRESORA = 'gross.impresora_de_esta_pc'
+const CLAVE_EQUIPO = 'gross.equipo'
+
+/*
+  La impresora de esta computadora, guardada en la computadora.
+
+  null es «todavía no se eligió acá»: la primera vez se toma la que
+  traía la terminal guardada, para que nadie la pierda al actualizar.
+  Una cadena vacía es «elegida: ninguna».
+*/
+export function impresoraDeEstaPc(): string | null {
+  if (typeof localStorage === 'undefined') return null
+  return localStorage.getItem(CLAVE_IMPRESORA)
+}
+
+/*
+  Un identificador al azar de esta computadora, creado la primera vez.
+  Sirve para darse cuenta de que dos PC eligieron el mismo puesto.
+*/
+export function equipoDeEstaPc(): string {
+  if (typeof localStorage === 'undefined') return 'pruebas'
+  let id = localStorage.getItem(CLAVE_EQUIPO)
+  if (!id) {
+    id = crypto.randomUUID()
+    localStorage.setItem(CLAVE_EQUIPO, id)
+  }
+  return id
+}
+
+/** La terminal con la impresora de esta PC encima de la que trae el servidor. */
+export function conImpresoraDeEstaPc<T extends { impresora_windows: string | null }>(t: T, local: string | null): T {
+  if (local === null) return t
+  return { ...t, impresora_windows: local.trim() || null }
+}
 
 /*
   ─────────────────────────────────────────────────────────────
@@ -63,10 +101,20 @@ function leerGuardada(): Terminal | null {
   }
 }
 
-let actual: Terminal | null = leerGuardada()
+let actual: Terminal | null = (() => {
+  const guardada = leerGuardada()
+  return guardada ? conImpresoraDeEstaPc(guardada, impresoraDeEstaPc()) : null
+})()
 const oyentes = new Set<() => void>()
 
 function publicar(t: Terminal | null) {
+  if (t) {
+    // La primera vez, la impresora que ya tenía esta PC pasa a ser suya.
+    if (impresoraDeEstaPc() === null && actual?.impresora_windows) {
+      localStorage.setItem(CLAVE_IMPRESORA, actual.impresora_windows)
+    }
+    t = conImpresoraDeEstaPc(t, impresoraDeEstaPc())
+  }
   actual = t
   if (t) localStorage.setItem(CLAVE, JSON.stringify(t))
   else localStorage.removeItem(CLAVE)
@@ -155,4 +203,13 @@ export function useTerminal() {
   const olvidar = useCallback(() => publicar(null), [])
 
   return { terminal, disponibles, cargando, elegir, olvidar }
+}
+
+/*
+  Elegir la impresora de esta computadora. Se guarda acá y se publica
+  enseguida: el próximo ticket ya sale por la nueva.
+*/
+export function guardarImpresoraDeEstaPc(nombre: string) {
+  localStorage.setItem(CLAVE_IMPRESORA, nombre.trim())
+  if (actual) publicar(actual)
 }

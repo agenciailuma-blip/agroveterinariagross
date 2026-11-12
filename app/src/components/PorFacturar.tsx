@@ -3,6 +3,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { agruparPorCliente, facturarPendientes, ventasPorFacturar } from '@/lib/api/facturacion'
 import { mandarSolaACuentaCorriente } from '@/lib/api/facturaPorMail'
 import { moneda } from '@/lib/tipos'
+import { imprimirOAbrirComprobante } from '@/lib/comprobante/imprimirDirecto'
+import { useTerminal } from '@/lib/terminal'
 import { botonChico, tarjeta } from '@/estilos'
 
 /*
@@ -34,6 +36,7 @@ export default function PorFacturar({
   onError: (texto: string) => void
 }) {
   const qc = useQueryClient()
+  const { terminal } = useTerminal()
   const pendientes = useQuery({ queryKey: ['por-facturar'], queryFn: ventasPorFacturar })
   // Las desmarcadas. Guardar lo que NO va hace que las ventas nuevas
   // aparezcan marcadas solas, que es lo que se espera a fin de mes.
@@ -48,6 +51,7 @@ export default function PorFacturar({
         // Es a cuenta corriente siempre: le sale sola por mail al cliente.
         const texto = `Factura autorizada por ARCA. CAE ${cae}`
         onAviso(texto)
+        void imprimirOAbrirComprobante(comprobanteId, terminal)
         void mandarSolaACuentaCorriente(comprobanteId).then((mail) => {
           if (mail) onAviso(`${texto} ${mail}`)
         })

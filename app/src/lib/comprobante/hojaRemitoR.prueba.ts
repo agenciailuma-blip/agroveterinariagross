@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { RENGLONES_POR_HOJA, enRenglones, recortar, repartirEnHojas, textosDeHoja, type DatosDeHoja, type Medir } from '@/lib/comprobante/hojaRemitoR'
+import { RENGLONES_POR_HOJA, enRenglones, recortar, repartirEnHojas, tamanoQueEntra, textosDeHoja, type DatosDeHoja, type Medir } from '@/lib/comprobante/hojaRemitoR'
 
 // Cada letra mide un milímetro: las cuentas se ven a ojo.
 const medir: Medir = (t) => t.length
@@ -64,6 +64,14 @@ describe('lo que se imprime', () => {
   })
   it('el cliente, el pedido, los renglones y lo asociado', () => {
     expect(dice(datos())).toEqual(expect.arrayContaining(['Cliente de prueba', '7', 'A1', 'Alimento', '3', '1,5', '0001-00000037']))
+  })
+  it('la factura asociada va con su nombre, achicando la letra si no entra', () => {
+    const t = textos(datos({ asociado: 'Factura A 0001-00000006' }))
+    const asociado = t.find((x) => x.texto.startsWith('Factura A'))
+    expect(asociado?.texto).toBe('Factura A 0001-00000006')
+    // Con media letra por milímetro de punto, a 9,5 no entra en 38 mm.
+    expect(tamanoQueEntra('Factura A 0001-00000006', 38, 9.5, 6.5, (x, tam) => x.length * tam * 0.2)).toBeLessThan(9.5)
+    expect(tamanoQueEntra('A 1', 38, 9.5, 6.5, (x, tam) => x.length * tam * 0.2)).toBe(9.5)
   })
   it('no lleva precios: nada con signo de pesos', () => {
     expect(dice(datos()).some((t) => t.includes('$'))).toBe(false)

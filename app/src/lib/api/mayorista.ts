@@ -38,6 +38,13 @@ export interface ProductoMayorista {
   /** null cuando el permiso no deja ver el stock. */
   stock: number | null
   unidades_por_bulto: number | null
+  /**
+    De qué lista es este precio: el catálogo trae los productos de todas
+    las listas mayoristas. Falta en la copia del teléfono guardada antes
+    del 12/11, que era de una sola lista.
+  */
+  lista_precio_id?: string
+  predeterminada?: boolean
 }
 
 export interface ClienteMayorista {
@@ -69,6 +76,24 @@ export interface ClienteMayorista {
     guardada antes del 29/10: se lee como «no».
   */
   pide_proforma?: boolean
+  /** Su lista de precios (la predeterminada si no tiene). Falta en copias de antes del 12/11. */
+  lista_precio_id?: string | null
+  lista_nombre?: string | null
+}
+
+/*
+  Los productos que puede pedir un cliente, con los precios de su lista.
+
+  Con una copia vieja del teléfono —sin listas— vale todo el catálogo.
+  Si el cliente no trae lista, la predeterminada.
+*/
+export function catalogoDelCliente(
+  catalogo: ProductoMayorista[],
+  cliente: Pick<ClienteMayorista, 'lista_precio_id'> | null,
+): ProductoMayorista[] {
+  if (!catalogo.some((p) => p.lista_precio_id)) return catalogo
+  const lista = cliente?.lista_precio_id
+  return catalogo.filter((p) => (lista ? p.lista_precio_id === lista : p.predeterminada))
 }
 
 export type EstadoPedidoMayorista = 'pendiente' | 'confirmado' | 'facturado' | 'cancelado'
@@ -605,15 +630,57 @@ export interface PrecioMayorista {
   stock: number
 }
 
-export async function leerLista(): Promise<PrecioMayorista[]> {
-  const { data, error } = await supabase.rpc('mayorista_lista')
+export interface ListaMayorista {
+  id: string
+  nombre: string
+  /** La de los clientes sin lista. No se da de baja. */
+  predeterminada: boolean
+  productos: number
+  clientes: number
+}
+
+export async function listarListasMayoristas(): Promise<ListaMayorista[]> {
+  const { data, error } = await supabase.rpc('mayorista_listas')
+  if (error) throw new Error(error.message)
+  return ((data ?? []) as ListaMayorista[]).map((l) => ({
+    ...l,
+    productos: Number(l.productos),
+    clientes: Number(l.clientes),
+  }))
+}
+
+/** Sin id, crea una lista nueva. Devuelve su id. */
+export async function guardarListaMayorista(id: string | null, nombre: string): Promise<string> {
+  const { data, error } = await supabase.rpc('mayorista_guardar_lista', { p_id: id, p_nombre: nombre })
+  if (error) throw new Error(error.message)
+  return data as string
+}
+
+export async function bajaListaMayorista(id: string): Promise<void> {
+  const { error } = await supabase.rpc('mayorista_baja_lista', { p_id: id })
+  if (error) throw new Error(error.message)
+}
+
+export async function asignarListaMayorista(clientes: string[], listaId: string): Promise<number> {
+  const { data, error } = await supabase.rpc('mayorista_asignar_lista', { p_clientes: clientes, p_lista: listaId })
+  if (error) throw new Error(error.message)
+  return Number(data)
+}
+
+/* Sin lista, la predeterminada. */
+export async function leerLista(listaId: string | null = null): Promise<PrecioMayorista[]> {
+  const { data, error } = await supabase.rpc('mayorista_lista', { p_lista: listaId })
   if (error) throw new Error(error.message)
   return (data ?? []) as PrecioMayorista[]
 }
 
 /* null saca el producto de la lista. */
-export async function guardarPrecio(productoId: string, precio: number | null): Promise<void> {
-  const { error } = await supabase.rpc('mayorista_guardar_precio', { p_producto_id: productoId, p_precio: precio })
+export async function guardarPrecio(productoId: string, precio: number | null, listaId: string | null = null): Promise<void> {
+  const { error } = await supabase.rpc('mayorista_guardar_precio', {
+    p_producto_id: productoId,
+    p_precio: precio,
+    p_lista: listaId,
+  })
   if (error) throw new Error(error.message)
 }
 
@@ -640,17 +707,20 @@ export async function buscarParaLista(texto: string): Promise<ProductoParaLista[
 }
 
 /* De a muchos, desde la planilla: o entran todos o no entra ninguno. */
-export async function guardarPrecios(cambios: { producto_id: string; precio: number | null }[]): Promise<number> {
-  const { data, error } = await supabase.rpc('mayorista_guardar_precios', { p_cambios: cambios })
+export async function guardarPrecios(
+  cambios: { producto_id: string; precio: number | null }[],
+  listaId: string | null = null,
+): Promise<number> {
+  const { data, error } = await supabase.rpc('mayorista_guardar_precios', { p_cambios: cambios, p_lista: listaId })
   if (error) throw new Error(error.message)
   return data as number
 }
 
 /** Todo el catálogo, con el precio mayorista de los que están en la lista. */
-export async function catalogoDeLaLista(): Promise<ProductoDeLaPlanilla[]> {
+export async function catalogoDeLaLista(listaId: string | null = null): Promise<ProductoDeLaPlanilla[]> {
   const [productos, lista] = await Promise.all([
     todos('producto', 'id, codigo, nombre_interno, precio_venta, activo'),
-    leerLista(),
+    leerLista(listaId),
   ])
   const precios = new Map(lista.map((p) => [p.producto_id, Number(p.precio)]))
   return (productos as unknown as { id: string; codigo: string; nombre_interno: string; precio_venta: number; activo: boolean }[])
@@ -665,7 +735,7 @@ export async function catalogoDeLaLista(): Promise<ProductoDeLaPlanilla[]> {
     .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
 }
 
-export async function bajarPlanillaDeLista(): Promise<void> {
-  const hoja = hojaDeLista(await catalogoDeLaLista())
-  descargar(nombreDeArchivo('lista-mayorista'), await aExcel(hoja, ANCHOS_DE_LISTA))
+export async function bajarPlanillaDeLista(listaId: string | null = null, nombre = 'lista-mayorista'): Promise<void> {
+  const hoja = hojaDeLista(await catalogoDeLaLista(listaId))
+  descargar(nombreDeArchivo(nombre), await aExcel(hoja, ANCHOS_DE_LISTA))
 }

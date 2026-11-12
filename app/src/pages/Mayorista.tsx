@@ -18,6 +18,7 @@ import {
   agregarLinea,
   autorizarVencido,
   buscarProductos,
+  catalogoDelCliente,
   cambiarCantidad,
   cancelarPedido,
   cantidadesCorregidas,
@@ -376,8 +377,11 @@ function ArmarPedido({
     [clientes.data, buscarCliente],
   )
   const productos = useMemo(
-    () => (buscarProducto.trim() ? buscarProductos(catalogo.data?.datos ?? [], buscarProducto).slice(0, 30) : []),
-    [catalogo.data, buscarProducto],
+    () =>
+      buscarProducto.trim()
+        ? buscarProductos(catalogoDelCliente(catalogo.data?.datos ?? [], cliente), buscarProducto).slice(0, 30)
+        : [],
+    [catalogo.data, buscarProducto, cliente],
   )
   const flechasCliente = useListaConFlechas(encontrados, (c) => setClienteId(c.id))
   const flechas = useListaConFlechas(productos, (p) => setLineas((l) => agregarLinea(l, p, 1)))
@@ -484,7 +488,7 @@ function ArmarPedido({
               <p className="text-xs text-piedra-500">Cliente</p>
               <p className="truncate font-semibold text-tinta">{cliente.nombre}</p>
               <p className="truncate text-xs text-piedra-500">
-                {[cliente.localidad, cliente.ruta].filter(Boolean).join(' · ')}
+                {[cliente.localidad, cliente.ruta, cliente.lista_nombre].filter(Boolean).join(' · ')}
               </p>
             </div>
             <button onClick={() => setClienteId(null)} className={botonChico.suave}>

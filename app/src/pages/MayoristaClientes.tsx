@@ -9,6 +9,8 @@ import { moneda } from '@/lib/tipos'
 import { boton, botonChico, campo, campoDeFiltro, tarjeta } from '@/estilos'
 import {
   CONDICIONES_IVA,
+  asignarListaMayorista,
+  listarListasMayoristas,
   enlaceMapa,
   enlaceWhatsapp,
   filtrarClientes,
@@ -54,6 +56,11 @@ export default function MayoristaClientes() {
   const [vista, setVista] = useState<'lista' | 'mapa'>('lista')
   const [editando, setEditando] = useState<ClienteMayorista | 'nuevo' | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  // Filtrar por lista y elegir varios para asignarles una (12/11).
+  const [listaFiltro, setListaFiltro] = useState('')
+  const [elegidos, setElegidos] = useState<Set<string>>(new Set())
+  const [listaAsignar, setListaAsignar] = useState('')
 
   const puedeVer = tienePermiso('mayorista.vender') || tienePermiso('mayorista.atender')
   const cargaClientes = tienePermiso('mayorista.clientes')
@@ -67,9 +74,45 @@ export default function MayoristaClientes() {
     staleTime: 5 * 60_000,
   })
 
+  const listas = useQuery({
+    queryKey: ['mayorista-listas'],
+    queryFn: listarListasMayoristas,
+    enabled: puedeVer && navigator.onLine,
+  })
+  const variasListas = (listas.data?.length ?? 0) > 1
+
+  const asignar = useMutation({
+    mutationFn: () => asignarListaMayorista([...elegidos], listaAsignar),
+    onSuccess: (n) => {
+      const nombre = listas.data?.find((l) => l.id === listaAsignar)?.nombre ?? ''
+      setError(null)
+      setAviso(n === 1 ? `1 cliente pasa a comprar con ${nombre}.` : `${n} clientes pasan a comprar con ${nombre}.`)
+      setElegidos(new Set())
+      qc.invalidateQueries({ queryKey: ['mayorista-clientes'] })
+      qc.invalidateQueries({ queryKey: ['mayorista-listas'] })
+    },
+    onError: (e) => setError(enCastellano(e, 'No se pudo asignar la lista.')),
+  })
+
   const todos = useMemo(() => clientes.data?.datos ?? [], [clientes.data])
   const rutas = useMemo(() => rutasDe(todos), [todos])
-  const filas = useMemo(() => filtrarClientes(todos, { texto, ruta, soloConVencido }), [todos, texto, ruta, soloConVencido])
+  const filas = useMemo(
+    () =>
+      filtrarClientes(todos, { texto, ruta, soloConVencido }).filter(
+        (c) => !listaFiltro || c.lista_precio_id === listaFiltro,
+      ),
+    [todos, texto, ruta, soloConVencido, listaFiltro],
+  )
+  const eligeVarios = cargaClientes && variasListas
+
+  function alternar(id: string) {
+    setElegidos((s) => {
+      const n = new Set(s)
+      if (n.has(id)) n.delete(id)
+      else n.add(id)
+      return n
+    })
+  }
   const veDeuda = todos.some((c) => c.saldo !== null)
   const conUbicacion = useMemo(() => filas.filter((c) => c.latitud != null && c.longitud != null), [filas])
 
@@ -115,6 +158,11 @@ export default function MayoristaClientes() {
           {aviso}
         </p>
       )}
+      {error && (
+        <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 ring-1 ring-red-200">
+          {error}
+        </p>
+      )}
       {clientes.data?.deLaCopia && (
         <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900 ring-1 ring-amber-200">
           Sin señal: es la lista del {new Date(clientes.data.leidoEn).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' })}.
@@ -153,6 +201,21 @@ export default function MayoristaClientes() {
             {rutas.map((r) => (
               <option key={r} value={r}>
                 {r}
+              </option>
+            ))}
+          </select>
+        )}
+        {variasListas && (
+          <select
+            value={listaFiltro}
+            onChange={(e) => setListaFiltro(e.target.value)}
+            aria-label="Lista de precios"
+            className={`${campoDeFiltro} min-w-0`}
+          >
+            <option value="">Todas las listas</option>
+            {listas.data!.map((l) => (
+              <option key={l.id} value={l.id}>
+                {l.nombre}
               </option>
             ))}
           </select>
@@ -207,17 +270,68 @@ export default function MayoristaClientes() {
           </Suspense>
         </div>
       ) : (
+        <div className="space-y-2">
+          {eligeVarios && (
+            <div className={`${tarjeta} flex flex-wrap items-center gap-2 px-4 py-3 text-sm`}>
+              <span className="text-piedra-600">
+                {elegidos.size === 0
+                  ? 'Marcá clientes para cambiarles la lista de precios.'
+                  : elegidos.size === 1
+                    ? '1 cliente marcado'
+                    : `${elegidos.size} clientes marcados`}
+              </span>
+              <button
+                onClick={() => setElegidos(new Set(filas.map((c) => c.id)))}
+                className="text-marca-700 hover:underline"
+              >
+                Marcar los {filas.length} de la lista
+              </button>
+              {elegidos.size > 0 && (
+                <>
+                  <button onClick={() => setElegidos(new Set())} className="text-piedra-500 hover:underline">
+                    Desmarcar
+                  </button>
+                  <div className="flex min-w-0 flex-1 basis-64 flex-wrap items-center justify-end gap-2">
+                    <select
+                      value={listaAsignar}
+                      onChange={(e) => setListaAsignar(e.target.value)}
+                      aria-label="Lista para asignar"
+                      className={`${campoDeFiltro} min-w-0`}
+                    >
+                      <option value="">Elegí la lista</option>
+                      {listas.data!.map((l) => (
+                        <option key={l.id} value={l.id}>
+                          {l.nombre}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={() => asignar.mutate()}
+                      disabled={!listaAsignar || asignar.isPending}
+                      className={botonChico.principal}
+                    >
+                      Asignar lista
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         <ul className="space-y-2">
           {filas.map((c) => (
             <FilaCliente
               key={c.id}
               c={c}
+              conLista={variasListas}
+              elegido={eligeVarios ? elegidos.has(c.id) : undefined}
+              onElegir={eligeVarios ? () => alternar(c.id) : undefined}
               onEditar={cargaClientes ? () => setEditando(c) : undefined}
               onPedido={arma ? () => navegar(`/mayorista?cliente=${c.id}`) : undefined}
               onCobro={cobra ? () => navegar(`/mayorista/cobros?cliente=${c.id}`) : undefined}
             />
           ))}
         </ul>
+        </div>
       )}
     </div>
   )
@@ -225,11 +339,18 @@ export default function MayoristaClientes() {
 
 function FilaCliente({
   c,
+  conLista,
+  elegido,
+  onElegir,
   onEditar,
   onPedido,
   onCobro,
 }: {
   c: ClienteMayorista
+  /** Con más de una lista, se ve con cuál compra. */
+  conLista?: boolean
+  elegido?: boolean
+  onElegir?: () => void
   onEditar?: () => void
   onPedido?: () => void
   /** Le pagó al vendedor: la orden de recibo. */
@@ -241,6 +362,15 @@ function FilaCliente({
   return (
     <li className={`${tarjeta} space-y-2 px-4 py-3`}>
       <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
+        {onElegir && (
+          <input
+            type="checkbox"
+            checked={!!elegido}
+            onChange={onElegir}
+            aria-label={`Marcar a ${c.nombre}`}
+            className="mt-1 size-4 shrink-0 rounded border-borde text-marca-700 focus:ring-marca-500"
+          />
+        )}
         <div className="min-w-0 flex-1 basis-48">
           <p className="truncate font-medium text-tinta">{c.nombre}</p>
           <p className="truncate text-xs text-piedra-500">
@@ -263,6 +393,11 @@ function FilaCliente({
             <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-900">Sin cuenta corriente</span>
           )}
           {c.pide_proforma && <MarcaProforma />}
+          {conLista && c.lista_nombre && (
+            <span className="rounded-full bg-marca-50 px-2 py-0.5 text-xs text-marca-800 ring-1 ring-marca-200">
+              {c.lista_nombre}
+            </span>
+          )}
         </div>
       </div>
       {c.ultimo_pedido_en && (

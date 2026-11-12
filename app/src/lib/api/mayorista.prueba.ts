@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   agregarLinea,
+  catalogoDelCliente,
   cambiarCantidad,
   cantidadesCorregidas,
   enlaceMapa,
@@ -157,5 +158,30 @@ describe('buscar entre los clientes', () => {
 
   it('las rutas, una vez cada una y en orden', () => {
     expect(rutasDe(clientes)).toEqual(['Ruta 12', 'Ruta 14'])
+  })
+})
+
+describe('el catálogo de cada cliente, con su lista', () => {
+  const producto = (id: string, lista: string, predeterminada: boolean) => ({
+    producto_id: id,
+    codigo: id,
+    nombre: id,
+    precio: 100,
+    stock: null,
+    unidades_por_bulto: null,
+    lista_precio_id: lista,
+    predeterminada,
+  })
+  const catalogo = [producto('a', 'l1', true), producto('a', 'l2', false), producto('b', 'l2', false)]
+
+  it('el cliente ve sólo los productos de su lista', () => {
+    expect(catalogoDelCliente(catalogo, { lista_precio_id: 'l2' }).map((p) => p.producto_id)).toEqual(['a', 'b'])
+  })
+  it('sin lista, la predeterminada', () => {
+    expect(catalogoDelCliente(catalogo, { lista_precio_id: null }).map((p) => p.lista_precio_id)).toEqual(['l1'])
+  })
+  it('una copia vieja del teléfono, sin listas, vale entera', () => {
+    const viejo = [{ ...producto('a', '', true), lista_precio_id: undefined }]
+    expect(catalogoDelCliente(viejo, { lista_precio_id: 'l2' })).toHaveLength(1)
   })
 })

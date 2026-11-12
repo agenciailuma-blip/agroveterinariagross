@@ -17,6 +17,8 @@ import { confirmar } from '@/components/Dialogo'
 import { facturarComprobanteInterno } from '@/lib/api/facturacion'
 import { mandarSolaACuentaCorriente } from '@/lib/api/facturaPorMail'
 import { moneda } from '@/lib/tipos'
+import { imprimirOAbrirComprobante } from '@/lib/comprobante/imprimirDirecto'
+import { useTerminal } from '@/lib/terminal'
 
 /*
   El archivo de los comprobantes que numera Gross.
@@ -41,6 +43,7 @@ const FILTROS: { valor: Filtro; etiqueta: string }[] = [
 export default function NoFiscales() {
   const { tienePermiso } = useAuth()
   const qc = useQueryClient()
+  const { terminal } = useTerminal()
   const [filtro, setFiltro] = useState<Filtro>('todos')
   const [error, setError] = useState<string | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
@@ -92,6 +95,7 @@ export default function NoFiscales() {
       setError(null)
       const texto = `Factura autorizada por ARCA. CAE ${cae}`
       setAviso(texto)
+      void imprimirOAbrirComprobante(comprobanteId, terminal)
       void mandarSolaACuentaCorriente(comprobanteId).then((mail) => {
         if (mail) setAviso(`${texto} ${mail}`)
       })

@@ -1,3 +1,4 @@
+import { imprimirOAbrirComprobante } from '@/lib/comprobante/imprimirDirecto'
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTerminal } from '@/lib/terminal'
@@ -196,6 +197,7 @@ function PonerPrecios({
       }
       onListo(texto)
       if (comprobanteId) {
+        void imprimirOAbrirComprobante(comprobanteId, terminal)
         void mandarSolaACuentaCorriente(comprobanteId).then((mail) => {
           if (mail) onAviso(`${texto} ${mail}`)
         })
