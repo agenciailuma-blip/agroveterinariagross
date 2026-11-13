@@ -8,6 +8,7 @@ import type { ComprobanteCompleto } from '@/lib/api/comprobante'
 import { urlQrDe } from '@/lib/comprobante/imprimirDirecto'
 import TicketComprobante from '@/components/TicketComprobante'
 import MandarPorMail from '@/components/MandarPorMail'
+import BotonRemitoLogistico from '@/components/BotonRemitoLogistico'
 import { ticketEscPos } from '@/lib/comprobante/escpos'
 import { destinoDeImpresion } from '@/lib/comprobante/destino'
 import { enEscritorio, imprimirTicket } from '@/lib/escritorio'
@@ -209,6 +210,10 @@ export default function ComprobanteImprimible() {
             >
               {imprimirDirecto.isPending ? 'Imprimiendo…' : 'Imprimir en el mostrador'}
             </button>
+          )}
+          {/* Sólo en una factura, nunca en una nota de crédito (Lucas, 13/11). */}
+          {c.cae && c.venta_id && !/nota/i.test(c.tipo_descripcion) && c.estado !== 'anulado' && (
+            <BotonRemitoLogistico ventaId={c.venta_id} />
           )}
           <button
             onClick={guardarPdf}

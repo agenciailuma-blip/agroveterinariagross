@@ -183,7 +183,9 @@ function Rutas() {
         <Route path="facturacion/emitidas" element={<ComprobantesEmitidos modo="facturas" />} />
         <Route path="facturacion/percepciones" element={<ComprobantesEmitidos modo="percepciones" />} />
         <Route path="remitos" element={<Remitos />} />
-        <Route path="no-fiscales" element={<NoFiscales />} />
+        <Route path="no-fiscales" element={<NoFiscales tipo="presupuesto" />} />
+        <Route path="proformas" element={<NoFiscales tipo="comprobante_interno" />} />
+        <Route path="comprobantes-de-entrega" element={<NoFiscales tipo="comprobante_entrega" />} />
         <Route path="reportes" element={<Reportes />} />
         <Route path="cheques" element={<Cheques />} />
         <Route path="calendario" element={<Calendario />} />

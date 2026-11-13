@@ -61,9 +61,10 @@ export default function Remitos() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-tinta">Remitos</h1>
+          <h1 className="text-xl font-bold text-tinta">Remito logístico</h1>
           <p className="text-sm text-piedra-500">
-            La mercadería que sale del local, con su comprobante de entrega.
+            La hoja R que acompaña a la mercadería facturada cuando viaja. También sale desde cada
+            factura y al facturar un pedido mayorista.
           </p>
         </div>
         {puedeEmitir && (
@@ -71,7 +72,7 @@ export default function Remitos() {
             onClick={() => setNuevo(true)}
             className="rounded-lg bg-marca-700 px-4 py-2 text-sm font-medium text-white hover:bg-marca-600"
           >
-            Nuevo remito
+            Nuevo remito logístico
           </button>
         )}
       </div>
@@ -131,7 +132,7 @@ export default function Remitos() {
       )}
 
       <section>
-        <h2 className="mb-2 text-sm font-medium text-piedra-600">Últimos remitos</h2>
+        <h2 className="mb-2 text-sm font-medium text-piedra-600">Últimos remitos logísticos</h2>
         {remitos.isPending ? (
           <p className="text-sm text-piedra-500">Cargando…</p>
         ) : (remitos.data?.length ?? 0) === 0 ? (
@@ -226,12 +227,6 @@ export default function Remitos() {
                       ) : (
                         <div className="flex flex-col items-end gap-1">
                           <button
-                            onClick={() => abrirNoFiscal(r.id)}
-                            className="text-xs text-marca-700 underline"
-                          >
-                            Imprimir
-                          </button>
-                          <button
                             onClick={() => abrirRemitoR(r.id)}
                             className="text-xs text-marca-700 underline"
                           >
@@ -265,7 +260,7 @@ export default function Remitos() {
             setError(null)
             qc.invalidateQueries({ queryKey: ['remitos'] })
             qc.invalidateQueries({ queryKey: ['remitos-sin-cobrar'] })
-            abrirNoFiscal(id)
+            abrirRemitoR(id)
           }}
           onError={setError}
         />

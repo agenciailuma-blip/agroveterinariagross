@@ -31,20 +31,39 @@ import { useTerminal } from '@/lib/terminal'
   12 de sus sugerencias, y las tres partes están acá.
 */
 
-type Filtro = TipoNoFiscal | 'todos'
+/*
+  Desde el 13/11 es una pantalla por documento, cada una su pestaña en
+  Comprobantes: Proformas emitidas, Comprobantes de entrega y
+  Presupuestos. Antes era una sola, «Comprobantes no fiscales», con un
+  filtro, y mezclaba papeles que se buscan por razones distintas.
+*/
+const TEXTOS: Partial<Record<TipoNoFiscal, { titulo: string; bajada: string; archivo: string; vacio: string }>> = {
+  comprobante_interno: {
+    titulo: 'Proformas emitidas',
+    bajada: 'Las ventas que salieron sin factura. Una proforma de una venta cobrada se puede facturar.',
+    archivo: 'proformas',
+    vacio: 'Todavía no se emitió ninguna proforma.',
+  },
+  comprobante_entrega: {
+    titulo: 'Comprobantes de entrega',
+    bajada: 'Lo que firmó quien retiró mercadería a cuenta corriente o fiada.',
+    archivo: 'comprobantes-de-entrega',
+    vacio: 'Todavía no se emitió ningún comprobante de entrega.',
+  },
+  presupuesto: {
+    titulo: 'Presupuestos',
+    bajada: 'Se mandan a la caja para cobrarlos.',
+    archivo: 'presupuestos',
+    vacio: 'Todavía no se emitió ningún presupuesto.',
+  },
+}
 
-const FILTROS: { valor: Filtro; etiqueta: string }[] = [
-  { valor: 'todos', etiqueta: 'Todos' },
-  { valor: 'presupuesto', etiqueta: 'Presupuestos' },
-  { valor: 'remito', etiqueta: 'Remitos' },
-  { valor: 'comprobante_interno', etiqueta: 'Internos' },
-]
-
-export default function NoFiscales() {
+export default function NoFiscales({ tipo }: { tipo: TipoNoFiscal }) {
   const { tienePermiso } = useAuth()
   const qc = useQueryClient()
   const { terminal } = useTerminal()
-  const [filtro, setFiltro] = useState<Filtro>('todos')
+  const filtro = tipo
+  const textos = TEXTOS[tipo] ?? TEXTOS.presupuesto!
   const [error, setError] = useState<string | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
 
@@ -118,7 +137,7 @@ export default function NoFiscales() {
   function exportar() {
     if (!filas.data?.length) return
     const hoy = new Date().toISOString().slice(0, 10)
-    descargarCsv(`comprobantes-no-fiscales-${hoy}.csv`, aCsv(filas.data))
+    descargarCsv(`${textos.archivo}-${hoy}.csv`, aCsv(filas.data))
   }
 
   if (!puedeVer) {
@@ -133,10 +152,8 @@ export default function NoFiscales() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-tinta">Comprobantes no fiscales</h1>
-          <p className="text-sm text-piedra-500">
-            Presupuestos, remitos y comprobantes internos. Los que numera Gross, no ARCA.
-          </p>
+          <h1 className="text-xl font-bold text-tinta">{textos.titulo}</h1>
+          <p className="text-sm text-piedra-500">{textos.bajada}</p>
         </div>
         <button
           onClick={exportar}
@@ -145,20 +162,6 @@ export default function NoFiscales() {
         >
           Exportar a Excel
         </button>
-      </div>
-
-      <div className="flex flex-wrap gap-1 rounded-lg bg-piedra-100 p-1">
-        {FILTROS.map((f) => (
-          <button
-            key={f.valor}
-            onClick={() => setFiltro(f.valor)}
-            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-              filtro === f.valor ? 'bg-white text-tinta shadow-sm' : 'text-piedra-500 hover:text-tinta'
-            }`}
-          >
-            {f.etiqueta}
-          </button>
-        ))}
       </div>
 
       {error && (
@@ -176,7 +179,7 @@ export default function NoFiscales() {
         <p className="text-sm text-piedra-500">Cargando…</p>
       ) : (filas.data?.length ?? 0) === 0 ? (
         <div className="grid place-items-center rounded-xl border border-dashed border-borde bg-white/60 py-12">
-          <p className="text-sm text-piedra-400">No hay comprobantes de este tipo.</p>
+          <p className="text-sm text-piedra-400">{textos.vacio}</p>
         </div>
       ) : (
         <div className="overflow-hidden rounded-xl bg-white ring-1 ring-borde">
@@ -314,7 +317,8 @@ function Fila({
       </td>
       <td className="hidden px-3 py-2 align-top text-piedra-700 sm:table-cell">{f.receptor_nombre}</td>
       <td className="whitespace-nowrap px-3 py-2 text-right align-top tabular-nums text-piedra-700">
-        {f.total > 0 ? moneda.format(f.total) : '—'}
+        {/* El comprobante de entrega no lleva precios: tampoco acá. */}
+        {f.total > 0 && f.tipo_clave !== 'comprobante_entrega' ? moneda.format(f.total) : '—'}
       </td>
       <td className="hidden px-3 py-2 align-top text-xs sm:table-cell">{estado}</td>
       <td className="whitespace-nowrap px-3 py-2 text-right align-top">

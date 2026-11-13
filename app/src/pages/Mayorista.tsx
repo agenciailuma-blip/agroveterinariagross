@@ -7,8 +7,9 @@ import { confirmar, pedirTexto } from '@/components/Dialogo'
 import { emitirEnServidor } from '@/lib/api/noFiscal'
 import { enviarFacturaPorMail } from '@/lib/api/facturaPorMail'
 import { obtenerComprobanteCompleto } from '@/lib/api/comprobante'
-import { listarTandas } from '@/lib/api/remitoR'
 import { abrirComprobante, abrirNoFiscal, abrirRemitoR } from '@/lib/escritorio'
+import { imprimirNoFiscal, puedeImprimirSolo } from '@/lib/comprobante/imprimirDirecto'
+import { nombreDeFactura } from '@/lib/api/noFiscal'
 import { enCastellano } from '@/lib/errores'
 import { moneda, numero } from '@/lib/tipos'
 import { boton, botonChico, campo, tarjeta } from '@/estilos'
@@ -816,6 +817,24 @@ function FichaPedido({
     })
     if (!ok) return
 
+    /*
+      El pedido va a la cuenta corriente: sale el comprobante de entrega,
+      para que firme quien lo recibe (propuesta aprobada el 13/11).
+    */
+    async function entregar(ventaId: string, corresponde: string) {
+      try {
+        const e = await emitirEnServidor(ventaId, 'comprobante_entrega', terminal?.id ?? null, {
+          serie: terminal?.prefijo ?? null,
+          observaciones: `Corresponde a ${corresponde}. Pedido mayorista ${p.numero}.`,
+        })
+        if (puedeImprimirSolo(terminal)) await imprimirNoFiscal(e.id, terminal).catch(() => abrirNoFiscal(e.id))
+        else abrirNoFiscal(e.id)
+        return ''
+      } catch (e) {
+        return ` El comprobante de entrega no salió: ${enCastellano(e)}`
+      }
+    }
+
     accion.mutate(async () => {
       const r = await facturarPedido(p.id, documentacion)
 
@@ -825,7 +844,9 @@ function FichaPedido({
           observaciones: `Pedido mayorista ${p.numero}`,
         })
         abrirNoFiscal(interno.id)
-        return `Pedido ${p.numero}: a la cuenta corriente, con proforma.`
+        const numeroProforma = `PRO ${interno.serie}-${String(interno.numero).padStart(8, '0')}`
+        const sinEntrega = await entregar(r.ventaId, `Proforma ${numeroProforma}`)
+        return `Pedido ${p.numero}: a la cuenta corriente, con proforma.${sinEntrega}`
       }
 
       if (r.problema) {
@@ -846,29 +867,41 @@ function FichaPedido({
         }
       }
       abrirComprobante(r.comprobanteId!)
-      return `Pedido ${p.numero}: facturado.${mail}`
+      const nombre = (await nombreDeFactura(r.comprobanteId!).catch(() => null)) ?? `la venta del pedido ${p.numero}`
+      const sinEntrega = await entregar(r.ventaId, nombre)
+
+      // El remito logístico se ofrece solo al facturar el pedido (Lucas, 13/11).
+      const conRemito = await confirmar({
+        titulo: `¿Remito logístico del pedido ${p.numero}?`,
+        detalle: `Sale sobre la hoja R, con ${nombre}. Si no viaja ahora, se emite después desde el pedido.`,
+        aceptar: 'Emitir el remito',
+      })
+      if (conRemito) await remitir(r.ventaId)
+      return `Pedido ${p.numero}: facturado.${mail}${sinEntrega}${conRemito ? ' Remito logístico emitido.' : ''}`
     })
+  }
+
+  async function remitir(ventaId: string) {
+    const r = await emitirEnServidor(ventaId, 'remito', terminal?.id ?? null, {
+      serie: terminal?.prefijo ?? null,
+      observaciones: `Pedido mayorista ${p.numero}`,
+      entrega: { domicilio: p.cliente_domicilio, localidad: p.cliente_localidad, contacto: p.cliente_telefono },
+    })
+    abrirRemitoR(r.id)
   }
 
   async function alRemitir() {
     const destino = [p.cliente_domicilio, p.cliente_localidad].filter(Boolean).join(', ') || 'sin domicilio cargado'
     const ok = await confirmar({
-      titulo: `Remito del pedido ${p.numero}`,
-      detalle: `Para ${p.cliente_nombre}, a ${destino}.`,
+      titulo: `Remito logístico del pedido ${p.numero}`,
+      detalle: `Para ${p.cliente_nombre}, a ${destino}. Sale sobre la hoja R.`,
       aceptar: 'Emitir el remito',
     })
     if (!ok || !p.venta_id) return
     accion.mutate(async () => {
-      const r = await emitirEnServidor(p.venta_id!, 'remito', terminal?.id ?? null, {
-        serie: terminal?.prefijo ?? null,
-        observaciones: `Pedido mayorista ${p.numero}`,
-        entrega: { domicilio: p.cliente_domicilio, localidad: p.cliente_localidad, contacto: p.cliente_telefono },
-      })
-      // Con hojas de imprenta cargadas, el remito del mayorista sale sobre ellas.
-      const conHojas = await listarTandas().then((t) => t.some((x) => x.vigente), () => false)
-      if (conHojas) abrirRemitoR(r.id)
-      else abrirNoFiscal(r.id)
-      return `Pedido ${p.numero}: remito emitido.`
+      // Desde el 13/11 el remito es sólo el logístico: siempre sobre la hoja R.
+      await remitir(p.venta_id!)
+      return `Pedido ${p.numero}: remito logístico emitido.`
     })
   }
 
@@ -1036,12 +1069,9 @@ function FichaPedido({
           </Dato>
         )}
         {p.remito_id && (
-          <Dato etiqueta="Remito">
-            <button onClick={() => abrirNoFiscal(p.remito_id!)} className="text-marca-700 underline">
+          <Dato etiqueta="Remito logístico">
+            <button onClick={() => abrirRemitoR(p.remito_id!)} className="text-marca-700 underline">
               {p.remito_numero}
-            </button>
-            <button onClick={() => abrirRemitoR(p.remito_id!)} className="ml-2 text-marca-700 underline">
-              Hoja R
             </button>
           </Dato>
         )}
@@ -1143,9 +1173,10 @@ function FichaPedido({
             Proforma
           </button>
         )}
-        {p.estado === 'facturado' && !p.remito_id && puedeRemitir && (
+        {/* Sólo con factura: un remito con CAI no acompaña una proforma (Lucas, 13/11). */}
+        {p.estado === 'facturado' && !p.remito_id && !!p.comprobante_id && puedeRemitir && (
           <button onClick={alRemitir} disabled={ocupado} className={boton.secundario}>
-            Remito
+            Remito logístico
           </button>
         )}
         {puedeCancelar && (

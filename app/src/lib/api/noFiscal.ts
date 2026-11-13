@@ -169,7 +169,7 @@ export function emitirRemitoDePedido(
 */
 export async function emitirEnServidor(
   ventaId: string,
-  tipo: 'remito' | 'comprobante_interno',
+  tipo: 'remito' | 'comprobante_interno' | 'comprobante_entrega',
   terminalId: string | null,
   opciones: { serie?: string | null; observaciones?: string | null; entrega?: DatosEntrega },
 ): Promise<{ id: string; serie: string; numero: number }> {
@@ -688,6 +688,16 @@ export async function ventasParaRemitir(busqueda: string): Promise<VentaParaRemi
   const { data, error } = await q
   if (error) throw new Error(error.message)
 
+  /*
+    El remito logístico sale sólo de una venta facturada (Lucas, 13/11):
+    un remito con CAI no puede acompañar mercadería sin factura.
+  */
+  const ids = (data ?? []).map((v) => (v as { id: string }).id)
+  const { data: facturadas } = ids.length
+    ? await supabase.from('comprobante').select('venta_id').in('venta_id', ids).neq('estado', 'anulado')
+    : { data: [] as { venta_id: string }[] }
+  const conFactura = new Set((facturadas ?? []).map((f) => f.venta_id as string))
+
   type Cliente = {
     nombre: string
     calle: string | null
@@ -701,7 +711,7 @@ export async function ventasParaRemitir(busqueda: string): Promise<VentaParaRemi
     VentaParaRemitir,
     'cliente_nombre' | 'cliente_domicilio' | 'cliente_localidad' | 'cliente_telefono'
   > & { cliente: Cliente | Cliente[] | null })[])
-    .filter((v) => !yaTienen.has(v.id))
+    .filter((v) => !yaTienen.has(v.id) && conFactura.has(v.id))
     .map((v) => {
       const c = Array.isArray(v.cliente) ? v.cliente[0] : v.cliente
       const domicilio = [c?.calle, c?.numero, c?.piso_depto].filter(Boolean).join(' ')

@@ -54,7 +54,8 @@ export default function NuevoRemito({
   onEmitido,
   onError,
 }: Props) {
-  const [origen, setOrigen] = useState<Origen>('venta')
+  // Desde el 13/11 el remito sale sólo de una venta facturada: «de cero» ya no se ofrece.
+  const [origen] = useState<Origen>('venta')
 
   // ── Comunes a los dos orígenes
   const [domicilio, setDomicilio] = useState('')
@@ -134,37 +135,12 @@ export default function NuevoRemito({
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-tinta/40 p-4">
       <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-xl bg-white p-5 shadow-xl">
-        <h2 className="text-lg font-bold text-tinta">Nuevo remito</h2>
-
-        <div className="mt-3 flex gap-1 rounded-lg bg-piedra-100 p-1">
-          {(
-            [
-              ['venta', 'Desde una venta'],
-              ['cero', 'De cero'],
-            ] as const
-          ).map(([o, texto]) => (
-            <button
-              key={o}
-              onClick={() => {
-                setOrigen(o)
-                setElegida(null)
-                setCliente(null)
-                setLineas([])
-                setDescuenta(true)
-              }}
-              className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                origen === o ? 'bg-white text-tinta shadow-sm' : 'text-piedra-500 hover:text-tinta'
-              }`}
-            >
-              {texto}
-            </button>
-          ))}
-        </div>
+        <h2 className="text-lg font-bold text-tinta">Nuevo remito logístico</h2>
 
         {origen === 'venta' ? (
           !elegida ? (
             <>
-              <p className="mt-3 text-sm text-piedra-500">¿De qué venta sale la mercadería?</p>
+              <p className="mt-3 text-sm text-piedra-500">¿De qué factura sale la mercadería? Aparecen las ventas facturadas que todavía no tienen remito.</p>
               <input
                 autoFocus
                 value={busqueda}
@@ -318,7 +294,7 @@ export default function NuevoRemito({
             disabled={!listo || emitir.isPending}
             className="rounded-lg bg-marca-700 px-4 py-2 text-sm font-medium text-white hover:bg-marca-600 disabled:opacity-40"
           >
-            {emitir.isPending ? 'Emitiendo…' : 'Emitir e imprimir'}
+            {emitir.isPending ? 'Emitiendo…' : 'Emitir y abrir la hoja R'}
           </button>
         </div>
       </div>

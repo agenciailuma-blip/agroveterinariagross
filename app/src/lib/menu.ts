@@ -187,8 +187,15 @@ export const SECCIONES: Seccion[] = [
       { a: '/facturacion', etiqueta: 'Facturación', permiso: 'facturacion.ver' },
       // Buscar, reimprimir y bajar: todas, por fecha, cliente o número.
       { a: '/facturacion/emitidas', etiqueta: 'Facturas emitidas', permiso: 'facturacion.ver' },
+      /*
+        Desde el 13/11 (propuesta aprobada por Lucas): la proforma en lugar
+        del comprobante interno, un solo remito —el logístico— y el
+        comprobante de entrega con su propia pestaña.
+      */
+      { a: '/proformas', etiqueta: 'Proformas emitidas', permiso: 'facturacion.no_fiscal_ver' },
       { a: '/facturacion/percepciones', etiqueta: 'Percepciones', permiso: 'facturacion.ver' },
-      { a: '/remitos', etiqueta: 'Remitos', permiso: 'facturacion.no_fiscal_ver' },
+      { a: '/remitos', etiqueta: 'Remito logístico', permiso: 'facturacion.no_fiscal_ver' },
+      { a: '/comprobantes-de-entrega', etiqueta: 'Comprobantes de entrega', permiso: 'facturacion.no_fiscal_ver' },
       { a: '/no-fiscales', etiqueta: 'Presupuestos', permiso: 'facturacion.no_fiscal_ver' },
     ],
   },
