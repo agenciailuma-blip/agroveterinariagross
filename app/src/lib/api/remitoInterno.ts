@@ -29,6 +29,8 @@ export interface RemitoPorFacturar {
   total_sugerido: number
   unidades: number
   dias: number
+  /** 'remito': el remito interno viejo. 'comprobante_interno': la proforma a convenir (13/11). */
+  tipo_clave: 'remito' | 'comprobante_interno'
 }
 
 /** La marca sólo cuenta con cuenta corriente: el remito interno se factura a la cuenta. */
@@ -36,13 +38,17 @@ export function esPrecioAConvenir(c: { cuenta_corriente: boolean; precio_a_conve
   return !!c?.cuenta_corriente && !!c.precio_a_convenir
 }
 
-export async function remitosPorFacturar(clienteId?: string): Promise<RemitoPorFacturar[]> {
+export async function remitosPorFacturar(
+  clienteId?: string,
+  tipo?: 'remito' | 'comprobante_interno',
+): Promise<RemitoPorFacturar[]> {
   let consulta = supabase
     .from('vista_remito_por_facturar')
-    .select('id, serie, numero, fecha, cliente_id, cliente, observaciones, total_sugerido, unidades, dias')
+    .select('id, serie, numero, fecha, cliente_id, cliente, observaciones, total_sugerido, unidades, dias, tipo_clave')
     .order('fecha')
     .order('numero')
   if (clienteId) consulta = consulta.eq('cliente_id', clienteId)
+  if (tipo) consulta = consulta.eq('tipo_clave', tipo)
   const { data, error } = await consulta
   if (error) throw new Error(error.message)
   return ((data ?? []) as RemitoPorFacturar[]).map((r) => ({

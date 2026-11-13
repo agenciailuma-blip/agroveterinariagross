@@ -22,6 +22,7 @@ const linea = (remito: string, orden: string, producto: string, cantidad: number
 const remito = (id: string, cliente: string, dias: number): RemitoPorFacturar => ({
   id,
   serie: 'T',
+  tipo_clave: 'remito',
   numero: 1,
   fecha: '2026-10-29',
   cliente_id: cliente,

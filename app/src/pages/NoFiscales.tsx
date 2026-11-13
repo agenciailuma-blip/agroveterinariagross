@@ -19,6 +19,7 @@ import { mandarSolaACuentaCorriente } from '@/lib/api/facturaPorMail'
 import { moneda } from '@/lib/tipos'
 import { imprimirOAbrirComprobante } from '@/lib/comprobante/imprimirDirecto'
 import { useTerminal } from '@/lib/terminal'
+import PendientesDeFacturar from '@/components/PendientesDeFacturar'
 
 /*
   El archivo de los comprobantes que numera Gross.
@@ -175,6 +176,17 @@ export default function NoFiscales({ tipo }: { tipo: TipoNoFiscal }) {
         </p>
       )}
 
+      {/* Las proformas a precio de lista que esperan el definitivo (13/11). */}
+      {tipo === 'comprobante_interno' && (
+        <PendientesDeFacturar
+          tipo="comprobante_interno"
+          puedeFactura={puedeFacturar}
+          puedeInterno={tienePermiso('facturacion.vender_sin_factura')}
+          onAviso={setAviso}
+          onError={setError}
+        />
+      )}
+
       {filas.isPending ? (
         <p className="text-sm text-piedra-500">Cargando…</p>
       ) : (filas.data?.length ?? 0) === 0 ? (
@@ -281,6 +293,8 @@ function Fila({
       ) : (
         <span className="rounded bg-verde-100 px-1.5 py-0.5 text-verde-800">facturado</span>
       )
+    ) : f.tipo_clave === 'comprobante_interno' && f.facturar_despues && !f.venta_id ? (
+      <span className="rounded bg-amber-100 px-1.5 py-0.5 text-amber-900">a convenir</span>
     ) : vencido ? (
       <span className="rounded bg-amber-100 px-1.5 py-0.5 text-amber-900">vencido</span>
     ) : f.valido_hasta ? (

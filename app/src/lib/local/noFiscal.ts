@@ -146,6 +146,8 @@ export interface EmisionDirectaLocal {
   }[]
   descuentaStock: boolean
   observaciones?: string | null
+  /** La proforma a convenir y su entrega salen por el mismo camino (13/11). */
+  tipo?: string
   entrega?: {
     domicilio?: string | null
     localidad?: string | null
@@ -171,7 +173,7 @@ export async function emitirRemitoDirectoLocal(
 
   const doc: NoFiscalLocal = {
     id: datos.id,
-    tipo_clave: 'remito',
+    tipo_clave: datos.tipo ?? 'remito',
     serie: datos.serie,
     numero: datos.numero,
     // Sin venta: es la diferencia de fondo con el otro camino.

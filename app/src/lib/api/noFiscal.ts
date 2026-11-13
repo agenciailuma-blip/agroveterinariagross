@@ -44,6 +44,9 @@ export interface DatosEntrega {
 }
 
 /** El número como se imprime: REM 0002-00000045 */
+/** La leyenda de la proforma a convenir. La misma frase la saca la base al definir el precio. */
+export const LEYENDA_A_CONVENIR = 'Los precios están sujetos a modificación.'
+
 export function numeroNoFiscal(tipo: TipoNoFiscal, serie: string, numero: number): string {
   return `${SIGLA_NO_FISCAL[tipo]} ${serie}-${String(numero).padStart(8, '0')}`
 }
@@ -252,15 +255,22 @@ export async function emitirRemitoDirecto(
     facturarDespues?: boolean
     /** Quién dejó pasar a un cliente con deuda vencida (respuesta 7 de Lucas). */
     vencidoAutorizadoPor?: string | null
+    /*
+      Desde el 13/11 también salen por acá la proforma a convenir (con
+      facturarDespues) y su comprobante de entrega (sin mover stock).
+    */
+    tipo?: 'remito' | 'comprobante_interno' | 'comprobante_entrega'
   } = {},
 ): Promise<{ id: string; serie: string; numero: number }> {
   if (!lineas.length) throw new Error('El remito no tiene ninguna línea.')
+  const tipo = opciones.tipo ?? 'remito'
   const facturarDespues = opciones.facturarDespues ?? false
-  const descuentaStock = facturarDespues || (opciones.descuentaStock ?? true)
+  const descuentaStock =
+    tipo !== 'comprobante_entrega' && (facturarDespues || (opciones.descuentaStock ?? true))
 
   const serie = (opciones.serie ?? '').trim() || 'T'
   const id = crypto.randomUUID()
-  const numero = await reservarNumeroNoFiscal('remito', serie)
+  const numero = await reservarNumeroNoFiscal(tipo, serie)
 
   const datos = {
     p_cliente_id: clienteId,
@@ -285,6 +295,7 @@ export async function emitirRemitoDirecto(
     ...(facturarDespues
       ? { p_facturar_despues: true, p_vencido_autorizado_por: opciones.vencidoAutorizadoPor ?? null }
       : {}),
+    ...(tipo !== 'remito' ? { p_tipo: tipo } : {}),
   }
 
   /*
@@ -313,6 +324,7 @@ export async function emitirRemitoDirecto(
     descuentaStock,
     observaciones: opciones.observaciones ?? null,
     entrega: opciones.entrega,
+    tipo,
   })
   if (yaSubido) return { id, serie, numero }
 
@@ -326,7 +338,7 @@ export async function emitirRemitoDirecto(
       tipo: 'rpc',
       tabla: 'emitir_remito_directo',
       datos,
-      descripcion: `REM ${serie}-${String(numero).padStart(8, '0')}`,
+      descripcion: numeroNoFiscal(tipo, serie, numero),
     },
   ])
 
@@ -556,6 +568,8 @@ export interface FilaNoFiscal {
     muy distintas para quien mira el stock.
   */
   descuenta_stock: boolean
+  /** En una proforma: salió a precio a convenir (13/11). Sin venta todavía, espera el precio. */
+  facturar_despues?: boolean
   venta_id: string | null
   /** La factura en que terminó, si se facturó. */
   convertido_en_comprobante_id: string | null
@@ -568,7 +582,7 @@ export async function listarNoFiscales(tipo: TipoNoFiscal | 'todos'): Promise<Fi
     .from('comprobante_no_fiscal')
     .select(
       `id, tipo_clave, serie, numero, fecha, receptor_nombre, total, estado, valido_hasta,
-       entrega_localidad, transportista, descuenta_stock, venta_id, convertido_en_comprobante_id,
+       entrega_localidad, transportista, descuenta_stock, facturar_despues, venta_id, convertido_en_comprobante_id,
        venta:venta_id(codigo, estado)`,
     )
     .order('creado_en', { ascending: false })

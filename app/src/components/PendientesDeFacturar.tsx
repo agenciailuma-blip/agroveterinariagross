@@ -1,4 +1,4 @@
-import { imprimirOAbrirComprobante } from '@/lib/comprobante/imprimirDirecto'
+import { imprimirNoFiscal, imprimirOAbrirComprobante, puedeImprimirSolo } from '@/lib/comprobante/imprimirDirecto'
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTerminal } from '@/lib/terminal'
@@ -28,23 +28,49 @@ import { botonChico, campo, tarjeta } from '@/estilos'
 
   Vienen marcados todos los del cliente, como en Por facturar. Se
   desmarca lo que no va.
+
+  Desde el 13/11 la misma pantalla es «A convenir», en Proformas
+  emitidas: las proformas que salieron a precio de lista y esperan el
+  precio definitivo. Con proforma no sale otra: se reimprime la misma,
+  con el precio definido y sin la leyenda.
   ─────────────────────────────────────────────────────────────
 */
+
+const TEXTOS = {
+  remito: {
+    titulo: 'Pendientes de facturar',
+    bajada: 'Remitos internos: la mercadería ya salió, falta el precio. Se facturan de a uno o varios juntos en un solo comprobante.',
+    uno: 'remito',
+    varios: 'remitos',
+  },
+  comprobante_interno: {
+    titulo: 'A convenir',
+    bajada: 'Proformas que salieron a precio de lista. Se define el precio de una o de varias del mismo cliente: la cuenta corriente se corrige por la diferencia.',
+    uno: 'proforma',
+    varios: 'proformas',
+  },
+} as const
 
 const fecha = (dia: string) => new Date(`${dia}T12:00:00`).toLocaleDateString('es-AR')
 
 export default function PendientesDeFacturar({
+  tipo = 'remito',
   puedeFactura,
   puedeInterno,
   onAviso,
   onError,
 }: {
+  tipo?: 'remito' | 'comprobante_interno'
   puedeFactura: boolean
   puedeInterno: boolean
   onAviso: (texto: string) => void
   onError: (texto: string) => void
 }) {
-  const pendientes = useQuery({ queryKey: ['remitos-por-facturar'], queryFn: () => remitosPorFacturar() })
+  const pendientes = useQuery({
+    queryKey: ['remitos-por-facturar', tipo],
+    queryFn: () => remitosPorFacturar(undefined, tipo),
+  })
+  const t = TEXTOS[tipo]
   const [fuera, setFuera] = useState<Set<string>>(new Set())
   const [poniendoPrecios, setPoniendoPrecios] = useState<{ cliente: string; remitos: RemitoPorFacturar[] } | null>(null)
 
@@ -62,11 +88,8 @@ export default function PendientesDeFacturar({
   return (
     <div className={`${tarjeta} overflow-hidden`}>
       <div className="border-b border-borde bg-piedra-50 px-5 py-3">
-        <p className="font-medium text-tinta">Pendientes de facturar</p>
-        <p className="text-xs text-piedra-500">
-          Remitos internos: la mercadería ya salió, falta el precio. Se facturan de a uno o varios
-          juntos en un solo comprobante.
-        </p>
+        <p className="font-medium text-tinta">{t.titulo}</p>
+        <p className="text-xs text-piedra-500">{t.bajada}</p>
       </div>
 
       <div className="divide-y divide-borde">
@@ -77,7 +100,7 @@ export default function PendientesDeFacturar({
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <p className="font-medium text-tinta">{c.cliente}</p>
                 <p className="text-xs text-piedra-500">
-                  {c.remitos.length} {c.remitos.length === 1 ? 'remito' : 'remitos'}
+                  {c.remitos.length} {c.remitos.length === 1 ? t.uno : t.varios}
                 </p>
               </div>
 
@@ -88,10 +111,10 @@ export default function PendientesDeFacturar({
                       type="checkbox"
                       checked={!fuera.has(r.id)}
                       onChange={() => alternar(r.id)}
-                      aria-label={`Incluir el remito ${r.serie}-${r.numero}`}
+                      aria-label={`Incluir ${t.uno} ${r.serie}-${r.numero}`}
                     />
                     <span className="font-mono text-xs text-piedra-400">
-                      {numeroNoFiscal('remito', r.serie, r.numero)}
+                      {numeroNoFiscal(r.tipo_clave ?? tipo, r.serie, r.numero)}
                     </span>
                     <span className="text-xs text-piedra-500">{fecha(r.fecha)}</span>
                     <span className={`text-xs ${r.dias > 7 ? 'text-amber-700' : 'text-piedra-400'}`}>
@@ -111,7 +134,7 @@ export default function PendientesDeFacturar({
                     disabled={!elegidos.length}
                     className={botonChico.principal}
                   >
-                    {elegidos.length > 1 ? `Poner precios a ${elegidos.length} remitos` : 'Poner precios'}
+                    {elegidos.length > 1 ? `Poner precios a ${elegidos.length} ${t.varios}` : 'Poner precios'}
                   </button>
                 </div>
               )}
@@ -171,11 +194,20 @@ function PonerPrecios({
   const precios = Object.fromEntries(productos.map((p) => [p.producto_id, leerImporte(texto(p.producto_id, p.sugerido))]))
   const faltan = productos.filter((p) => precios[p.producto_id] == null)
   const total = productos.reduce((s, p) => s + p.cantidad * (precios[p.producto_id] ?? 0), 0)
-  const numeros = remitos.map((r) => numeroNoFiscal('remito', r.serie, r.numero)).join(', ')
+  const numeros = remitos.map((r) => numeroNoFiscal(r.tipo_clave ?? 'remito', r.serie, r.numero)).join(', ')
+  const sonProformas = remitos.some((r) => r.tipo_clave === 'comprobante_interno')
 
   const facturar = useMutation({
     mutationFn: async () => {
       const r = await facturarRemitosInternos(ids, precios as Record<string, number>, documentacion)
+      if (documentacion === 'no_fiscal' && sonProformas) {
+        // La misma proforma, ahora con el precio definido y sin la leyenda.
+        for (const id of ids) {
+          if (puedeImprimirSolo(terminal)) await imprimirNoFiscal(id, terminal).catch(() => abrirNoFiscal(id))
+          else abrirNoFiscal(id)
+        }
+        return { texto: `${cliente}: precio definido. La cuenta corriente quedó corregida.`, problema: null, comprobanteId: null }
+      }
       if (documentacion === 'no_fiscal') {
         const interno = await emitirEnServidor(r.ventaId, 'comprobante_interno', terminal?.id ?? null, {
           serie: terminal?.prefijo ?? null,
@@ -189,6 +221,7 @@ function PonerPrecios({
     },
     onSuccess: ({ texto, problema, comprobanteId }) => {
       qc.invalidateQueries({ queryKey: ['remitos-por-facturar'] })
+      qc.invalidateQueries({ queryKey: ['no-fiscales'] })
       qc.invalidateQueries({ queryKey: ['comprobantes'] })
       qc.invalidateQueries({ queryKey: ['movimientos-cc'] })
       if (problema) {

@@ -298,7 +298,9 @@ export default function Facturacion() {
 
       <PorFacturar puedeEmitir={puedeEmitir} onAviso={avisar} onError={setError} />
 
+      {/* Los remitos internos viejos, hasta que se terminen de facturar (13/11). */}
       <PendientesDeFacturar
+        tipo="remito"
         puedeFactura={puedeEmitir}
         puedeInterno={tienePermiso('facturacion.vender_sin_factura')}
         onAviso={avisar}

@@ -27,7 +27,8 @@ import { subirPendientes } from '@/lib/local/sync'
 import { listaConfig, valorConfig } from '@/lib/local/consultas'
 import AsociarProductos from '@/components/AsociarProductos'
 import { totalesPorConcepto } from '@/lib/conceptos'
-import { emitirPresupuesto, emitirRemitoDirecto, numeroNoFiscal } from '@/lib/api/noFiscal'
+import { LEYENDA_A_CONVENIR, emitirPresupuesto, emitirRemitoDirecto, numeroNoFiscal } from '@/lib/api/noFiscal'
+import { imprimirNoFiscal, puedeImprimirSolo } from '@/lib/comprobante/imprimirDirecto'
 import { useAuth } from '@/auth/AuthProvider'
 import AvisoVencido from '@/components/AvisoVencido'
 import { ConsultaFiado } from '@/components/CamposFiado'
@@ -120,9 +121,10 @@ export default function PuntoDeVenta() {
     enabled: !!cliente?.cuenta_corriente,
   })
   /*
-    El remito interno (fase-03, punto 2): la mercadería sale ahora y el
-    precio se pone después, en Pendientes de facturar. Con deuda vencida
-    lo autoriza un encargado con su PIN, igual que en la caja.
+    El precio a convenir (13/11; antes, remito interno): la mercadería
+    sale ahora con una proforma a precio de lista, y el precio se define
+    después en Comprobantes → Proformas emitidas → A convenir. Con deuda
+    vencida lo autoriza un encargado con su PIN, igual que en la caja.
   */
   const [quiereRemito, setQuiereRemito] = useState(false)
   const [autorizoRemito, setAutorizoRemito] = useState<{ usuario_id: string; nombre: string } | null>(null)
@@ -643,37 +645,56 @@ export default function PuntoDeVenta() {
   })
 
   const remitoInterno = useMutation({
-    mutationFn: () =>
-      emitirRemitoDirecto(
-        cliente!.id,
-        lineas.map((l) => ({
-          producto_id: l.producto_id,
-          codigo: l.codigo_producto,
-          descripcion: l.descripcion,
-          cantidad: l.cantidad,
-          precio_unitario: l.precio_unitario,
-        })),
-        {
-          facturarDespues: true,
-          vencidoAutorizadoPor: autorizoRemito?.usuario_id ?? null,
-          terminalId: terminal!.id,
-          serie: terminal!.prefijo ?? null,
-        },
-      ),
-    onSuccess: ({ id, serie, numero }) => {
+    mutationFn: async () => {
+      const renglones = lineas.map((l) => ({
+        producto_id: l.producto_id,
+        codigo: l.codigo_producto,
+        descripcion: l.descripcion,
+        cantidad: l.cantidad,
+        precio_unitario: l.precio_unitario,
+      }))
+      const proforma = await emitirRemitoDirecto(cliente!.id, renglones, {
+        tipo: 'comprobante_interno',
+        facturarDespues: true,
+        vencidoAutorizadoPor: autorizoRemito?.usuario_id ?? null,
+        terminalId: terminal!.id,
+        serie: terminal!.prefijo ?? null,
+        observaciones: LEYENDA_A_CONVENIR,
+      })
+      // Y el comprobante de entrega, para que firme quien retira.
+      const numeroProforma = numeroNoFiscal('comprobante_interno', proforma.serie, proforma.numero)
+      const entrega = await emitirRemitoDirecto(cliente!.id, renglones, {
+        tipo: 'comprobante_entrega',
+        terminalId: terminal!.id,
+        serie: terminal!.prefijo ?? null,
+        observaciones: `Corresponde a Proforma ${numeroProforma}.`,
+      }).catch(() => null)
+      return { ...proforma, entregaId: entrega?.id ?? null }
+    },
+    onSuccess: ({ id, serie, numero, entregaId }) => {
       setLineas([])
       setMedioAnticipado(null)
       setCuotasAnticipadas(1)
       setQuiereRemito(false)
       setAutorizoRemito(null)
       setError(null)
-      setExito(`${numeroNoFiscal('remito', serie, numero)} listo. Queda en Pendientes de facturar.`)
-      setTimeout(() => setExito(null), 4000)
-      abrirNoFiscal(id)
+      setExito(
+        `Proforma ${numeroNoFiscal('comprobante_interno', serie, numero)} a cuenta corriente. El precio se define en Proformas emitidas → A convenir.`,
+      )
+      setTimeout(() => setExito(null), 6000)
+      // Primero la proforma y después la entrega, como en la caja.
+      if (puedeImprimirSolo(terminal)) {
+        imprimirNoFiscal(id, terminal)
+          .then(() => (entregaId ? imprimirNoFiscal(entregaId, terminal) : undefined))
+          .catch(() => abrirNoFiscal(id))
+      } else {
+        abrirNoFiscal(id)
+        if (entregaId) abrirNoFiscal(entregaId)
+      }
       // Como al enviar a caja: el remito queda a nombre de quien lo hizo.
       salir()
     },
-    onError: (e) => setError(e instanceof Error ? e.message : 'No se pudo hacer el remito.'),
+    onError: (e) => setError(e instanceof Error ? e.message : 'No salió la proforma.'),
   })
 
   const enviar = useMutation({
@@ -889,10 +910,10 @@ export default function PuntoDeVenta() {
     el ancho, y la página se desplaza hacia abajo. Medido el 15/10.
   */
   /*
-    El remito interno, para el cliente de cuenta corriente que se lleva
-    la mercadería y el precio se arregla después. Con la marca «Precio a
-    convenir» es lo primero que se ofrece, con su F10; mandarlo a la caja
-    queda abajo. Sin la marca, al revés.
+    El precio a convenir, para el cliente de cuenta corriente que se
+    lleva la mercadería y el precio se arregla después. Con la marca
+    «Precio a convenir» es lo primero que se ofrece, con su F10;
+    mandarlo a la caja queda abajo. Sin la marca, al revés.
   */
   const aConvenir = esPrecioAConvenir(cliente)
   const bloqueRemitoInterno = cliente?.cuenta_corriente && lineas.length > 0 && tienePermiso('facturacion.no_fiscal_emitir') && (
@@ -904,9 +925,9 @@ export default function PuntoDeVenta() {
                   return
                 }
                 const sigue = await confirmar({
-                  titulo: `¿Remito interno a ${cliente.nombre}?`,
-                  detalle: `${numero.format(totales.unidades)} ${totales.unidades === 1 ? 'unidad' : 'unidades'}. Sale sin precio y descuenta stock. Se factura después desde Pendientes de facturar.`,
-                  aceptar: 'Hacer el remito',
+                  titulo: `¿Precio a convenir para ${cliente.nombre}?`,
+                  detalle: `Sale una proforma por ${moneda.format(lineas.reduce((s, l) => s + l.cantidad * l.precio_unitario, 0))} a precio de lista, con la leyenda «${LEYENDA_A_CONVENIR}», y va a la cuenta corriente. El precio se define después en Proformas emitidas → A convenir.`,
+                  aceptar: 'Sacar la proforma',
                 })
                 if (sigue) remitoInterno.mutate()
               }}
@@ -920,10 +941,10 @@ export default function PuntoDeVenta() {
               className={`w-full ${aConvenir ? PRINCIPAL : SECUNDARIO}`}
             >
               {remitoInterno.isPending ? (
-                'Haciendo el remito…'
+                'Sacando la proforma…'
               ) : (
                 <>
-                  Remito interno · precio después
+                  Precio a convenir · proforma
                   {aConvenir && <TeclaAtajo tecla="F10" clara />}
                 </>
               )}
