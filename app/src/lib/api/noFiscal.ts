@@ -19,18 +19,21 @@ import {
   error, y por eso también son dos módulos y no uno.
 */
 
-export type TipoNoFiscal = 'presupuesto' | 'remito' | 'comprobante_interno'
+export type TipoNoFiscal = 'presupuesto' | 'remito' | 'comprobante_interno' | 'comprobante_entrega'
 
 export const ETIQUETA_NO_FISCAL: Record<TipoNoFiscal, string> = {
   presupuesto: 'Presupuesto',
-  remito: 'Remito',
-  comprobante_interno: 'Comprobante interno',
+  remito: 'Remito logístico',
+  // Se llamó «comprobante interno» hasta el 13/11: misma clave y mismo contador.
+  comprobante_interno: 'Proforma',
+  comprobante_entrega: 'Comprobante de entrega',
 }
 
 export const SIGLA_NO_FISCAL: Record<TipoNoFiscal, string> = {
   presupuesto: 'PRE',
   remito: 'REM',
-  comprobante_interno: 'CI',
+  comprobante_interno: 'PRO',
+  comprobante_entrega: 'ENT',
 }
 
 export interface DatosEntrega {
@@ -390,7 +393,9 @@ export interface LineaNoFiscal {
   concepto de los productos asociados.
 */
 const conConceptos = (tipo: string, lineas: LineaNoFiscal[]) =>
-  tipo === 'remito' ? lineas : agruparPorConcepto(lineas, { porAlicuota: false })
+  tipo === 'remito' || tipo === 'comprobante_entrega'
+    ? lineas
+    : agruparPorConcepto(lineas, { porAlicuota: false })
 
 /*
   El documento completo, para imprimirlo.
@@ -829,4 +834,47 @@ export function descargarCsv(nombre: string, contenido: string) {
   a.click()
   document.body.removeChild(a)
   setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
+
+/*
+  El comprobante de entrega (propuesta aprobada el 13/11).
+
+  Sale solo después de la factura o la proforma en cada venta a cuenta
+  corriente o fiada: la mercadería se va sin pagar y alguien firma que
+  la recibió. Sin precios, con los productos de verdad y la factura o
+  proforma a la que corresponde.
+
+  Lo que corresponde va en las observaciones, a propósito: así se
+  imprime igual en el rollo, en la hoja A4 y sin conexión, y queda
+  guardado con el papel aunque la factura se anule después.
+*/
+export async function emitirComprobanteDeEntrega(
+  ventaId: string,
+  terminal: { id: string; prefijo?: string | null } | null,
+  corresponde: string,
+): Promise<{ id: string; numero: string }> {
+  const emitido = await emitirNoFiscal(ventaId, 'comprobante_entrega', terminal?.id ?? null, {
+    serie: terminal?.prefijo ?? null,
+    observaciones: `Corresponde a ${corresponde}.`,
+  })
+  return { id: emitido.id, numero: numeroNoFiscal('comprobante_entrega', emitido.serie, emitido.numero) }
+}
+
+/** «Factura B 0003-00001234», para nombrarla en el comprobante de entrega. */
+export async function nombreDeFactura(comprobanteId: string): Promise<string | null> {
+  if (!navigator.onLine) return null
+  const { data } = await supabase
+    .from('comprobante')
+    .select('numero, punto_venta:punto_venta_id(numero), tipo:tipo_comprobante_id(descripcion)')
+    .eq('id', comprobanteId)
+    .maybeSingle()
+  if (!data) return null
+  const d = data as unknown as {
+    numero: number | null
+    punto_venta: { numero: number } | null
+    tipo: { descripcion: string } | null
+  }
+  if (!d.numero) return null
+  const pv = String(d.punto_venta?.numero ?? 0).padStart(4, '0')
+  return `${d.tipo?.descripcion ?? 'Factura'} ${pv}-${String(d.numero).padStart(8, '0')}`
 }

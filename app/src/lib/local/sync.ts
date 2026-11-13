@@ -795,7 +795,7 @@ async function alinearNumeracion(prefijo: string) {
 async function alinearNumeracionNoFiscal(prefijo: string) {
   const { alinearNumeroNoFiscal } = await import('@/lib/local/consultas')
 
-  for (const tipo of ['presupuesto', 'remito', 'comprobante_interno']) {
+  for (const tipo of ['presupuesto', 'remito', 'comprobante_interno', 'comprobante_entrega']) {
     const { data } = await supabase
       .from('comprobante_no_fiscal')
       .select('numero')

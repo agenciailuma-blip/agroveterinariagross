@@ -182,7 +182,7 @@ function PonerPrecios({
           observaciones: `Remito interno ${numeros}`,
         })
         abrirNoFiscal(interno.id)
-        return { texto: `${cliente}: a la cuenta corriente, con comprobante interno.`, problema: null, comprobanteId: null }
+        return { texto: `${cliente}: a la cuenta corriente, con proforma.`, problema: null, comprobanteId: null }
       }
       if (r.problema) return { texto: '', problema: r.problema, comprobanteId: null }
       return { texto: `Factura autorizada por ARCA. CAE ${r.cae}`, problema: null, comprobanteId: r.comprobanteId }
@@ -269,7 +269,7 @@ function PonerPrecios({
                   documentacion === d ? 'bg-marca-700 text-white ring-marca-700' : 'text-piedra-600 ring-borde hover:bg-piedra-50'
                 }`}
               >
-                {d === 'fiscal' ? 'Factura' : 'Comprobante interno'}
+                {d === 'fiscal' ? 'Factura' : 'Proforma'}
               </button>
             ))}
           </div>
@@ -301,7 +301,7 @@ function PonerPrecios({
               ? 'Facturando…'
               : documentacion === 'fiscal'
                 ? `Facturar ${moneda.format(total)}`
-                : `Comprobante interno ${moneda.format(total)}`}
+                : `Proforma ${moneda.format(total)}`}
           </button>
         </div>
       </div>

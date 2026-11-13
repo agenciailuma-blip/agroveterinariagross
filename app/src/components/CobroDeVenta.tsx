@@ -29,7 +29,13 @@ import { cargarPrecios, mediosParaElegir } from '@/lib/api/precios'
 import type { MedioPago } from '@/lib/api/precios'
 import { facturarVenta } from '@/lib/api/facturacion'
 import { mandarSolaACuentaCorriente } from '@/lib/api/facturaPorMail'
-import { emitirNoFiscal, marcarDocumentacion, numeroNoFiscal } from '@/lib/api/noFiscal'
+import {
+  emitirComprobanteDeEntrega,
+  emitirNoFiscal,
+  marcarDocumentacion,
+  nombreDeFactura,
+  numeroNoFiscal,
+} from '@/lib/api/noFiscal'
 import { abrirComprobante, abrirNoFiscal } from '@/lib/escritorio'
 import {
   imprimirComprobante,
@@ -103,6 +109,8 @@ export default function CobroDeVenta({
   const [noFiscalEmitido, setNoFiscalEmitido] = useState<{ texto: string; id: string } | null>(
     null,
   )
+  // El comprobante de entrega que salió con la última venta (13/11).
+  const [entregaEmitida, setEntregaEmitida] = useState<{ id: string; numero: string } | null>(null)
   const [listoParaImprimir, setListoParaImprimir] = useState<{
     codigo: string
     cae: string
@@ -308,8 +316,50 @@ export default function CobroDeVenta({
     Al revés —fallar el cobro porque ARCA está caído— dejaría al cliente
     parado en el mostrador con la mercadería en la mano.
   */
+  /*
+    El comprobante de entrega sale si algo de la venta se va sin pagar:
+    a cuenta corriente o fiado (respuestas de Lucas del 13/11).
+  */
+  const vaSinPagar = pagos.some((p) => {
+    const tipo = (precios.data?.medios ?? []).find((m) => m.id === p.medio_pago_id)?.tipo
+    return (tipo === 'cuenta_corriente' || tipo === 'fiado') && Number(p.importe) > 0
+  })
+
   const cobrarVenta = useMutation({
     mutationFn: async () => {
+      const r = await cobrarYDocumentar()
+      if (!vaSinPagar) return { ...r, entrega: null as { id: string; numero: string } | null }
+      const corresponde = r.noFiscal
+        ? `Proforma ${r.noFiscal.numero}`
+        : ((r.comprobanteId ? await nombreDeFactura(r.comprobanteId).catch(() => null) : null) ??
+          `la venta ${r.codigo ?? ''}`.trim())
+      try {
+        const entrega = await emitirComprobanteDeEntrega(seleccionada!, terminal ?? null, corresponde)
+        return { ...r, entrega }
+      } catch (e) {
+        return {
+          ...r,
+          entrega: null,
+          problema:
+            r.problema ??
+            (e instanceof Error
+              ? `no salió el comprobante de entrega: ${e.message}`
+              : 'no salió el comprobante de entrega.'),
+        }
+      }
+    },
+    onSuccess: ({ codigo, cae, comprobanteId, noFiscal, problema, conCaea, entrega }) => {
+      setEntregaEmitida(entrega)
+      // Primero la factura o la proforma, y a continuación la entrega.
+      const yLaEntrega = (hacerlo: () => Promise<void>) => () =>
+        hacerlo().then(() => (entrega ? imprimirNoFiscal(entrega.id, terminal) : undefined))
+      despuesDeCobrar({ codigo, cae, comprobanteId, noFiscal, problema, conCaea }, yLaEntrega, entrega)
+    },
+    onError: (e) => setError(e instanceof Error ? e.message : 'No se pudo cobrar.'),
+    onSettled: () => setCobrada(false),
+  })
+
+  async function cobrarYDocumentar() {
       const codigo = venta.data?.codigo
       // Sin factura ahora: sin factura del todo, o a cuenta para facturar
       // después. Las dos se marcan antes y salen con comprobante interno.
@@ -426,8 +476,8 @@ export default function CobroDeVenta({
             conCaea: false,
             problema:
               e instanceof Error
-                ? `no se pudo emitir el comprobante interno: ${e.message}`
-                : 'no se pudo emitir el comprobante interno.',
+                ? `no se pudo emitir la proforma: ${e.message}`
+                : 'no se pudo emitir la proforma.',
           }
         }
       }
@@ -445,10 +495,31 @@ export default function CobroDeVenta({
           problema: e instanceof Error ? e.message : 'ARCA no respondió.',
         }
       }
+  }
+
+  function despuesDeCobrar(
+    {
+      codigo,
+      cae,
+      comprobanteId,
+      noFiscal,
+      problema,
+      conCaea,
+    }: {
+      codigo: string | undefined
+      cae: string | null
+      comprobanteId: string | null
+      noFiscal: { id: string; numero: string } | null
+      problema: string | null
+      conCaea: boolean
     },
-    onSuccess: ({ codigo, cae, comprobanteId, noFiscal, problema, conCaea }) => {
+    yLaEntrega: (hacerlo: () => Promise<void>) => () => Promise<void>,
+    entrega: { id: string; numero: string } | null,
+  ) {
       if (problema) {
         setFacturaPendiente(`Venta ${codigo} cobrada, pero la factura quedó pendiente: ${problema}`)
+        // Sin factura todavía, la entrega sale igual: la mercadería se va.
+        if (entrega) imprimirSolo(() => imprimirNoFiscal(entrega.id, terminal))
       } else if (noFiscal) {
         // Igual que con la factura: el papel queda a un clic, no
         // escondido en otra pantalla. El cliente está parado adelante.
@@ -456,10 +527,10 @@ export default function CobroDeVenta({
           id: noFiscal.id,
           texto:
             documentacion === 'a_facturar'
-              ? `Venta ${codigo} a cuenta corriente, para facturar después. Comprobante interno ${noFiscal.numero}.`
-              : `Venta ${codigo} cobrada sin factura. Comprobante interno ${noFiscal.numero}.`,
+              ? `Venta ${codigo} a cuenta corriente. Proforma ${noFiscal.numero}.`
+              : `Venta ${codigo} cobrada con proforma ${noFiscal.numero}.`,
         })
-        imprimirSolo(() => imprimirNoFiscal(noFiscal.id, terminal))
+        imprimirSolo(yLaEntrega(() => imprimirNoFiscal(noFiscal.id, terminal)))
       } else {
         /*
           El comprobante queda a un clic, no escondido en otra pantalla.
@@ -470,7 +541,8 @@ export default function CobroDeVenta({
           bloquea las ventanas que no abrió una persona.
         */
         setListoParaImprimir({ codigo: codigo ?? '', cae: cae ?? '', comprobanteId, caea: conCaea })
-        if (comprobanteId) imprimirSolo(() => imprimirComprobante(comprobanteId, terminal))
+        if (comprobanteId) imprimirSolo(yLaEntrega(() => imprimirComprobante(comprobanteId, terminal)))
+        else if (entrega) imprimirSolo(() => imprimirNoFiscal(entrega.id, terminal))
         /*
           A cuenta corriente, la factura le sale sola por mail al cliente.
           No se espera: el cajero sigue con el próximo, y el cartel verde
@@ -488,10 +560,7 @@ export default function CobroDeVenta({
       qc.invalidateQueries({ queryKey: ['resumen-caja'] })
       qc.invalidateQueries({ queryKey: ['comprobantes'] })
       qc.invalidateQueries({ queryKey: ['ventas-sin-facturar'] })
-    },
-    onError: (e) => setError(e instanceof Error ? e.message : 'No se pudo cobrar.'),
-    onSettled: () => setCobrada(false),
-  })
+  }
 
   /*
     Mandar el ticket a la impresora del mostrador, sin pedir permiso.
@@ -665,6 +734,29 @@ export default function CobroDeVenta({
           </button>
           <button
             onClick={() => setNoFiscalEmitido(null)}
+            className="rounded p-1 text-piedra-500 hover:bg-piedra-100"
+            aria-label="Entendido"
+          >
+            <svg className="size-4" fill="none" viewBox="0 0 24 24" strokeWidth={2.2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
+
+      {entregaEmitida && (
+        <div className="mb-3 flex items-center gap-3 rounded-xl bg-piedra-50 px-4 py-3 ring-1 ring-borde">
+          <p className="min-w-0 flex-1 text-sm text-tinta">
+            Comprobante de entrega {entregaEmitida.numero}, para que firme quien retira.
+          </p>
+          <button
+            onClick={() => abrirNoFiscal(entregaEmitida.id)}
+            className="shrink-0 rounded-lg px-3 py-2 text-sm font-medium text-tinta ring-1 ring-borde hover:bg-piedra-100"
+          >
+            {puedeImprimirSolo(terminal) ? 'Reimprimir' : 'Imprimir'}
+          </button>
+          <button
+            onClick={() => setEntregaEmitida(null)}
             className="rounded p-1 text-piedra-500 hover:bg-piedra-100"
             aria-label="Entendido"
           >
@@ -909,40 +1001,62 @@ function PanelCobro({
   const esResponsableInscripto = venta.cliente?.condicion_iva_id === 1
   const nuevoSaldo = saldoActual + (pagos.find((p) => p.medio_pago_id === medio?.id)?.importe ?? 0)
   /*
-    Con qué documento puede salir la venta.
+    Con qué documento puede salir la venta: Factura o Proforma (13/11).
 
-    · Sin factura: con permiso, a cualquier cliente. También a un
-      Responsable Inscripto: Lucas pidió el 20/10 que en la caja estén
-      siempre las dos opciones. La base pide el mismo permiso.
-    · A cuenta, factura después: a quien tiene cuenta corriente, también
-      a un Responsable Inscripto. La factura sale igual, más tarde
-      (pedido del 28/09).
+    Hasta el 13/11 eran tres —con factura, sin factura y factura
+    después—. Lucas las juntó en dos: la proforma es el papel que sale
+    sin factura. Por dentro siguen siendo dos caminos, y se elige solo:
+
+    · A cuenta corriente, de un cliente con cuenta: «a facturar». Queda
+      en Facturación → Por facturar, para facturarla después si la pide.
+    · Cualquier otra: «sin factura», que pide el permiso de vender sin
+      factura. La base pide el mismo.
+
+    Quien no tiene ese permiso igual puede sacar la proforma a un
+    cliente con cuenta corriente: va entera a la cuenta.
   */
+  const conCuenta = !!venta.cliente?.cuenta_corriente
+  const ofreceProforma = puedeVenderSinFactura || conCuenta
   const opciones: [Documentacion, string, string][] = [
-    ['fiscal', 'Con factura', 'Factura de ARCA con CAE'],
-    ...(puedeVenderSinFactura
-      ? [['no_fiscal', 'Sin factura', 'Comprobante interno'] as [Documentacion, string, string]]
-      : []),
-    ...(venta.cliente?.cuenta_corriente
-      ? [['a_facturar', 'Factura después', 'A cuenta corriente'] as [Documentacion, string, string]]
+    ['fiscal', 'Factura', 'Factura de ARCA con CAE'],
+    ...(ofreceProforma
+      ? [
+          [
+            documentacion === 'fiscal' ? 'no_fiscal' : documentacion,
+            'Proforma',
+            documentacion === 'a_facturar' ? 'A cuenta corriente' : 'Sin factura',
+          ] as [Documentacion, string, string],
+        ]
       : []),
   ]
+  const caminoDeProforma = (alCC: boolean): Documentacion =>
+    conCuenta && (alCC || !puedeVenderSinFactura) ? 'a_facturar' : 'no_fiscal'
 
   const elegirDocumentacion = (valor: Documentacion) => {
-    onDocumentacion(valor)
-    // Factura después va entera a la cuenta: se elige sola.
+    if (valor === 'fiscal') return onDocumentacion('fiscal')
+    const camino = caminoDeProforma(esCuentaCorriente)
+    onDocumentacion(camino)
+    // Sin el permiso, la proforma va entera a la cuenta: se elige sola.
     const cc = medios.find((m) => m.tipo === 'cuenta_corriente')
-    if (valor === 'a_facturar' && cc && medio?.id !== cc.id) onElegirMedio(cc)
+    if (camino === 'a_facturar' && cc && medio?.id !== cc.id) onElegirMedio(cc)
   }
+
+  // Si cambia el medio con la proforma elegida, el camino se acomoda.
+  useEffect(() => {
+    if (documentacion === 'fiscal') return
+    const camino = caminoDeProforma(esCuentaCorriente)
+    if (camino !== documentacion) onDocumentacion(camino)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [esCuentaCorriente, documentacion])
 
   /*
     Con o sin factura desde el teclado, a los costados de F10: F9 con
     factura, F11 sin factura, y F10 cobra. Sólo si la opción está a la
     vista y se puede elegir, igual que el botón.
   */
-  const teclaDe: Partial<Record<Documentacion, string>> = { fiscal: 'F9', no_fiscal: 'F11' }
+  const teclaDe: Partial<Record<Documentacion, string>> = { fiscal: 'F9', no_fiscal: 'F11', a_facturar: 'F11' }
   const elegible = (valor: Documentacion) =>
-    opciones.length > 1 && opciones.some(([v]) => v === valor) && (valor === 'fiscal' || enLinea)
+    opciones.length > 1 && (valor === 'fiscal' || (ofreceProforma && enLinea))
   useAtajo('F9', () => elegirDocumentacion('fiscal'), elegible('fiscal'))
   useAtajo('F11', () => elegirDocumentacion('no_fiscal'), elegible('no_fiscal'))
 
@@ -1448,9 +1562,8 @@ function PanelCobro({
             )}
             {enLinea && documentacion === 'a_facturar' && (
               <p className="px-3 pb-1.5 pt-2 text-[11px] leading-snug text-piedra-500">
-                Va entera a la cuenta corriente y sale un comprobante interno. La factura la emite
-                el encargado después, desde Facturación → Por facturar: sola o junto con otras
-                ventas del cliente.
+                Va entera a la cuenta corriente y sale una proforma. Si la quiere con factura, sale
+                después desde Facturación → Por facturar: sola o junto con otras ventas del cliente.
                 {esResponsableInscripto && ' La percepción de IIBB, si le toca, va en esa factura.'}
               </p>
             )}
@@ -1488,9 +1601,9 @@ function PanelCobro({
                   : 'Cobrada · sacando el comprobante…'
                 : 'Cobrando…'
               : documentacion === 'no_fiscal'
-                ? 'Cobrar sin factura'
+                ? 'Cobrar con proforma'
                 : documentacion === 'a_facturar'
-                  ? 'A cuenta, factura después'
+                  ? 'A cuenta, con proforma'
                   : 'Cobrar'}
             {!cobrando && <TeclaAtajo tecla="F10" clara />}
           </button>

@@ -27,6 +27,8 @@ const LINEA = 'my-1.5 border-t border-dashed border-black'
 
 export default function TicketNoFiscal({ c }: { c: NoFiscalCompleto }) {
   const esRemito = c.tipo_clave === 'remito'
+  // El comprobante de entrega (13/11): como el remito, sin precios y con firma.
+  const esEntrega = c.tipo_clave === 'comprobante_entrega'
   const esPresupuesto = c.tipo_clave === 'presupuesto'
 
   /*
@@ -42,7 +44,7 @@ export default function TicketNoFiscal({ c }: { c: NoFiscalCompleto }) {
     después lo que salió sin cobrarse —el panel de "entregado y sin
     cobrar" vive de eso—. Lo que no se hace es imprimirlos.
   */
-  const conPrecios = !esRemito
+  const conPrecios = !esRemito && !esEntrega
 
   return (
     <div className="mx-auto w-[72mm] bg-white px-2 py-3 font-mono text-[8.5px] leading-[1.35] text-black">
@@ -140,7 +142,7 @@ export default function TicketNoFiscal({ c }: { c: NoFiscalCompleto }) {
         Sin total en pesos el papel necesita algún número que permita
         verificar la entrega, y ese número es cuántas unidades salieron.
       */}
-      {esRemito && c.lineas.length > 0 && (
+      {(esRemito || esEntrega) && c.lineas.length > 0 && (
         <>
           <div className={LINEA} />
           <div className="flex justify-between text-[10px] font-bold">
@@ -156,6 +158,16 @@ export default function TicketNoFiscal({ c }: { c: NoFiscalCompleto }) {
         <>
           <div className={LINEA} />
           <p className="break-words">{c.observaciones}</p>
+        </>
+      )}
+
+      {esEntrega && (
+        <>
+          <div className={LINEA} />
+          <p className="mt-3">Recibí la mercadería detallada</p>
+          <p className="mt-4">Firma: ____________________</p>
+          <p className="mt-1.5">Aclaración: ________________</p>
+          <p className="mt-1.5">DNI: _______________________</p>
         </>
       )}
 

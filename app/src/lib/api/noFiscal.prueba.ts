@@ -40,7 +40,7 @@ describe('el número impreso', () => {
   it('lleva la sigla, la serie y ocho dígitos', () => {
     expect(numeroNoFiscal('remito', 'CAJA1', 45)).toBe('REM CAJA1-00000045')
     expect(numeroNoFiscal('presupuesto', 'MOS1', 7)).toBe('PRE MOS1-00000007')
-    expect(numeroNoFiscal('comprobante_interno', 'CAJA1', 1)).toBe('CI CAJA1-00000001')
+    expect(numeroNoFiscal('comprobante_interno', 'CAJA1', 1)).toBe('PRO CAJA1-00000001')
   })
 })
 
@@ -51,7 +51,7 @@ describe('exportar a Excel', () => {
 
   it('separa con punto y coma: es lo que espera el Excel en español', () => {
     const [, primera] = aCsv([fila()]).split('\r\n')
-    expect(primera.split(';')[0]).toBe('Remito')
+    expect(primera.split(';')[0]).toBe('Remito logístico')
     expect(primera.split(';')[1]).toBe('REM CAJA1-00000045')
   })
 

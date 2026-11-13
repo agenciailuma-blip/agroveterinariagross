@@ -29,6 +29,8 @@ function centrado(t: string): string {
 export function ticketNoFiscalEscPos(d: NoFiscalCompleto): Uint8Array {
   const c = new Cinta()
   const esRemito = d.tipo_clave === 'remito'
+  // El comprobante de entrega (13/11): como el remito, sin precios y con firma.
+  const esEntrega = d.tipo_clave === 'comprobante_entrega'
 
   c.reiniciar()
 
@@ -91,7 +93,7 @@ export function ticketNoFiscalEscPos(d: NoFiscalCompleto): Uint8Array {
     bytes. Los tres tienen que decir lo mismo, y por eso la condición
     está escrita igual en los tres.
   */
-  const conPrecios = !esRemito
+  const conPrecios = !esRemito && !esEntrega
 
   c.separador()
   for (const l of d.lineas) {
@@ -115,7 +117,7 @@ export function ticketNoFiscalEscPos(d: NoFiscalCompleto): Uint8Array {
     número para verificar la entrega, y ese número es cuántas unidades
     salieron — que además es lo que se cuenta al recibir.
   */
-  if (esRemito && d.lineas.length > 0) {
+  if ((esRemito || esEntrega) && d.lineas.length > 0) {
     c.separador()
     c.negrita(true)
       .columnas(
@@ -131,6 +133,17 @@ export function ticketNoFiscalEscPos(d: NoFiscalCompleto): Uint8Array {
   }
 
   // ── Recibí conforme ──
+  if (esEntrega) {
+    c.separador()
+    c.linea()
+    c.linea('Recibí la mercadería detallada')
+    c.linea()
+    c.linea('Firma: ..............................')
+    c.linea()
+    c.linea('Aclaración: .........................')
+    c.linea()
+    c.linea('DNI: ................................')
+  }
   if (esRemito) {
     c.separador()
     c.linea()

@@ -180,6 +180,8 @@ export default function NoFiscalImprimible() {
 */
 function Hoja({ c }: { c: NoFiscalCompleto }) {
   const esRemito = c.tipo_clave === 'remito'
+  // El comprobante de entrega (13/11): como el remito, sin precios y con firma.
+  const esEntrega = c.tipo_clave === 'comprobante_entrega'
   /*
     En el remito no van precios. Lucas, 07/09.
 
@@ -191,7 +193,7 @@ function Hoja({ c }: { c: NoFiscalCompleto }) {
     Se siguen guardando en la base —son lo que permite valorizar lo que
     salió sin cobrarse—; lo que no se hace es imprimirlos.
   */
-  const conImportes = !esRemito && c.total > 0
+  const conImportes = !esRemito && !esEntrega && c.total > 0
   const unidades = c.lineas.reduce((s, l) => s + Number(l.cantidad), 0)
 
   return (
@@ -298,7 +300,7 @@ function Hoja({ c }: { c: NoFiscalCompleto }) {
         número con el que verificar la entrega, y ese número es cuántas
         unidades salieron — que además es lo que se cuenta al recibir.
       */}
-      {esRemito && c.lineas.length > 0 && (
+      {(esRemito || esEntrega) && c.lineas.length > 0 && (
         <div className="mt-3 flex justify-end border-t border-black pt-2">
           <div className="flex w-64 justify-between text-sm font-bold">
             <span>TOTAL DE UNIDADES</span>
@@ -311,6 +313,14 @@ function Hoja({ c }: { c: NoFiscalCompleto }) {
         <div className="mt-4 border-t border-piedra-200 pt-2">
           <p className="font-bold">Observaciones</p>
           <p className="whitespace-pre-wrap">{c.observaciones}</p>
+        </div>
+      )}
+
+      {esEntrega && (
+        <div className="mt-10 grid grid-cols-3 gap-8">
+          <p className="border-t border-black pt-1">Firma de quien retira</p>
+          <p className="border-t border-black pt-1">Aclaración</p>
+          <p className="border-t border-black pt-1">DNI</p>
         </div>
       )}
 

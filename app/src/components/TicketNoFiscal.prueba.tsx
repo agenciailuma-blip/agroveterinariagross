@@ -130,8 +130,8 @@ describe('el no fiscal no puede parecerse a una factura', () => {
 
 describe('el contenido', () => {
   it('muestra el número con su sigla y su serie', () => {
-    expect(html(doc())).toContain('CI CAJA1-00000045')
-    expect(bytes(doc())).toContain('CI CAJA1-00000045')
+    expect(html(doc())).toContain('PRO CAJA1-00000045')
+    expect(bytes(doc())).toContain('PRO CAJA1-00000045')
   })
 
   it('el total es el de la venta, sin desglose', () => {
@@ -159,6 +159,22 @@ describe('el contenido', () => {
 
   it('el comprobante interno NO lleva recibí conforme: no se entrega nada a domicilio', () => {
     expect(html(doc())).not.toMatch(/Recib. conforme/)
+  })
+
+  it('el comprobante de entrega va sin precios, con firma, aclaración y DNI', () => {
+    const entrega = doc({
+      tipo_clave: 'comprobante_entrega' as TipoNoFiscal,
+      tipo_descripcion: 'Comprobante de entrega',
+      observaciones: 'Corresponde a Factura B 0003-00001234.',
+    })
+    for (const salida of [html(entrega), bytes(entrega)]) {
+      expect(salida).toContain('ENT CAJA1-00000045')
+      expect(salida).toContain('Factura B 0003-00001234')
+      expect(salida).toMatch(/Aclaraci.n/)
+      expect(salida).toContain('DNI')
+      expect(salida).toMatch(/TOTAL DE UNIDADES/)
+      expect(salida).not.toMatch(/15[.\s]000/)
+    }
   })
 
   it('el presupuesto muestra hasta cuándo vale', () => {

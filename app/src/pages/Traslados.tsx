@@ -429,7 +429,7 @@ function EstadoDelCobro({ t }: { t: Traslado }) {
   if (venta.no_fiscal_id) {
     return (
       <button onClick={() => abrirNoFiscal(venta.no_fiscal_id!)} className="text-xs text-marca-700 hover:underline">
-        Cobrada · comprobante interno
+        Cobrada · proforma
       </button>
     )
   }
