@@ -12,6 +12,7 @@ import {
   ventasParaElContador,
 } from '@/lib/api/libroIva'
 import { descargarCsv } from '@/lib/api/noFiscal'
+import { obtenerTextos } from '@/lib/api/configuracion'
 import { moneda, numero } from '@/lib/tipos'
 import { boton, campo, tarjeta } from '@/estilos'
 
@@ -87,9 +88,21 @@ export default function ExportarParaContador() {
 
   const k = compras.data ? totalesDeCompras(compras.data) : null
 
-  function bajarCompras() {
+  async function bajarCompras() {
     if (!compras.data?.length) return
-    descargarCsv(`compras-${anio}-${String(mes).padStart(2, '0')}.csv`, comprasACsv(compras.data))
+    // El encabezado de su planilla: el comercio, el CUIT y el período.
+    const datos = await obtenerTextos(['comercio.nombre_fantasia', 'comercio.razon_social', 'comercio.cuit'])
+    const texto = (k: string) => datos[k] ?? ''
+    descargarCsv(
+      `compras-${anio}-${String(mes).padStart(2, '0')}.csv`,
+      comprasACsv(compras.data, {
+        nombre: texto('comercio.nombre_fantasia'),
+        razonSocial: texto('comercio.razon_social'),
+        cuit: texto('comercio.cuit'),
+        desde,
+        hasta,
+      }),
+    )
   }
 
   function bajar() {
@@ -173,8 +186,8 @@ export default function ExportarParaContador() {
             </p>
           )}
           <p className="mt-2 border-t border-borde pt-2 text-xs text-piedra-500">
-            Una fila por alícuota: una factura con 21% y 10,5% ocupa dos renglones. Las notas de
-            crédito van en negativo, así sumar la columna da el neto del mes.
+            Con las columnas de Mis Comprobantes Emitidos: una fila por comprobante y las notas de
+            crédito en negativo, así sumar la columna da el mes.
           </p>
         </div>
       )}

@@ -56,6 +56,7 @@ const CONCEPTOS_DE_TRIBUTO = [
   'Percepción de IIBB',
   'Percepción de IVA',
   'Retención de Ganancias',
+  'Retención SUSS',
   'Impuestos internos',
   'Otro',
 ] as const

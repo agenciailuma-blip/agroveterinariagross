@@ -28,76 +28,122 @@ import { supabase } from '@/lib/supabase'
     que es exactamente la forma que pide el libro
   · `comprobante_tributo` — las percepciones, con su base y su importe
 
-  ─── UNA FILA POR ALÍCUOTA, NO POR COMPROBANTE ───
+  ─── EL FORMATO, EL DEL CONTADOR ───
 
-  Es la decisión de forma, y es la que un contador espera: una factura
-  con 21% y 10,5% ocupa **dos renglones**, cada uno con su neto y su
-  impuesto. Una sola fila con los dos netos sumados obliga a
-  desarmarla a mano, que es justo lo que exportar viene a evitar.
+  El 16/11 el contador mandó cómo lo quiere: **las mismas columnas que
+  Mis Comprobantes Emitidos de ARCA**, una fila por comprobante, con
+  las notas de crédito en negativo. Antes salía una fila por alícuota y
+  con columnas propias (signo, condición de IVA, alícuota); se cambió a
+  la suya para que lo use sin retocar nada.
 
-  Los datos de cabecera —fecha, cliente, total— se repiten en los dos
-  renglones. Es redundante y está bien: así cada fila se entiende sola
-  y se puede filtrar y ordenar en Excel sin perder contexto.
+  Una factura con 21 % y 10,5 % queda en una fila con los netos e IVA
+  sumados, igual que en ARCA. Las percepciones no van: él tampoco las
+  tiene en esa planilla, y salen en su propio archivo.
   ─────────────────────────────────────────────────────────────
 */
 
 export interface FilaLibroIva {
   /** +1 en una factura, −1 en una nota de crédito. Ya viene aplicado a los importes. */
   signo: number
+  /** dd/mm/aaaa, que es lo que el Excel de Gross toma como fecha. */
   fecha: string
+  /** Con el código de ARCA adelante: «1 - Factura A». */
   tipo: string
-  clase: string | null
   punto_venta: number
   numero: number
+  /** Siempre vacío: cada comprobante es una fila. Está porque ARCA lo trae. */
+  numero_hasta: string
+  cae: string | null
+  /** «CUIT», o el código de ARCA del documento (96 DNI, 99 sin identificar), como en ARCA. */
+  tipo_documento: string
+  documento: string
   cliente: string
-  documento: string | null
-  condicion_iva: string
-  alicuota: number | null
+  tipo_cambio: number
+  moneda: string
   neto_gravado: number
-  iva: number
   no_gravado: number
   exento: number
-  percepciones: number
+  iva: number
   total: number
-  cae: string | null
-  estado: string
+  /** No va en el archivo; sirve para avisarlo en pantalla. */
+  percepciones: number
 }
 
-interface CrudoAlicuota {
-  alicuota_iva_id: number
-  base_imponible: number
-  importe: number
-  alicuota: { porcentaje: number } | { porcentaje: number }[] | null
+/** 2026-10-01 → 01/10/2026. */
+export function fechaArgentina(iso: string): string {
+  const [a, m, d] = iso.slice(0, 10).split('-')
+  return `${d}/${m}/${a}`
 }
 
-interface CrudoComprobante {
-  id: string
+export interface CrudoComprobante {
   fecha: string
   numero: number
-  neto_gravado: number
-  neto_no_gravado: number
-  exento: number
-  iva_total: number
-  tributos_total: number
-  total: number
+  neto_gravado: number | string
+  neto_no_gravado: number | string
+  exento: number | string
+  iva_total: number | string
+  tributos_total: number | string
+  total: number | string
   cae: string | null
-  estado: string
+  moneda: string | null
+  cotizacion: number | string | null
   receptor_nombre: string
+  receptor_tipo_documento_id: number | null
   receptor_documento: string | null
   tipo:
-    | { descripcion: string; clase: string | null; signo: number }
-    | { descripcion: string; clase: string | null; signo: number }[]
+    | { id: number; descripcion: string; signo: number }
+    | { id: number; descripcion: string; signo: number }[]
     | null
   punto: { numero: number } | { numero: number }[] | null
-  condicion: { descripcion: string } | { descripcion: string }[] | null
-  comprobante_alicuota: CrudoAlicuota[] | null
 }
 
 const uno = <T,>(v: T | T[] | null | undefined): T | null =>
   Array.isArray(v) ? (v[0] ?? null) : (v ?? null)
 
+/*
+  Un comprobante, como fila del archivo.
+
+  Afuera de la consulta para poder probar las reglas sin base: el signo
+  de la nota de crédito, el tipo con su código y el documento como lo
+  muestra ARCA.
+*/
+export function comoFilaDeVenta(c: CrudoComprobante): FilaLibroIva {
+  const tipo = uno(c.tipo)
+  const punto = uno(c.punto)
+
+  /*
+    El signo del tipo de comprobante: +1 en una factura, −1 en una nota
+    de crédito. Sumar la columna «Imp. Total» tiene que dar el mes; con
+    las notas de crédito en positivo daría de más, y el error es
+    silencioso. El contador las tiene así en su planilla.
+  */
+  const signo = tipo?.signo ?? 1
+  const tipoDoc = c.receptor_tipo_documento_id ?? 99
+
+  return {
+    signo,
+    fecha: fechaArgentina(c.fecha),
+    tipo: tipo ? `${tipo.id} - ${tipo.descripcion}` : '',
+    punto_venta: punto?.numero ?? 0,
+    numero: c.numero,
+    numero_hasta: '',
+    cae: c.cae,
+    tipo_documento: tipoDoc === 80 ? 'CUIT' : String(tipoDoc),
+    documento: tipoDoc === 99 ? '0' : (c.receptor_documento ?? '0'),
+    cliente: c.receptor_nombre,
+    tipo_cambio: Number(c.cotizacion ?? 1),
+    moneda: !c.moneda || c.moneda === 'PES' ? '$' : c.moneda,
+    neto_gravado: signo * Number(c.neto_gravado),
+    no_gravado: signo * Number(c.neto_no_gravado),
+    exento: signo * Number(c.exento),
+    iva: signo * Number(c.iva_total),
+    total: signo * Number(c.total),
+    percepciones: signo * Number(c.tributos_total),
+  }
+}
+
 /**
- * Las ventas de un período, desarmadas por alícuota.
+ * Las ventas de un período, una fila por comprobante.
  *
  * Se traen sólo los comprobantes que existen para el fisco: los
  * autorizados y los emitidos por contingencia. Un pendiente o un
@@ -111,14 +157,11 @@ export async function ventasParaElContador(
   const { data, error } = await supabase
     .from('comprobante')
     .select(
-      `id, fecha, numero, neto_gravado, neto_no_gravado, exento, iva_total,
-       tributos_total, total, cae, estado,
-       receptor_nombre, receptor_documento,
-       tipo:tipo_comprobante_id(descripcion, clase, signo),
-       punto:punto_venta_id(numero),
-       condicion:receptor_condicion_iva_id(descripcion),
-       comprobante_alicuota(alicuota_iva_id, base_imponible, importe,
-                            alicuota:alicuota_iva_id(porcentaje))`,
+      `fecha, numero, neto_gravado, neto_no_gravado, exento, iva_total,
+       tributos_total, total, cae, moneda, cotizacion,
+       receptor_nombre, receptor_tipo_documento_id, receptor_documento,
+       tipo:tipo_comprobante_id(id, descripcion, signo),
+       punto:punto_venta_id(numero)`,
     )
     .gte('fecha', desde)
     .lte('fecha', hasta)
@@ -127,100 +170,27 @@ export async function ventasParaElContador(
     .order('numero')
 
   if (error) throw new Error(error.message)
-
-  const filas: FilaLibroIva[] = []
-
-  for (const c of (data ?? []) as unknown as CrudoComprobante[]) {
-    const tipo = uno(c.tipo)
-    const punto = uno(c.punto)
-    const condicion = uno(c.condicion)
-
-    /*
-      El signo del tipo de comprobante: +1 en una factura, −1 en una
-      nota de crédito. Se aplica a los importes.
-
-      Es la decisión que hace que el archivo sirva: sumar la columna
-      "Neto gravado" tiene que dar el neto del período. Con las notas
-      de crédito en positivo daría de más, y el error es silencioso —
-      un número plausible que está mal.
-
-      Va además su propia columna, para que se vea de dónde sale y no
-      parezca que el sistema devolvió importes negativos por error.
-    */
-    const signo = tipo?.signo ?? 1
-
-    const cabecera = {
-      fecha: c.fecha,
-      tipo: tipo?.descripcion ?? '',
-      clase: tipo?.clase ?? null,
-      signo,
-      punto_venta: punto?.numero ?? 0,
-      numero: c.numero,
-      cliente: c.receptor_nombre,
-      documento: c.receptor_documento,
-      condicion_iva: condicion?.descripcion ?? '',
-      no_gravado: signo * Number(c.neto_no_gravado),
-      exento: signo * Number(c.exento),
-      percepciones: signo * Number(c.tributos_total),
-      total: signo * Number(c.total),
-      cae: c.cae,
-      estado: c.estado,
-    }
-
-    const alicuotas = c.comprobante_alicuota ?? []
-
-    if (alicuotas.length === 0) {
-      /*
-        Un comprobante sin alícuotas es legítimo: una factura
-        íntegramente exenta o no gravada. Va igual, con la columna de
-        alícuota vacía. Saltearlo dejaría un hueco en la numeración del
-        libro, y un hueco es lo primero que un contador pregunta.
-      */
-      filas.push({ ...cabecera, alicuota: null, neto_gravado: 0, iva: 0 })
-      continue
-    }
-
-    alicuotas.forEach((a, i) => {
-      filas.push({
-        ...cabecera,
-        alicuota: Number(uno(a.alicuota)?.porcentaje ?? 0),
-        neto_gravado: signo * Number(a.base_imponible),
-        iva: signo * Number(a.importe),
-        /*
-          Los importes que son del comprobante y no de la alícuota —no
-          gravado, exento, percepciones y total— van sólo en el primer
-          renglón. Repetirlos en los dos haría que sumar la columna dé
-          el doble, y sumar columnas es literalmente lo que se hace con
-          este archivo.
-        */
-        ...(i > 0
-          ? { no_gravado: 0, exento: 0, percepciones: 0, total: 0 }
-          : {}),
-      })
-    })
-  }
-
-  return filas
+  return ((data ?? []) as unknown as CrudoComprobante[]).map(comoFilaDeVenta)
 }
 
+// Los títulos, tal cual los trae ARCA en Mis Comprobantes Emitidos.
 const COLUMNAS: { clave: keyof FilaLibroIva; titulo: string }[] = [
   { clave: 'fecha', titulo: 'Fecha' },
-  { clave: 'tipo', titulo: 'Tipo de comprobante' },
-  { clave: 'clase', titulo: 'Letra' },
-  { clave: 'signo', titulo: 'Signo' },
+  { clave: 'tipo', titulo: 'Tipo' },
   { clave: 'punto_venta', titulo: 'Punto de venta' },
-  { clave: 'numero', titulo: 'Número' },
-  { clave: 'cliente', titulo: 'Cliente' },
-  { clave: 'documento', titulo: 'CUIT / DNI' },
-  { clave: 'condicion_iva', titulo: 'Condición IVA' },
-  { clave: 'alicuota', titulo: 'Alícuota %' },
-  { clave: 'neto_gravado', titulo: 'Neto gravado' },
+  { clave: 'numero', titulo: 'Número Desde' },
+  { clave: 'numero_hasta', titulo: 'Número hasta' },
+  { clave: 'cae', titulo: 'Cód. Autorización' },
+  { clave: 'tipo_documento', titulo: 'Tipo Doc. Receptor' },
+  { clave: 'documento', titulo: 'Nro. Doc. Receptor' },
+  { clave: 'cliente', titulo: 'Denominación Receptor' },
+  { clave: 'tipo_cambio', titulo: 'Tipo Cambio' },
+  { clave: 'moneda', titulo: 'Moneda' },
+  { clave: 'neto_gravado', titulo: 'Imp. Neto Gravado' },
+  { clave: 'no_gravado', titulo: 'Imp. Neto No Gravado' },
+  { clave: 'exento', titulo: 'Imp. Op. Exentas' },
   { clave: 'iva', titulo: 'IVA' },
-  { clave: 'no_gravado', titulo: 'No gravado' },
-  { clave: 'exento', titulo: 'Exento' },
-  { clave: 'percepciones', titulo: 'Percepciones' },
-  { clave: 'total', titulo: 'Total' },
-  { clave: 'cae', titulo: 'CAE' },
+  { clave: 'total', titulo: 'Imp. Total' },
 ]
 
 /*
@@ -234,7 +204,12 @@ const COLUMNAS: { clave: keyof FilaLibroIva; titulo: string }[] = [
   Es el mismo criterio que ya usa la exportación de comprobantes no
   fiscales, y está probado.
 */
-function armarCsv<T>(filas: T[], columnas: { clave: keyof T; titulo: string }[]): string {
+function armarCsv<T>(
+  filas: T[],
+  columnas: { clave: keyof T; titulo: string }[],
+  /** Renglones sueltos antes de los títulos (el encabezado de la planilla de compras). */
+  antes: string[] = [],
+): string {
   const escapar = (v: unknown): string => {
     if (v === null || v === undefined) return ''
     if (typeof v === 'number') return String(v).replace('.', ',')
@@ -246,7 +221,7 @@ function armarCsv<T>(filas: T[], columnas: { clave: keyof T; titulo: string }[])
   const cuerpo = filas.map((f) => columnas.map((c) => escapar(f[c.clave])).join(';'))
   // El BOM lo decía este comentario desde septiembre, pero no estaba: los
   // títulos con acento («Alícuota %», «Número») abrían rotos. Visto el 19/10.
-  return '﻿' + [encabezado, ...cuerpo].join('\n')
+  return '﻿' + [...antes.map(escapar), encabezado, ...cuerpo].join('\n')
 }
 
 export function aCsv(filas: FilaLibroIva[]): string {
@@ -408,7 +383,7 @@ export function totalesDePercepciones(filas: FilaPercepcion[]) {
 /** Los totales del período, para poder controlar el archivo de un vistazo. */
 export function totales(filas: FilaLibroIva[]) {
   return {
-    comprobantes: new Set(filas.map((f) => `${f.punto_venta}-${f.numero}-${f.tipo}`)).size,
+    comprobantes: filas.length,
     neto: filas.reduce((s, f) => s + f.neto_gravado, 0),
     iva: filas.reduce((s, f) => s + f.iva, 0),
     percepciones: filas.reduce((s, f) => s + f.percepciones, 0),
@@ -426,11 +401,11 @@ export function totales(filas: FilaLibroIva[]) {
   controlar lo cargado contra lo que tiene ARCA sin pedirle nada a nadie.
   Decidido el 28/09.
 
-  La misma forma que el de ventas: una fila por alícuota, las notas de
-  crédito en negativo, y lo que es del comprobante —no gravado, exento,
-  percepciones, total— sólo en el primer renglón, para que sumar la
-  columna dé el mes. Las percepciones van separadas por concepto, porque
-  la de IVA y la de IIBB se computan en declaraciones distintas.
+  El formato es el que mandó el 16/11, el de su programa: arriba el
+  comercio, el CUIT y el período; después **una fila por comprobante**,
+  con el tipo abreviado (Fac, N.C., N.D.), exento y no gravado en una
+  sola columna, y cada percepción en la suya. Las notas de crédito en
+  negativo, para que sumar la columna dé el mes.
   ─────────────────────────────────────────────────────────────
 */
 
@@ -438,19 +413,21 @@ export interface FilaLibroCompras {
   signo: number
   fecha: string
   tipo: string
-  clase: string | null
-  punto_venta: number
+  letra: string | null
+  suc: number
   numero: number
   proveedor: string
   cuit: string | null
-  alicuota: number | null
-  neto_gravado: number
+  neto: number
   iva: number
-  no_gravado: number
-  exento: number
-  percepcion_iva: number
-  percepcion_iibb: number
-  otros_tributos: number
+  imp_internos: number
+  exento_no_gravado: number
+  perc_dgr: number
+  perc_iva: number
+  perc_ganancias: number
+  ret_suss: number
+  /** Lo cargado como «Otro»: no tiene columna en su planilla y no puede perderse. */
+  otros: number
   total: number
 }
 
@@ -458,68 +435,79 @@ export interface CrudoCompra {
   fecha: string
   punto_venta: number
   numero: number
+  neto_gravado: number | string
   neto_no_gravado: number | string
   exento: number | string
+  iva_total: number | string
   total: number | string
   proveedor: { nombre: string; numero_documento: string | null } | { nombre: string; numero_documento: string | null }[] | null
-  tipo: { descripcion: string; clase: string | null; signo: number } | { descripcion: string; clase: string | null; signo: number }[] | null
-  compra_alicuota: CrudoAlicuota[] | null
+  tipo:
+    | { descripcion: string; clase: string | null; familia: string | null; signo: number }
+    | { descripcion: string; clase: string | null; familia: string | null; signo: number }[]
+    | null
   compra_tributo: { descripcion: string; importe: number | string }[] | null
 }
 
-/** Una factura de compra, desarmada en sus renglones del libro. */
-export function comoFilasDeCompra(c: CrudoCompra): FilaLibroCompras[] {
+const TIPO_ABREVIADO: Record<string, string> = {
+  factura: 'Fac',
+  nota_credito: 'N.C.',
+  nota_debito: 'N.D.',
+}
+
+/*
+  En qué columna va cada concepto de la pantalla de Compras. La
+  retención de ganancias va en «Perc.GAN.», que es la columna de
+  ganancias que tiene su planilla.
+*/
+const COLUMNA_DEL_TRIBUTO: Record<string, keyof FilaLibroCompras> = {
+  'Percepción de IIBB': 'perc_dgr',
+  'Percepción de IVA': 'perc_iva',
+  'Retención de Ganancias': 'perc_ganancias',
+  'Retención SUSS': 'ret_suss',
+  'Impuestos internos': 'imp_internos',
+}
+
+/** Una factura de compra, como fila del archivo. */
+export function comoFilaDeCompra(c: CrudoCompra): FilaLibroCompras {
   const tipo = uno(c.tipo)
   const proveedor = uno(c.proveedor)
   const signo = tipo?.signo ?? 1
 
-  const tributos = c.compra_tributo ?? []
-  const sumar = (f: (d: string) => boolean) =>
-    signo * tributos.filter((t) => f(t.descripcion)).reduce((s, t) => s + Number(t.importe), 0)
-  const esIva = (d: string) => d === 'Percepción de IVA'
-  const esIibb = (d: string) => d === 'Percepción de IIBB'
-
-  const cabecera = {
+  const fila: FilaLibroCompras = {
     signo,
-    fecha: c.fecha,
-    tipo: tipo?.descripcion ?? '',
-    clase: tipo?.clase ?? null,
-    punto_venta: c.punto_venta,
+    fecha: fechaArgentina(c.fecha),
+    tipo: TIPO_ABREVIADO[tipo?.familia ?? ''] ?? tipo?.descripcion ?? '',
+    letra: tipo?.clase ?? null,
+    suc: c.punto_venta,
     numero: c.numero,
     proveedor: proveedor?.nombre ?? '',
     cuit: proveedor?.numero_documento ?? null,
-    no_gravado: signo * Number(c.neto_no_gravado),
-    exento: signo * Number(c.exento),
-    percepcion_iva: sumar(esIva),
-    percepcion_iibb: sumar(esIibb),
-    otros_tributos: sumar((d) => !esIva(d) && !esIibb(d)),
+    neto: signo * Number(c.neto_gravado),
+    iva: signo * Number(c.iva_total),
+    imp_internos: 0,
+    exento_no_gravado: signo * (Number(c.exento) + Number(c.neto_no_gravado)),
+    perc_dgr: 0,
+    perc_iva: 0,
+    perc_ganancias: 0,
+    ret_suss: 0,
+    otros: 0,
     total: signo * Number(c.total),
   }
 
-  const alicuotas = c.compra_alicuota ?? []
-  // Una factura C o una íntegramente exenta no tiene alícuotas: va igual,
-  // en un renglón, para que no quede un hueco.
-  if (alicuotas.length === 0) return [{ ...cabecera, alicuota: null, neto_gravado: 0, iva: 0 }]
-
-  return alicuotas.map((a, i) => ({
-    ...cabecera,
-    alicuota: Number(uno(a.alicuota)?.porcentaje ?? 0),
-    neto_gravado: signo * Number(a.base_imponible),
-    iva: signo * Number(a.importe),
-    ...(i > 0
-      ? { no_gravado: 0, exento: 0, percepcion_iva: 0, percepcion_iibb: 0, otros_tributos: 0, total: 0 }
-      : {}),
-  }))
+  for (const t of c.compra_tributo ?? []) {
+    const columna = COLUMNA_DEL_TRIBUTO[t.descripcion] ?? 'otros'
+    ;(fila[columna] as number) += signo * Number(t.importe)
+  }
+  return fila
 }
 
 export async function comprasParaElContador(desde: string, hasta: string): Promise<FilaLibroCompras[]> {
   const { data, error } = await supabase
     .from('compra')
     .select(
-      `fecha, punto_venta, numero, neto_no_gravado, exento, total,
+      `fecha, punto_venta, numero, neto_gravado, neto_no_gravado, exento, iva_total, total,
        proveedor:proveedor_id(nombre, numero_documento),
-       tipo:tipo_comprobante_id(descripcion, clase, signo),
-       compra_alicuota(alicuota_iva_id, base_imponible, importe, alicuota:alicuota_iva_id(porcentaje)),
+       tipo:tipo_comprobante_id(descripcion, clase, familia, signo),
        compra_tributo(descripcion, importe)`,
     )
     .is('eliminado_en', null)
@@ -529,39 +517,63 @@ export async function comprasParaElContador(desde: string, hasta: string): Promi
     .order('numero')
 
   if (error) throw new Error(error.message)
-  return ((data ?? []) as unknown as CrudoCompra[]).flatMap(comoFilasDeCompra)
+  return ((data ?? []) as unknown as CrudoCompra[]).map(comoFilaDeCompra)
 }
 
+// Los títulos, tal cual vienen en la planilla del contador.
 const COLUMNAS_COMPRAS: { clave: keyof FilaLibroCompras; titulo: string }[] = [
   { clave: 'fecha', titulo: 'Fecha' },
-  { clave: 'tipo', titulo: 'Tipo de comprobante' },
-  { clave: 'clase', titulo: 'Letra' },
-  { clave: 'signo', titulo: 'Signo' },
-  { clave: 'punto_venta', titulo: 'Punto de venta' },
-  { clave: 'numero', titulo: 'Número' },
+  { clave: 'tipo', titulo: 'Tipo Comp.' },
+  { clave: 'letra', titulo: 'Letra' },
+  { clave: 'suc', titulo: 'Suc' },
+  { clave: 'numero', titulo: 'Numero' },
   { clave: 'proveedor', titulo: 'Proveedor' },
-  { clave: 'cuit', titulo: 'CUIT' },
-  { clave: 'alicuota', titulo: 'Alícuota %' },
-  { clave: 'neto_gravado', titulo: 'Neto gravado' },
-  { clave: 'iva', titulo: 'IVA crédito fiscal' },
-  { clave: 'no_gravado', titulo: 'No gravado' },
-  { clave: 'exento', titulo: 'Exento' },
-  { clave: 'percepcion_iva', titulo: 'Percepción IVA' },
-  { clave: 'percepcion_iibb', titulo: 'Percepción IIBB' },
-  { clave: 'otros_tributos', titulo: 'Otros tributos' },
+  { clave: 'cuit', titulo: 'Cuit' },
+  { clave: 'neto', titulo: 'Neto' },
+  { clave: 'iva', titulo: 'Iva' },
+  { clave: 'imp_internos', titulo: 'Imp.Int.' },
+  { clave: 'exento_no_gravado', titulo: 'Exento y No Grabado' },
+  { clave: 'perc_dgr', titulo: 'Perc.DGR' },
+  { clave: 'perc_iva', titulo: 'Perc.IVA' },
+  { clave: 'perc_ganancias', titulo: 'Perc.GAN.' },
+  { clave: 'ret_suss', titulo: 'Ret.Sus.' },
+  { clave: 'otros', titulo: 'Otros' },
   { clave: 'total', titulo: 'Total' },
 ]
 
-export function comprasACsv(filas: FilaLibroCompras[]): string {
-  return armarCsv(filas, COLUMNAS_COMPRAS)
+export interface EncabezadoDeCompras {
+  nombre: string
+  razonSocial: string
+  cuit: string
+  desde: string
+  hasta: string
+}
+
+/** 20146369767 → 20-14636976-7. */
+function cuitConGuiones(cuit: string): string {
+  const d = cuit.replace(/\D/g, '')
+  return d.length === 11 ? `${d.slice(0, 2)}-${d.slice(2, 10)}-${d.slice(10)}` : cuit
+}
+
+export function comprasACsv(filas: FilaLibroCompras[], e: EncabezadoDeCompras): string {
+  return armarCsv(filas, COLUMNAS_COMPRAS, [
+    e.nombre.toUpperCase(),
+    `${e.razonSocial} Cuit: ${cuitConGuiones(e.cuit)}`,
+    '',
+    'Mis comprobantes recibidos',
+    `Periodo Desde: ${fechaArgentina(e.desde)} Hasta: ${fechaArgentina(e.hasta)}`,
+  ])
 }
 
 export function totalesDeCompras(filas: FilaLibroCompras[]) {
   return {
-    comprobantes: new Set(filas.map((f) => `${f.cuit ?? f.proveedor}-${f.tipo}-${f.punto_venta}-${f.numero}`)).size,
-    neto: filas.reduce((s, f) => s + f.neto_gravado, 0),
+    comprobantes: filas.length,
+    neto: filas.reduce((s, f) => s + f.neto, 0),
     iva: filas.reduce((s, f) => s + f.iva, 0),
-    percepciones: filas.reduce((s, f) => s + f.percepcion_iva + f.percepcion_iibb + f.otros_tributos, 0),
+    percepciones: filas.reduce(
+      (s, f) => s + f.imp_internos + f.perc_dgr + f.perc_iva + f.perc_ganancias + f.ret_suss + f.otros,
+      0,
+    ),
     total: filas.reduce((s, f) => s + f.total, 0),
   }
 }
