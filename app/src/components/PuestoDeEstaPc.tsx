@@ -83,6 +83,13 @@ export function PuestoDeEstaPc() {
   Cada PC anuncia su identificador al abrir y cada diez minutos. Si el
   puesto lo había anunciado otra PC en las últimas 12 horas, la base
   contesta que sí. Como las dos se anuncian, las dos terminan avisando.
+
+  El 16/11 el aviso quedó pegado: la PC de la esquina había sido Caja 1
+  y pasó a Caja 2; el servidor abrió como Caja 1, la base recordaba a la
+  otra PC de horas antes y el aviso no se iba más hasta cerrar el
+  sistema. Ahora cada anuncio lo pone o lo saca: si dos PC siguen en el
+  mismo puesto, se pisan cada diez minutos y el aviso sigue; si la otra
+  ya se fue, a los diez minutos desaparece.
 */
 let repetidoEnEstaSesion = false
 
@@ -100,10 +107,10 @@ export function AvisoPuestoRepetido() {
         p_equipo: equipoDeEstaPc(),
       })
       if (!vigente || error) return
-      if (data === true) {
-        repetidoEnEstaSesion = true
-        setRepetido(true)
-      }
+      // Cada anuncio dice cómo está AHORA. Si la otra PC se fue a otro
+      // puesto, el próximo anuncio contesta que no y el aviso se va solo.
+      repetidoEnEstaSesion = data === true
+      setRepetido(data === true)
     }
     // Al cambiar de puesto, el aviso del anterior ya no corre.
     repetidoEnEstaSesion = false
