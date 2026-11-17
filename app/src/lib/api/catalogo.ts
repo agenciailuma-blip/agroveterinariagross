@@ -167,16 +167,51 @@ export async function listarProductosDeBaja(texto: string) {
   los que no están dados de baja, de esa categoría y esa marca. Así el
   total que muestra la lista es el que se confirma al prenderlos.
 */
+export type FiltroWeb = 'todos' | 'en_web' | 'no_en_web'
+
+/*
+  El canal de la tienda, igual que app.canal_de_la_tienda() en la base:
+  el más viejo de los activos de tipo tienda.
+*/
+async function canalDeLaTienda(): Promise<string | null> {
+  const { data, error } = await supabase
+    .from('canal')
+    .select('id')
+    .eq('tipo', 'tienda')
+    .eq('activo', true)
+    .is('eliminado_en', null)
+    .order('creado_en')
+    .limit(1)
+    .maybeSingle<{ id: string }>()
+  if (error) throw new Error(error.message)
+  return data?.id ?? null
+}
+
 export async function listarProductos(
   texto: string,
   soloSinRevisar: boolean,
   categoriaId: string | null = null,
   marcaId: string | null = null,
+  web: FiltroWeb = 'todos',
 ) {
+  const columnas =
+    'producto_id, codigo, nombre_interno, nombre_publico, precio_venta, unidad_medida, cantidad, estado, activo, revisado_en, envase_id, disponible'
+
+  /*
+    «En la web» es lo que tiene prendido «Vender online» —lo mismo que
+    pinta la marca Web de la fila—. Se filtra en la base y no sobre lo
+    que se ve: la lista trae de a 100.
+  */
+  const canal = web === 'todos' ? null : await canalDeLaTienda()
+  if (web === 'en_web' && !canal) return { filas: [] as FilaListado[], total: 0, limite: LIMITE_LISTADO }
+  const conWeb = web !== 'todos' && !!canal
+
   let q = supabase
     .from('vista_stock')
     .select(
-      'producto_id, codigo, nombre_interno, nombre_publico, precio_venta, unidad_medida, cantidad, estado, activo, revisado_en, envase_id, disponible',
+      conWeb
+        ? `${columnas}, web:canal_producto${web === 'en_web' ? '!inner' : ''}(producto_id)`
+        : columnas,
       { count: 'exact' },
     )
     .order('revisado_en', { ascending: true, nullsFirst: true })
@@ -192,10 +227,16 @@ export async function listarProductos(
   if (soloSinRevisar) q = q.is('revisado_en', null)
   if (categoriaId) q = q.eq('categoria_id', categoriaId)
   if (marcaId) q = q.eq('marca_id', marcaId)
+  if (conWeb) {
+    q = q.eq('web.canal_id', canal).eq('web.publicar', true)
+    // Sin una fila prendida en la tienda: nunca se prendió, o se apagó.
+    if (web === 'no_en_web') q = q.is('web', null)
+  }
 
   const { data, error, count } = await q
   if (error) throw new Error(error.message)
-  return { filas: (data ?? []) as FilaListado[], total: count ?? 0, limite: LIMITE_LISTADO }
+  const filas = ((data ?? []) as unknown as (FilaListado & { web?: unknown })[]).map(({ web: _web, ...f }) => f)
+  return { filas: filas as FilaListado[], total: count ?? 0, limite: LIMITE_LISTADO }
 }
 
 export async function contarAvance() {

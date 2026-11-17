@@ -1,5 +1,5 @@
 ---
-actualizado: 2026-11-13
+actualizado: 2026-11-17
 estado: en curso
 ---
 
@@ -11,6 +11,8 @@ estado: en curso
 ---
 
 ## Dónde está todo, hoy
+
+**Construida: 0.25.1** (17/11), para publicar — **trae también los dos cambios sin publicar de después de la 0.25.0** (ventas y compras para el contador, y el aviso de puesto repetido). **Productos: filtro «En la web / No en la web»** junto a categoría y marca; filtra en la base, no sólo los 100 que se ven. El listado ya no se desplaza hacia el costado a 375 px. Visto en el navegador contra la base real (165 en la web). **892 pruebas verdes.**
 
 **Publicada: 0.25.0** (la publicó Francisco; el publicador terminó con «Deployment complete» en Cloudflare, anotado el 16/11) — **trae la 0.24.0, la 0.23.0 y la 0.22.2.** La propuesta de proformas, aprobada por Lucas el 13/11 con sus cinco respuestas ([`propuesta-proformas-y-remitos.md`](propuesta-proformas-y-remitos.md)):
 - **Proforma en lugar de comprobante interno**, con la misma numeración (sigla PRO). En la caja quedan dos botones: **Factura (F9)** y **Proforma (F11)**; por dentro la proforma sigue siendo «sin factura» o «a facturar» según el medio y el cliente.

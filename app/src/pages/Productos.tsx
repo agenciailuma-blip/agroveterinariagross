@@ -13,7 +13,7 @@ import {
   obtenerProducto,
   restaurarProductos,
 } from '@/lib/api/catalogo'
-import type { FilaListado, Referencias } from '@/lib/api/catalogo'
+import type { FilaListado, FiltroWeb, Referencias } from '@/lib/api/catalogo'
 import { listarDepositos, stockPorDeposito } from '@/lib/api/depositos'
 import ProductoEditor from '@/components/ProductoEditor'
 import { siguienteCodigo } from '@/lib/api/codigos'
@@ -90,6 +90,7 @@ export default function Productos() {
   const [soloSinRevisar, setSoloSinRevisar] = useState(false)
   const [categoriaId, setCategoriaId] = useState<string | null>(null)
   const [marcaId, setMarcaId] = useState<string | null>(null)
+  const [web, setWeb] = useState<FiltroWeb>('todos')
   const [seleccionado, setSeleccionado] = useState<string | null>(null)
   const [subiendoFotos, setSubiendoFotos] = useState(false)
   const [buscandoFotos, setBuscandoFotos] = useState(false)
@@ -116,8 +117,8 @@ export default function Productos() {
   }, [])
 
   const listado = useQuery({
-    queryKey: ['productos', debounced, soloSinRevisar, categoriaId, marcaId],
-    queryFn: () => listarProductos(debounced, soloSinRevisar, categoriaId, marcaId),
+    queryKey: ['productos', debounced, soloSinRevisar, categoriaId, marcaId, web],
+    queryFn: () => listarProductos(debounced, soloSinRevisar, categoriaId, marcaId, web),
   })
 
   /*
@@ -473,7 +474,7 @@ export default function Productos() {
   */
   const puedeMarcar = puedeDarDeBaja || puedeEditar
   const grupoEntero =
-    puedeEditar && !verBajas && !debounced && !soloSinRevisar && (!!categoriaId || !!marcaId)
+    puedeEditar && !verBajas && !debounced && !soloSinRevisar && web === 'todos' && (!!categoriaId || !!marcaId)
   const nombreDelGrupo = [
     categoriaId && `la categoría «${referencias.data?.categorias.find((c) => c.id === categoriaId)?.nombre ?? ''}»`,
     marcaId && `la marca «${referencias.data?.marcas.find((m) => m.id === marcaId)?.nombre ?? ''}»`,
@@ -621,6 +622,19 @@ export default function Productos() {
                   {m.nombre}
                 </option>
               ))}
+            </select>
+            <select
+              aria-label="En la web"
+              value={web}
+              onChange={(e) => {
+                setWeb(e.target.value as FiltroWeb)
+                setMarcados(new Set())
+              }}
+              className={campoDeFiltro}
+            >
+              <option value="todos">Web: todos</option>
+              <option value="en_web">En la web</option>
+              <option value="no_en_web">No en la web</option>
             </select>
           </>
         )}
@@ -832,13 +846,13 @@ export default function Productos() {
                     </th>
                   )}
                   <th className={`px-4 py-2.5 font-medium ${soloSinFicha}`}>Código</th>
-                  <th className="px-4 py-2.5 font-medium">Producto</th>
-                  <th className="px-4 py-2.5 text-right font-medium">Precio</th>
+                  <th className="px-2.5 py-2.5 font-medium sm:px-4">Producto</th>
+                  <th className="px-2.5 py-2.5 text-right font-medium sm:px-4">Precio</th>
                   {verBajas ? (
                     <th className="px-4 py-2.5 font-medium">Dado de baja</th>
                   ) : (
                     <>
-                      <th className="px-4 py-2.5 text-right font-medium">Stock</th>
+                      <th className="px-2.5 py-2.5 text-right font-medium sm:px-4">Stock</th>
                       <th className={`px-4 py-2.5 font-medium ${soloSinFicha}`}>Estado</th>
                     </>
                   )}
@@ -866,7 +880,9 @@ export default function Productos() {
                     <td colSpan={6} className="px-4 py-12 text-center text-piedra-400">
                       {debounced
                         ? `No hay productos que coincidan con “${debounced}”.`
-                        : 'Todavía no hay productos cargados. Van a llegar con la importación del listado.'}
+                        : soloSinRevisar || categoriaId || marcaId || web !== 'todos'
+                          ? 'No hay productos con esos filtros.'
+                          : 'Todavía no hay productos cargados. Van a llegar con la importación del listado.'}
                     </td>
                   </tr>
                 )}
@@ -936,7 +952,7 @@ export default function Productos() {
                             setCreando(false)
                             setSeleccionado(p.producto_id)
                           }}
-                          className="cursor-pointer px-4 py-2.5"
+                          className="cursor-pointer px-2.5 py-2.5 sm:px-4"
                         >
                           {/*
                             flex-wrap: sin él, la fila del nombre y la marca
@@ -956,10 +972,10 @@ export default function Productos() {
                           {/* Sin la columna del código, va debajo del nombre. */}
                           <p className={`font-mono text-xs text-piedra-400 ${editorAbierto ? '' : 'sm:hidden'}`}>{p.codigo}</p>
                         </td>
-                        <td className="px-4 py-2.5 text-right tabular-nums text-tinta">
+                        <td className="px-2.5 py-2.5 text-right tabular-nums text-tinta sm:px-4">
                           {moneda.format(p.precio_venta)}
                         </td>
-                        <td className="px-4 py-2.5 text-right tabular-nums text-piedra-700">
+                        <td className="px-2.5 py-2.5 text-right tabular-nums text-piedra-700 sm:px-4">
                           {numero.format(p.cantidad)}
                           {/* Una suelta: lo que se ve son las sueltas; abriendo cajas hay más. */}
                           {p.envase_id && (
