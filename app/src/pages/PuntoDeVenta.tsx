@@ -37,6 +37,7 @@ import { moneda, numero } from '@/lib/tipos'
 import { confirmar, pedirNumero, pedirTexto } from '@/components/Dialogo'
 import { MOTIVOS_DE_PRECIO } from '@/lib/motivos'
 import LineaLibre from '@/components/LineaLibre'
+import VistaPreviaProducto from '@/components/VistaPreviaProducto'
 import type { DatosLineaLibre } from '@/components/LineaLibre'
 import { useAtajo, useBotonConAtajo } from '@/lib/atajos'
 import { TeclaAtajo } from '@/components/Atajos'
@@ -255,6 +256,9 @@ export default function PuntoDeVenta() {
   )
   const flechasProductos = useListaConFlechas(encontrados, (p) => void agregar(p))
   useEscribirEnElBuscador(busqueda)
+  // El que se ve en la columna derecha mientras la lista está abierta.
+  const marcadoEnLaLista =
+    debounced.length >= 2 && texto.trim() ? encontrados[Math.min(flechasProductos.marcado, encontrados.length - 1)] : undefined
 
   const botonCliente = useRef<HTMLButtonElement>(null)
   const zonaDePago = useRef<HTMLDivElement>(null)
@@ -1558,6 +1562,21 @@ Se muestra en la cola del cajero. Si no hace falta, dejalo vacío.`,
           {presupuestar.isPending ? `Armando… ${pasoEnvio ?? ''}` : 'Hacer un presupuesto'}
         </button>
 
+        {/*
+          Lo de abajo queda en un contenedor que llena la columna: mientras
+          se busca, la foto del producto marcado va encima, sin correr nada.
+        */}
+        <div className="relative flex min-h-0 flex-1 flex-col gap-4">
+        {marcadoEnLaLista && (
+          <div className="absolute inset-0 z-10 hidden lg:block">
+            <VistaPreviaProducto
+              producto={marcadoEnLaLista}
+              siguiente={encontrados[flechasProductos.marcado + 1]}
+              enLinea={enLinea}
+            />
+          </div>
+        )}
+
         {!enLinea && lineas.length > 0 && (
           <p className="text-xs text-piedra-500">
             Sin conexión el presupuesto se imprime igual y viaja cuando vuelva internet.
@@ -1592,6 +1611,7 @@ Se muestra en la cola del cajero. Si no hace falta, dejalo vacío.`,
             Descartar venta
           </button>
         )}
+        </div>
       </aside>
     </div>
   )
