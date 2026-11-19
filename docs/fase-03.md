@@ -307,6 +307,8 @@ Lucas pidió algo que es más grande que estos pedidos y que no se resuelve punt
 
 Eso pide **recorrer el sistema entero** con esa vara —cada circuito de punta a punta, contando pantallas y veces que se elige lo mismo— y no sólo lo nuevo. **Se hace como un trabajo propio**, después de diseñar esta fase, porque los circuitos nuevos (pedido mayorista, remito interno) tienen que nacer ya integrados y sirven de modelo para corregir los viejos.
 
+**Hecha el 19/11:** [`auditoria-integralidad.md`](auditoria-integralidad.md).
+
 ---
 
 ## Las preguntas, contestadas el 26/10

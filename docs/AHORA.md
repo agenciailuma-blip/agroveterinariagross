@@ -17,6 +17,8 @@ estado: en curso
 - **La tienda ya toma los cambios de los productos que tenía** (foto, *solo consultar*, precio): lo resolvió la web.
 - **Proforma a precio a convenir:** Francisco le avisa a Lucas que la pruebe. Al 19/11 no había ninguna emitida y ningún cliente tenía la marca.
 
+**Auditoría de integralidad, hecha (19/11):** [`auditoria-integralidad.md`](auditoria-integralidad.md). Diez circuitos ya cumplen la vara (el pedido mayorista es el modelo); quedan **nueve saltos**, en tres tandas. La primera son cinco enlaces entre pantallas que ya existen (movimientos de la cuenta → su comprobante, proveedor → su cuenta y sus pedidos, remito → su venta, recibo → cuenta del cliente, cheque → cuenta del cliente). Nada construido todavía.
+
 **Sin publicar: 0.25.3** (19/11). **Mayorista: WhatsApp, Cómo llegar y Ver en el mapa ahora abren en el programa de escritorio** (antes sólo en el navegador): la tarjeta del cliente, el cartelito del mapa y la ficha pasan por la misma función que ya usaban Fiados y Traslados, que abre el navegador de la PC. En el navegador y el celular siguen como enlaces comunes. Tipos revisados; el lado del programa no se puede probar en el navegador: confirmarlo en una PC con la 0.25.3 instalada.
 
 **Publicada: 0.25.2** (17/11, 17:18; la publicó Francisco), verificada el 19/11 en Cloudflare: `latest.json` dice 0.25.2 — trae la 0.25.1. **Mostrador: foto del producto marcado** en la columna derecha mientras se busca (flechas o mouse), con nombre, precio, stock y miniaturas si tiene varias; «Sin foto» si no tiene. Pedido del cliente el 17/11. Visto en el navegador contra la base real.
@@ -607,7 +609,7 @@ Lucas trajo **ocho pedidos nuevos**, en su cuaderno y explicados en dos audios: 
 - **Los productos asociados** hacen una factura que describe otra cosa de la que salió. Avisado una vez en el documento; el 06/11 se decidió no pedirle a Armando que lo revise.
 - **Los mensajes masivos van en la fase siguiente**, con el CRM.
 
-**Anotado para hacer aparte: la auditoría de integralidad.** Lucas quiere menos saltos entre pantallas —el pedido llega, depósito da el ok, un clic arma el remito, otro factura, todo en el mismo lugar— y que lo hecho igual se vea desde Remitos o Comprobantes. Pide recorrer el sistema entero con esa vara; está descripto al final de [`fase-03.md`](fase-03.md).
+**Anotado para hacer aparte: la auditoría de integralidad.** Lucas quiere menos saltos entre pantallas —el pedido llega, depósito da el ok, un clic arma el remito, otro factura, todo en el mismo lugar— y que lo hecho igual se vea desde Remitos o Comprobantes. Pide recorrer el sistema entero con esa vara; está descripto al final de [`fase-03.md`](fase-03.md). **Hecha el 19/11:** [`auditoria-integralidad.md`](auditoria-integralidad.md).
 
 Las fotos, las láminas y la transcripción: [`referencias/pedidos-lucas-2026-10-26/`](referencias/pedidos-lucas-2026-10-26/).
 
