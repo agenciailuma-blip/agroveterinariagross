@@ -92,6 +92,10 @@ Ordenados por cuánto se usan. **Tamaño:** *chico* entra en una versión junto 
 
 **Propuesta.** En el buscador del mostrador, escribir el número del presupuesto lo trae y ofrece mandarlo a caja ahí mismo. **Tamaño: chico a medio.** Depende de cuánto se use: si casi no vuelven presupuestos, no vale la pena.
 
+## Hecho
+
+- **Tanda 1, en la 0.25.5 (19/11):** puntos 2, 4, 5, 6 y 7. Dos diferencias con lo propuesto: en *Compras* el botón de cada factura se llama **Cuenta** (no se sabe desde ahí si ya está pagada) y **Pagarla** aparece al guardar una nueva; y los recibos de **fiados** no llevan a la ficha del fiado, porque la consulta de recibos no trae a la persona.
+
 ## Orden sugerido
 
 | Tanda | Qué | Por qué junto |

@@ -6,7 +6,9 @@ import { listarNoFiscales, numeroNoFiscal, remitosSinCobrar } from '@/lib/api/no
 import NuevoRemito from '@/components/NuevoRemito'
 import RemitoFirmado from '@/components/RemitoFirmado'
 import { firmasDeRemitos } from '@/lib/api/remitoFirmado'
-import { abrirNoFiscal, abrirRemitoR } from '@/lib/escritorio'
+import { abrirComprobante, abrirNoFiscal, abrirRemitoR } from '@/lib/escritorio'
+import { papelDeVenta } from '@/lib/api/papeles'
+import { enCastellano } from '@/lib/errores'
 
 /*
   Los remitos del reparto.
@@ -25,6 +27,18 @@ export default function Remitos() {
   const qc = useQueryClient()
   const [nuevo, setNuevo] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  async function abrirVenta(ventaId: string, remitoId: string) {
+    setError(null)
+    try {
+      const papel = await papelDeVenta(ventaId, remitoId)
+      if (!papel) setError('Esa venta todavía no tiene factura ni proforma.')
+      else if (papel.tipo === 'comprobante') await abrirComprobante(papel.id)
+      else await abrirNoFiscal(papel.id)
+    } catch (e) {
+      setError(enCastellano(e, 'No se pudo abrir la factura de la venta.'))
+    }
+  }
 
   const puedeVer = tienePermiso('facturacion.no_fiscal_ver')
   const puedeEmitir = tienePermiso('facturacion.no_fiscal_emitir')
@@ -214,7 +228,18 @@ export default function Remitos() {
                       )}
                     </td>
                     <td className="hidden whitespace-nowrap px-3 py-2 align-top text-xs text-piedra-500 lg:table-cell">
-                      {r.venta_codigo ?? '—'}
+                      {/* Auditoría de integralidad, punto 5: del remito a la factura de su venta. */}
+                      {r.venta_codigo && r.venta_id ? (
+                        <button
+                          onClick={() => abrirVenta(r.venta_id!, r.id)}
+                          className="text-marca-700 underline"
+                          title="Abrir la factura o la proforma de esta venta"
+                        >
+                          {r.venta_codigo}
+                        </button>
+                      ) : (
+                        (r.venta_codigo ?? '—')
+                      )}
                       {r.venta_estado && r.venta_estado !== 'cobrada' && (
                         <span className="ml-1 rounded bg-amber-100 px-1.5 py-0.5 text-amber-900">
                           {r.venta_estado === 'en_caja' ? 'sin cobrar' : r.venta_estado}

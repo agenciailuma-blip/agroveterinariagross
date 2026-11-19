@@ -73,10 +73,10 @@ export default function Recibos() {
           </p>
           <ul className={`${tarjeta} divide-y divide-piedra-100`}>
             {filas.map((r) => (
-              <li key={r.id}>
+              <li key={r.id} className="flex items-stretch">
                 <Link
                   to={`/recibo/${r.id}`}
-                  className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1 px-4 py-3 hover:bg-piedra-50"
+                  className="flex min-w-0 flex-1 flex-wrap items-start justify-between gap-x-4 gap-y-1 px-4 py-3 hover:bg-piedra-50"
                 >
                   <div className="min-w-0 flex-1 basis-56">
                     <p className="truncate text-sm font-medium text-tinta">{r.cliente_nombre}</p>
@@ -102,6 +102,15 @@ export default function Recibos() {
                     )}
                   </div>
                 </Link>
+                {/* Auditoría de integralidad, punto 6: del recibo a cómo quedó la cuenta. */}
+                {r.cliente_id && (
+                  <Link
+                    to={`/clientes?c=${r.cliente_id}`}
+                    className="flex shrink-0 items-center border-l border-piedra-100 px-3 text-xs text-marca-700 hover:bg-marca-50"
+                  >
+                    Cuenta
+                  </Link>
+                )}
               </li>
             ))}
           </ul>

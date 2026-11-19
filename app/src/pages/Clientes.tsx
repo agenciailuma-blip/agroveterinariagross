@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/auth/AuthProvider'
 import {
@@ -106,6 +106,20 @@ export default function Clientes() {
     },
     onError: (e) => setError(e instanceof Error ? e.message : 'No se pudo guardar.'),
   })
+
+  /*
+    Desde un recibo o un cheque se llega con `?c=`: se abre ese cliente en
+    su cuenta corriente (auditoría de integralidad, puntos 6 y 7).
+  */
+  const [params, setParams] = useSearchParams()
+  const pedido = params.get('c')
+  useEffect(() => {
+    if (!pedido) return
+    setCreando(false)
+    setSeleccionado(pedido)
+    setPestania('cuenta')
+    setParams({}, { replace: true })
+  }, [pedido, setParams])
 
   function abrir(id: string) {
     setCreando(false)

@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { ETIQUETA_MOVIMIENTO, movimientosCuentaCorriente } from '@/lib/api/clientes'
+import { ETIQUETA_MOVIMIENTO, movimientosCuentaCorriente, type MovimientoCC } from '@/lib/api/clientes'
 import type { Cliente } from '@/lib/api/clientes'
 import { cajaAbierta } from '@/lib/api/caja'
 import { numeroRecibo, type ReciboEmitido } from '@/lib/api/recibos'
@@ -9,7 +9,9 @@ import ModalCobranza from '@/components/ModalCobranza'
 import RemitoFirmado from '@/components/RemitoFirmado'
 import { firmasDeRemitos, firmasDeVentas } from '@/lib/api/remitoFirmado'
 import { remitosPorFacturar } from '@/lib/api/remitoInterno'
-import { abrirNoFiscal } from '@/lib/escritorio'
+import { abrirComprobante, abrirNoFiscal } from '@/lib/escritorio'
+import { papelDeMovimiento, recibosDeMovimientos, tienePapel } from '@/lib/api/papeles'
+import { enCastellano } from '@/lib/errores'
 import { useAuth } from '@/auth/AuthProvider'
 import { numeroNoFiscal } from '@/lib/api/noFiscal'
 import { useTerminal } from '@/lib/terminal'
@@ -32,10 +34,37 @@ export default function CuentaCorriente({
   const { terminal } = useTerminal()
   const [cobrando, setCobrando] = useState(false)
   const [recibo, setRecibo] = useState<ReciboEmitido | null>(null)
+  const navegar = useNavigate()
+  const [sinPapel, setSinPapel] = useState<string | null>(null)
+
+  /*
+    Tocar un renglón abre su papel: la factura o la proforma de la venta,
+    la nota de crédito, el recibo. Auditoría de integralidad, punto 2.
+  */
+  async function abrirPapel(m: MovimientoCC) {
+    setSinPapel(null)
+    try {
+      const papel = await papelDeMovimiento(m, recibos.data)
+      if (!papel) setSinPapel('Ese movimiento no tiene un comprobante para abrir.')
+      else if (papel.tipo === 'comprobante') await abrirComprobante(papel.id)
+      else if (papel.tipo === 'no_fiscal') await abrirNoFiscal(papel.id)
+      else navegar(`/recibo/${papel.id}`)
+    } catch (e) {
+      setSinPapel(enCastellano(e, 'No se pudo abrir el comprobante.'))
+    }
+  }
 
   const movimientos = useQuery({
     queryKey: ['movimientos-cc', cliente.id],
     queryFn: () => movimientosCuentaCorriente(cliente.id),
+  })
+
+  // El recibo de cada cobro: el recibo apunta al movimiento, no al revés.
+  const cobros = (movimientos.data ?? []).filter((m) => m.tipo === 'cobranza').map((m) => m.id)
+  const recibos = useQuery({
+    queryKey: ['recibos-de-movimientos', cobros],
+    queryFn: () => recibosDeMovimientos(cobros),
+    enabled: cobros.length > 0,
   })
 
   // El remito firmado de cada venta, si ya subieron la foto.
@@ -194,6 +223,11 @@ export default function CuentaCorriente({
         <div className="border-b border-borde px-5 py-2.5">
           <p className="text-xs font-medium tracking-wide text-piedra-400 uppercase">Movimientos</p>
         </div>
+        {sinPapel && (
+          <p role="alert" className="border-b border-borde bg-amber-50 px-5 py-2 text-xs text-amber-900">
+            {sinPapel}
+          </p>
+        )}
         {/*
           Un renglón por movimiento, sin columnas de ancho fijo: la ficha
           del cliente es angosta, y con fecha, concepto, vencimiento e
@@ -210,7 +244,16 @@ export default function CuentaCorriente({
             return (
               <li key={m.id} className="flex items-start gap-3 px-5 py-2.5">
                 <div className="min-w-0 flex-1">
-                  <p className="break-words text-tinta">{m.concepto ?? ETIQUETA_MOVIMIENTO[m.tipo]}</p>
+                  {tienePapel(m, recibos.data) ? (
+                    <button
+                      onClick={() => abrirPapel(m)}
+                      className="break-words text-left text-tinta underline decoration-piedra-300 underline-offset-2 hover:text-marca-700 hover:decoration-marca-500"
+                    >
+                      {m.concepto ?? ETIQUETA_MOVIMIENTO[m.tipo]}
+                    </button>
+                  ) : (
+                    <p className="break-words text-tinta">{m.concepto ?? ETIQUETA_MOVIMIENTO[m.tipo]}</p>
+                  )}
                   <p className="text-xs text-piedra-400">
                     <span className="tabular-nums">{fecha.format(new Date(m.ocurrido_en))}</span>
                     {' · '}

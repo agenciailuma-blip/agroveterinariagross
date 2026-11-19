@@ -468,6 +468,12 @@ function Detalle({ c, puedeMover, onAccion }: { c: Cheque; puedeMover: boolean; 
         </ol>
       </div>
 
+      {c.cliente_id && c.cliente_con_cuenta && (
+        <Link to={`/clientes?c=${c.cliente_id}`} className="block text-sm text-marca-700 hover:underline">
+          Ver la cuenta de {c.cliente} →
+        </Link>
+      )}
+
       {c.estado === 'endosado' && c.proveedor_id && (
         <Link to={`/proveedores/cuentas?p=${c.proveedor_id}`} className="text-sm text-marca-700 hover:underline">
           Ver la cuenta de {c.proveedor} →

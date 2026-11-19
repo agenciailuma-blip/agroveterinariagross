@@ -50,6 +50,8 @@ export default function Proveedores() {
 
   const puedeVer = tienePermiso('proveedores.ver')
   const puedeGestionar = tienePermiso('proveedores.gestionar')
+  const puedeVerCuentas = tienePermiso('compras.ver')
+  const puedePedir = tienePermiso('compras.registrar')
   const puedeAumentar = tienePermiso('productos.aumentar_precios')
 
   const proveedores = useQuery({
@@ -210,8 +212,20 @@ export default function Proveedores() {
                     {numero.format(cuenta.data?.get(p.id) ?? 0)}
                   </td>
                   <td className="px-3 py-2.5 text-right align-top sm:px-4">
+                    <div className="flex flex-col items-end gap-1.5 sm:flex-row sm:justify-end sm:gap-3">
+                      {/* Auditoría de integralidad, punto 4: del proveedor a sus cosas. */}
+                      {puedeVerCuentas && (
+                        <Link to={`/proveedores/cuentas?p=${p.id}`} className="text-xs text-marca-700 hover:underline">
+                          Cuenta
+                        </Link>
+                      )}
+                      {puedePedir && p.activo && (
+                        <Link to={`/compras/pedidos?p=${p.id}`} className="text-xs text-marca-700 hover:underline">
+                          Pedir
+                        </Link>
+                      )}
                     {puedeGestionar && (
-                      <div className="flex flex-col items-end gap-1.5 sm:flex-row sm:justify-end sm:gap-3">
+                      <>
                         <button
                           onClick={() => setEditando(p)}
                           className="text-xs text-marca-700 hover:underline"
@@ -236,8 +250,9 @@ export default function Proveedores() {
                         >
                           Dar de baja
                         </button>
-                      </div>
+                      </>
                     )}
+                    </div>
                   </td>
                 </tr>
               ))}

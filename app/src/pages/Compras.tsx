@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/auth/AuthProvider'
@@ -69,6 +70,8 @@ export default function Compras() {
   const [recibiendoId, setRecibiendoId] = useState<string | null>(null)
   const qc = useQueryClient()
   const puedeRecibir = tienePermiso('compras.registrar') && tienePermiso('stock.ajustar')
+  // De la factura a la cuenta del proveedor, para pagarla (auditoría de integralidad, 4).
+  const puedeVerCuenta = tienePermiso('compras.ver')
 
   const compras = useQuery({ queryKey: ['compras'], queryFn: () => listarCompras() })
 
@@ -114,6 +117,7 @@ export default function Compras() {
       <span className="text-xs text-amber-700">Sin recibir</span>
     )
   const recibiendo = compras.data?.find((c) => c.id === recibiendoId) ?? null
+  const proveedorDe = (id: string) => compras.data?.find((c) => c.id === id)?.proveedor_id ?? null
 
   return (
     <div className="space-y-6">
@@ -147,13 +151,21 @@ export default function Compras() {
         />
       )}
 
-      {recienGuardada && !recibiendo && puedeRecibir && (
+      {recienGuardada && !recibiendo && (puedeRecibir || puedeVerCuenta) && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-emerald-50 px-4 py-3 text-sm ring-1 ring-emerald-200">
-          <span className="text-emerald-800">Factura guardada. ¿La mercadería ya está acá?</span>
-          <div className="flex gap-2">
+          <span className="text-emerald-800">
+            {puedeRecibir ? 'Factura guardada. ¿La mercadería ya está acá?' : 'Factura guardada.'}
+          </span>
+          <div className="flex flex-wrap gap-2">
             <button onClick={() => setRecienGuardada(null)} className={boton.suave}>
-              Después
+              {puedeRecibir ? 'Después' : 'Listo'}
             </button>
+            {puedeVerCuenta && proveedorDe(recienGuardada) && (
+              <Link to={`/proveedores/cuentas?p=${proveedorDe(recienGuardada)}`} className={boton.secundario}>
+                Pagarla
+              </Link>
+            )}
+            {puedeRecibir && (
             <button
               onClick={() => {
                 setRecibiendoId(recienGuardada)
@@ -163,6 +175,7 @@ export default function Compras() {
             >
               Recibir la mercadería
             </button>
+            )}
           </div>
         </div>
       )}
@@ -249,6 +262,15 @@ export default function Compras() {
                 </td>
                 <td className="whitespace-nowrap hidden px-4 py-2.5 sm:table-cell">{mercaderia(c)}</td>
                 <td className="px-2 py-2.5 text-right">
+                  <div className="flex flex-col items-end gap-1 xl:flex-row xl:justify-end">
+                  {puedeVerCuenta && c.proveedor_id && (
+                    <Link
+                      to={`/proveedores/cuentas?p=${c.proveedor_id}`}
+                      className="whitespace-nowrap rounded-lg px-2 py-1 text-xs text-marca-700 hover:bg-marca-50"
+                    >
+                      Cuenta
+                    </Link>
+                  )}
                   {tienePermiso('compras.registrar') && (
                     <button
                       onClick={() =>
@@ -263,6 +285,7 @@ export default function Compras() {
                       Dar de baja
                     </button>
                   )}
+                  </div>
                 </td>
               </tr>
             ))}

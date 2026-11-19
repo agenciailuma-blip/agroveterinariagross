@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/auth/AuthProvider'
 import { pedirTexto } from '@/components/Dialogo'
@@ -74,8 +74,15 @@ export default function PedidosProveedor() {
   const qc = useQueryClient()
   const puedePedir = tienePermiso('compras.registrar')
 
+  /*
+    «Pedir» desde la lista de proveedores llega con `?p=` y abre el
+    pedido con ese proveedor ya elegido (auditoría de integralidad, 4).
+  */
+  const [params, setParams] = useSearchParams()
+  const [proveedorInicial] = useState(() => params.get('p') ?? '')
+
   const [filtro, setFiltro] = useState<EstadoPedido | null>('pedido')
-  const [armando, setArmando] = useState(false)
+  const [armando, setArmando] = useState(() => !!proveedorInicial && puedePedir)
   const [abierto, setAbierto] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
@@ -124,6 +131,7 @@ export default function PedidosProveedor() {
 
       {armando && (
         <ArmarPedido
+          proveedorInicial={proveedorInicial}
           onHecho={(id, n) => {
             setArmando(false)
             setAbierto(id)
@@ -134,6 +142,7 @@ export default function PedidosProveedor() {
           onCancelar={() => {
             setArmando(false)
             setError(null)
+            if (params.has('p')) setParams({}, { replace: true })
           }}
           onError={setError}
         />
@@ -227,16 +236,18 @@ function Estado({ estado, llegoAlgo }: { estado: EstadoPedido; llegoAlgo: boolea
 */
 
 function ArmarPedido({
+  proveedorInicial = '',
   onHecho,
   onCancelar,
   onError,
 }: {
+  proveedorInicial?: string
   onHecho: (id: string, numero: number) => void
   onCancelar: () => void
   onError: (e: string | null) => void
 }) {
   const botonPedir = useBotonConAtajo('F10')
-  const [proveedorId, setProveedorId] = useState('')
+  const [proveedorId, setProveedorId] = useState(proveedorInicial)
   const [pedir, setPedir] = useState<Record<string, number>>({})
   const [observacion, setObservacion] = useState('')
   const [buscar, setBuscar] = useState('')
