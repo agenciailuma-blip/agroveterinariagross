@@ -1,5 +1,5 @@
 ---
-actualizado: 2026-11-17
+actualizado: 2026-11-19
 estado: en curso
 ---
 
@@ -12,9 +12,14 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Construida: 0.25.2** (17/11), para publicar — trae la 0.25.1 si no se publicó. **Mostrador: foto del producto marcado** en la columna derecha mientras se busca (flechas o mouse), con nombre, precio, stock y miniaturas si tiene varias; «Sin foto» si no tiene. Pedido del cliente el 17/11. Visto en el navegador contra la base real.
+**Cerrado el 19/11, avisado por Francisco:**
+- **Las impresoras de Mostrador 2 y Caja 2 ya andan** (mensaje de Lucas). En la base `terminal.impresora_windows` sigue vacía para esas dos, y es normal: desde la 0.24.0 la impresora se guarda en cada PC, no en el puesto.
+- **La tienda ya toma los cambios de los productos que tenía** (foto, *solo consultar*, precio): lo resolvió la web.
+- **Proforma a precio a convenir:** Francisco le avisa a Lucas que la pruebe. Al 19/11 no había ninguna emitida y ningún cliente tenía la marca.
 
-**0.25.1** (17/11) — **trae también los dos cambios sin publicar de después de la 0.25.0** (ventas y compras para el contador, y el aviso de puesto repetido). **Productos: filtro «En la web / No en la web»** junto a categoría y marca; filtra en la base, no sólo los 100 que se ven. El listado ya no se desplaza hacia el costado a 375 px. Visto en el navegador contra la base real (165 en la web). **892 pruebas verdes.**
+**Publicada: 0.25.2** (17/11, 17:18; la publicó Francisco), verificada el 19/11 en Cloudflare: `latest.json` dice 0.25.2 — trae la 0.25.1. **Mostrador: foto del producto marcado** en la columna derecha mientras se busca (flechas o mouse), con nombre, precio, stock y miniaturas si tiene varias; «Sin foto» si no tiene. Pedido del cliente el 17/11. Visto en el navegador contra la base real.
+
+**Publicada con la 0.25.2: 0.25.1** (17/11) — **trae también los dos cambios sin publicar de después de la 0.25.0** (ventas y compras para el contador, y el aviso de puesto repetido). **Productos: filtro «En la web / No en la web»** junto a categoría y marca; filtra en la base, no sólo los 100 que se ven. El listado ya no se desplaza hacia el costado a 375 px. Visto en el navegador contra la base real (165 en la web). **892 pruebas verdes.**
 
 **Publicada: 0.25.0** (la publicó Francisco; el publicador terminó con «Deployment complete» en Cloudflare, anotado el 16/11) — **trae la 0.24.0, la 0.23.0 y la 0.22.2.** La propuesta de proformas, aprobada por Lucas el 13/11 con sus cinco respuestas ([`propuesta-proformas-y-remitos.md`](propuesta-proformas-y-remitos.md)):
 - **Proforma en lugar de comprobante interno**, con la misma numeración (sigla PRO). En la caja quedan dos botones: **Factura (F9)** y **Proforma (F11)**; por dentro la proforma sigue siendo «sin factura» o «a facturar» según el medio y el cliente.

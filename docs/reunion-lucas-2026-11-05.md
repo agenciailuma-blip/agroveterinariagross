@@ -10,7 +10,7 @@ Nueve pedidos. Abajo, cada uno con lo que se encontró en el código y en la bas
 
 | Punto | Estado |
 |---|---|
-| 1. Fotos en la tienda | Del lado de la web: ✅ avisado |
+| 1. Fotos en la tienda | Del lado de la web: ✅ resuelto por la web (anotado el 19/11) |
 | 2. Ingresos, egresos y cierre de caja | ✅ 0.21.0: ingresos y egresos, el cierre por medio de pago, la planilla A4 y los cierres anteriores |
 | 3. Buscar con el teclado | ✅ 0.20.0 en Mostrador y Caja; 0.21.1 en Remitos, Órdenes internas, Recepción y Mayorista |
 | 4 y 5. Alimento suelto | ✅ 0.20.0: 86 productos a kilo o litro, coma en la cantidad, opción para todos. Atar cada suelto a su bolsa lo hace Lucas, a mano y de a poco (06/11) |
