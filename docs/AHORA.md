@@ -19,9 +19,15 @@ estado: en curso
 
 **Registro de auditoría — propuesta (19/11):** [`propuesta-registro-de-auditoria.md`](propuesta-registro-de-auditoria.md). Es lo único que falta construir de la Fase 1 (alcance §1); la tabla `auditoria` sigue vacía. Que fichas y configuración dejen rastro, y una pantalla que junte eso con los rastros que ya existen. Tres días. Espera el OK de Francisco y dos respuestas de Lucas (quién lo ve; si quiere un aviso diario).
 
-**Auditoría de integralidad, hecha (19/11):** [`auditoria-integralidad.md`](auditoria-integralidad.md). Diez circuitos ya cumplen la vara (el pedido mayorista es el modelo); quedan **nueve saltos**, en tres tandas. La primera son cinco enlaces entre pantallas que ya existen (movimientos de la cuenta → su comprobante, proveedor → su cuenta y sus pedidos, remito → su venta, recibo → cuenta del cliente, cheque → cuenta del cliente). **La tanda 1 ya está en la 0.25.5.**
+**Auditoría de integralidad, hecha (19/11):** [`auditoria-integralidad.md`](auditoria-integralidad.md). Diez circuitos ya cumplen la vara (el pedido mayorista es el modelo); quedan **nueve saltos**, en tres tandas. La primera son cinco enlaces entre pantallas que ya existen (movimientos de la cuenta → su comprobante, proveedor → su cuenta y sus pedidos, remito → su venta, recibo → cuenta del cliente, cheque → cuenta del cliente). **Las tandas 1 y 2 ya están en la 0.25.5**; la 3 (buscador por número y presupuesto desde el mostrador) espera a que Lucas diga si le hace falta.
 
-**Sin publicar: 0.25.5** (19/11). **Integralidad, tanda 1: cinco enlaces entre pantallas.**
+**Sin publicar: 0.25.5** (19/11). **Integralidad, tandas 1 y 2.**
+
+*Tanda 2 — facturar y devolver desde donde aparece:*
+- **Remitos internos desde la cuenta del cliente:** el recuadro *Pendientes de facturar* de la cuenta tiene **Poner precios y facturar**, con los remitos marcados (se desmarca lo que no va). Abre la misma ventana de precios que *Facturación*. Probado con dos remitos simulados en el navegador (no había ninguno real pendiente): la ventana abre sólo con los marcados; se canceló sin facturar.
+- **Devolver desde la vista de cualquier factura:** *Devolver todo* y *Devolver una parte*, con las mismas reglas que *Facturación* (ahora escritas una vez, en `devolucionesPosibles`); en una factura agrupada, *Devolver de una de sus ventas*. Así se devuelve una factura vieja encontrada en *Facturas emitidas*, en la cuenta del cliente o en un pedido. Probado con la factura 00001-00000001 (agosto): se abrieron las dos ventanas y se cancelaron; no quedó ninguna nota de crédito. En una nota de crédito y en una agrupada ya devuelta no aparece. *Facturación* sigue igual.
+
+*Tanda 1 — cinco enlaces entre pantallas:*
 - **Cuenta corriente del cliente:** cada movimiento con papel va subrayado y lo abre: la factura de la venta (también la agrupada de fin de mes), la proforma, la nota de crédito —la de una venta anulada, no su factura— o el recibo del cobro. Los cobros de antes de que existieran los recibos quedan sin enlace.
 - **Proveedores:** **Cuenta** y **Pedir** en cada uno; *Pedir* abre el pedido nuevo con el proveedor elegido.
 - **Compras:** **Cuenta** en cada factura, y **Pagarla** al guardar una nueva.

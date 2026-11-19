@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Fragment, useEffect, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
+import DevolverFactura from '@/components/DevolverFactura'
 import QRCode from 'qrcode'
 import { lineasDelPie } from '@/lib/comprobante/escpos'
 import { obtenerComprobanteCompleto, registrarImpresion } from '@/lib/api/comprobante'
@@ -235,6 +236,9 @@ export default function ComprobanteImprimible() {
 
       {/* Para el cliente de cuenta corriente, y lo que se mandó antes. */}
       {c.cae && <MandarPorMail c={c} />}
+
+      {/* Devolverla desde acá, la encuentre quien la encuentre (integralidad, 3). */}
+      {c.cae && <DevolverFactura comprobanteId={c.id} />}
 
       {errorImpresora && (
         <div className="mx-auto mb-4 max-w-[21cm] px-4 print:hidden">

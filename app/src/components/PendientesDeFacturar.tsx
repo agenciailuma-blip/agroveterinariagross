@@ -162,7 +162,13 @@ export default function PendientesDeFacturar({
   )
 }
 
-function PonerPrecios({
+/*
+  La ventana de precios. También la abre la cuenta corriente del cliente
+  con sus remitos (auditoría de integralidad, punto 1): ahí la factura
+  que ARCA no autorizó se reintenta en Facturación, no «abajo».
+*/
+export function PonerPrecios({
+  dondeReintentar = 'desde la lista de abajo',
   cliente,
   remitos,
   puedeFactura,
@@ -171,6 +177,7 @@ function PonerPrecios({
   onListo,
   onAviso,
 }: {
+  dondeReintentar?: string
   cliente: string
   remitos: RemitoPorFacturar[]
   puedeFactura: boolean
@@ -225,7 +232,7 @@ function PonerPrecios({
       qc.invalidateQueries({ queryKey: ['comprobantes'] })
       qc.invalidateQueries({ queryKey: ['movimientos-cc'] })
       if (problema) {
-        onListo('', `La factura quedó armada, pero ARCA no la autorizó todavía: ${problema} Se puede reintentar desde la lista de abajo.`)
+        onListo('', `La factura quedó armada, pero ARCA no la autorizó todavía: ${problema} Se puede reintentar ${dondeReintentar}.`)
         return
       }
       onListo(texto)

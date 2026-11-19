@@ -6,6 +6,7 @@ import type { Cliente } from '@/lib/api/clientes'
 import { cajaAbierta } from '@/lib/api/caja'
 import { numeroRecibo, type ReciboEmitido } from '@/lib/api/recibos'
 import ModalCobranza from '@/components/ModalCobranza'
+import { PonerPrecios } from '@/components/PendientesDeFacturar'
 import RemitoFirmado from '@/components/RemitoFirmado'
 import { firmasDeRemitos, firmasDeVentas } from '@/lib/api/remitoFirmado'
 import { remitosPorFacturar } from '@/lib/api/remitoInterno'
@@ -16,6 +17,7 @@ import { useAuth } from '@/auth/AuthProvider'
 import { numeroNoFiscal } from '@/lib/api/noFiscal'
 import { useTerminal } from '@/lib/terminal'
 import { moneda } from '@/lib/tipos'
+import { botonChico } from '@/estilos'
 
 const fecha = new Intl.DateTimeFormat('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })
 
@@ -88,6 +90,25 @@ export default function CuentaCorriente({
     enabled: cliente.cuenta_corriente,
   })
   const idsSinPrecio = (sinPrecio.data ?? []).map((r) => r.id)
+
+  /*
+    Facturarlos desde acá, sin ir a Facturación a buscar al mismo cliente
+    (auditoría de integralidad, punto 1). Vienen todos marcados, como
+    allá; se desmarca lo que no va.
+  */
+  const puedeFactura = tienePermiso('facturacion.emitir')
+  const puedeInterno = tienePermiso('facturacion.vender_sin_factura')
+  const [fuera, setFuera] = useState<Set<string>>(new Set())
+  const [poniendoPrecios, setPoniendoPrecios] = useState(false)
+  const [avisoFactura, setAvisoFactura] = useState<{ texto: string; error: boolean } | null>(null)
+  const elegidos = (sinPrecio.data ?? []).filter((r) => !fuera.has(r.id))
+  const alternar = (id: string) =>
+    setFuera((s) => {
+      const n = new Set(s)
+      if (n.has(id)) n.delete(id)
+      else n.add(id)
+      return n
+    })
   const firmasSinPrecio = useQuery({
     queryKey: ['remitos-firmados', 'remitos', idsSinPrecio],
     queryFn: () => firmasDeRemitos(idsSinPrecio),
@@ -194,6 +215,14 @@ export default function CuentaCorriente({
           <ul className="divide-y divide-piedra-100 text-sm">
             {sinPrecio.data.map((r) => (
               <li key={r.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-5 py-2.5">
+                {(puedeFactura || puedeInterno) && sinPrecio.data!.length > 1 && (
+                  <input
+                    type="checkbox"
+                    checked={!fuera.has(r.id)}
+                    onChange={() => alternar(r.id)}
+                    aria-label={`Incluir el remito ${numeroNoFiscal('remito', r.serie, r.numero)}`}
+                  />
+                )}
                 <button
                   onClick={() => abrirNoFiscal(r.id)}
                   className="font-mono text-xs text-marca-700 underline"
@@ -216,7 +245,50 @@ export default function CuentaCorriente({
               </li>
             ))}
           </ul>
+          {(puedeFactura || puedeInterno) && (
+            <div className="flex justify-end border-t border-amber-100 px-5 py-2.5">
+              <button
+                onClick={() => {
+                  setAvisoFactura(null)
+                  setPoniendoPrecios(true)
+                }}
+                disabled={!elegidos.length}
+                className={botonChico.principal}
+              >
+                {elegidos.length > 1 ? `Poner precios y facturar ${elegidos.length} remitos` : 'Poner precios y facturar'}
+              </button>
+            </div>
+          )}
         </div>
+      )}
+
+      {avisoFactura && (
+        <p
+          role={avisoFactura.error ? 'alert' : undefined}
+          className={`rounded-xl px-4 py-3 text-sm ring-1 ${
+            avisoFactura.error ? 'bg-red-50 text-red-700 ring-red-200' : 'bg-verde-50 font-medium text-verde-800 ring-verde-200'
+          }`}
+        >
+          {avisoFactura.texto}
+        </p>
+      )}
+
+      {poniendoPrecios && (
+        <PonerPrecios
+          cliente={cliente.nombre}
+          remitos={elegidos}
+          puedeFactura={puedeFactura}
+          puedeInterno={puedeInterno}
+          dondeReintentar="desde Comprobantes → Facturación"
+          onCerrar={() => setPoniendoPrecios(false)}
+          onListo={(texto, error) => {
+            setPoniendoPrecios(false)
+            setFuera(new Set())
+            setAvisoFactura(error ? { texto: error, error: true } : { texto, error: false })
+            onCambio()
+          }}
+          onAviso={(texto) => setAvisoFactura({ texto, error: false })}
+        />
       )}
 
       <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-borde">

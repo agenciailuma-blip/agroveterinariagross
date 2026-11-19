@@ -108,6 +108,38 @@ export async function listarComprobantes(filtro: 'pendientes' | 'todos'): Promis
   return (data ?? []) as FilaComprobante[]
 }
 
+/** Una sola fila de la vista: para la vista del comprobante, que ofrece devolverlo. */
+export async function comprobantePorId(id: string): Promise<FilaComprobante | null> {
+  const { data, error } = await supabase.from('vista_comprobante_estado').select('*').eq('id', id).maybeSingle()
+  if (error) throw new Error(error.message)
+  return (data ?? null) as FilaComprobante | null
+}
+
+/*
+  Qué devoluciones admite una factura. Las mismas reglas en la lista de
+  Facturación y en la vista del comprobante: escritas una vez.
+
+  · Entera: una factura autorizada que todavía no se devolvió. Sobre una
+    nota de crédito no tiene sentido, y sobre una factura ya devuelta
+    duplicaría el reingreso de stock.
+  · Por partes: sigue mientras quede algo. No la corta una nota de
+    crédito —cada devolución parcial emite la suya—; la corta que no
+    quede mercadería sin devolver.
+  · Agrupada: una factura de fin de mes no tiene una venta sino varias;
+    se devuelve venta por venta, desde la lista de sus ventas.
+*/
+export function devolucionesPosibles(
+  c: FilaComprobante,
+  puedeEmitir: boolean,
+): { entera: boolean; parte: boolean; agrupada: boolean } {
+  const facturaAutorizada = puedeEmitir && c.familia === 'factura' && c.estado === 'autorizado'
+  return {
+    entera: facturaAutorizada && !c.tiene_nota_credito && !c.tiene_devoluciones_parciales && !!c.venta_id,
+    parte: facturaAutorizada && c.queda_por_devolver && !!c.venta_id,
+    agrupada: c.familia === 'factura' && !c.venta_id,
+  }
+}
+
 /*
   Ventas cobradas sin comprobante.
 
