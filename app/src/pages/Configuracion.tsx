@@ -9,6 +9,7 @@ import TandasRemitoR from '@/components/TandasRemitoR'
 import Depositos from '@/components/Depositos'
 import RedDelLocal from '@/components/RedDelLocal'
 import CajasYMostradores from '@/components/CajasYMostradores'
+import EstadoDeLasPc from '@/components/EstadoDeLasPc'
 import ImpresoraDelMostrador from '@/components/ImpresoraDelMostrador'
 import RitmoDelMostrador from '@/components/RitmoDelMostrador'
 import ConceptosAsociados from '@/components/ConceptosAsociados'
@@ -117,6 +118,7 @@ export default function Configuracion() {
 
       {pestana === 'local' && (
         <>
+          <EstadoDeLasPc />
           <CajasYMostradores />
           <Depositos />
           <RedDelLocal />

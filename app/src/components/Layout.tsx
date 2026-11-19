@@ -8,6 +8,7 @@ import { contarOrdenesPendientes } from '@/lib/api/recibos'
 import AvisoDeActualizacion from '@/components/AvisoDeActualizacion'
 import AvisoBaseBloqueada from '@/components/AvisoBaseBloqueada'
 import { AvisoPuestoRepetido } from '@/components/PuestoDeEstaPc'
+import { InformeDeEstaPc } from '@/components/EstadoDeLasPc'
 import { useAuth } from '@/auth/AuthProvider'
 import { IndicadorConexion } from '@/components/IndicadorConexion'
 import { TeclaAtajo, useAtajosGlobales } from '@/components/Atajos'
@@ -390,6 +391,7 @@ export default function Layout() {
         <AvisoDeActualizacion />
         <AvisoBaseBloqueada />
         <AvisoPuestoRepetido />
+        <InformeDeEstaPc />
         <header className="flex min-h-12 items-center justify-between gap-3 border-b border-borde bg-white px-3 py-2 lg:min-h-14 lg:items-stretch lg:px-6 lg:py-0">
           <div className="flex min-w-0 items-center gap-2 lg:hidden">
             <button
