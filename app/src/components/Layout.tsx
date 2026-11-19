@@ -6,6 +6,7 @@ import { contarPedidosPendientes } from '@/lib/api/pedidos'
 import { contarPedidosPendientes as contarMayoristasPendientes } from '@/lib/api/mayorista'
 import { contarOrdenesPendientes } from '@/lib/api/recibos'
 import AvisoDeActualizacion from '@/components/AvisoDeActualizacion'
+import BuscarPapel from '@/components/BuscarPapel'
 import AvisoBaseBloqueada from '@/components/AvisoBaseBloqueada'
 import { AvisoPuestoRepetido } from '@/components/PuestoDeEstaPc'
 import { InformeDeEstaPc } from '@/components/EstadoDeLasPc'
@@ -416,6 +417,8 @@ export default function Layout() {
           estira la página entera hasta una zona vacía (29/10).
         */}
         <main className="relative flex-1 overflow-auto p-4 md:p-6">
+          {/* En Comprobantes, un número busca en todas las pestañas (integralidad, 8). */}
+          {seccionDe(pathname)?.seccion.id === 'comprobantes' && <BuscarPapel />}
           <Outlet />
         </main>
       </div>

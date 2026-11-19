@@ -119,6 +119,33 @@ export function leerNumero(texto: string): { punto_venta: number | null; numero:
   return { punto_venta: null, numero: Number(partes[0]) }
 }
 
+/*
+  Un número de cualquier papel, con su serie si la tiene.
+
+  Los papeles no fiscales y los recibos llevan como serie el prefijo del
+  puesto, que puede tener letras («PRE CAJA1-00000010»); las facturas,
+  el punto de venta. Las palabras sueltas sin números —la sigla, la
+  letra de la factura, «N°»— se ignoran.
+*/
+export function leerPapel(texto: string): { serie: string | null; numero: number } | null {
+  const partes = texto
+    .split(/[\s\-/]+/)
+    .map((p) => p.replace(/[.:#°º]/g, ''))
+    .filter((p) => /\d/.test(p))
+  if (!partes.length || partes.length > 2) return null
+  const ultimo = partes[partes.length - 1]
+  if (!/^\d+$/.test(ultimo) || !Number(ultimo)) return null
+  return { serie: partes.length === 2 ? partes[0].toUpperCase() : null, numero: Number(ultimo) }
+}
+
+/** Si la serie de un papel es la que se escribió: «1» y «0001» son la misma; «CAJA1», tal cual. */
+export function mismaSerie(serie: string | number, escrita: string | null): boolean {
+  if (escrita == null) return true
+  const s = String(serie).toUpperCase()
+  if (/^\d+$/.test(s) && /^\d+$/.test(escrita)) return Number(s) === Number(escrita)
+  return s === escrita
+}
+
 // ───────────────────────────────────────────────────────────────
 // La consulta
 // ───────────────────────────────────────────────────────────────

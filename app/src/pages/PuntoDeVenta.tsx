@@ -2,7 +2,8 @@ import { Link } from 'react-router-dom'
 import { esPrecioAConvenir } from '@/lib/api/remitoInterno'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { KeyboardEvent } from 'react'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { enCastellano } from '@/lib/errores'
 import { useTerminal } from '@/lib/terminal'
 import { IdentificarOperador, useOperador } from '@/components/IdentificarOperador'
 import {
@@ -27,7 +28,16 @@ import { subirPendientes } from '@/lib/local/sync'
 import { listaConfig, valorConfig } from '@/lib/local/consultas'
 import AsociarProductos from '@/components/AsociarProductos'
 import { totalesPorConcepto } from '@/lib/conceptos'
-import { LEYENDA_A_CONVENIR, emitirPresupuesto, emitirRemitoDirecto, numeroNoFiscal } from '@/lib/api/noFiscal'
+import {
+  LEYENDA_A_CONVENIR,
+  emitirPresupuesto,
+  emitirRemitoDirecto,
+  mandarPresupuestoACaja,
+  numeroDePresupuesto,
+  numeroNoFiscal,
+  presupuestosPorNumero,
+  type PresupuestoEncontrado,
+} from '@/lib/api/noFiscal'
 import { imprimirNoFiscal, puedeImprimirSolo } from '@/lib/comprobante/imprimirDirecto'
 import { useAuth } from '@/auth/AuthProvider'
 import AvisoVencido from '@/components/AvisoVencido'
@@ -233,10 +243,36 @@ export default function PuntoDeVenta() {
     if (!cliente) clienteConsumidorFinal().then((c) => c && setCliente(c))
   }, [cliente])
 
+  /*
+    «PRE» y un número en el buscador trae ese presupuesto para mandarlo
+    a caja, sin ir a Presupuestos (auditoría de integralidad, 9).
+  */
+  const qc = useQueryClient()
+  const puedeVerPresupuestos = tienePermiso('facturacion.no_fiscal_ver')
+  const buscaPresupuesto = puedeVerPresupuestos && !!numeroDePresupuesto(debounced)
+  const presupuestos = useQuery({
+    queryKey: ['presupuesto-por-numero', debounced],
+    queryFn: () => presupuestosPorNumero(debounced),
+    enabled: buscaPresupuesto,
+  })
+  const presupuestoACaja = useMutation({
+    mutationFn: (p: PresupuestoEncontrado) => mandarPresupuestoACaja(p.venta_id!),
+    onSuccess: (_, p) => {
+      setError(null)
+      setExito(`Presupuesto ${numeroNoFiscal('presupuesto', p.serie, p.numero)}: a la caja`)
+      setTexto('')
+      setDebounced('')
+      qc.invalidateQueries({ queryKey: ['presupuesto-por-numero'] })
+      qc.invalidateQueries({ queryKey: ['no-fiscales'] })
+      qc.invalidateQueries({ queryKey: ['cola-caja'] })
+    },
+    onError: (e) => setError(enCastellano(e, 'No se pudo mandar el presupuesto a la caja.')),
+  })
+
   const resultados = useQuery({
     queryKey: ['venta-buscar', debounced],
     queryFn: () => buscarProductosVenta(debounced),
-    enabled: debounced.length >= 2,
+    enabled: debounced.length >= 2 && !buscaPresupuesto,
   })
 
   const clientes = useQuery({
@@ -287,6 +323,12 @@ export default function PuntoDeVenta() {
       e.preventDefault()
       if (buscandoCliente) document.getElementById('buscador-de-cliente')?.focus()
       else botonCliente.current?.focus()
+      return
+    }
+    // Con «PRE 12» no se agrega ningún producto: se elige el presupuesto con el mouse.
+    if (e.key === 'Enter' && puedeVerPresupuestos && numeroDePresupuesto(texto)) {
+      e.preventDefault()
+      setDebounced(texto.trim())
       return
     }
     const listaAlDia = debounced === texto.trim() && !resultados.isFetching
@@ -1044,7 +1086,65 @@ export default function PuntoDeVenta() {
             Escribir
           </button>
 
-          {debounced.length >= 2 && (
+          {buscaPresupuesto && (
+            <div className="absolute top-full right-0 left-0 z-20 mt-1 max-h-80 overflow-y-auto rounded-xl bg-white shadow-lg ring-1 ring-borde">
+              {presupuestos.isPending ? (
+                <p className="px-4 py-3 text-sm text-piedra-400">Buscando el presupuesto…</p>
+              ) : presupuestos.isError ? (
+                <p role="alert" className="px-4 py-3 text-sm text-red-700">
+                  {enCastellano(presupuestos.error, 'No se pudo buscar el presupuesto: hace falta conexión.')}
+                </p>
+              ) : !presupuestos.data?.length ? (
+                <p className="px-4 py-3 text-sm text-piedra-400">Ningún presupuesto con ese número.</p>
+              ) : (
+                presupuestos.data.map((p) => {
+                  const puedeIr = p.estado === 'emitido' && p.venta_estado === 'borrador' && !!p.venta_id
+                  const situacion =
+                    p.estado === 'anulado'
+                      ? 'Anulado'
+                      : p.venta_estado === 'en_caja'
+                        ? 'Ya está en la caja'
+                        : p.venta_estado === 'cobrada'
+                          ? 'Ya se cobró'
+                          : p.estado === 'convertido'
+                            ? 'Ya se facturó'
+                            : null
+                  const vencido = !!p.valido_hasta && p.valido_hasta < new Date().toISOString().slice(0, 10)
+                  return (
+                    <div
+                      key={p.id}
+                      className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-piedra-100 px-4 py-2.5 last:border-0"
+                    >
+                      <div className="min-w-0 flex-1 basis-56">
+                        <p className="font-medium text-tinta">
+                          Presupuesto <span className="font-mono text-sm">{numeroNoFiscal('presupuesto', p.serie, p.numero)}</span>
+                        </p>
+                        <p className="truncate text-xs text-piedra-500">
+                          {p.receptor_nombre} · {new Date(`${p.fecha}T12:00:00`).toLocaleDateString('es-AR')} ·{' '}
+                          {moneda.format(p.total)}
+                          {vencido && <span className="text-amber-700"> · vencido</span>}
+                        </p>
+                      </div>
+                      {puedeIr ? (
+                        <button
+                          onClick={() => presupuestoACaja.mutate(p)}
+                          disabled={presupuestoACaja.isPending}
+                          tabIndex={-1}
+                          className="shrink-0 rounded-lg bg-marca-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-marca-600 disabled:opacity-40"
+                        >
+                          {presupuestoACaja.isPending ? 'Mandando…' : 'Mandar a caja'}
+                        </button>
+                      ) : (
+                        <span className="shrink-0 text-xs text-piedra-500">{situacion ?? 'No se puede mandar a caja'}</span>
+                      )}
+                    </div>
+                  )
+                })
+              )}
+            </div>
+          )}
+
+          {debounced.length >= 2 && !buscaPresupuesto && (
             <div
               ref={(el) => {
                 flechasProductos.lista.current = el

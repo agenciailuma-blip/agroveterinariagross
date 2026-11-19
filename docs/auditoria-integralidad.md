@@ -95,6 +95,7 @@ Ordenados por cuánto se usan. **Tamaño:** *chico* entra en una versión junto 
 ## Hecho
 
 - **Tanda 1, en la 0.25.5 (19/11):** puntos 2, 4, 5, 6 y 7. Dos diferencias con lo propuesto: en *Compras* el botón de cada factura se llama **Cuenta** (no se sabe desde ahí si ya está pagada) y **Pagarla** aparece al guardar una nueva; y los recibos de **fiados** no llevan a la ficha del fiado, porque la consulta de recibos no trae a la persona.
+- **Tanda 3, en la 0.25.7 (19/11):** puntos 8 y 9, sin esperar la respuesta de Lucas. El buscador acepta también la sigla para buscar un solo tipo, y la serie con letras de los puestos (`CAJA1`). En el mostrador se escribe «PRE» y el número.
 - **Tanda 2, también en la 0.25.5 (19/11):** puntos 1 y 3, como se propusieron. En la cuenta del cliente, los remitos vienen marcados y se desmarca lo que no va; la devolución en la vista del comprobante usa las mismas reglas y ventanas que *Facturación*.
 
 ## Orden sugerido

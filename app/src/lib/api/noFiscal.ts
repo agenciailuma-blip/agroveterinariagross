@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { leerPapel, mismaSerie } from '@/lib/api/buscarComprobantes'
 import { agruparPorConcepto } from '@/lib/conceptos'
 import { datosEmisor } from '@/lib/api/comprobante'
 import { encolar } from '@/lib/local/sync'
@@ -782,6 +783,59 @@ export async function emitirPresupuesto(
   un segundo camino a la facturación sería tener dos lugares donde se
   decide lo mismo.
 */
+/*
+  El presupuesto que vuelve al mostrador (auditoría de integralidad, 9).
+
+  El cliente vuelve con el papel; en el buscador del mostrador se
+  escribe «PRE» y el número —«pre 12», «PRE CAJA1-00000012»— y aparece,
+  para mandarlo a caja sin ir a Presupuestos. Pide un dígito después de
+  «pre»: un producto que empieza con esas letras («Premium») no lo
+  dispara.
+*/
+const ES_PRESUPUESTO = /^\s*pre(?:supuesto)?[\s.:#°º-]*((?:[a-z]*\d+[\s/-]+)?\d+)$/i
+
+export function numeroDePresupuesto(texto: string): string | null {
+  return ES_PRESUPUESTO.exec(texto)?.[1].trim() ?? null
+}
+
+export interface PresupuestoEncontrado {
+  id: string
+  serie: string
+  numero: number
+  fecha: string
+  receptor_nombre: string
+  total: number
+  estado: string
+  valido_hasta: string | null
+  venta_id: string | null
+  venta_estado: string | null
+}
+
+export async function presupuestosPorNumero(texto: string): Promise<PresupuestoEncontrado[]> {
+  const escrito = numeroDePresupuesto(texto)
+  if (!escrito) return []
+  const leido = leerPapel(escrito)
+  if (!leido) return []
+  const { serie, numero } = leido
+
+  const { data, error } = await supabase
+    .from('comprobante_no_fiscal')
+    .select('id, serie, numero, fecha, receptor_nombre, total, estado, valido_hasta, venta_id, venta:venta_id(estado)')
+    .eq('tipo_clave', 'presupuesto')
+    .eq('numero', numero)
+    .order('creado_en', { ascending: false })
+    .limit(10)
+  if (error) throw new Error(error.message)
+  return ((data ?? []) as unknown as (Omit<PresupuestoEncontrado, 'venta_estado'> & {
+    venta: { estado: string } | { estado: string }[] | null
+  })[])
+    .filter((p) => mismaSerie(p.serie, serie))
+    .map(({ venta, ...p }) => {
+      const v = Array.isArray(venta) ? venta[0] : venta
+      return { ...p, total: Number(p.total), venta_estado: v?.estado ?? null }
+    })
+}
+
 export async function mandarPresupuestoACaja(ventaId: string): Promise<void> {
   const { error } = await supabase
     .from('venta')
