@@ -17,6 +17,8 @@ estado: en curso
 - **La tienda ya toma los cambios de los productos que tenía** (foto, *solo consultar*, precio): lo resolvió la web.
 - **Proforma a precio a convenir:** Francisco le avisa a Lucas que la pruebe. Al 19/11 no había ninguna emitida y ningún cliente tenía la marca.
 
+**Manual al día con la 0.25.7 (19/11):** [`manual/manual.html`](manual/manual.html) y el PDF regenerado. Suma lo de la 0.25.1 a la 0.25.7: foto del producto y presupuesto por número en el Mostrador, enlaces de la cuenta corriente y Pendientes de facturar desde la cuenta, Cuenta/Pedir/Pagarla en Compras y Proveedores, devolver desde cualquier factura, la barra de búsqueda por número en Comprobantes, el filtro «En la web», los archivos del contador con su formato nuevo, *Estado de las PC* en Configuración y la sección nueva **29 · Registro de auditoría**. Para entregárselo a Gross, el PDF está en `docs/manual/`.
+
 **Construida: 0.25.7 — falta publicar; trae la 0.25.6.** **Integralidad, tanda 3: buscar por número.**
 - **Comprobantes, arriba de todas las pestañas:** una barra que busca un número en facturas y notas, presupuestos, proformas, remitos, comprobantes de entrega y recibos, todo junto. Acepta «16», «1-16», «0001-00000004» y la serie del puesto con letras («PRE CAJA1-00000010»). Con la sigla delante (PRE, REM, PRO, ENT, REC, FAC, NC) busca sólo ese tipo. Tocar un resultado lo abre.
 - **Mostrador:** escribir «PRE» y el número en el buscador trae el presupuesto con **Mandar a caja**, o dice si ya está en la caja, ya se cobró o está anulado. Pide un dígito después de «pre»: «Premium» y «Prednisolona 20» siguen buscando productos.

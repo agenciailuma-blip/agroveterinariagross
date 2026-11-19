@@ -204,7 +204,7 @@
         <tr><td><b>Tesorería</b></td><td>Cheques <span class="gris">(20)</span> · Calendario <span class="gris">(21)</span></td></tr>
         <tr><td><b>Comprobantes</b></td><td>Facturación <span class="gris">(22)</span> · Facturas emitidas y Percepciones <span class="gris">(23)</span> · Remito logístico <span class="gris">(24)</span> · Proformas emitidas, Comprobantes de entrega y Presupuestos <span class="gris">(25)</span></td></tr>
         <tr><td><b>Reportes</b></td><td>Reportes <span class="gris">(26)</span></td></tr>
-        <tr><td><b>Administración</b></td><td>Usuarios <span class="gris">(27)</span> · Configuración <span class="gris">(28)</span></td></tr>
+        <tr><td><b>Administración</b></td><td>Usuarios <span class="gris">(27)</span> · Configuración <span class="gris">(28)</span> · Registro de auditoría <span class="gris">(29)</span></td></tr>
     </table>
     <p style="margin-top:4mm">Y al final: <b>qué se imprime y qué se exporta</b>, <b>trabajar sin internet</b>,
     <b>desde el celular</b> y <b>cómo piensa el sistema</b>.</p>
@@ -233,8 +233,8 @@
     <header><span class="numero">2</span><div><h3>Mostrador</h3><p class="lema">Armar la venta y mandarla a la caja, o cobrarla ahí mismo.</p></div></header>
     <div class="cuerpo">
       <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Es la pantalla donde más tiempo pasa el día: el vendedor atiende, arma la venta y se la pasa a la caja, sin dejar de atender.</div></div>
-      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">El detalle con precios y subtotal · <b>el total en efectivo y con tarjeta al mismo tiempo</b> · cuánto queda de cada producto al buscarlo y aviso si no alcanza · en lo que se vende suelto, <b>cuántas hay sueltas</b> debajo de lo disponible, que cuenta también lo que se puede abrir · el borrador se conserva si la pantalla se refresca por accidente.</div></div>
-      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Identificarme con <b>PIN</b> · buscar o escanear productos · <b>escribir una línea que no está en el catálogo</b> · cambiar cantidades · <b>rebajar el precio de una línea</b>, por monto o por porcentaje · elegir el cliente, o <b>agregar uno nuevo con su CUIT</b> · anticipar con qué va a pagar · <b>asociar productos</b> a un concepto (F11) · <b>enviar a caja</b> o <b>cobrarla ahí mismo</b> · <b>hacer un presupuesto</b> o <b>sacar una proforma a precio a convenir</b> · descartar la venta.</div></div>
+      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">El detalle con precios y subtotal · <b>el total en efectivo y con tarjeta al mismo tiempo</b> · cuánto queda de cada producto al buscarlo y aviso si no alcanza · en lo que se vende suelto, <b>cuántas hay sueltas</b> debajo de lo disponible, que cuenta también lo que se puede abrir · mientras se busca, a la derecha, <b>la foto del producto marcado</b> con su nombre, precio y stock · el borrador se conserva si la pantalla se refresca por accidente.</div></div>
+      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Identificarme con <b>PIN</b> · buscar o escanear productos · <b>escribir una línea que no está en el catálogo</b> · cambiar cantidades · <b>rebajar el precio de una línea</b>, por monto o por porcentaje · elegir el cliente, o <b>agregar uno nuevo con su CUIT</b> · anticipar con qué va a pagar · <b>asociar productos</b> a un concepto (F11) · <b>enviar a caja</b> o <b>cobrarla ahí mismo</b> · <b>hacer un presupuesto</b> o <b>sacar una proforma a precio a convenir</b> · <b>traer un presupuesto por su número</b> y mandarlo a caja · descartar la venta.</div></div>
       <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">El <b>presupuesto impreso</b>, en ticket de 80 mm o en hoja A4.</div></div>
 
       <p style="margin:3mm 0 1mm"><b>Tres cosas que conviene saber</b></p>
@@ -247,6 +247,8 @@
       <div class="nota verde"><b>El cliente nuevo, con el CUIT y nada más.</b> Si se escribe en el buscador de clientes un CUIT que no está cargado, aparece <i>Traer de ARCA y agregarlo</i>: el sistema le pregunta a ARCA el nombre o la razón social, el domicilio y <b>la condición frente al IVA</b>, da de alta al cliente y lo deja elegido. La tarjeta dice, por ejemplo, <i>Responsable Inscripto · Factura A</i>. No hace falta preguntarle al cliente si es responsable inscripto: con que diga «factura A» y dé su CUIT, alcanza.</div>
       <div class="nota verde"><b>Vender y cobrar en el mismo puesto.</b> Quien tiene permiso para cobrar ve el botón <b>Cobrar</b> (F10) al lado de <i>Enviar a caja</i>, que pasa a F9. Abre la misma pantalla de cobro de la Caja, contra la caja del local. Si el cobro se cancela, la venta pasa a la cola de la Caja, también sin internet. Si el programa se cierra a mitad del cobro, se retoma al volver. Quien no cobra sigue con <i>Enviar a caja</i> en F10.</div>
       <div class="nota"><b>Precio a convenir · proforma.</b> Para el cliente de cuenta corriente al que el precio se le define más tarde. Sale una <b>proforma a precio de lista</b> con la leyenda <i>«Los precios están sujetos a modificación»</i>, y su <b>comprobante de entrega</b> para firmar. Descuenta stock, no pasa por la caja y <b>la deuda entra ya a la cuenta corriente</b> por ese importe. Lleva sólo productos del catálogo. El precio definitivo se pone después en <b>Comprobantes → Proformas emitidas → A convenir</b> (ver <b>25</b>). Si el cliente tiene la marca <b>Precio a convenir</b> en su ficha, es el botón principal, con F10, y <i>Enviar a caja</i> queda abajo. Sin la marca, también se puede hacer.</div>
+      <div class="nota verde"><b>La foto mientras se busca.</b> Al recorrer los resultados con las flechas o el mouse, la columna de la derecha muestra la foto del producto marcado, con su nombre, precio y stock, y las miniaturas si tiene varias. Si no tiene foto, lo dice. Sirve para confirmar que es el que el cliente señala antes de agregarlo.</div>
+      <div class="nota"><b>Un presupuesto, por su número.</b> Si el cliente vuelve con un presupuesto, se escribe en el buscador <i>PRE</i> y el número —<i>PRE 10</i> o <i>PRE CAJA1-00000010</i>— y aparece con el botón <b>Mandar a caja</b>. Si ya está en la caja, ya se cobró o está anulado, lo dice. Hace falta el número después de <i>PRE</i>: escribir <i>Premium</i> sigue buscando productos.</div>
       <div class="nota"><b>Venta por kilo o por litro.</b> En los productos que se venden por peso o por volumen, la cantidad acepta decimales: <i>0,5</i> o <i>0,374</i>, con coma. Los que se venden por unidad no se parten, salvo que se encienda <i>Decimales en todos los productos</i> en Configuración.</div>
       <div class="nota"><b>Precio en cada venta.</b> Un producto que en la góndola son muchos —<i>Accesorios varios</i>— lleva esa marca en su ficha. Al agregarlo —en el mostrador o al corregir la venta en la caja— se pregunta el precio, y cada vez va en un renglón aparte con el suyo.</div>
       <div class="nota"><b>Productos asociados (F11).</b> Se marcan los renglones y se elige el concepto. La venta guarda los productos reales: de ellos salen el stock, la caja y el IVA. La factura, la proforma y el presupuesto muestran un renglón por concepto, por el total, o uno por alícuota si el concepto mezcla. El remito logístico y el comprobante de entrega muestran lo que se llevó. Al abrir la factura en pantalla, debajo del concepto se ve cada producto con un ✓, que no sale impreso. Los conceptos se editan en <b>Configuración → El local</b>.</div>
@@ -341,14 +343,16 @@
     <header><span class="numero">7</span><div><h3>Clientes</h3><p class="lema">La ficha del cliente y su cuenta corriente.</p></div></header>
     <div class="cuerpo">
       <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Tener los datos con los que se factura y, para el que compra en cuenta, saber cuánto debe, desde cuándo y hasta cuánto puede seguir comprando.</div></div>
-      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Datos fiscales (condición de IVA, CUIT o DNI, domicilio) · <b>saldo actual</b>, límite de crédito y crédito disponible · los movimientos de la cuenta con su origen · los remitos internos viejos todavía sin precio, arriba de los movimientos · la pestaña <b>Vencidos</b>: por cliente, el total, los días y cada comprobante con lo que le queda impago.</div></div>
-      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Buscar · crear y editar, con el código siguiente ya propuesto · <b>traer los datos de ARCA</b> con el CUIT · <b>verificar con ARCA</b> la condición de todos los clientes · definir si tiene <b>cuenta corriente</b> y con qué <b>límite</b> · fijarle un <b>descuento</b> propio y una lista de precios · cargar la <b>exclusión de percepción de IIBB</b> con su certificado y vigencia · marcarlo <b>Precio a convenir</b> · <b>registrar una cobranza</b>, que sale con su recibo · <b>importar la planilla de clientes</b>, con el saldo que debe cada uno.</div></div>
+      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Datos fiscales (condición de IVA, CUIT o DNI, domicilio) · <b>saldo actual</b>, límite de crédito y crédito disponible · los movimientos de la cuenta con su origen, <b>subrayados cuando tienen papel</b> · los remitos internos viejos todavía sin precio, en <b>Pendientes de facturar</b>, arriba de los movimientos · la pestaña <b>Vencidos</b>: por cliente, el total, los días y cada comprobante con lo que le queda impago.</div></div>
+      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Buscar · crear y editar, con el código siguiente ya propuesto · <b>traer los datos de ARCA</b> con el CUIT · <b>verificar con ARCA</b> la condición de todos los clientes · definir si tiene <b>cuenta corriente</b> y con qué <b>límite</b> · fijarle un <b>descuento</b> propio y una lista de precios · cargar la <b>exclusión de percepción de IIBB</b> con su certificado y vigencia · marcarlo <b>Precio a convenir</b> · <b>registrar una cobranza</b>, que sale con su recibo · <b>abrir el papel de un movimiento</b> · <b>poner precios y facturar</b> los remitos internos pendientes · <b>importar la planilla de clientes</b>, con el saldo que debe cada uno.</div></div>
       <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">El <b>resumen de cuenta corriente en PDF</b>, para mandarle al cliente.</div></div>
 
       <div class="nota"><b>Importar la planilla de clientes</b> —botón <i>Importar planilla</i>— trae todos los clientes de una vez, con el <b>saldo que debe cada uno a una fecha</b>. El sistema reconoce las columnas y las muestra con un dato de ejemplo para confirmarlas. Antes de importar muestra <b>la suma de todos los saldos</b>: ése es el número que hay que comparar con el total del sistema anterior. Se puede importar la misma planilla las veces que haga falta: cada cliente se reconoce por su código o su CUIT y el saldo queda <b>igual</b> al de la planilla, no se suma. Un CUIT con el último dígito mal no entra, porque ARCA rechazaría la factura.</div>
       <div class="nota verde"><b>Los datos fiscales los da ARCA.</b> En la ficha, con un CUIT bien escrito aparece <i>Traer datos de ARCA</i>, y en un cliente nuevo la consulta sale sola: completa el nombre o la razón social, el domicilio y la condición frente al IVA. Si ARCA no emite la constancia de ese CUIT —por ejemplo, porque le falta el domicilio fiscal electrónico— trae el nombre y lo dice, y la condición se elige a mano. Con DNI no hay consulta: es consumidor final.</div>
       <div class="nota"><b>Verificar con ARCA</b> —botón en Clientes— le pregunta a ARCA por cada cliente con CUIT y muestra <b>los que tienen cargada otra condición</b> que la que dice ARCA, para corregirlos todos de una vez. Aparte, lista los CUIT mal escritos o que ARCA no conoce. El nombre con que se lo conoce en el local no se toca: sólo la condición. Conviene hacerlo después de importar la planilla de clientes.</div>
       <div class="nota"><b>Cobrar la cuenta con cheques.</b> En la cobranza se elige «Cheque» y se carga cada cheque con su importe, banco, número y fecha de pago; pueden ser varios. Cada uno queda como un renglón de la cuenta —<i>«Cobranza con cheque Credicoop N° 555001 al 30/11»</i>— y pasa a la cartera de <b>Tesorería</b>.</div>
+      <div class="nota verde"><b>Cada movimiento lleva a su papel.</b> En la cuenta corriente, el movimiento que tiene un papel va subrayado y lo abre: la factura de la venta —también la que agrupa el mes—, la proforma, la nota de crédito o el recibo de la cobranza. Una venta anulada abre su nota de crédito. Los cobros de antes de que existieran los recibos no tienen enlace.</div>
+      <div class="nota"><b>Los remitos internos viejos, desde la cuenta.</b> El recuadro <b>Pendientes de facturar</b> los muestra marcados; se desmarca lo que no va y <b>Poner precios y facturar</b> abre la misma grilla que en Facturación (ver <b>22</b>).</div>
       <div class="nota verde"><b>El resumen de cuenta</b> tiene la forma de un resumen del banco: saldo anterior, cada factura, pago y nota de crédito con el saldo que va quedando, y el saldo al cierre. Se elige el período —este mes, el mes pasado o todo— y se guarda como PDF con el nombre del cliente ya puesto, listo para adjuntar a un mail. Si el resumen llega hasta hoy, dice además cuánto de ese saldo está vencido y desde cuándo.</div>
     </div>
   </section>
@@ -358,7 +362,7 @@
     <div class="cuerpo">
       <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Dejar un papel numerado de cada cobranza de cuenta corriente y de cada pago de un fiado, y encontrarlo después.</div></div>
       <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Por recibo: cliente, número, fecha, medios de pago, si viene de una orden del vendedor, quién lo emitió, el importe y si se mandó por mail. Los anulados se ven tachados y <b>no suman</b> al total.</div></div>
-      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Buscar por cliente o por número, en cualquier forma: «12», «00000012» o «0001-00000012» · abrirlo · imprimirlo · <b>mandarlo por mail</b> · <b>anularlo</b>.</div></div>
+      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Buscar por cliente o por número, en cualquier forma: «12», «00000012» o «0001-00000012» · abrirlo · imprimirlo · <b>mandarlo por mail</b> · <b>anularlo</b> · con <b>Cuenta</b>, ir a la cuenta corriente del cliente.</div></div>
       <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">La <b>hoja A4</b> del recibo, con el importe en letras y el saldo que queda, impresa o en PDF por mail.</div></div>
       <div class="nota"><b>Anular un recibo.</b> En la hoja del recibo, <b>Anular</b> pide el motivo y dice qué va a pasar. Conserva su número y sale con la marca <b>RECIBO ANULADO</b>. Lo necesita el permiso <i>Anular recibos</i>. Al anular:
         <ul class="limpia">
@@ -391,7 +395,7 @@
     <div class="cuerpo">
       <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Es la fuente de todo lo demás: de acá salen el precio que cobra la caja, el IVA que va en la factura y el stock que se descuenta.</div></div>
       <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">El listado con precio, stock y el semáforo (<i>En stock · Stock bajo · Crítico · Sobrevendido</i>) · el <b>avance de la carga</b>: cuántos productos ya se revisaron sobre el total.</div></div>
-      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Buscar por código, nombre o <b>escaneando</b> · abrir la ficha y editarla · crear uno nuevo, con el código siguiente ya propuesto · <b>importar la planilla de Excel</b> · dar de baja de a uno o en masa, y restaurar · filtrar por los que faltan revisar.</div></div>
+      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Buscar por código, nombre o <b>escaneando</b> · abrir la ficha y editarla · crear uno nuevo, con el código siguiente ya propuesto · <b>importar la planilla de Excel</b> · dar de baja de a uno o en masa, y restaurar · filtrar por categoría, marca, <b>si está en la web o no</b> y por los que faltan revisar.</div></div>
       <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">Nada desde acá.</div></div>
 
       <p style="margin:3mm 0 1mm"><b>Lo que tiene la ficha del producto</b></p>
@@ -508,7 +512,7 @@
     <div class="cuerpo">
       <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Dejar registrado lo que dice el papel del proveedor —cuánto se le compró, con qué IVA y qué percepciones le cargaron— y hacer entrar la mercadería al stock con su costo.</div></div>
       <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Las facturas cargadas, con proveedor, tipo, número, fecha, total y si <b>la mercadería ya se recibió</b> · al cargar una, el <b>total se arma solo</b> para compararlo con el papel antes de guardar.</div></div>
-      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Cargar una factura: proveedor, tipo, punto de venta y número, fecha, <b>vencimiento</b>, <b>desglose por alícuota de IVA</b> y percepciones · el IVA se sugiere al escribir el neto y se puede corregir, porque manda el papel · <b>recibir la mercadería</b> · dar de baja una factura.</div></div>
+      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Cargar una factura: proveedor, tipo, punto de venta y número, fecha, <b>vencimiento</b>, <b>desglose por alícuota de IVA</b> y percepciones · el IVA se sugiere al escribir el neto y se puede corregir, porque manda el papel · <b>recibir la mercadería</b> · <b>Pagarla</b>, al guardarla · con <b>Cuenta</b>, ir a la cuenta del proveedor · dar de baja una factura.</div></div>
       <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">Las compras del mes van en el archivo para el contador (ver <b>Facturación</b>).</div></div>
 
       <p style="margin:3mm 0 1mm"><b>Recibir la mercadería, paso a paso</b></p>
@@ -553,7 +557,7 @@
     <div class="cuerpo">
       <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Cuando llega la lista nueva de un laboratorio, aplicar el aumento a todos sus productos en una operación, y poder volver atrás si el número salió mal.</div></div>
       <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Por proveedor: CUIT, contacto y <b>cuántos productos tiene asignados</b>, que es a cuántos les va a pegar un ajuste. En su ficha, <b>para transferirle: CBU o CVU y alias</b>, y su <b>pedido mínimo</b>: en pesos, en bultos o en kilos, según cómo lo cuente él. El CBU se controla al escribirlo con sus dígitos verificadores, como hacen los bancos, y la ficha dice de qué banco es.</div></div>
-      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Crear, editar y dar de baja · <b>ajustar precios en masa</b> por proveedor y rubro · <b>deshacer</b> un ajuste.</div></div>
+      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Crear, editar y dar de baja · con <b>Cuenta</b>, ir a lo que se le debe · con <b>Pedir</b>, armarle un pedido (ver <b>19</b>) · <b>ajustar precios en masa</b> por proveedor y rubro · <b>deshacer</b> un ajuste.</div></div>
       <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">Nada.</div></div>
 
       <p style="margin:3mm 0 1mm"><b>El ajuste masivo, paso a paso</b></p>
@@ -629,7 +633,7 @@
     <div class="cuerpo">
       <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Un cheque no es plata que entró: es una promesa con fecha, que además se mueve. Esta pantalla dice qué cheques hay, de quién, por cuánto, para cuándo y dónde está cada uno.</div></div>
       <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Arriba: cuánto hay <b>en cartera</b>, cuáles <b>hay que depositar esta semana</b> y cuánto falta que se debite de los <b>propios</b>. Tres vistas: <b>En cartera</b> —ordenados por fecha de pago—, <b>Propios a debitar</b> y <b>Todos</b>, con buscador. Por cheque: banco, número, si es e-cheq, al día o diferido, <b>cuántos días quedan para depositarlo</b>, quién lo firmó, quién lo entregó y a quién se le dio. Al abrirlo, su <b>historia</b>: cuándo entró, quién lo recibió, a quién se endosó.</div></div>
-      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor"><b>Depositar</b> de a varios, con fecha y cuenta · <b>devolver</b> un cheque al cliente · marcarlo <b>rechazado</b>, con el motivo y los gastos del banco · marcar propios como <b>debitados</b> · <b>corregir datos</b> mal tipeados · <b>deshacer</b> un depósito o un débito marcado por error.</div></div>
+      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor"><b>Depositar</b> de a varios, con fecha y cuenta · <b>devolver</b> un cheque al cliente · marcarlo <b>rechazado</b>, con el motivo y los gastos del banco · marcar propios como <b>debitados</b> · <b>corregir datos</b> mal tipeados · <b>deshacer</b> un depósito o un débito marcado por error · ir a la <b>cuenta del cliente</b> que lo entregó.</div></div>
       <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">Nada.</div></div>
 
       <p style="margin:3mm 0 1mm"><b>Por dónde entra y por dónde sale un cheque</b></p>
@@ -656,6 +660,8 @@
   </section>
 
   <p class="seccion-menu">Sección Comprobantes · Facturación · Facturas emitidas · Proformas emitidas · Percepciones · Remito logístico · Comprobantes de entrega · Presupuestos</p>
+
+  <div class="nota verde"><b>Buscar cualquier papel por su número.</b> Arriba de todas las pestañas de Comprobantes hay una barra que busca el número en <b>facturas y notas de crédito, presupuestos, proformas, remitos, comprobantes de entrega y recibos</b>, todo junto. Entiende el número en cualquier forma: <i>16</i>, <i>1-16</i>, <i>0001-00000004</i> o con el prefijo del puesto, <i>CAJA1-00000010</i>. Con la sigla delante busca sólo ese tipo: <b>FAC</b>, <b>NC</b>, <b>PRE</b>, <b>PRO</b>, <b>REM</b>, <b>ENT</b> o <b>REC</b> —por ejemplo, <i>REC 4</i>—. Tocar un resultado lo abre.</div>
 
   <section class="pantalla">
     <header><span class="numero">22</span><div><h3>Facturación</h3><p class="lema">El semáforo de todo lo que se le informa a ARCA.</p></div></header>
@@ -684,6 +690,7 @@
       <ul class="limpia">
         <li>Los remitos internos que salieron antes de la proforma a convenir esperan acá su precio. Se eligen uno o varios del mismo cliente y se ponen los precios en una grilla, con el de lista ya escrito.</li>
         <li>Sale la <b>factura o la proforma</b> a la cuenta corriente, con su vencimiento. No vuelve a descontar stock. Cuando no queda ninguno, el cuadro desaparece.</li>
+        <li>Lo mismo se hace desde la <b>cuenta corriente del cliente</b> (ver <b>7</b>).</li>
       </ul>
 
       <p style="margin:3mm 0 1mm"><b>Lo que se facturó durante un corte de internet</b></p>
@@ -693,7 +700,13 @@
         <li>Cada una dice si <b>ya llegó al servidor</b> o todavía está esperando. Informarle a ARCA lo emitido lo hace el sistema solo, todos los días.</li>
       </ul>
 
-      <div class="nota"><b>El archivo para el contador</b> se baja de esta misma pantalla: se elige el mes y, antes de bajarlo, se ven los totales para controlar que el mes sea el correcto. Lleva <b>una fila por alícuota</b> —una factura con 21% y 10,5% ocupa dos renglones— y las notas de crédito van en negativo, así sumar la columna da el neto del mes. En la misma pantalla están el archivo de <b>percepciones de IIBB</b> —una fila por percepción, con el CUIT del cliente, la base y la alícuota— y el de <b>compras</b>, con el IVA crédito fiscal y las percepciones que le cobraron a Gross separadas por concepto, para controlar contra ARCA que no falte ninguna.</div>
+      <div class="nota"><b>Los archivos para el contador</b> se bajan de esta misma pantalla: se elige el mes y, antes de bajarlos, se ven los totales para controlar que el mes sea el correcto. Las fechas van en <i>dd/mm/aaaa</i>.
+        <ul class="limpia">
+          <li><b>Ventas:</b> las mismas columnas que <i>Mis Comprobantes Emitidos</i> de ARCA, <b>una fila por comprobante</b>. El tipo va con su código —<i>1 - Factura A</i>— y el documento del cliente, como lo muestra ARCA. Las notas de crédito van en negativo, así sumar la columna da el neto del mes.</li>
+          <li><b>Percepciones de IIBB:</b> una fila por percepción, con el CUIT del cliente, la base y la alícuota.</li>
+          <li><b>Compras:</b> arriba, el comercio, el CUIT y el período; después, una fila por factura con <i>Fac / N.C. / N.D.</i>, el neto y el IVA, el exento y no gravado juntos, y <b>cada percepción en su columna</b>. Lo cargado como «Otro» va en una columna aparte, para que no se pierda. Sirve para controlar contra ARCA que no falte ninguna.</li>
+        </ul>
+      </div>
     </div>
   </section>
 
@@ -702,8 +715,9 @@
     <div class="cuerpo">
       <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Encontrar cualquier factura o percepción ya emitida. Facturación es lo que necesita atención; estas dos pestañas son para consultar.</div></div>
       <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Las facturas, o las percepciones, que cumplen la búsqueda.</div></div>
-      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Buscar por fecha, cliente o número · abrir y reimprimir · desde una factura abierta, emitir su <b>Remito logístico</b> o abrir el que ya tiene.</div></div>
+      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Buscar por fecha, cliente o número · abrir y reimprimir · desde una factura abierta, emitir su <b>Remito logístico</b> o abrir el que ya tiene · <b>Devolver todo</b> o <b>Devolver una parte</b>.</div></div>
       <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">Lo listado, con <b>Bajar Excel</b>.</div></div>
+      <div class="nota"><b>Devolver desde la factura.</b> La vista de cualquier factura —se abra desde acá, desde la cuenta del cliente o desde un pedido— tiene <b>Devolver todo</b> y <b>Devolver una parte</b>, con las mismas reglas que en Facturación (ver <b>22</b>). En una factura que agrupa varias ventas aparece <b>Devolver de una de sus ventas</b>. En una nota de crédito, o en una factura ya devuelta entera, no aparece.</div>
     </div>
   </section>
 
@@ -711,7 +725,7 @@
     <header><span class="numero">24</span><div><h3>Remito logístico</h3><p class="lema">La hoja R que acompaña a la mercadería facturada cuando viaja.</p></div></header>
     <div class="cuerpo">
       <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Que la mercadería facturada que sale en la camioneta viaje con su remito R, el que tiene CAI, y que alguien lo firme al recibir.</div></div>
-      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor"><b>Entregado y sin cobrar</b>, arriba y en ámbar: mercadería que salió y plata que no entró, con cuántos días lleva · el listado con destino, transporte y a qué venta corresponde.</div></div>
+      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor"><b>Entregado y sin cobrar</b>, arriba y en ámbar: mercadería que salió y plata que no entró, con cuántos días lleva · el listado con destino, transporte y a qué venta corresponde; el código de la venta abre su factura o proforma.</div></div>
       <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor"><b>Nuevo remito logístico</b>, eligiendo la factura de la que sale la mercadería · abrir la <b>Hoja R</b> e imprimirla · <b>subir la foto del remito firmado</b> · anular.</div></div>
       <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">El <b>remito R</b> sobre la hoja de la imprenta, original y duplicado.</div></div>
 
@@ -781,7 +795,7 @@
     </div>
   </section>
 
-  <p class="seccion-menu">Sección Administración · Usuarios · Configuración</p>
+  <p class="seccion-menu">Sección Administración · Usuarios · Configuración · Registro de auditoría</p>
 
   <section class="pantalla">
     <header><span class="numero">27</span><div><h3>Usuarios</h3><p class="lema">Quién entra, qué puede hacer y con qué PIN.</p></div></header>
@@ -791,7 +805,7 @@
       <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Dar de alta, con su correo y su contraseña · <b>dar acceso</b>, <b>cambiar la contraseña</b> o <b>quitar el acceso</b> · asignar rol · <b>definir o quitar el PIN</b> de mostrador · <b>eliminar</b> · <b>encender y apagar permisos por rol</b>.</div></div>
       <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">Nada.</div></div>
       <div class="nota"><b>La contraseña la pone quien administra.</b> Al dar de alta a alguien con su correo se le escribe una contraseña y ya puede entrar: se la pasa quien la creó. Si se la olvida, <i>Cambiar contraseña</i>, y la anterior deja de servir. <i>Quitar acceso</i> lo deja en la lista sin poder entrar; <i>Dar acceso</i> lo vuelve a habilitar.</div>
-      <div class="nota"><b>Eliminar no borra lo que hizo.</b> La persona sale de la lista y ya no entra, pero cada venta, cobro o movimiento sigue con su nombre. Nadie se quita el acceso ni se elimina a sí mismo, y el sistema no deja quedarse sin ningún administrador.</div>
+      <div class="nota"><b>Eliminar no borra lo que hizo.</b> La persona sale de la lista y ya no entra, pero cada venta, cobro o movimiento sigue con su nombre. Nadie se quita el acceso ni se elimina a sí mismo, y el sistema no deja quedarse sin ningún administrador. Cada cambio en usuarios, roles y permisos queda en el <b>Registro de auditoría</b> (ver <b>29</b>).</div>
     </div>
   </section>
 
@@ -811,6 +825,7 @@
         <tr><td><b>Envío de mails</b></td><td>Prendido o apagado. Apagado, no sale ningún mail: ni facturas, ni recibos, ni pedidos mayoristas, solos o con el botón.</td></tr>
         <tr><td><b>Percepción de IIBB — Misiones</b></td><td>Alícuota y mínimo no sujeto a percepción. Los fija la DGR y cambian por resolución. Y cómo se calcula en una factura que agrupa varias ventas: sobre el total o venta por venta, según lo que indique el contador.</td></tr>
         <tr><th colspan="2">El local</th></tr>
+        <tr><td><b>Estado de las PC</b></td><td>Cómo está cada computadora del local, sin ir hasta ella: la <b>versión</b> del sistema, si usa el programa o el navegador, la <b>impresora elegida y si Windows la encuentra</b>, las operaciones <b>sin enviar</b>, el último error al enviar y si la red del local anda. Cada PC lo informa sola al abrir el sistema y cada cinco minutos. Va en verde si está todo bien, ámbar si hay algo para mirar, rojo si algo falla y gris si no se reporta hace más de 15 minutos —apagada o sin internet—, sin perder lo último que dijo. Si una PC tiene una versión anterior a la de las demás, lo dice. No muestra ventas ni importes.</td></tr>
         <tr><td><b>Cajas y mostradores</b></td><td>Las computadoras del local, con su prefijo, su punto de venta y cuándo se conectó cada una por última vez. <b>Agregar</b> propone el nombre y el prefijo que siguen —<i>Mostrador 3, MOS3</i>—; después, en la PC nueva, se abre el sistema y se la elige en <b>Ventas</b> o en <b>Esta computadora</b>. El prefijo encabeza cada número de venta de esa máquina y <b>no se cambia después</b>. No se puede dar de baja la caja que escucha a las demás ni una caja abierta. Con más de un depósito, cada máquina dice <b>de qué depósito vende</b>; las que no tienen uno elegido venden del principal.</td></tr>
         <tr><td><b>Depósitos</b></td><td>Los lugares donde hay mercadería. Cada movimiento de stock queda registrado en el suyo. El <b>principal</b> es del que venden las máquinas sin depósito elegido. Un depósito se da de baja <b>vacío y sin máquinas</b>: primero se transfiere su mercadería.</td></tr>
         <tr><td><b>La red del local</b></td><td>Qué computadora escucha a las demás cuando no hay internet — conviene que sea la de la caja. Desde cada mostrador se puede probar la conexión.</td></tr>
@@ -821,6 +836,31 @@
         <tr><td><b>Diagnóstico de la terminal</b></td><td>Qué terminal es esta máquina, si tiene copia local y si hay operaciones sin enviar. Es lo primero que se mira cuando una PC «no anda».</td></tr>
         <tr><td><b>Impresora de esta computadora</b></td><td>Se elige de la <b>lista de impresoras de Windows</b>, como al imprimir desde el Word, y se guarda <b>en cada computadora</b>, aunque otra use el mismo puesto. Tiene un botón para imprimir una prueba.</td></tr>
       </table>
+    </div>
+  </section>
+
+  <section class="pantalla">
+    <header><span class="numero">29</span><div><h3>Registro de auditoría</h3><p class="lema">Quién hizo qué, desde qué puesto y cuándo.</p></div></header>
+    <div class="cuerpo">
+      <div class="campo"><div class="etiqueta">Para qué sirve</div><div class="valor">Tener en una sola lista todo lo sensible que pasó en el sistema, para controlarlo sin ir pantalla por pantalla, y saber quién tocó una ficha o la configuración y qué tenía antes.</div></div>
+      <div class="campo"><div class="etiqueta">Qué veo</div><div class="valor">Un renglón por hecho, de lo más nuevo a lo más viejo, con la fecha y la hora, el tipo, qué pasó, quién lo hizo y desde qué puesto. Cuando algo se cambió, <b>el valor de antes tachado y el de después</b>.</div></div>
+      <div class="campo"><div class="etiqueta">Qué hago</div><div class="valor">Elegir las <b>fechas</b> —arranca en los últimos siete días— · filtrar por <b>tipo</b> y por <b>persona</b> · <b>buscar</b> un producto, un cliente, un número o un motivo · <b>Ver</b> la factura, la proforma o la planilla de caja del renglón.</div></div>
+      <div class="campo"><div class="etiqueta">Qué exporto</div><div class="valor">Lo listado, con <b>Bajar a Excel</b>.</div></div>
+      <table class="datos">
+        <tr><th style="width:42mm">Tipo</th><th>Qué junta</th></tr>
+        <tr><td><b>Anulaciones</b></td><td>Ventas, proformas, recibos, movimientos de caja, entradas y salidas de stock, transferencias, pagos a proveedores, fiados y pedidos mayoristas cancelados, con el motivo.</td></tr>
+        <tr><td><b>Devoluciones</b></td><td>Las devoluciones y las notas de crédito.</td></tr>
+        <tr><td><b>Precios</b></td><td>El precio rebajado en una venta, con el motivo y quién lo autorizó · los aumentos masivos y su deshacer, una sola vez y no producto por producto · el precio cambiado en la ficha de un producto o en una lista.</td></tr>
+        <tr><td><b>Autorizaciones</b></td><td>Las ventas, proformas y pedidos mayoristas que un encargado dejó pasar con deuda vencida.</td></tr>
+        <tr><td><b>Caja</b></td><td>Cada caja abierta y cerrada, con quién lo hizo.</td></tr>
+        <tr><td><b>Stock</b></td><td>Las entradas y salidas de stock y los inventarios cerrados.</td></tr>
+        <tr><td><b>Productos y clientes</b></td><td>Cada alta, cambio y baja en la ficha de un producto o de un cliente.</td></tr>
+        <tr><td><b>Usuarios y permisos</b></td><td>Los usuarios y los roles, y cada permiso dado o quitado.</td></tr>
+        <tr><td><b>Configuración</b></td><td>Cada cambio en Configuración, en los medios de pago y las listas de precios, en los puntos de venta, los puestos, los depósitos y las hojas del remito R.</td></tr>
+      </table>
+      <div class="nota"><b>Lo ve sólo quien tiene el permiso.</b> El permiso es <i>Ver el registro de auditoría</i>, y viene sólo en el rol <b>Administrador</b>. Se le da a otro rol desde <b>Usuarios → Roles y permisos</b> (ver <b>27</b>).</div>
+      <div class="nota verde"><b>Nadie lo corrige ni lo borra</b>, tampoco el administrador: cada renglón queda como se anotó. Las claves secretas de la configuración no se copian: el renglón dice que cambiaron, sin mostrarlas.</div>
+      <div class="nota">Muestra hasta 500 renglones por vez, los más recientes. Si llega a ese número, lo avisa: hay que acortar las fechas para ver más atrás.</div>
     </div>
   </section>
 </div>
@@ -843,12 +883,13 @@
     <tr><td><b>Resumen de cuenta corriente</b></td><td>Clientes y Reportes</td><td>Hoja A4 · se guarda como PDF</td></tr>
     <tr><td><b>Orden de compra interna</b></td><td>Compras → Órdenes internas</td><td>Hoja A4 · con la firma del responsable</td></tr>
     <tr><td><b>Nota de pedido a proveedor</b></td><td>Compras → Pedidos</td><td>Hoja A4 sin precios · texto para WhatsApp</td></tr>
-    <tr><td><b>Ventas del mes para el contador</b></td><td>Facturación</td><td>Archivo de Excel</td></tr>
+    <tr><td><b>Ventas del mes para el contador</b></td><td>Facturación</td><td>Archivo de Excel · columnas de ARCA</td></tr>
     <tr><td><b>Percepciones de IIBB del mes</b></td><td>Facturación</td><td>Archivo de Excel</td></tr>
-    <tr><td><b>Compras del mes</b></td><td>Facturación</td><td>Archivo de Excel</td></tr>
+    <tr><td><b>Compras del mes</b></td><td>Facturación</td><td>Archivo de Excel · con el formato del contador</td></tr>
     <tr><td><b>Listado de proformas, comprobantes de entrega y presupuestos</b></td><td>Cada pestaña de Comprobantes</td><td>Archivo de Excel</td></tr>
     <tr><td><b>Facturas emitidas y percepciones</b></td><td>Comprobantes</td><td>Archivo de Excel</td></tr>
     <tr><td><b>Listas mayoristas</b></td><td>Mayorista → Listas de precios, una por lista</td><td>Archivo de Excel</td></tr>
+    <tr><td><b>Registro de auditoría</b></td><td>Administración → Registro de auditoría</td><td>Archivo de Excel</td></tr>
     <tr><td><b>Lista de faltantes</b></td><td>Stock</td><td>Al portapapeles, para pegar en WhatsApp</td></tr>
     <tr><td><b>Arqueo de caja</b></td><td>Caja (al cerrar)</td><td>En pantalla</td></tr>
     <tr><td><b>Planilla de caja</b></td><td>Caja (al cerrar) y Cierres anteriores</td><td>Hoja A4 · se guarda como PDF</td></tr>
@@ -912,7 +953,7 @@
 
   <table class="datos">
     <tr><td style="width:50mm"><b>Dos archivadores separados</b></td><td>Los comprobantes <b>fiscales</b> (Facturación) y los <b>propios</b> (proformas, comprobantes de entrega y presupuestos) viven aparte. Comparten la impresora y la pantalla, <b>nunca los números</b>. Es lo que hace imposible que un presupuesto se cuele en una declaración.</td></tr>
-    <tr><td><b>Nada se borra</b></td><td>Dar de baja un producto, anular una venta o un remito no borra nada: queda el registro de quién lo hizo y por qué. El historial siempre queda.</td></tr>
+    <tr><td><b>Nada se borra</b></td><td>Dar de baja un producto, anular una venta o un remito no borra nada: queda el registro de quién lo hizo y por qué. El historial siempre queda, y lo sensible se junta en el <b>Registro de auditoría</b>.</td></tr>
     <tr><td><b>El stock son movimientos</b></td><td>El saldo es la suma de lo que entró y salió, con su motivo y su responsable. Por eso puede quedar negativo a propósito: si dos terminales sin conexión venden la última unidad, entran las dos y el saldo queda en −1, que es una alerta visible y no un dato perdido.</td></tr>
     <tr><td><b>Identidad en dos capas</b></td><td>La <b>máquina</b> se autentica una vez y queda abierta todo el día. La <b>persona</b> se identifica con PIN por operación: cero fricción en el mostrador y saber quién hizo qué.</td></tr>
     <tr><td><b>Los datos de los clientes, cifrados</b></td><td>Lo que cada computadora guarda para poder trabajar sin internet —nombre, documento, domicilio de entrega— queda <b>cifrado</b>. Si alguien se lleva la computadora o copia sus archivos, no puede leer nada. La llave la guarda Windows, atada a la cuenta de esa máquina.</td></tr>
