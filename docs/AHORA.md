@@ -17,6 +17,8 @@ estado: en curso
 - **La tienda ya toma los cambios de los productos que tenía** (foto, *solo consultar*, precio): lo resolvió la web.
 - **Proforma a precio a convenir:** Francisco le avisa a Lucas que la pruebe. Al 19/11 no había ninguna emitida y ningún cliente tenía la marca.
 
+**Registro de auditoría — propuesta (19/11):** [`propuesta-registro-de-auditoria.md`](propuesta-registro-de-auditoria.md). Es lo único que falta construir de la Fase 1 (alcance §1); la tabla `auditoria` sigue vacía. Que fichas y configuración dejen rastro, y una pantalla que junte eso con los rastros que ya existen. Tres días. Espera el OK de Francisco y dos respuestas de Lucas (quién lo ve; si quiere un aviso diario).
+
 **Auditoría de integralidad, hecha (19/11):** [`auditoria-integralidad.md`](auditoria-integralidad.md). Diez circuitos ya cumplen la vara (el pedido mayorista es el modelo); quedan **nueve saltos**, en tres tandas. La primera son cinco enlaces entre pantallas que ya existen (movimientos de la cuenta → su comprobante, proveedor → su cuenta y sus pedidos, remito → su venta, recibo → cuenta del cliente, cheque → cuenta del cliente). **La tanda 1 ya está en la 0.25.5.**
 
 **Sin publicar: 0.25.5** (19/11). **Integralidad, tanda 1: cinco enlaces entre pantallas.**
