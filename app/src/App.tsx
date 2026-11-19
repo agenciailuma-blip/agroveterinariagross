@@ -29,6 +29,7 @@ import PedidosWeb from '@/pages/PedidosWeb'
 import Clientes from '@/pages/Clientes'
 import VerificarClientesArca from '@/pages/VerificarClientesArca'
 import Usuarios from '@/pages/Usuarios'
+import RegistroAuditoria from '@/pages/RegistroAuditoria'
 import Configuracion from '@/pages/Configuracion'
 import Facturacion from '@/pages/Facturacion'
 import ComprobanteImprimible from '@/pages/ComprobanteImprimible'
@@ -178,6 +179,7 @@ function Rutas() {
         <Route path="clientes/importar" element={<ImportarSaldos tipo="clientes" />} />
         <Route path="clientes/verificar" element={<VerificarClientesArca />} />
         <Route path="usuarios" element={<Usuarios />} />
+        <Route path="auditoria" element={<RegistroAuditoria />} />
         <Route path="configuracion" element={<Configuracion />} />
         <Route path="facturacion" element={<Facturacion />} />
         <Route path="facturacion/emitidas" element={<ComprobantesEmitidos modo="facturas" />} />

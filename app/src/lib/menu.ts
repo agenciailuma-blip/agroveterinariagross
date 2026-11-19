@@ -213,6 +213,7 @@ export const SECCIONES: Seccion[] = [
     pestanas: [
       { a: '/usuarios', etiqueta: 'Usuarios', permiso: 'usuarios.gestionar' },
       { a: '/configuracion', etiqueta: 'Configuración', permiso: 'configuracion.gestionar' },
+      { a: '/auditoria', etiqueta: 'Registro de auditoría', permiso: 'auditoria.ver' },
     ],
   },
 ]

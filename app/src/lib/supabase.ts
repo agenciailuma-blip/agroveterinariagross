@@ -112,6 +112,32 @@ if (typeof window !== 'undefined') {
   window.addEventListener('online', () => void probarServidor())
 }
 
+/*
+  El puesto de esta PC, en cada pedido a la base (19/11).
+
+  El registro de auditoría anota desde qué puesto se cambió una ficha o
+  la configuración, y la base no tiene otra forma de saberlo. Va sólo a
+  /rest/v1/ —tablas y funciones—: las Edge Functions contestan con su
+  propia lista de encabezados permitidos y uno nuevo las haría fallar.
+  Se lee directo de lo guardado para no importar terminal.ts acá.
+*/
+export function conPuesto(entrada: RequestInfo | URL, headers?: HeadersInit): HeadersInit | undefined {
+  const direccion = typeof entrada === 'string' ? entrada : entrada instanceof URL ? entrada.href : entrada.url
+  if (!direccion.includes('/rest/v1/') || typeof localStorage === 'undefined') return headers
+  // Un Request trae sus propios encabezados: pisarlos los borraría.
+  if (typeof entrada !== 'string' && !(entrada instanceof URL) && !headers) return headers
+  let puesto: string | undefined
+  try {
+    puesto = (JSON.parse(localStorage.getItem('gross.terminal') ?? 'null') as { id?: string } | null)?.id
+  } catch {
+    return headers
+  }
+  if (!puesto) return headers
+  const conEl = new Headers(headers)
+  conEl.set('x-gross-terminal', puesto)
+  return conEl
+}
+
 function fetchConLimite(entrada: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   if (!cortacircuito.dejarPasar()) {
     return Promise.reject(fallaDeRed('el servidor no está respondiendo (se lo dio por caído)'))
@@ -136,7 +162,7 @@ function fetchConLimite(entrada: RequestInfo | URL, init?: RequestInit): Promise
     else externa.addEventListener('abort', () => control.abort(externa.reason), { once: true })
   }
 
-  return fetch(entrada, { ...init, signal: control.signal })
+  return fetch(entrada, { ...init, headers: conPuesto(entrada, init?.headers), signal: control.signal })
     .then((r) => {
       // Contestó algo, aunque sea un error del servidor: la red está.
       cortacircuito.anotarExito()
