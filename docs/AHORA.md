@@ -21,7 +21,7 @@ estado: en curso
 
 **Auditoría de integralidad, hecha (19/11):** [`auditoria-integralidad.md`](auditoria-integralidad.md). Diez circuitos ya cumplen la vara (el pedido mayorista es el modelo); quedan **nueve saltos**, en tres tandas. La primera son cinco enlaces entre pantallas que ya existen (movimientos de la cuenta → su comprobante, proveedor → su cuenta y sus pedidos, remito → su venta, recibo → cuenta del cliente, cheque → cuenta del cliente). **Las tandas 1 y 2 ya están en la 0.25.5**; la 3 (buscador por número y presupuesto desde el mostrador) espera a que Lucas diga si le hace falta.
 
-**Sin publicar: 0.25.5** (19/11). **Integralidad, tandas 1 y 2.**
+**Publicada: 0.25.5** (19/11, 09:21; la publicó Francisco), verificada en Cloudflare: `latest.json` dice 0.25.5. **Integralidad, tandas 1 y 2.**
 
 *Tanda 2 — facturar y devolver desde donde aparece:*
 - **Remitos internos desde la cuenta del cliente:** el recuadro *Pendientes de facturar* de la cuenta tiene **Poner precios y facturar**, con los remitos marcados (se desmarca lo que no va). Abre la misma ventana de precios que *Facturación*. Probado con dos remitos simulados en el navegador (no había ninguno real pendiente): la ventana abre sólo con los marcados; se canceló sin facturar.
