@@ -118,6 +118,20 @@ export async function abrirMapa(url: string): Promise<void> {
   return abrirEnlace(url)
 }
 
+/*
+  Para un enlace común (`<a href>`) a WhatsApp o al mapa. En el navegador
+  no hace nada: el enlace abre su pestaña solo, y en el teléfono la
+  aplicación. Adentro del programa Tauri ignora `target="_blank"`, así
+  que el toque se frena y la dirección va al navegador de la PC.
+*/
+export function abrirEnlaceAfuera(e: { preventDefault(): void; currentTarget: EventTarget | null }): void {
+  if (!enEscritorio) return
+  const url = e.currentTarget instanceof HTMLAnchorElement ? e.currentTarget.getAttribute('href') : null
+  if (!url) return
+  e.preventDefault()
+  abrirEnlace(url).catch(() => window.alert('No se pudo abrir el navegador.'))
+}
+
 async function abrirEnlace(url: string): Promise<void> {
   if (!enEscritorio) {
     window.open(url, '_blank', 'noreferrer')

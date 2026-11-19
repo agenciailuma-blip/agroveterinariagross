@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/auth/AuthProvider'
 import { consultarCuitEnArca } from '@/lib/api/clientes'
+import { abrirEnlaceAfuera } from '@/lib/escritorio'
 import { cuitValido } from '@/lib/api/cheques'
 import { enCastellano } from '@/lib/errores'
 import { moneda } from '@/lib/tipos'
@@ -422,12 +423,12 @@ function FilaCliente({
           </a>
         )}
         {whatsapp && (
-          <a href={whatsapp} target="_blank" rel="noreferrer" className={botonChico.secundario}>
+          <a href={whatsapp} target="_blank" rel="noreferrer" onClick={abrirEnlaceAfuera} className={botonChico.secundario}>
             WhatsApp
           </a>
         )}
         {mapa && (
-          <a href={mapa} target="_blank" rel="noreferrer" className={botonChico.secundario}>
+          <a href={mapa} target="_blank" rel="noreferrer" onClick={abrirEnlaceAfuera} className={botonChico.secundario}>
             Cómo llegar
           </a>
         )}
@@ -669,6 +670,7 @@ function EditorCliente({
                   href={enlaceMapa({ latitud: d.latitud, longitud: d.longitud, calle: null, numero: null, localidad: null })!}
                   target="_blank"
                   rel="noreferrer"
+                  onClick={abrirEnlaceAfuera}
                   className="text-xs text-marca-700 underline"
                 >
                   Ver en el mapa

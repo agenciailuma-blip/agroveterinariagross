@@ -3,6 +3,7 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { enlaceMapa, type ClienteMayorista } from '@/lib/api/mayorista'
 import { moneda } from '@/lib/tipos'
+import { abrirEnlaceAfuera } from '@/lib/escritorio'
 
 /*
   ─────────────────────────────────────────────────────────────
@@ -94,6 +95,7 @@ export default function MapaDeClientes({
         ${llegar ? `<a href="${texto(llegar)}" target="_blank" rel="noopener">Cómo llegar</a>` : ''}
       `
       div.querySelector('[data-elegir]')?.addEventListener('click', () => elegir.current?.(c))
+      div.querySelector('a')?.addEventListener('click', abrirEnlaceAfuera)
       marca.bindPopup(div)
       marca.bindTooltip(c.nombre_fantasia || c.nombre)
       marca.addTo(g)

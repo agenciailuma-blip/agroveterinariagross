@@ -17,6 +17,8 @@ estado: en curso
 - **La tienda ya toma los cambios de los productos que tenía** (foto, *solo consultar*, precio): lo resolvió la web.
 - **Proforma a precio a convenir:** Francisco le avisa a Lucas que la pruebe. Al 19/11 no había ninguna emitida y ningún cliente tenía la marca.
 
+**Sin publicar: 0.25.3** (19/11). **Mayorista: WhatsApp, Cómo llegar y Ver en el mapa ahora abren en el programa de escritorio** (antes sólo en el navegador): la tarjeta del cliente, el cartelito del mapa y la ficha pasan por la misma función que ya usaban Fiados y Traslados, que abre el navegador de la PC. En el navegador y el celular siguen como enlaces comunes. Tipos revisados; el lado del programa no se puede probar en el navegador: confirmarlo en una PC con la 0.25.3 instalada.
+
 **Publicada: 0.25.2** (17/11, 17:18; la publicó Francisco), verificada el 19/11 en Cloudflare: `latest.json` dice 0.25.2 — trae la 0.25.1. **Mostrador: foto del producto marcado** en la columna derecha mientras se busca (flechas o mouse), con nombre, precio, stock y miniaturas si tiene varias; «Sin foto» si no tiene. Pedido del cliente el 17/11. Visto en el navegador contra la base real.
 
 **Publicada con la 0.25.2: 0.25.1** (17/11) — **trae también los dos cambios sin publicar de después de la 0.25.0** (ventas y compras para el contador, y el aviso de puesto repetido). **Productos: filtro «En la web / No en la web»** junto a categoría y marca; filtra en la base, no sólo los 100 que se ven. El listado ya no se desplaza hacia el costado a 375 px. Visto en el navegador contra la base real (165 en la web). **892 pruebas verdes.**

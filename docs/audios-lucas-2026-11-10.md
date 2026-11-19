@@ -35,7 +35,7 @@ Seis pedidos que llegaron por WhatsApp, revisados contra el código y la base. L
 
 **Verificado:** se llamó a la función real del programa con el mismo enlace de 304 caracteres, en una prueba temporal que después se borró. Abrió Chrome en *Compartir en WhatsApp*, y no se abrió ninguna carpeta. Compila. **Llega al local con la próxima versión.** El botón *Mapa* de Traslados abre por el mismo camino, así que una dirección larga ya no puede fallar.
 
-**Visto de paso, sin tocar:** en *Mayorista → Clientes*, el botón de WhatsApp y el *Cómo llegar* del mapa son enlaces comunes (`target="_blank"`). Dentro del programa de escritorio no hacen nada; en el navegador, sí. Pasarlos a la misma función es un arreglo de 15 minutos.
+**Visto de paso, sin tocar:** en *Mayorista → Clientes*, el botón de WhatsApp y el *Cómo llegar* del mapa son enlaces comunes (`target="_blank"`). Dentro del programa de escritorio no hacen nada; en el navegador, sí. Pasarlos a la misma función es un arreglo de 15 minutos. **Hecho en la 0.25.3** (19/11).
 
 ## 3 · Impresora
 
