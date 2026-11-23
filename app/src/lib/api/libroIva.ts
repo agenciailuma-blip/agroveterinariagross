@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import type { Celda, ColumnaDeListado, Listado } from '@/lib/importacion/exportar'
 
 /*
   ─────────────────────────────────────────────────────────────
@@ -174,58 +175,44 @@ export async function ventasParaElContador(
 }
 
 // Los títulos, tal cual los trae ARCA en Mis Comprobantes Emitidos.
-const COLUMNAS: { clave: keyof FilaLibroIva; titulo: string }[] = [
-  { clave: 'fecha', titulo: 'Fecha' },
-  { clave: 'tipo', titulo: 'Tipo' },
-  { clave: 'punto_venta', titulo: 'Punto de venta' },
-  { clave: 'numero', titulo: 'Número Desde' },
+const COLUMNAS: ColumnaDe<FilaLibroIva>[] = [
+  { clave: 'fecha', titulo: 'Fecha', tipo: 'fecha' },
+  { clave: 'tipo', titulo: 'Tipo', ancho: 20 },
+  { clave: 'punto_venta', titulo: 'Punto de venta', tipo: 'numero' },
+  { clave: 'numero', titulo: 'Número Desde', tipo: 'numero' },
   { clave: 'numero_hasta', titulo: 'Número hasta' },
-  { clave: 'cae', titulo: 'Cód. Autorización' },
+  { clave: 'cae', titulo: 'Cód. Autorización', ancho: 17 },
   { clave: 'tipo_documento', titulo: 'Tipo Doc. Receptor' },
   { clave: 'documento', titulo: 'Nro. Doc. Receptor' },
-  { clave: 'cliente', titulo: 'Denominación Receptor' },
-  { clave: 'tipo_cambio', titulo: 'Tipo Cambio' },
+  { clave: 'cliente', titulo: 'Denominación Receptor', ancho: 30 },
+  { clave: 'tipo_cambio', titulo: 'Tipo Cambio', tipo: 'numero' },
   { clave: 'moneda', titulo: 'Moneda' },
-  { clave: 'neto_gravado', titulo: 'Imp. Neto Gravado' },
-  { clave: 'no_gravado', titulo: 'Imp. Neto No Gravado' },
-  { clave: 'exento', titulo: 'Imp. Op. Exentas' },
-  { clave: 'iva', titulo: 'IVA' },
-  { clave: 'total', titulo: 'Imp. Total' },
+  { clave: 'neto_gravado', titulo: 'Imp. Neto Gravado', tipo: 'importe' },
+  { clave: 'no_gravado', titulo: 'Imp. Neto No Gravado', tipo: 'importe' },
+  { clave: 'exento', titulo: 'Imp. Op. Exentas', tipo: 'importe' },
+  { clave: 'iva', titulo: 'IVA', tipo: 'importe' },
+  { clave: 'total', titulo: 'Imp. Total', tipo: 'importe' },
 ]
 
+type ColumnaDe<T> = ColumnaDeListado & { clave: keyof T }
+
 /*
-  El CSV que abre bien en el Excel que usa Gross.
-
-  Tres cosas, y las tres importan: punto y coma como separador, coma
-  decimal, y el BOM del principio para que los acentos no salgan rotos.
-  Sin eso el archivo abre con todo en una sola columna y hay que
-  rehacerlo a mano — que es justo lo que exportar viene a evitar.
-
-  Es el mismo criterio que ya usa la exportación de comprobantes no
-  fiscales, y está probado.
+  El listado que se baja como Excel (.xlsx): títulos, una fila por
+  registro y, si hace falta, renglones sueltos arriba. Los importes van
+  como número —con su signo— para que sumar la columna dé el mes.
 */
-function armarCsv<T>(
-  filas: T[],
-  columnas: { clave: keyof T; titulo: string }[],
-  /** Renglones sueltos antes de los títulos (el encabezado de la planilla de compras). */
-  antes: string[] = [],
-): string {
-  const escapar = (v: unknown): string => {
-    if (v === null || v === undefined) return ''
-    if (typeof v === 'number') return String(v).replace('.', ',')
-    const s = String(v)
-    return /[";\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
+function armarListado<T>(filas: T[], columnas: ColumnaDe<T>[], antes: string[] = []): Listado {
+  const valor = (v: unknown): Celda =>
+    v === null || v === undefined ? null : typeof v === 'number' ? v : String(v)
+  return {
+    antes,
+    columnas: columnas.map(({ titulo, tipo, ancho }) => ({ titulo, tipo, ancho })),
+    filas: filas.map((f) => columnas.map((c) => valor(f[c.clave]))),
   }
-
-  const encabezado = columnas.map((c) => c.titulo).join(';')
-  const cuerpo = filas.map((f) => columnas.map((c) => escapar(f[c.clave])).join(';'))
-  // El BOM lo decía este comentario desde septiembre, pero no estaba: los
-  // títulos con acento («Alícuota %», «Número») abrían rotos. Visto el 19/10.
-  return '﻿' + [...antes.map(escapar), encabezado, ...cuerpo].join('\n')
 }
 
-export function aCsv(filas: FilaLibroIva[]): string {
-  return armarCsv(filas, COLUMNAS)
+export function ventasAListado(filas: FilaLibroIva[]): Listado {
+  return armarListado(filas, COLUMNAS)
 }
 
 /*
@@ -351,22 +338,22 @@ export async function percepcionesParaRentas(
   )
 }
 
-const COLUMNAS_PERCEPCION: { clave: keyof FilaPercepcion; titulo: string }[] = [
-  { clave: 'fecha', titulo: 'Fecha' },
-  { clave: 'tipo', titulo: 'Tipo de comprobante' },
-  { clave: 'signo', titulo: 'Signo' },
-  { clave: 'punto_venta', titulo: 'Punto de venta' },
-  { clave: 'numero', titulo: 'Número' },
-  { clave: 'cliente', titulo: 'Cliente percibido' },
+const COLUMNAS_PERCEPCION: ColumnaDe<FilaPercepcion>[] = [
+  { clave: 'fecha', titulo: 'Fecha', tipo: 'fecha' },
+  { clave: 'tipo', titulo: 'Tipo de comprobante', ancho: 20 },
+  { clave: 'signo', titulo: 'Signo', tipo: 'numero' },
+  { clave: 'punto_venta', titulo: 'Punto de venta', tipo: 'numero' },
+  { clave: 'numero', titulo: 'Número', tipo: 'numero' },
+  { clave: 'cliente', titulo: 'Cliente percibido', ancho: 30 },
   { clave: 'documento', titulo: 'CUIT / DNI' },
-  { clave: 'concepto', titulo: 'Concepto' },
-  { clave: 'base_imponible', titulo: 'Base imponible' },
-  { clave: 'alicuota', titulo: 'Alícuota %' },
-  { clave: 'importe', titulo: 'Percibido' },
+  { clave: 'concepto', titulo: 'Concepto', ancho: 26 },
+  { clave: 'base_imponible', titulo: 'Base imponible', tipo: 'importe' },
+  { clave: 'alicuota', titulo: 'Alícuota %', tipo: 'numero' },
+  { clave: 'importe', titulo: 'Percibido', tipo: 'importe' },
 ]
 
-export function percepcionesACsv(filas: FilaPercepcion[]): string {
-  return armarCsv(filas, COLUMNAS_PERCEPCION)
+export function percepcionesAListado(filas: FilaPercepcion[]): Listado {
+  return armarListado(filas, COLUMNAS_PERCEPCION)
 }
 
 export function totalesDePercepciones(filas: FilaPercepcion[]) {
@@ -521,24 +508,24 @@ export async function comprasParaElContador(desde: string, hasta: string): Promi
 }
 
 // Los títulos, tal cual vienen en la planilla del contador.
-const COLUMNAS_COMPRAS: { clave: keyof FilaLibroCompras; titulo: string }[] = [
-  { clave: 'fecha', titulo: 'Fecha' },
+const COLUMNAS_COMPRAS: ColumnaDe<FilaLibroCompras>[] = [
+  { clave: 'fecha', titulo: 'Fecha', tipo: 'fecha' },
   { clave: 'tipo', titulo: 'Tipo Comp.' },
   { clave: 'letra', titulo: 'Letra' },
-  { clave: 'suc', titulo: 'Suc' },
-  { clave: 'numero', titulo: 'Numero' },
-  { clave: 'proveedor', titulo: 'Proveedor' },
+  { clave: 'suc', titulo: 'Suc', tipo: 'numero' },
+  { clave: 'numero', titulo: 'Numero', tipo: 'numero' },
+  { clave: 'proveedor', titulo: 'Proveedor', ancho: 30 },
   { clave: 'cuit', titulo: 'Cuit' },
-  { clave: 'neto', titulo: 'Neto' },
-  { clave: 'iva', titulo: 'Iva' },
-  { clave: 'imp_internos', titulo: 'Imp.Int.' },
-  { clave: 'exento_no_gravado', titulo: 'Exento y No Grabado' },
-  { clave: 'perc_dgr', titulo: 'Perc.DGR' },
-  { clave: 'perc_iva', titulo: 'Perc.IVA' },
-  { clave: 'perc_ganancias', titulo: 'Perc.GAN.' },
-  { clave: 'ret_suss', titulo: 'Ret.Sus.' },
-  { clave: 'otros', titulo: 'Otros' },
-  { clave: 'total', titulo: 'Total' },
+  { clave: 'neto', titulo: 'Neto', tipo: 'importe' },
+  { clave: 'iva', titulo: 'Iva', tipo: 'importe' },
+  { clave: 'imp_internos', titulo: 'Imp.Int.', tipo: 'importe' },
+  { clave: 'exento_no_gravado', titulo: 'Exento y No Grabado', tipo: 'importe' },
+  { clave: 'perc_dgr', titulo: 'Perc.DGR', tipo: 'importe' },
+  { clave: 'perc_iva', titulo: 'Perc.IVA', tipo: 'importe' },
+  { clave: 'perc_ganancias', titulo: 'Perc.GAN.', tipo: 'importe' },
+  { clave: 'ret_suss', titulo: 'Ret.Sus.', tipo: 'importe' },
+  { clave: 'otros', titulo: 'Otros', tipo: 'importe' },
+  { clave: 'total', titulo: 'Total', tipo: 'importe' },
 ]
 
 export interface EncabezadoDeCompras {
@@ -555,8 +542,8 @@ function cuitConGuiones(cuit: string): string {
   return d.length === 11 ? `${d.slice(0, 2)}-${d.slice(2, 10)}-${d.slice(10)}` : cuit
 }
 
-export function comprasACsv(filas: FilaLibroCompras[], e: EncabezadoDeCompras): string {
-  return armarCsv(filas, COLUMNAS_COMPRAS, [
+export function comprasAListado(filas: FilaLibroCompras[], e: EncabezadoDeCompras): Listado {
+  return armarListado(filas, COLUMNAS_COMPRAS, [
     e.nombre.toUpperCase(),
     `${e.razonSocial} Cuit: ${cuitConGuiones(e.cuit)}`,
     '',

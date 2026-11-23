@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import {
-  aCsv,
   comoFilaDeCompra,
   comoFilaDePercepcion,
   comoFilaDeVenta,
-  comprasACsv,
-  percepcionesACsv,
+  comprasAListado,
+  percepcionesAListado,
   totalesDeCompras,
   totalesDePercepciones,
+  ventasAListado,
 } from '@/lib/api/libroIva'
 import type { CrudoComprobante, CrudoCompra, CrudoTributo, FilaPercepcion } from '@/lib/api/libroIva'
 
@@ -100,35 +100,26 @@ describe('la percepción, como sale de la base', () => {
 
 describe('el archivo que abre en Excel', () => {
   it('lleva el CUIT, la base y la alícuota, que es lo que pide Rentas', () => {
-    const csv = percepcionesACsv([fila()])
-    const [encabezado, primera] = csv.split('\n')
+    const l = percepcionesAListado([fila()])
+    const titulos = l.columnas.map((c) => c.titulo)
 
-    expect(encabezado).toContain('CUIT / DNI')
-    expect(encabezado).toContain('Base imponible')
-    expect(encabezado).toContain('Alícuota %')
-    expect(primera).toContain('30712234567')
+    expect(titulos).toContain('CUIT / DNI')
+    expect(titulos).toContain('Base imponible')
+    expect(titulos).toContain('Alícuota %')
+    // El CUIT va como texto: como número Excel lo muestra en notación científica.
+    expect(l.filas[0]).toContain('30712234567')
   })
 
-  /*
-    Coma decimal y punto y coma como separador: es lo que necesita el
-    Excel que usan. Con punto decimal, "33100.5" entra como texto y no
-    se puede sumar.
-  */
-  it('escribe los números como los espera el Excel de Gross', () => {
-    const csv = percepcionesACsv([fila({ importe: 33100.5 })])
+  it('los importes van como número, para que se puedan sumar', () => {
+    const l = percepcionesAListado([fila({ importe: 33100.5 })])
+    const col = l.columnas.findIndex((c) => c.titulo === 'Percibido')
 
-    expect(csv).toContain('33100,5')
-    expect(csv.split('\n')[0]).toContain(';')
-  })
-
-  it('empieza con el BOM, para que Excel lea bien los acentos', () => {
-    const csv = percepcionesACsv([fila()])
-    expect(csv.startsWith('﻿')).toBe(true)
-    expect(csv).toContain('Alícuota %')
+    expect(l.filas[0][col]).toBe(33100.5)
+    expect(l.columnas[col].tipo).toBe('importe')
   })
 
   it('un mes sin percepciones sale con encabezado y sin filas', () => {
-    expect(percepcionesACsv([]).split('\n')).toHaveLength(1)
+    expect(percepcionesAListado([]).filas).toHaveLength(0)
   })
 })
 
@@ -189,22 +180,21 @@ describe('las compras para el contador', () => {
   })
 
   it('el archivo arranca con el comercio, el CUIT y el período', () => {
-    const csv = comprasACsv([comoFilaDeCompra(factura)], {
+    const l = comprasAListado([comoFilaDeCompra(factura)], {
       nombre: 'Agroveterinaria Gross',
       razonSocial: 'GROSS ERNESTO HUGO',
       cuit: '20146369767',
       desde: '2026-10-01',
       hasta: '2026-10-31',
     })
-    const renglones = csv.replace('﻿', '').split('\n')
-    expect(renglones.slice(0, 5)).toEqual([
+    expect(l.antes).toEqual([
       'AGROVETERINARIA GROSS',
       'GROSS ERNESTO HUGO Cuit: 20-14636976-7',
       '',
       'Mis comprobantes recibidos',
       'Periodo Desde: 01/10/2026 Hasta: 31/10/2026',
     ])
-    expect(renglones[5]).toBe(
+    expect(l.columnas.map((c) => c.titulo).join(';')).toBe(
       'Fecha;Tipo Comp.;Letra;Suc;Numero;Proveedor;Cuit;Neto;Iva;Imp.Int.;Exento y No Grabado;Perc.DGR;Perc.IVA;Perc.GAN.;Ret.Sus.;Otros;Total',
     )
   })
@@ -253,7 +243,7 @@ describe('las ventas para el contador', () => {
   })
 
   it('las columnas son las de ARCA y las percepciones no van', () => {
-    const [encabezado] = aCsv([comoFilaDeVenta(factura)]).replace('﻿', '').split('\n')
+    const encabezado = ventasAListado([comoFilaDeVenta(factura)]).columnas.map((c) => c.titulo).join(';')
     expect(encabezado).toBe(
       'Fecha;Tipo;Punto de venta;Número Desde;Número hasta;Cód. Autorización;Tipo Doc. Receptor;Nro. Doc. Receptor;Denominación Receptor;Tipo Cambio;Moneda;Imp. Neto Gravado;Imp. Neto No Gravado;Imp. Op. Exentas;IVA;Imp. Total',
     )

@@ -3,7 +3,7 @@ import leerExcel from 'read-excel-file/universal'
 import { clasificar, type Registro } from '@/lib/importacion/comparar'
 import { COMPARADOR_CLIENTES, COMPARADOR_PRODUCTOS, COMPARADOR_PROVEEDORES } from '@/lib/importacion/comparadores'
 import { CLIENTES, PROVEEDORES } from '@/lib/importacion/definiciones'
-import { aExcel, armarHoja, nombreDeArchivo } from '@/lib/importacion/exportar'
+import { aExcel, armarHoja, listadoAExcel, nombreDeArchivo } from '@/lib/importacion/exportar'
 import { detectarEncabezado, PRODUCTOS, prepararFilas, proponerMapeo, type DefinicionPlanilla } from '@/lib/importacion/planilla'
 import {
   COLUMNAS_DE_CLIENTES,
@@ -176,5 +176,26 @@ describe('el archivo de Excel de verdad', () => {
 
   it('el nombre lleva la fecha', () => {
     expect(nombreDeArchivo('productos', new Date(2026, 9, 21))).toBe('productos-2026-10-21.xlsx')
+  })
+})
+
+describe('los listados para el contador', () => {
+  it('abren con las columnas separadas: importes como número, fechas como fecha y el CUIT entero', async () => {
+    const archivo = await listadoAExcel({
+      antes: ['AGROVETERINARIA GROSS', ''],
+      columnas: [
+        { titulo: 'Fecha', tipo: 'fecha' },
+        { titulo: 'Cuit' },
+        { titulo: 'Neto', tipo: 'importe' },
+      ],
+      filas: [['07/09/2026', '30712345671', -1619834.71]],
+    })
+    const [hoja] = await leerExcel(archivo)
+    const filas = hoja.data as unknown[][]
+    expect(filas[0][0]).toBe('AGROVETERINARIA GROSS')
+    expect(filas[2]).toEqual(['Fecha', 'Cuit', 'Neto'])
+    expect(filas[3][0]).toEqual(new Date(Date.UTC(2026, 8, 7)))
+    expect(filas[3][1]).toBe('30712345671')
+    expect(filas[3][2]).toBe(-1619834.71)
   })
 })

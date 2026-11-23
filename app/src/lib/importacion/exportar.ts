@@ -1,4 +1,5 @@
 import type { DefinicionPlanilla } from '@/lib/importacion/planilla'
+import type { SheetData } from 'write-excel-file/universal'
 
 /*
   ─────────────────────────────────────────────────────────────
@@ -77,6 +78,84 @@ export async function aExcel(hoja: Celda[][], anchos: (number | undefined)[] = [
     }),
   )
   return escribir(datos, { columns: anchos.map((w) => ({ width: w ?? 14 })), stickyRowsCount: 1 }).toBlob()
+}
+
+/*
+  ─────────────────────────────────────────────────────────────
+  Los listados para mirar o mandar al contador
+
+  También son .xlsx y no CSV (pedido del 19/11): un CSV con punto y coma
+  abre en una sola columna en cualquier Excel que no esté configurado en
+  español, y el contador lo tenía que rehacer a mano. El .xlsx abre con
+  doble clic igual en todos lados.
+
+  Cada columna dice qué lleva: los importes salen como número con dos
+  decimales —así se suman—, las fechas como fecha de Excel —así se
+  ordenan y filtran— y el resto como texto. Un CUIT o un CAE van como
+  texto a propósito: como número, Excel los muestra en notación
+  científica y les come los últimos dígitos.
+  ─────────────────────────────────────────────────────────────
+*/
+
+export interface ColumnaDeListado {
+  titulo: string
+  tipo?: 'texto' | 'numero' | 'importe' | 'fecha'
+  /** Ancho en caracteres. */
+  ancho?: number
+}
+
+export interface Listado {
+  /** Renglones sueltos antes de los títulos (el encabezado de la planilla de compras). */
+  antes?: string[]
+  columnas: ColumnaDeListado[]
+  filas: Celda[][]
+  /** Filas que van en negrita: los subtotales y el total. */
+  resaltadas?: number[]
+}
+
+/** «07/09/2026» o «2026-09-07» → la fecha, en UTC como la espera la librería. */
+export function fechaDeTexto(v: string): Date | null {
+  let m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(v)
+  if (m) return new Date(Date.UTC(Number(m[3]), Number(m[2]) - 1, Number(m[1])))
+  m = /^(\d{4})-(\d{2})-(\d{2})/.exec(v)
+  if (m) return new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])))
+  return null
+}
+
+export async function listadoAExcel(l: Listado): Promise<Blob> {
+  const { default: escribir } = await import('write-excel-file/universal')
+  const antes = (l.antes ?? []).map((t) => [t === '' ? null : { value: t, type: String }])
+  const titulos = l.columnas.map((c) => ({ value: c.titulo, type: String, fontWeight: 'bold' as const }))
+  const resaltadas = new Set(l.resaltadas ?? [])
+
+  const cuerpo = l.filas.map((fila, i) =>
+    fila.map((v, j) => {
+      if (v === null || v === '') return null
+      const negrita = resaltadas.has(i) ? { fontWeight: 'bold' as const } : {}
+      const tipo = l.columnas[j]?.tipo ?? 'texto'
+      if (typeof v === 'number') {
+        if (!Number.isFinite(v)) return null
+        return tipo === 'importe'
+          ? { value: v, type: Number, format: '#,##0.00', ...negrita }
+          : { value: v, type: Number, ...negrita }
+      }
+      if (tipo === 'fecha') {
+        const f = fechaDeTexto(v)
+        if (f) return { value: f, type: Date, format: 'dd/mm/yyyy', ...negrita }
+      }
+      return { value: v, type: String, ...negrita }
+    }),
+  )
+
+  const hoja = [...antes, titulos, ...cuerpo] as SheetData
+  return escribir(hoja, {
+    columns: l.columnas.map((c) => ({ width: c.ancho ?? (c.tipo === 'fecha' ? 11 : 14) })),
+    stickyRowsCount: antes.length + 1,
+  }).toBlob()
+}
+
+export async function bajarListado(nombre: string, l: Listado) {
+  descargar(nombre, await listadoAExcel(l))
 }
 
 /*

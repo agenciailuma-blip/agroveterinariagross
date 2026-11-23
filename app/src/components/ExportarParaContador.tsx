@@ -1,17 +1,17 @@
 import { useState, type ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
-  aCsv,
-  comprasACsv,
+  comprasAListado,
   comprasParaElContador,
-  percepcionesACsv,
+  percepcionesAListado,
   percepcionesParaRentas,
   totales,
   totalesDeCompras,
   totalesDePercepciones,
+  ventasAListado,
   ventasParaElContador,
 } from '@/lib/api/libroIva'
-import { descargarCsv } from '@/lib/api/noFiscal'
+import { bajarListado } from '@/lib/importacion/exportar'
 import { obtenerTextos } from '@/lib/api/configuracion'
 import { moneda, numero } from '@/lib/tipos'
 import { boton, campo, tarjeta } from '@/estilos'
@@ -93,9 +93,9 @@ export default function ExportarParaContador() {
     // El encabezado de su planilla: el comercio, el CUIT y el período.
     const datos = await obtenerTextos(['comercio.nombre_fantasia', 'comercio.razon_social', 'comercio.cuit'])
     const texto = (k: string) => datos[k] ?? ''
-    descargarCsv(
-      `compras-${anio}-${String(mes).padStart(2, '0')}.csv`,
-      comprasACsv(compras.data, {
+    await bajarListado(
+      `compras-${anio}-${String(mes).padStart(2, '0')}.xlsx`,
+      comprasAListado(compras.data, {
         nombre: texto('comercio.nombre_fantasia'),
         razonSocial: texto('comercio.razon_social'),
         cuit: texto('comercio.cuit'),
@@ -105,16 +105,16 @@ export default function ExportarParaContador() {
     )
   }
 
-  function bajar() {
+  async function bajar() {
     if (!filas.data?.length) return
-    descargarCsv(`ventas-${anio}-${String(mes).padStart(2, '0')}.csv`, aCsv(filas.data))
+    await bajarListado(`ventas-${anio}-${String(mes).padStart(2, '0')}.xlsx`, ventasAListado(filas.data))
   }
 
-  function bajarPercepciones() {
+  async function bajarPercepciones() {
     if (!percepciones.data?.length) return
-    descargarCsv(
-      `percepciones-iibb-${anio}-${String(mes).padStart(2, '0')}.csv`,
-      percepcionesACsv(percepciones.data),
+    await bajarListado(
+      `percepciones-iibb-${anio}-${String(mes).padStart(2, '0')}.xlsx`,
+      percepcionesAListado(percepciones.data),
     )
   }
 
