@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   agruparPor,
-  busquedaACsv,
+  busquedaAListado,
   grupoDe,
   leerNumero,
   rangoDe,
@@ -101,29 +101,34 @@ describe('clasificar por semana o por mes', () => {
 })
 
 describe('el archivo', () => {
-  it('abre en Excel con acentos y lleva la fila de totales', () => {
-    const csv = busquedaACsv(agruparPor([fila()], 'nada'), true)
-    expect(csv.startsWith('﻿')).toBe(true)
-    const renglones = csv.slice(1).split('\r\n')
-    expect(renglones[0]).toBe('Fecha;Comprobante;Letra;Número;Cliente;CUIT / DNI;Neto;IVA;Percepción;Total;CAE')
-    expect(renglones[1]).toContain('06/10/2026;Factura A;A;00001-00000001;HIMPA;30711631956;4249741,90;892445,80;140666,46;5282854,16')
-    expect(renglones.at(-1)).toBe(';TOTAL;;;1 comprobantes;;4249741,90;892445,80;140666,46;5282854,16;')
+  it('lleva las columnas de pantalla y la fila de totales al pie', () => {
+    const l = busquedaAListado(agruparPor([fila()], 'nada'), true)
+    expect(l.columnas.map((c) => c.titulo).join(';')).toBe(
+      'Fecha;Comprobante;Letra;Número;Cliente;CUIT / DNI;Neto;IVA;Percepción;Total;CAE',
+    )
+    expect(l.filas[0].slice(0, 10)).toEqual([
+      '2026-10-06', 'Factura A', 'A', '00001-00000001', 'HIMPA', '30711631956',
+      4249741.9, 892445.8, 140666.46, 5282854.16,
+    ])
+    expect(l.filas.at(-1)?.slice(1, 10)).toEqual([
+      'TOTAL', null, null, '1 comprobantes', null, 4249741.9, 892445.8, 140666.46, 5282854.16,
+    ])
+    expect(l.resaltadas).toEqual([1])
   })
 
   it('con grupos, cada uno lleva su subtotal antes del total', () => {
-    const csv = busquedaACsv(agruparPor([fila({ fecha: '2026-09-30' }), fila({ fecha: '2026-10-01' })], 'mes'), true)
-    const renglones = csv.slice(1).split('\r\n')
-    expect(renglones.filter((r) => r.includes('Subtotal'))).toHaveLength(2)
-    expect(renglones.at(-1)).toContain('281332,92')
+    const l = busquedaAListado(agruparPor([fila({ fecha: '2026-09-30' }), fila({ fecha: '2026-10-01' })], 'mes'), true)
+    expect(l.filas.filter((r) => String(r[1]).startsWith('Subtotal'))).toHaveLength(2)
+    expect(l.filas.at(-1)?.[8]).toBeCloseTo(281332.92, 2)
   })
 
   it('sin percepciones no lleva esa columna', () => {
-    const csv = busquedaACsv(agruparPor([fila()], 'nada'), false)
-    expect(csv).not.toContain('Percepción')
+    const l = busquedaAListado(agruparPor([fila()], 'nada'), false)
+    expect(l.columnas.map((c) => c.titulo)).not.toContain('Percepción')
   })
 
   it('las notas de crédito salen en negativo', () => {
-    const csv = busquedaACsv(agruparPor([fila({ signo: -1, familia: 'nota_credito' })], 'nada'), true)
-    expect(csv).toContain('-140666,46')
+    const l = busquedaAListado(agruparPor([fila({ signo: -1, familia: 'nota_credito' })], 'nada'), true)
+    expect(l.filas[0][8]).toBe(-140666.46)
   })
 })

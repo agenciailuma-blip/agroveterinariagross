@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import type { Celda, ColumnaDeListado, Listado } from '@/lib/importacion/exportar'
 
 /*
   ─────────────────────────────────────────────────────────────
@@ -376,71 +377,71 @@ export const fechaAr = (iso: string) => {
   return `${d}/${m}/${a}`
 }
 
-const numeroCsv = (n: number) => n.toFixed(2).replace('.', ',')
-
-const celda = (v: string) => (/[";\r\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v)
-
 /*
-  El archivo de una búsqueda, para abrir en Excel.
+  El archivo de una búsqueda, para abrir en Excel (.xlsx).
 
-  Punto y coma, coma decimal y el BOM al principio, como los demás
-  archivos del sistema: sin eso Excel abre todo en una columna o con
-  los acentos rotos. Los importes van con su signo, y al pie va la fila
-  de totales —y la de cada semana o mes, si se clasificó—, igual que en
-  pantalla: es la que pidieron poder ver y exportar.
+  Los importes van con su signo, y al pie va la fila de totales —y la
+  de cada semana o mes, si se clasificó—, igual que en pantalla: es la
+  que pidieron poder ver y exportar. Esas filas salen en negrita.
 */
-export function busquedaACsv(grupos: Grupo[], conPercepcion: boolean): string {
-  const titulos = [
-    'Fecha', 'Comprobante', 'Letra', 'Número', 'Cliente', 'CUIT / DNI',
-    'Neto', 'IVA', ...(conPercepcion ? ['Percepción'] : []), 'Total', 'CAE',
+export function busquedaAListado(grupos: Grupo[], conPercepcion: boolean): Listado {
+  const columnas: ColumnaDeListado[] = [
+    { titulo: 'Fecha', tipo: 'fecha' },
+    { titulo: 'Comprobante', ancho: 20 },
+    { titulo: 'Letra', ancho: 6 },
+    { titulo: 'Número', ancho: 16 },
+    { titulo: 'Cliente', ancho: 30 },
+    { titulo: 'CUIT / DNI' },
+    { titulo: 'Neto', tipo: 'importe' },
+    { titulo: 'IVA', tipo: 'importe' },
+    ...(conPercepcion ? [{ titulo: 'Percepción', tipo: 'importe' as const }] : []),
+    { titulo: 'Total', tipo: 'importe' },
+    { titulo: 'CAE', ancho: 17 },
   ]
-  const renglones: string[] = [titulos.join(';')]
+  const filas: Celda[][] = []
+  const resaltadas: number[] = []
 
   const importes = (t: { neto: number; iva: number; percepciones: number; total: number }) => [
-    numeroCsv(t.neto),
-    numeroCsv(t.iva),
-    ...(conPercepcion ? [numeroCsv(t.percepciones)] : []),
-    numeroCsv(t.total),
+    t.neto,
+    t.iva,
+    ...(conPercepcion ? [t.percepciones] : []),
+    t.total,
   ]
 
   for (const g of grupos) {
     for (const f of g.filas) {
       const neto = f.signo * (f.neto_gravado + f.neto_no_gravado + f.exento)
-      renglones.push(
-        [
-          fechaAr(f.fecha),
-          celda(f.tipo),
-          f.clase ?? '',
-          f.comprobante,
-          celda(f.receptor_nombre),
-          f.receptor_documento ?? '',
-          ...importes({
-            neto,
-            iva: f.signo * f.iva_total,
-            percepciones: f.signo * f.tributos_total,
-            total: f.signo * f.total,
-          }),
-          f.cae ?? '',
-        ].join(';'),
-      )
+      filas.push([
+        f.fecha,
+        f.tipo,
+        f.clase ?? null,
+        f.comprobante,
+        f.receptor_nombre,
+        f.receptor_documento ?? null,
+        ...importes({
+          neto,
+          iva: f.signo * f.iva_total,
+          percepciones: f.signo * f.tributos_total,
+          total: f.signo * f.total,
+        }),
+        f.cae ?? null,
+      ])
     }
     if (grupos.length > 1) {
-      renglones.push(
-        ['', celda(`Subtotal ${g.titulo}`), '', '', `${g.totales.comprobantes} comprobantes`, '',
-          ...importes(g.totales), ''].join(';'),
-      )
+      resaltadas.push(filas.length)
+      filas.push([null, `Subtotal ${g.titulo}`, null, null, `${g.totales.comprobantes} comprobantes`, null,
+        ...importes(g.totales), null])
     }
   }
 
   const total = totalesDe(grupos.flatMap((g) => g.filas))
-  renglones.push(
-    ['', 'TOTAL', '', '', `${total.comprobantes} comprobantes`, '', ...importes(total), ''].join(';'),
-  )
+  resaltadas.push(filas.length)
+  filas.push([null, 'TOTAL', null, null, `${total.comprobantes} comprobantes`, null, ...importes(total), null])
 
-  return '﻿' + renglones.join('\r\n')
+  return { columnas, filas, resaltadas }
 }
 
 /** Un nombre de archivo que dice qué tiene adentro. */
 export function nombreDeArchivo(base: string, desde: string, hasta: string): string {
-  return desde === hasta ? `${base}-${desde}.csv` : `${base}-${desde}-al-${hasta}.csv`
+  return desde === hasta ? `${base}-${desde}.xlsx` : `${base}-${desde}-al-${hasta}.xlsx`
 }

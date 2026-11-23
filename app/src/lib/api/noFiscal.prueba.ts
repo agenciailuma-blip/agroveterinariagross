@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { aCsv, numeroNoFiscal } from '@/lib/api/noFiscal'
+import { noFiscalesAListado, numeroNoFiscal } from '@/lib/api/noFiscal'
 import type { FilaNoFiscal } from '@/lib/api/noFiscal'
 
 /*
@@ -46,34 +46,16 @@ describe('el número impreso', () => {
 })
 
 describe('exportar a Excel', () => {
-  it('arranca con el BOM, si no los acentos salen rotos', () => {
-    expect(aCsv([fila()]).startsWith('\uFEFF')).toBe(true)
+  it('una fila por comprobante, con el tipo y el número a la vista', () => {
+    const l = noFiscalesAListado([fila(), fila({ numero: 46 }), fila({ numero: 47 })])
+    expect(l.columnas).toHaveLength(9)
+    expect(l.filas).toHaveLength(3)
+    expect(l.filas[0][0]).toBe('Remito logístico')
+    expect(l.filas[0][1]).toBe('REM CAJA1-00000045')
   })
 
-  it('separa con punto y coma: es lo que espera el Excel en español', () => {
-    const [, primera] = aCsv([fila()]).split('\r\n')
-    expect(primera.split(';')[0]).toBe('Remito logístico')
-    expect(primera.split(';')[1]).toBe('REM CAJA1-00000045')
-  })
-
-  it('el importe va con coma decimal', () => {
-    expect(aCsv([fila({ total: 1234.5 })])).toContain('1234,50')
-  })
-
-  it('un texto con punto y coma no rompe las columnas', () => {
-    const csv = aCsv([fila({ receptor_nombre: 'Perez; Juan' })])
-    expect(csv).toContain('"Perez; Juan"')
-    // La fila sigue teniendo las nueve columnas de siempre.
-    const [cabecera] = csv.split('\r\n')
-    expect(cabecera.split(';')).toHaveLength(9)
-  })
-
-  it('las comillas adentro de un nombre se duplican', () => {
-    expect(aCsv([fila({ receptor_nombre: 'El "Gringo"' })])).toContain('"El ""Gringo"""')
-  })
-
-  it('exporta una fila por comprobante', () => {
-    const csv = aCsv([fila(), fila({ numero: 46 }), fila({ numero: 47 })])
-    expect(csv.split('\r\n')).toHaveLength(4) // cabecera + 3
+  it('el total va como número', () => {
+    const l = noFiscalesAListado([fila({ total: 1234.5 })])
+    expect(l.filas[0][4]).toBe(1234.5)
   })
 })

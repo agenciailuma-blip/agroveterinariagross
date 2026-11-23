@@ -4,15 +4,15 @@ import { useAuth } from '@/auth/AuthProvider'
 import { pedirTexto } from '@/components/Dialogo'
 import {
   ETIQUETA_NO_FISCAL,
-  aCsv,
   anularNoFiscal,
-  descargarCsv,
   listarNoFiscales,
   mandarPresupuestoACaja,
+  noFiscalesAListado,
   numeroNoFiscal,
 } from '@/lib/api/noFiscal'
 import type { FilaNoFiscal, TipoNoFiscal } from '@/lib/api/noFiscal'
 import { abrirComprobante, abrirNoFiscal } from '@/lib/escritorio'
+import { bajarListado } from '@/lib/importacion/exportar'
 import { confirmar } from '@/components/Dialogo'
 import { facturarComprobanteInterno } from '@/lib/api/facturacion'
 import { mandarSolaACuentaCorriente } from '@/lib/api/facturaPorMail'
@@ -153,10 +153,10 @@ export default function NoFiscales({ tipo }: { tipo: TipoNoFiscal }) {
     onError: (e) => setError(e instanceof Error ? e.message : 'No se pudo anular.'),
   })
 
-  function exportar() {
+  async function exportar() {
     if (!filas.data?.length) return
     const hoy = new Date().toISOString().slice(0, 10)
-    descargarCsv(`${textos.archivo}-${hoy}.csv`, aCsv(filas.data))
+    await bajarListado(`${textos.archivo}-${hoy}.xlsx`, noFiscalesAListado(filas.data))
   }
 
   if (!puedeVer) {

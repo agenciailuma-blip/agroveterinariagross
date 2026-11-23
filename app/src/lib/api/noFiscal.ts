@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import type { Listado } from '@/lib/importacion/exportar'
 import { aplicarFiltros } from '@/lib/api/filtrosConsulta'
 import type { Filtros } from '@/lib/filtros'
 import { leerPapel, mismaSerie } from '@/lib/api/buscarComprobantes'
@@ -899,72 +900,41 @@ export async function mandarPresupuestoACaja(ventaId: string): Promise<void> {
 }
 
 /*
-  El listado a CSV.
+  El listado a Excel.
 
   "Registro, veo y exporto" — punto 12 de Lucas, que él mismo planteó
   como criterio y no como pedido. Un listado que no se puede sacar del
   sistema obliga a copiarlo a mano, y ahí es donde aparecen los números
   que no coinciden con nada.
 
-  Separador de punto y coma y BOM al principio: es lo que hace que Excel
-  en español abra el archivo con las columnas separadas y los acentos
-  bien, sin que nadie tenga que importar nada.
+  Sale como .xlsx (ver `listadoAExcel`): abre con doble clic y con las
+  columnas separadas en cualquier Excel, y el total viaja como número.
 */
-export function aCsv(filas: FilaNoFiscal[]): string {
-  const escapar = (v: string | number | null) => {
-    const t = String(v ?? '')
-    return /[";\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t
-  }
-
-  const cabecera = [
-    'Tipo',
-    'Numero',
-    'Fecha',
-    'Cliente',
-    'Total',
-    'Estado',
-    'Destino',
-    'Transporte',
-    'Venta',
-  ]
-
-  const lineas = filas.map((f) =>
-    [
+export function noFiscalesAListado(filas: FilaNoFiscal[]): Listado {
+  return {
+    columnas: [
+      { titulo: 'Tipo', ancho: 24 },
+      { titulo: 'Numero', ancho: 20 },
+      { titulo: 'Fecha', tipo: 'fecha' },
+      { titulo: 'Cliente', ancho: 30 },
+      { titulo: 'Total', tipo: 'importe' },
+      { titulo: 'Estado' },
+      { titulo: 'Destino', ancho: 18 },
+      { titulo: 'Transporte', ancho: 18 },
+      { titulo: 'Venta' },
+    ],
+    filas: filas.map((f) => [
       ETIQUETA_NO_FISCAL[f.tipo_clave],
       numeroNoFiscal(f.tipo_clave, f.serie, f.numero),
       f.fecha,
       f.receptor_nombre,
-      // Coma decimal: es lo que espera Excel en español.
-      f.total.toFixed(2).replace('.', ','),
+      f.total,
       f.estado,
-      f.entrega_localidad ?? '',
-      f.transportista ?? '',
-      f.venta_codigo ?? '',
-    ]
-      .map(escapar)
-      .join(';'),
-  )
-
-  return '\uFEFF' + [cabecera.join(';'), ...lineas].join('\r\n')
-}
-
-/*
-  Bajar el archivo.
-
-  Adentro del programa instalado un enlace de descarga no siempre hace
-  algo, así que se abre en una ventana y se deja que el sistema resuelva.
-  En el navegador es una descarga común.
-*/
-export function descargarCsv(nombre: string, contenido: string) {
-  const blob = new Blob([contenido], { type: 'text/csv;charset=utf-8' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = nombre
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
-  setTimeout(() => URL.revokeObjectURL(url), 1000)
+      f.entrega_localidad ?? null,
+      f.transportista ?? null,
+      f.venta_codigo ?? null,
+    ]),
+  }
 }
 
 /*

@@ -6,7 +6,7 @@ import {
   TOPE,
   agruparPor,
   buscarComprobantes,
-  busquedaACsv,
+  busquedaAListado,
   fechaAr,
   leerNumero,
   nombreDeArchivo,
@@ -19,7 +19,7 @@ import {
   type Periodo,
   type Totales,
 } from '@/lib/api/buscarComprobantes'
-import { descargarCsv } from '@/lib/api/noFiscal'
+import { bajarListado } from '@/lib/importacion/exportar'
 import { moneda, numero } from '@/lib/tipos'
 import { boton, botonChico, campoDeFiltro, tarjeta } from '@/estilos'
 import EncabezadoOrdenable from '@/components/EncabezadoOrdenable'
@@ -108,12 +108,12 @@ export default function BuscadorDeComprobantes({ modo }: { modo: Modo }) {
   const total = totalesDe(filas)
   const fechasAlReves = b.desde > b.hasta
 
-  function bajar() {
+  async function bajar() {
     if (!filas.length) return
     const base = conPercepcion ? 'percepciones' : 'comprobantes'
     // Con alguna percepción en la lista, va su columna: sin ella el total no cierra.
     const columnaPercepcion = conPercepcion || filas.some((f) => f.tributos_total !== 0)
-    descargarCsv(nombreDeArchivo(base, b.desde, b.hasta), busquedaACsv(grupos, columnaPercepcion))
+    await bajarListado(nombreDeArchivo(base, b.desde, b.hasta), busquedaAListado(grupos, columnaPercepcion))
   }
 
   // La vuelta desde la factura: a esta misma búsqueda, no al principio.
