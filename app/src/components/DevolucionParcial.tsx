@@ -7,6 +7,8 @@ import {
   type LineaDevolvible,
 } from '@/lib/api/devoluciones'
 import { enCastellano } from '@/lib/errores'
+import { imprimirOAbrirComprobante } from '@/lib/comprobante/imprimirDirecto'
+import { useTerminal } from '@/lib/terminal'
 import { moneda, numero } from '@/lib/tipos'
 import { boton, campo } from '@/estilos'
 
@@ -62,6 +64,7 @@ export default function DevolucionParcial({
 
   const hayAlgo = [...elegidas.values()].some((c) => c > 0)
 
+  const { terminal } = useTerminal()
   const devolver = useMutation({
     mutationFn: async () => {
       const seleccion = [...elegidas.entries()]
@@ -70,7 +73,9 @@ export default function DevolucionParcial({
 
       return devolverLineas(ventaId, seleccion, motivo.trim())
     },
-    onSuccess: ({ cae, problema }) => {
+    onSuccess: ({ notaCreditoId, cae, problema }) => {
+      // La nota autorizada sale sola, como la factura (pedido de Gross, 23/11).
+      if (cae && notaCreditoId) void imprimirOAbrirComprobante(notaCreditoId, terminal)
       if (problema) {
         onListo(
           `La devolución se hizo por ${moneda.format(total)} y la nota de crédito quedó armada, pero ARCA no la autorizó todavía: ${problema} Se puede reintentar desde esta misma pantalla.`,

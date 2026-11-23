@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/auth/AuthProvider'
+import { imprimirOAbrirComprobante } from '@/lib/comprobante/imprimirDirecto'
+import { useTerminal } from '@/lib/terminal'
 import { pedirTexto } from '@/components/Dialogo'
 import DevolucionParcial from '@/components/DevolucionParcial'
 import {
@@ -28,6 +30,7 @@ import { moneda } from '@/lib/tipos'
 export default function DevolverFactura({ comprobanteId }: { comprobanteId: string }) {
   const { tienePermiso } = useAuth()
   const qc = useQueryClient()
+  const { terminal } = useTerminal()
   const puedeEmitir = tienePermiso('facturacion.emitir')
 
   const fila = useQuery({
@@ -54,7 +57,11 @@ export default function DevolverFactura({ comprobanteId }: { comprobanteId: stri
           texto: `La devolución se hizo y la nota de crédito quedó armada, pero ARCA no la autorizó todavía: ${problema} Se puede reintentar desde Comprobantes → Facturación.`,
           error: true,
         })
-      else setAviso({ texto: `Nota de crédito autorizada por ARCA. CAE ${cae}`, error: false })
+      else {
+        setAviso({ texto: `Nota de crédito autorizada por ARCA. CAE ${cae}`, error: false })
+        // La nota autorizada sale sola, como la factura (pedido de Gross, 23/11).
+        void imprimirOAbrirComprobante(notaCreditoId, terminal)
+      }
       refrescar()
     },
     onError: (e) => {

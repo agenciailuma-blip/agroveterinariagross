@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/auth/AuthProvider'
+import { imprimirOAbrirComprobante } from '@/lib/comprobante/imprimirDirecto'
+import { useTerminal } from '@/lib/terminal'
 import { pedirTexto } from '@/components/Dialogo'
 import ExportarParaContador from '@/components/ExportarParaContador'
 import {
@@ -41,6 +43,7 @@ const COLOR_SEMAFORO: Record<Semaforo, string> = {
 export default function Facturacion() {
   const { tienePermiso } = useAuth()
   const qc = useQueryClient()
+  const { terminal } = useTerminal()
   const [filtro, setFiltro] = useState<'pendientes' | 'todos'>('pendientes')
   const [error, setError] = useState<string | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
@@ -150,6 +153,8 @@ export default function Facturacion() {
         )
       } else {
         avisar(`Nota de crédito autorizada por ARCA. CAE ${cae}`)
+        // La nota autorizada sale sola, como la factura (pedido de Gross, 23/11).
+        void imprimirOAbrirComprobante(notaCreditoId, terminal)
       }
       refrescar()
     },

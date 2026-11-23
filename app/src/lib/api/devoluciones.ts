@@ -96,6 +96,8 @@ function redondear(n: number): number {
 
 export interface ResultadoDevolucion {
   devolucionId: string
+  /** La nota de crédito, si la venta estaba facturada. */
+  notaCreditoId: string | null
   cae: string | null
   /** Qué salió mal con ARCA, si algo salió mal. La devolución ya está hecha. */
   problema: string | null
@@ -134,14 +136,15 @@ export async function devolverLineas(
     .eq('id', id)
     .single()
 
-  if (!dev?.comprobante_id) return { devolucionId: id, cae: null, problema: null }
+  if (!dev?.comprobante_id) return { devolucionId: id, notaCreditoId: null, cae: null, problema: null }
 
   try {
     const { cae } = await solicitarCae(dev.comprobante_id as string)
-    return { devolucionId: id, cae, problema: null }
+    return { devolucionId: id, notaCreditoId: dev.comprobante_id as string, cae, problema: null }
   } catch (e) {
     return {
       devolucionId: id,
+      notaCreditoId: dev.comprobante_id as string,
       cae: null,
       problema: e instanceof Error ? e.message : 'ARCA no respondió.',
     }

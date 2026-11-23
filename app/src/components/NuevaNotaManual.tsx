@@ -14,6 +14,8 @@ import {
 } from '@/lib/api/notasManuales'
 import { buscarClientes, type ClienteVenta } from '@/lib/api/ventas'
 import { enCastellano } from '@/lib/errores'
+import { imprimirOAbrirComprobante } from '@/lib/comprobante/imprimirDirecto'
+import { useTerminal } from '@/lib/terminal'
 import { avanzarConEnter } from '@/lib/teclado'
 import { boton, campo } from '@/estilos'
 import { moneda } from '@/lib/tipos'
@@ -64,6 +66,7 @@ export default function NuevaNotaManual({
 }) {
   const qc = useQueryClient()
   const navegar = useNavigate()
+  const { terminal } = useTerminal()
   // Una por nota: si se corta la conexión y se aprieta de nuevo, es la misma nota.
   const [notaId] = useState(() => crypto.randomUUID())
   const [asociada, setAsociada] = useState(!!facturaFija)
@@ -119,8 +122,13 @@ export default function NuevaNotaManual({
       qc.invalidateQueries({ queryKey: ['buscar-comprobantes'] })
       qc.invalidateQueries({ queryKey: ['comprobantes'] })
       qc.invalidateQueries({ queryKey: ['movimientos-cc'] })
-      if (r.cae) navegar(`/comprobante/${r.id}`)
-      else setResultado(r)
+      /*
+        Autorizada, sale sola por la impresora del mostrador, como la
+        factura (pedido de Gross, 23/11). Sin impresora en esta PC, o si
+        falla, se abre la nota para imprimirla a mano.
+      */
+      if (r.cae) void imprimirOAbrirComprobante(r.id, terminal)
+      setResultado(r)
     },
     onError: (e) => setError(enCastellano(e, 'No se pudo emitir la nota.')),
   })
@@ -132,16 +140,27 @@ export default function NuevaNotaManual({
   if (resultado) {
     return (
       <Marco>
-        <h2 className="font-semibold text-tinta">{nombre} armada</h2>
-        <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900 ring-1 ring-amber-200">
-          ARCA no la autorizó todavía: {resultado.problema} Se puede reintentar desde Comprobantes → Facturación.
-        </p>
+        {resultado.cae ? (
+          <>
+            <h2 className="font-semibold text-tinta">{nombre} emitida</h2>
+            <p className="mt-3 rounded-lg bg-verde-50 px-3 py-2 text-sm text-verde-800 ring-1 ring-verde-200">
+              Autorizada por ARCA. CAE {resultado.cae}
+            </p>
+          </>
+        ) : (
+          <>
+            <h2 className="font-semibold text-tinta">{nombre} armada</h2>
+            <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900 ring-1 ring-amber-200">
+              ARCA no la autorizó todavía: {resultado.problema} Se puede reintentar desde Comprobantes → Facturación.
+            </p>
+          </>
+        )}
         <div className="mt-5 flex flex-wrap justify-end gap-2">
           <button onClick={onCerrar} className={boton.suave}>
             Cerrar
           </button>
           <button onClick={() => navegar(`/comprobante/${resultado.id}`)} className={boton.principal}>
-            Ver la nota
+            {resultado.cae ? 'Ver o reimprimir' : 'Ver la nota'}
           </button>
         </div>
       </Marco>

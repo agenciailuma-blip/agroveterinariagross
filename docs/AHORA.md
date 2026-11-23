@@ -12,7 +12,9 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Para publicar: 0.26.3** (la última publicada es la 0.26.2; `latest.json` lo confirma). **El aviso de «Precio a convenir · proforma» en el mostrador ya no dice que sale con precio:** ahora dice que sale sin precios, con su comprobante de entrega, y que a la cuenta corriente va por el importe a precio de lista hasta que se defina. Sólo cambia ese texto ([`PuntoDeVenta.tsx`](../app/src/pages/PuntoDeVenta.tsx)); tipos sin errores.
+**Para publicar: 0.26.4** (la última publicada es la 0.26.3, 23/11, 10:27; `latest.json` lo confirma). **Las notas de crédito y débito se imprimen solas al emitirse** (pedido del 23/11). Vale para la nota escrita a mano —asociada o no a una factura— y para la nota de crédito de una devolución, total o parcial, desde Facturación, desde la vista de la factura o desde Pedidos web. Es lo mismo que ya hacía la factura fuera de la caja (`imprimirOAbrirComprobante`): con impresora del mostrador en esa PC sale directo; si no hay o falla, se abre la nota para imprimirla a mano. Sólo cuando ARCA la autoriza; la que queda sin CAE no se imprime. La nota a mano ahora muestra «emitida · CAE» con un botón *Ver o reimprimir*, en vez de saltar a la vista de la nota. Sin cambios en la base; tipos sin errores, **968 pruebas verdes**. No probado emitiendo una nota real.
+
+**Publicada: 0.26.3.** **El aviso de «Precio a convenir · proforma» en el mostrador ya no dice que sale con precio:** ahora dice que sale sin precios, con su comprobante de entrega, y que a la cuenta corriente va por el importe a precio de lista hasta que se defina. Sólo cambia ese texto ([`PuntoDeVenta.tsx`](../app/src/pages/PuntoDeVenta.tsx)); tipos sin errores.
 
 **Publicada: 0.26.2. La proforma a convenir sale sin precios** (pedido del 23/11, con la foto de PRO CAJA2-25).
 - **Qué cambia:** mientras espera el precio, la proforma a convenir se imprime como el comprobante de entrega: productos y cantidades, total de unidades, sin precio unitario, importe ni total. Vale para el rollo en pantalla, la hoja A4 y la impresora directa.
