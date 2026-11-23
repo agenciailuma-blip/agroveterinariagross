@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
+import { ReporteMercaderia, ReporteVentas } from '@/components/ReportesAvanzados'
 import { useAuth } from '@/auth/AuthProvider'
 import {
   obtenerMetricasDeVenta,
@@ -44,28 +45,77 @@ import { useOrden } from '@/lib/useOrden'
   coincidir. Van como enlace.
   ─────────────────────────────────────────────────────────────
 */
+/*
+  ─── LAS PESTAÑAS ───
+
+  Resumen es la pantalla de siempre. Mercadería y Ventas son los
+  reportes avanzados del 23/11 (valor del stock, mercadería parada,
+  ventas por canal y por rubro de ARCA, margen), en
+  `components/ReportesAvanzados.tsx`. La pestaña va en la dirección
+  —`?ver=ventas`— para que volver atrás deje donde se estaba.
+*/
+type Pestana = 'resumen' | 'mercaderia' | 'ventas'
+
+const PESTANAS: [Pestana, string][] = [
+  ['resumen', 'Resumen'],
+  ['mercaderia', 'Mercadería'],
+  ['ventas', 'Ventas'],
+]
+
 export default function Reportes() {
   const { tienePermiso } = useAuth()
+  const [params, setParams] = useSearchParams()
+  const avanzados = tienePermiso('reportes.ver')
+  const pedida = params.get('ver') as Pestana | null
+  const pestana: Pestana = avanzados && pedida && PESTANAS.some(([p]) => p === pedida) ? pedida : 'resumen'
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-xl font-semibold tracking-tight text-tinta">Reportes</h1>
         <p className="text-sm text-piedra-500">
-          Cómo viene el mes y quién tiene plata de Gross en la calle.
+          Cómo viene el negocio: las ventas, la mercadería y quién debe.
         </p>
       </div>
 
-      <Ventas />
+      {avanzados && (
+        <div role="tablist" className="flex flex-wrap gap-1 border-b border-borde">
+          {PESTANAS.map(([p, texto]) => (
+            <button
+              key={p}
+              role="tab"
+              aria-selected={pestana === p}
+              onClick={() => setParams(p === 'resumen' ? {} : { ver: p }, { replace: true })}
+              className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium ${
+                pestana === p
+                  ? 'border-marca-700 text-marca-700'
+                  : 'border-transparent text-piedra-500 hover:text-tinta'
+              }`}
+            >
+              {texto}
+            </button>
+          ))}
+        </div>
+      )}
 
-      {/*
-        Sin permiso de cuenta corriente el bloque no se muestra. La base
-        además devuelve la vista vacía, así que esto es para no dejar un
-        panel en blanco sin explicar por qué.
-      */}
-      {tienePermiso('cuentacorriente.ver') && <Deuda />}
+      {pestana === 'mercaderia' ? (
+        <ReporteMercaderia />
+      ) : pestana === 'ventas' ? (
+        <ReporteVentas />
+      ) : (
+        <>
+          <Ventas />
 
-      <Enlaces />
+          {/*
+            Sin permiso de cuenta corriente el bloque no se muestra. La base
+            además devuelve la vista vacía, así que esto es para no dejar un
+            panel en blanco sin explicar por qué.
+          */}
+          {tienePermiso('cuentacorriente.ver') && <Deuda />}
+
+          <Enlaces />
+        </>
+      )}
     </div>
   )
 }
