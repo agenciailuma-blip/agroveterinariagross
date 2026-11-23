@@ -246,6 +246,22 @@ describe('cómo se le cuenta a una persona qué pasó con la caja', () => {
     expect(d.queHacer).toContain('redes privadas')
   })
 
+  it('si la caja está prendida pero no escucha, manda a mirar el sistema y no el aviso de Windows', () => {
+    const d = contarEntrega(
+      {
+        estado: 'no_contesta',
+        esperando: 6,
+        motivo:
+          'La computadora de la caja está prendida, pero el sistema no está escuchando en ella ' +
+          '(DESKTOP-O4R9STD, puerto 8737). Se probó 192.168.0.10: nadie escuchando (10061).',
+      },
+      cuando,
+    )
+    expect(d.estado).toBe('falla')
+    expect(d.queHacer).toContain('navegador')
+    expect(d.queHacer).not.toContain('redes privadas')
+  })
+
   it('dice la hora, para poder saber si es de ahora o de hace un rato', () => {
     const d = contarEntrega({ estado: 'entregado', cuantas: 1 }, cuando)
     expect(d.detalle).toMatch(/\d{1,2}:\d{2}/)

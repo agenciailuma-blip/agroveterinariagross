@@ -329,9 +329,13 @@ export function contarEntrega(
       return {
         estado: 'falla',
         detalle: `Hay ${entrega.esperando} operaciones esperando y la caja no contesta${hora}. ${entrega.motivo}`,
-        queHacer:
-          'Fijate que la computadora de la caja esté prendida y con el sistema abierto. ' +
-          'La primera vez, Windows pregunta si permite la comunicación en redes privadas: hay que decir que sí.',
+        // La PC contestó pero el sistema no escucha: el aviso de Windows no
+        // tiene nada que ver, y mandar a mirarlo hace perder el tiempo.
+        queHacer: /no está escuchando/.test(entrega.motivo)
+          ? 'En la caja: que el sistema esté abierto como programa instalado, no en el navegador, ' +
+            'y actualizado. Si ya lo está, cerrarlo y volver a abrirlo.'
+          : 'Fijate que la computadora de la caja esté prendida y con el sistema abierto. ' +
+            'La primera vez, Windows pregunta si permite la comunicación en redes privadas: hay que decir que sí.',
       }
   }
 }

@@ -307,6 +307,65 @@ fn primero_ipv4(mut destinos: Vec<std::net::SocketAddr>) -> Vec<std::net::Socket
     destinos.sort_by_key(|d| !d.is_ipv4());
     destinos
 }
+/*
+  Por qué no se pudo llegar a la caja, dicho para quien está en el local.
+
+  Antes se mostraba sólo el error de la última dirección probada, que
+  casi siempre es la IPv6 (fe80::…). El 19/11 eso hizo parecer que
+  volvía el problema de septiembre, cuando en realidad habían fallado
+  todas y por otro motivo. Ahora se dice cada dirección con su motivo, y
+  el resumen distingue los dos casos que piden cosas distintas:
+
+  - «Nadie escuchando» (10061): la PC está prendida y contestó, pero el
+    sistema no está escuchando en ella. Cerrado, abierto en el navegador
+    o con una versión vieja. El firewall no da este error.
+  - «No responde»: apagada, en otra red, o Windows la está frenando.
+*/
+fn motivo_del_intento(e: &std::io::Error) -> String {
+    use std::io::ErrorKind;
+    let codigo = e.raw_os_error().map(|c| format!(" ({c})")).unwrap_or_default();
+    let motivo = match (e.kind(), e.raw_os_error()) {
+        (ErrorKind::ConnectionRefused, _) | (_, Some(10061)) | (_, Some(111)) => {
+            "nadie escuchando".to_string()
+        }
+        (ErrorKind::TimedOut, _) | (ErrorKind::WouldBlock, _) | (_, Some(10060)) => {
+            "no responde".to_string()
+        }
+        (_, Some(10051)) | (_, Some(10065)) => "no se llega por la red".to_string(),
+        _ => e.to_string(),
+    };
+    format!("{motivo}{codigo}")
+}
+
+fn nadie_escuchando(e: &std::io::Error) -> bool {
+    e.kind() == std::io::ErrorKind::ConnectionRefused
+        || matches!(e.raw_os_error(), Some(10061) | Some(111))
+}
+
+fn explicar_fallo(
+    host: &str,
+    puerto: u16,
+    intentos: &[(std::net::SocketAddr, std::io::Error)],
+) -> String {
+    let resumen = if intentos.iter().any(|(_, e)| nadie_escuchando(e)) {
+        format!(
+            "La computadora de la caja está prendida, pero el sistema no está escuchando \
+             en ella ({host}, puerto {puerto})."
+        )
+    } else {
+        format!(
+            "La computadora de la caja no contestó ({host}, puerto {puerto}): puede estar \
+             apagada, en otra red, o Windows la está frenando."
+        )
+    };
+    let detalle = intentos
+        .iter()
+        .map(|(destino, e)| format!("{}: {}", destino.ip(), motivo_del_intento(e)))
+        .collect::<Vec<_>>()
+        .join("; ");
+    format!("{resumen} Se probó {detalle}.")
+}
+
 fn hablar(host: &str, puerto: u16, mensaje: &str) -> Result<Respuesta, String> {
     let destinos = primero_ipv4(
         (host, puerto)
@@ -319,23 +378,17 @@ fn hablar(host: &str, puerto: u16, mensaje: &str) -> Result<Respuesta, String> {
     }
 
     let mut conexion = None;
-    let mut ultimo_error = None;
+    let mut intentos = Vec::new();
     for destino in &destinos {
         match TcpStream::connect_timeout(destino, ESPERA) {
             Ok(c) => {
                 conexion = Some(c);
                 break;
             }
-            Err(e) => ultimo_error = Some(format!("{destino}: {e}")),
+            Err(e) => intentos.push((*destino, e)),
         }
     }
-    let mut conexion = conexion.ok_or_else(|| {
-        format!(
-            "La computadora de la caja no contestó en {host}:{puerto}. \
-             Fijate que esté prendida y con el sistema abierto. ({})",
-            ultimo_error.unwrap_or_default()
-        )
-    })?;
+    let mut conexion = conexion.ok_or_else(|| explicar_fallo(host, puerto, &intentos))?;
 
     conexion
         .set_read_timeout(Some(ESPERA))
@@ -471,14 +524,49 @@ mod pruebas {
     */
     #[test]
     fn avisa_cuando_la_caja_no_esta() {
+        // Un puerto donde nadie escucha, en una PC prendida: lo del 19/11.
         let error = hablar("127.0.0.1", 1, r#"{"clave":"x","tipo":"salud"}"#)
             .expect_err("no tendría que haber conectado");
 
-        assert!(error.contains("no contestó"), "mensaje inesperado: {error}");
         assert!(
-            error.contains("prendida"),
-            "el mensaje no dice qué mirar: {error}"
+            error.contains("prendida, pero el sistema no está escuchando"),
+            "mensaje inesperado: {error}"
         );
+        assert!(error.contains("127.0.0.1: nadie escuchando"), "falta el motivo: {error}");
+    }
+
+    /*
+      El 19/11 el mensaje mostró sólo la dirección IPv6 y pareció el
+      problema de septiembre. Tienen que aparecer todas, la IPv4 primero.
+    */
+    #[test]
+    fn dice_cada_direccion_con_su_motivo() {
+        use std::io::{Error, ErrorKind};
+        let v4: std::net::SocketAddr = "192.168.0.10:8737".parse().unwrap();
+        let v6: std::net::SocketAddr = "[fe80::1]:8737".parse().unwrap();
+        let m = explicar_fallo(
+            "DESKTOP-CAJA",
+            8737,
+            &[
+                (v4, Error::from(ErrorKind::ConnectionRefused)),
+                (v6, Error::from_raw_os_error(10061)),
+            ],
+        );
+        assert!(m.contains("no está escuchando"), "{m}");
+        assert!(m.contains("192.168.0.10: nadie escuchando"), "{m}");
+        assert!(m.contains("fe80::1: nadie escuchando (10061)"), "{m}");
+        assert!(m.find("192.168").unwrap() < m.find("fe80").unwrap(), "{m}");
+    }
+
+    #[test]
+    fn distingue_la_caja_que_no_responde() {
+        use std::io::{Error, ErrorKind};
+        let v4: std::net::SocketAddr = "192.168.0.10:8737".parse().unwrap();
+        let m = explicar_fallo("DESKTOP-CAJA", 8737, &[(v4, Error::from(ErrorKind::TimedOut))]);
+        assert!(m.contains("no contestó"), "{m}");
+        assert!(m.contains("apagada"), "{m}");
+        assert!(m.contains("192.168.0.10: no responde"), "{m}");
+        assert!(!m.contains("no está escuchando"), "{m}");
     }
 
     /*
