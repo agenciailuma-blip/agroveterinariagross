@@ -49,6 +49,8 @@ export interface VentaEnCola {
 export interface LineaCobro {
   id: string
   orden: number
+  /** Sin producto: una línea escrita a mano, que no puede ir a convenir. */
+  producto_id?: string | null
   codigo_producto: string
   descripcion: string
   cantidad: number
@@ -80,6 +82,8 @@ export interface VentaCompleta {
     nombre: string
     condicion_iva_id: number
     cuenta_corriente: boolean
+    /** Marcado «Precio a convenir»: en la caja sale sólo con proforma a convenir. */
+    precio_a_convenir?: boolean
     limite_credito: number | null
   } | null
   vendedor: { id: string; nombre: string } | null
@@ -245,9 +249,9 @@ export async function obtenerVentaCompleta(id: string): Promise<VentaCompleta> {
       .from('venta')
       .select(
         `id, codigo, estado, total, descuento_total, lista_precio_id, recargo_porcentaje, medio_pago_previsto_id, cuotas_previstas, observaciones, documentacion,
-         cliente:cliente_id(id, nombre, condicion_iva_id, cuenta_corriente, limite_credito),
+         cliente:cliente_id(id, nombre, condicion_iva_id, cuenta_corriente, precio_a_convenir, limite_credito),
          vendedor:vendedor_id(id, nombre),
-         venta_linea(id, orden, codigo_producto, descripcion, cantidad,
+         venta_linea(id, orden, producto_id, codigo_producto, descripcion, cantidad,
                      precio_original, precio_acordado, precio_unitario, motivo_modificacion, concepto)`,
       )
       .eq('id', id)

@@ -1,5 +1,5 @@
 ---
-actualizado: 2026-11-19
+actualizado: 2026-11-23
 estado: en curso
 ---
 
@@ -15,17 +15,30 @@ estado: en curso
 **Cerrado el 19/11, avisado por Francisco:**
 - **Las impresoras de Mostrador 2 y Caja 2 ya andan** (mensaje de Lucas). En la base `terminal.impresora_windows` sigue vacía para esas dos, y es normal: desde la 0.24.0 la impresora se guarda en cada PC, no en el puesto.
 - **La tienda ya toma los cambios de los productos que tenía** (foto, *solo consultar*, precio): lo resolvió la web.
-- **Proforma a precio a convenir:** Francisco le avisa a Lucas que la pruebe. Al 19/11 no había ninguna emitida y ningún cliente tenía la marca.
+- **Proforma a precio a convenir:** Lucas la probó el 19/11 y falló (ver la 0.25.8).
 
 **Manual al día con la 0.25.7 (19/11):** [`manual/manual.html`](manual/manual.html) y el PDF regenerado. Suma lo de la 0.25.1 a la 0.25.7: foto del producto y presupuesto por número en el Mostrador, enlaces de la cuenta corriente y Pendientes de facturar desde la cuenta, Cuenta/Pedir/Pagarla en Compras y Proveedores, devolver desde cualquier factura, la barra de búsqueda por número en Comprobantes, el filtro «En la web», los archivos del contador con su formato nuevo, *Estado de las PC* en Configuración y la sección nueva **29 · Registro de auditoría**. Para entregárselo a Gross, el PDF está en `docs/manual/`.
 
-**Construida: 0.25.7 — falta publicar; trae la 0.25.6.** **Integralidad, tanda 3: buscar por número.**
+**Construida: 0.25.9 — falta publicar.** **«A convenir» en la caja, sólo con proforma** (pedido de Lucas del 23/11: la factura va siempre con precio).
+- **Cliente marcado «Precio a convenir»:** en la caja (y en *Cobrar* del mostrador, que es el mismo cobro) no aparece Factura ni Proforma común: sólo **A convenir**, con el botón *Sacar la proforma a convenir*.
+- **Cliente con cuenta corriente sin la marca:** tercera opción **A convenir** junto a Factura y Proforma.
+- **Qué hace:** sale la proforma a convenir (con la leyenda, a precio de lista, a la cuenta corriente, descuenta stock) y su comprobante de entrega; la venta deja la cola anulada con el número de la proforma como motivo. Todo junto o nada, en la base: `venta_a_proforma_a_convenir()` en [`20261123110000_a_convenir_desde_la_caja.sql`](../supabase/migrations/20261123110000_a_convenir_desde_la_caja.sql), **ya aplicada en producción**. Necesita conexión; con deuda vencida pide el PIN del encargado como siempre; no acepta líneas escritas a mano.
+- **Probado** contra la base real con una venta inventada en una transacción deshecha: proforma, entrega, cargo de $3.000 a DON ENRIQUE y venta anulada. 930 pruebas verdes, tipos sin errores. **No visto en pantalla:** el navegador de desarrollo no tiene puesto asignado y asignarle uno lo registraba como PC del local. En la cola hay una venta real de DON ENRIQUE para probarlo: **MOS1-000071** ($6.500).
+
+**Publicada: 0.25.8** (23/11, 08:31; `latest.json` lo confirma). **La proforma a precio a convenir, arreglada (pruebas del 19/11).**
+- **Causa:** la base rechazaba la proforma a convenir y su comprobante de entrega: dos reglas de la tabla (de cuando el único papel sin venta era el remito) no dejaban domicilio de entrega fuera del remito ni un papel sin descontar stock. El mostrador no mostraba el rechazo: la guardaba en la PC, la imprimía y quedaba en «sin enviar» para siempre; por eso no aparecía en Proformas.
+- **Base (ya aplicada en producción el 23/11):** [`20261123100000_proforma_a_convenir_entra_en_la_base.sql`](../supabase/migrations/20261123100000_proforma_a_convenir_entra_en_la_base.sql). Probado contra la base real en una transacción deshecha: proforma, entrega y cargo a la cuenta corriente de DON ENRIQUE salen. **Las que quedaron en «sin enviar» suben solas** cuando la PC reintente: cargan la cuenta de DON ENRIQUE con importes de prueba; anularlas desde Proformas devuelve el cargo.
+- **App:** si la base rechaza la proforma a convenir, el mostrador lo muestra en vez de guardarla igual; el comprobante de entrega de una venta armada en otra PC sale directo en el servidor (el «La venta no está en esta computadora» de la caja 2); la pantalla de impresión usa la copia de la PC si el papel todavía no subió (el «No se pudo cargar el comprobante»). 926 pruebas verdes, tipos sin errores.
+- **La web en CAJA1 sacó un remito logístico «a facturar» (REM CAJA1-25 y 26):** ese navegador tenía una versión vieja guardada; la publicada es la actual. Se arregla recargando con Ctrl+Shift+R. Esos dos remitos esperan en A convenir: anularlos.
+- **Sin enviar, en lenguaje claro** (otra sesión): una línea por venta o papel (el contador cuenta eso), estado En camino/Enviando/Trabada, qué parte no entra y qué hacer; el error técnico en «Detalle para soporte»; Descartar borra la venta entera. El mostrador ya no deja un renglón con cantidad cero (CAJA1-000052, 3/11: el ROYAL CAT suelto quedó en 0; esa venta está en la base sólo con el CREDELIO y hay que descartarla en Caja 1 y anular o rehacer la venta). Commit 6729ca5.
+
+**Publicada: 0.25.7** (19/11, 09:44; `latest.json` lo confirma); trae la 0.25.6. **Integralidad, tanda 3: buscar por número.**
 - **Comprobantes, arriba de todas las pestañas:** una barra que busca un número en facturas y notas, presupuestos, proformas, remitos, comprobantes de entrega y recibos, todo junto. Acepta «16», «1-16», «0001-00000004» y la serie del puesto con letras («PRE CAJA1-00000010»). Con la sigla delante (PRE, REM, PRO, ENT, REC, FAC, NC) busca sólo ese tipo. Tocar un resultado lo abre.
 - **Mostrador:** escribir «PRE» y el número en el buscador trae el presupuesto con **Mandar a caja**, o dice si ya está en la caja, ya se cobró o está anulado. Pide un dígito después de «pre»: «Premium» y «Prednisolona 20» siguen buscando productos.
 - **Sin cambios en la base.** [`buscarPorNumero.ts`](../app/src/lib/api/buscarPorNumero.ts), [`BuscarPapel.tsx`](../app/src/components/BuscarPapel.tsx); la lectura del número (`leerPapel`, `mismaSerie`) en `buscarComprobantes.ts`. **926 pruebas verdes** (11 nuevas, rotas a propósito una vez), tipos sin errores. **Visto en el navegador contra la base real:** la barra con «PRE CAJA1-00000010», «rec 4», «FAC 1-16», «0001-00000004» y un número que no existe; el mostrador con PRE CAJA1-10 (*Mandar a caja*), pre 8 (*Ya se cobró*) y «premium» (productos). No se mandó nada a caja. A 375 px sin scroll horizontal.
 - **Al probar se encontró** que las series de presupuestos, remitos y recibos tienen letras (`CAJA1`): la primera versión sólo entendía números y no encontraba ninguno.
 
-**Construida: 0.25.6 — falta publicar.** **Registro de auditoría**, en *Administración → Registro de auditoría* (propuesta: [`propuesta-registro-de-auditoria.md`](propuesta-registro-de-auditoria.md)). Cierra lo que faltaba construir de la Fase 1.
+**Publicada: 0.25.6** (en la 0.25.7). **Registro de auditoría**, en *Administración → Registro de auditoría* (propuesta: [`propuesta-registro-de-auditoria.md`](propuesta-registro-de-auditoria.md)). Cierra lo que faltaba construir de la Fase 1.
 - **Qué junta:** anulaciones, devoluciones y notas de crédito, precios cambiados en la venta, aumentos masivos (una vez, no producto por producto), autorizaciones por deuda vencida, cajas abiertas y cerradas, entradas y salidas de stock, inventarios cerrados, y **desde el 19/11 cada cambio en fichas y configuración** (productos, precios por lista, clientes, usuarios, roles y permisos, configuración, medios de pago, listas, puntos de venta, puestos, depósitos, tandas del remito R) con el valor de antes y el de después. Filtros por fechas, tipo, persona y texto; botón **Bajar a Excel**.
 - **Quién lo ve:** sólo quien tenga «Ver el registro de auditoría». Arranca sólo en el **Administrador** (se le quitó al Encargado); Lucas se lo da a quien quiera desde *Usuarios → Roles y permisos*. **Sin mails** por ahora (lo pidió Francisco el 19/11).
 - **Nadie lo corrige ni lo borra:** la tabla `auditoria` no admite cambios desde la app. Las claves secretas de la configuración quedan como «oculto».

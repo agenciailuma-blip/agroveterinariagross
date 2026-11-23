@@ -33,6 +33,7 @@ import {
   emitirComprobanteDeEntrega,
   emitirNoFiscal,
   marcarDocumentacion,
+  ventaAProformaAConvenir,
   nombreDeFactura,
   numeroNoFiscal,
 } from '@/lib/api/noFiscal'
@@ -53,7 +54,12 @@ import { TeclaAtajo } from '@/components/Atajos'
 import { primeroElCodigoExacto, useListaConFlechas } from '@/lib/buscador'
 
 /** Con qué documento sale la venta. Ver marcar_documentacion_venta() en la base. */
-type Documentacion = 'fiscal' | 'no_fiscal' | 'a_facturar'
+/*
+  'a_convenir' (23/11) no es una marca de la venta: la venta de la cola
+  se convierte en proforma a convenir y deja la cola. Ver
+  venta_a_proforma_a_convenir() en la base.
+*/
+type Documentacion = 'fiscal' | 'no_fiscal' | 'a_facturar' | 'a_convenir'
 /*
   El cobro de una venta: medio de pago, descuento, con o sin factura,
   cobrar, facturar e imprimir.
@@ -359,6 +365,29 @@ export default function CobroDeVenta({
     onSettled: () => setCobrada(false),
   })
 
+  /*
+    A convenir: sin cobro. Sale la proforma a convenir con su entrega,
+    la deuda entra a la cuenta a precio de lista y la venta deja la cola.
+  */
+  const aConvenir = useMutation({
+    mutationFn: () => ventaAProformaAConvenir(seleccionada!, terminal!, autorizoVencido?.usuario_id ?? null),
+    onSuccess: ({ proforma, entrega }) => {
+      setNoFiscalEmitido({
+        id: proforma.id,
+        texto: `Proforma a convenir ${proforma.numero} a cuenta corriente. El precio se define en Proformas emitidas → A convenir.`,
+      })
+      setEntregaEmitida(entrega)
+      imprimirSolo(() =>
+        imprimirNoFiscal(proforma.id, terminal).then(() => imprimirNoFiscal(entrega.id, terminal)),
+      )
+      limpiar()
+      onTerminada()
+      qc.invalidateQueries({ queryKey: ['cola-caja'] })
+      qc.invalidateQueries({ queryKey: ['comprobantes'] })
+    },
+    onError: (e) => setError(e instanceof Error ? e.message : 'No salió la proforma a convenir.'),
+  })
+
   async function cobrarYDocumentar() {
       const codigo = venta.data?.codigo
       // Sin factura ahora: sin factura del todo, o a cuenta para facturar
@@ -374,7 +403,7 @@ export default function CobroDeVenta({
         después, con la plata adentro y un documento que no se puede
         emitir.
       */
-      if (sinFactura) await marcarDocumentacion(seleccionada!, documentacion)
+      if (sinFactura && documentacion !== 'a_convenir') await marcarDocumentacion(seleccionada!, documentacion)
 
       const { subida } = await cobrar(
         seleccionada!,
@@ -614,8 +643,18 @@ export default function CobroDeVenta({
     momento en que el sistema tiene que seguir funcionando igual. Prefiere
     cobrar de más con factura que no cobrar.
   */
+  /*
+    Al cliente marcado «Precio a convenir» no se le factura en la caja:
+    la factura va con precio. Sale sólo la proforma a convenir (23/11).
+  */
+  const soloAConvenir = !!venta.data?.cliente?.cuenta_corriente && !!venta.data?.cliente?.precio_a_convenir
   useEffect(() => {
-    if (!enLinea) setDocumentacion('fiscal')
+    if (soloAConvenir) setDocumentacion('a_convenir')
+  }, [venta.data?.id, soloAConvenir])
+
+  useEffect(() => {
+    if (!enLinea) setDocumentacion(soloAConvenir ? 'a_convenir' : 'fiscal')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enLinea])
 
   /*
@@ -812,13 +851,15 @@ export default function CobroDeVenta({
           autorizoVencido={autorizoVencido}
           onAutorizarVencido={async (pin) => setAutorizoVencido(await autorizarVencidoEnCaja(pin, terminal!.id))}
           aplicando={aplicar.isPending}
-          cobrando={cobrarVenta.isPending}
+          cobrando={cobrarVenta.isPending || aConvenir.isPending}
           cobrada={cobrada}
           ajustando={ajustar.isPending}
           puedeAjustar={tienePermiso('ventas.ajustar_total')}
           documentacion={documentacion}
           onDocumentacion={setDocumentacion}
           puedeVenderSinFactura={tienePermiso('facturacion.vender_sin_factura')}
+          puedeAConvenir={tienePermiso('facturacion.no_fiscal_emitir')}
+          soloAConvenir={soloAConvenir}
           enLinea={enLinea}
           puedeEditar={tienePermiso('ventas.editar_en_caja')}
           editando={editar.isPending}
@@ -875,7 +916,7 @@ export default function CobroDeVenta({
           error={error}
           onElegirMedio={elegirMedio}
           onAjustar={(nuevo, motivo) => ajustar.mutate({ nuevo, motivo })}
-          onCobrar={() => cobrarVenta.mutate()}
+          onCobrar={() => (documentacion === 'a_convenir' ? aConvenir.mutate() : cobrarVenta.mutate())}
           onCancelar={() => {
             limpiar()
             onCancelar()
@@ -912,6 +953,8 @@ function PanelCobro({
   documentacion,
   onDocumentacion,
   puedeVenderSinFactura,
+  puedeAConvenir,
+  soloAConvenir,
   enLinea,
   puedeEditar,
   editando,
@@ -947,6 +990,10 @@ function PanelCobro({
   documentacion: Documentacion
   onDocumentacion: (d: Documentacion) => void
   puedeVenderSinFactura: boolean
+  /** Puede sacar la proforma a convenir. */
+  puedeAConvenir: boolean
+  /** Cliente marcado «Precio a convenir»: sólo esa opción. */
+  soloAConvenir: boolean
   enLinea: boolean
   puedeEditar: boolean
   editando: boolean
@@ -1017,23 +1064,32 @@ function PanelCobro({
   */
   const conCuenta = !!venta.cliente?.cuenta_corriente
   const ofreceProforma = puedeVenderSinFactura || conCuenta
-  const opciones: [Documentacion, string, string][] = [
-    ['fiscal', 'Factura', 'Factura de ARCA con CAE'],
-    ...(ofreceProforma
-      ? [
-          [
-            documentacion === 'fiscal' ? 'no_fiscal' : documentacion,
-            'Proforma',
-            documentacion === 'a_facturar' ? 'A cuenta corriente' : 'Sin factura',
-          ] as [Documentacion, string, string],
-        ]
-      : []),
-  ]
+  /*
+    A convenir (23/11): con cuenta corriente se puede elegir; al cliente
+    marcado «Precio a convenir» es lo único que se le ofrece. La factura
+    va siempre con precio, así que a convenir no se factura.
+  */
+  const opcionAConvenir: [Documentacion, string, string] = ['a_convenir', 'A convenir', 'Proforma, precio después']
+  const opciones: [Documentacion, string, string][] = soloAConvenir
+    ? [opcionAConvenir]
+    : [
+        ['fiscal', 'Factura', 'Factura de ARCA con CAE'],
+        ...(ofreceProforma
+          ? [
+              [
+                documentacion === 'fiscal' || documentacion === 'a_convenir' ? 'no_fiscal' : documentacion,
+                'Proforma',
+                documentacion === 'a_facturar' ? 'A cuenta corriente' : 'Sin factura',
+              ] as [Documentacion, string, string],
+            ]
+          : []),
+        ...(conCuenta && puedeAConvenir ? [opcionAConvenir] : []),
+      ]
   const caminoDeProforma = (alCC: boolean): Documentacion =>
     conCuenta && (alCC || !puedeVenderSinFactura) ? 'a_facturar' : 'no_fiscal'
 
   const elegirDocumentacion = (valor: Documentacion) => {
-    if (valor === 'fiscal') return onDocumentacion('fiscal')
+    if (valor === 'fiscal' || valor === 'a_convenir') return onDocumentacion(valor)
     const camino = caminoDeProforma(esCuentaCorriente)
     onDocumentacion(camino)
     // Sin el permiso, la proforma va entera a la cuenta: se elige sola.
@@ -1043,11 +1099,19 @@ function PanelCobro({
 
   // Si cambia el medio con la proforma elegida, el camino se acomoda.
   useEffect(() => {
-    if (documentacion === 'fiscal') return
+    if (documentacion === 'fiscal' || documentacion === 'a_convenir') return
     const camino = caminoDeProforma(esCuentaCorriente)
     if (camino !== documentacion) onDocumentacion(camino)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [esCuentaCorriente, documentacion])
+
+  // A convenir va entero a la cuenta corriente, a precio de lista.
+  const medioCC = medios.find((m) => m.tipo === 'cuenta_corriente')
+  useEffect(() => {
+    if (documentacion === 'a_convenir' && medioCC && medio?.id !== medioCC.id) onElegirMedio(medioCC)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [documentacion, medioCC?.id, medio?.id])
+  const lineaAMano = venta.venta_linea.some((l) => !l.producto_id)
 
   /*
     Con o sin factura desde el teclado, a los costados de F10: F9 con
@@ -1056,7 +1120,7 @@ function PanelCobro({
   */
   const teclaDe: Partial<Record<Documentacion, string>> = { fiscal: 'F9', no_fiscal: 'F11', a_facturar: 'F11' }
   const elegible = (valor: Documentacion) =>
-    opciones.length > 1 && (valor === 'fiscal' || (ofreceProforma && enLinea))
+    !soloAConvenir && opciones.length > 1 && (valor === 'fiscal' || (ofreceProforma && enLinea))
   useAtajo('F9', () => elegirDocumentacion('fiscal'), elegible('fiscal'))
   useAtajo('F11', () => elegirDocumentacion('no_fiscal'), elegible('no_fiscal'))
 
@@ -1522,9 +1586,9 @@ function PanelCobro({
           lleve factura es una decisión del dueño. La base pide el mismo
           permiso; esto sólo evita ofrecer lo que va a fallar.
         */}
-        {opciones.length > 1 && (
+        {(opciones.length > 1 || soloAConvenir) && (
           <div className="mt-4 rounded-lg border border-borde p-1">
-            <div className={`grid gap-1 ${opciones.length === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
+            <div className={`grid gap-1 ${opciones.length === 3 ? 'grid-cols-3' : opciones.length === 2 ? 'grid-cols-2' : 'grid-cols-1'}`}>
               {opciones.map(([valor, titulo, detalle]) => (
                 <button
                   key={valor}
@@ -1554,7 +1618,16 @@ function PanelCobro({
                 </button>
               ))}
             </div>
-            {!enLinea && (
+            {documentacion === 'a_convenir' && (
+              <p className="px-3 pb-1.5 pt-2 text-[11px] leading-snug text-piedra-500">
+                {soloAConvenir ? 'Cliente con precio a convenir: no se factura acá. ' : ''}
+                Sale la proforma a convenir con su comprobante de entrega y va a la cuenta corriente.
+                El precio se define después en Proformas emitidas → A convenir.
+                {lineaAMano && ' Lleva sólo productos del catálogo: sacá las líneas escritas a mano.'}
+                {!enLinea && ' Necesita conexión.'}
+              </p>
+            )}
+            {!enLinea && !soloAConvenir && (
               <p className="px-3 pb-1.5 pt-2 text-[11px] leading-snug text-piedra-500">
                 Sin conexión sólo se puede cobrar con factura. Podés cobrar igual: la factura se
                 emite sola cuando vuelva internet.
@@ -1577,7 +1650,8 @@ function PanelCobro({
             disabled={
               !medio || Math.abs(diferencia) > 0.009 || cobrando || aplicando || calculandoPercepcion ||
               (documentacion === 'a_facturar' && !esCuentaCorriente) || chequeIncompleto || frenadoPorVencido ||
-              !!faltaFiado
+              !!faltaFiado ||
+              (documentacion === 'a_convenir' && (!enLinea || !esCuentaCorriente || lineaAMano))
             }
             title={
               chequeIncompleto
@@ -1600,7 +1674,9 @@ function PanelCobro({
                   ? 'Cobrada · facturando…'
                   : 'Cobrada · sacando el comprobante…'
                 : 'Cobrando…'
-              : documentacion === 'no_fiscal'
+              : documentacion === 'a_convenir'
+                ? 'Sacar la proforma a convenir'
+                : documentacion === 'no_fiscal'
                 ? 'Cobrar con proforma'
                 : documentacion === 'a_facturar'
                   ? 'A cuenta, con proforma'

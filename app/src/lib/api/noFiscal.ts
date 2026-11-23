@@ -8,6 +8,7 @@ import {
   emitirNoFiscalLocal,
   emitirRemitoDirectoLocal,
   obtenerNoFiscalLocal,
+  ventaEstaEnEstaComputadora,
 } from '@/lib/local/noFiscal'
 
 /*
@@ -102,6 +103,18 @@ export async function emitirNoFiscal(
     p_numero: numero,
     p_ocurrido_en: new Date().toISOString(),
     p_descuenta_stock: opciones.descuentaStock ?? true,
+  }
+
+  /*
+    La venta que se armó en otra PC y se cobra en esta no siempre está en
+    la copia local (pasó el 19/11 con el comprobante de entrega en la
+    caja 2). Con conexión no hace falta: sale directo en el servidor,
+    como el remito de un pedido web.
+  */
+  if (navigator.onLine && !(await ventaEstaEnEstaComputadora(ventaId))) {
+    const { error } = await supabase.rpc('emitir_comprobante_no_fiscal', datos)
+    if (error) throw new Error(error.message)
+    return { id, serie, numero }
   }
 
   // Se guarda acá primero, siempre: es lo que permite imprimir el papel
@@ -309,7 +322,13 @@ export async function emitirRemitoDirecto(
   let yaSubido = false
   if (facturarDespues && navigator.onLine) {
     const { error } = await supabase.rpc('emitir_remito_directo', datos)
-    if (error?.code === 'P0001') throw new Error(error.message)
+    /*
+      Si la base contestó, el rechazo se muestra, sea una regla escrita
+      (P0001) o cualquier otra: guardarlo igual dejaba un papel impreso
+      que nunca subía (19/11). Sólo la falta de respuesta —sin código—
+      sigue al camino sin conexión.
+    */
+    if (error?.code) throw new Error(error.message)
     yaSubido = !error
   }
 
@@ -457,13 +476,9 @@ export async function obtenerNoFiscalCompleto(id: string): Promise<NoFiscalCompl
     cliente y su condición de IVA viven en tablas que la terminal no
     replica— y con todo lo demás.
   */
-  if (!navigator.onLine) {
+  const desdeLaCopiaLocal = async () => {
     const local = await obtenerNoFiscalLocal(id)
-    if (!local) {
-      throw new Error(
-        'Ese comprobante no está en esta computadora y no hay conexión para traerlo.',
-      )
-    }
+    if (!local) return null
     return {
       ...local.doc,
       tipo_clave: local.doc.tipo_clave as TipoNoFiscal,
@@ -471,6 +486,16 @@ export async function obtenerNoFiscalCompleto(id: string): Promise<NoFiscalCompl
       lineas: conConceptos(local.doc.tipo_clave, local.lineas),
       emisor: local.emisor,
     }
+  }
+
+  if (!navigator.onLine) {
+    const local = await desdeLaCopiaLocal()
+    if (!local) {
+      throw new Error(
+        'Ese comprobante no está en esta computadora y no hay conexión para traerlo.',
+      )
+    }
+    return local
   }
 
   const { data: d, error } = await supabase
@@ -487,7 +512,16 @@ export async function obtenerNoFiscalCompleto(id: string): Promise<NoFiscalCompl
     .eq('id', id)
     .single()
 
-  if (error || !d) throw new Error(error?.message ?? 'No se encontró el comprobante.')
+  if (error || !d) {
+    /*
+      Con conexión, uno recién emitido puede no haber subido todavía
+      —espera en la bandeja de «sin enviar»—. Se imprime de la copia de
+      esta PC, como sin conexión.
+    */
+    const local = await desdeLaCopiaLocal()
+    if (local) return local
+    throw new Error(error?.message ?? 'No se encontró el comprobante.')
+  }
 
   // PostgREST devuelve las relaciones como objeto o como arreglo de uno
   // según cómo infiera la cardinalidad. Se normaliza acá, igual que en
@@ -936,6 +970,37 @@ export async function emitirComprobanteDeEntrega(
     observaciones: `Corresponde a ${corresponde}.`,
   })
   return { id: emitido.id, numero: numeroNoFiscal('comprobante_entrega', emitido.serie, emitido.numero) }
+}
+
+/*
+  «A convenir» desde la caja (23/11): la venta de la cola sale como
+  proforma a convenir, con su comprobante de entrega, y deja la cola.
+  Todo en el servidor y de una vez; necesita conexión. Los números los
+  reserva esta PC, como en el mostrador.
+*/
+export async function ventaAProformaAConvenir(
+  ventaId: string,
+  terminal: { id: string; prefijo?: string | null },
+  vencidoAutorizadoPor: string | null,
+): Promise<{ proforma: { id: string; numero: string }; entrega: { id: string; numero: string } }> {
+  if (!navigator.onLine) throw new Error('A convenir necesita conexión.')
+  const serie = (terminal.prefijo ?? '').trim() || 'T'
+  const numeroProforma = await reservarNumeroNoFiscal('comprobante_interno', serie)
+  const numeroEntrega = await reservarNumeroNoFiscal('comprobante_entrega', serie)
+  const { data, error } = await supabase.rpc('venta_a_proforma_a_convenir', {
+    p_venta_id: ventaId,
+    p_terminal_id: terminal.id,
+    p_serie: serie,
+    p_numero_proforma: numeroProforma,
+    p_numero_entrega: numeroEntrega,
+    p_vencido_autorizado_por: vencidoAutorizadoPor,
+  })
+  if (error) throw new Error(error.message)
+  const r = data as { proforma_id: string; entrega_id: string }
+  return {
+    proforma: { id: r.proforma_id, numero: numeroNoFiscal('comprobante_interno', serie, numeroProforma) },
+    entrega: { id: r.entrega_id, numero: numeroNoFiscal('comprobante_entrega', serie, numeroEntrega) },
+  }
 }
 
 /** «Factura B 0003-00001234», para nombrarla en el comprobante de entrega. */

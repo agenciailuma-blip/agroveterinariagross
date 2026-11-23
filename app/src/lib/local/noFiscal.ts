@@ -59,6 +59,11 @@ async function receptorDe(clienteId: string) {
   }
 }
 
+/** Si la venta está en la copia local: una armada en otra PC puede no estar. */
+export async function ventaEstaEnEstaComputadora(ventaId: string): Promise<boolean> {
+  return (await db.venta.get(ventaId)) !== undefined
+}
+
 export async function emitirNoFiscalLocal(datos: EmisionLocal): Promise<NoFiscalLocal> {
   const venta = await db.venta.get(datos.ventaId)
   if (!venta) throw new Error('La venta no está en esta computadora.')
