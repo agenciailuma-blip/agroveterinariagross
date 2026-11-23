@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   aCsv,
@@ -18,7 +18,7 @@ import { boton, campo, tarjeta } from '@/estilos'
 
 /*
   ─────────────────────────────────────────────────────────────
-  El Excel de ventas para el contador
+  Las descargas para el contador: ventas, compras y percepciones
 
   **No armamos el Libro de IVA.** Lo arma él, y las facturas de compra
   las baja de ARCA. Lo único que Gross tiene que darle son sus ventas
@@ -122,11 +122,13 @@ export default function ExportarParaContador() {
   // ofrecer meses que no pueden tener nada.
   const anios = Array.from({ length: hoy.getFullYear() - 2025 }, (_, i) => 2026 + i)
 
+  const periodo = `${MESES[mes - 1]} de ${anio}`
+
   return (
     <div className={`${tarjeta} p-5`}>
-      <h2 className="font-medium text-tinta">Ventas para el contador</h2>
+      <h2 className="font-medium text-tinta">Descargas para el contador</h2>
       <p className="mt-1 text-sm text-piedra-500">
-        Los archivos del mes, para mandarle: ventas, percepciones y compras.
+        Los archivos del mes, para mandarle: ventas, compras y percepciones.
       </p>
 
       <div className="mt-4 flex flex-wrap items-end gap-3">
@@ -158,116 +160,140 @@ export default function ExportarParaContador() {
             ))}
           </select>
         </label>
-        <button onClick={bajar} disabled={!filas.data?.length} className={boton.principal}>
-          Bajar el Excel
-        </button>
       </div>
-
-      {filas.isPending ? (
-        <p className="mt-4 text-sm text-piedra-500">Buscando…</p>
-      ) : !filas.data?.length ? (
-        <p className="mt-4 rounded-lg bg-piedra-50 px-3 py-2.5 text-sm text-piedra-600 ring-1 ring-borde">
-          No hay comprobantes autorizados en {MESES[mes - 1]} de {anio}.
-        </p>
-      ) : (
-        <div className="mt-4 rounded-lg bg-piedra-50 p-3 ring-1 ring-borde">
-          <p className="text-xs font-medium tracking-wide text-piedra-400 uppercase">
-            Lo que va en el archivo
-          </p>
-          <dl className="mt-2 grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm sm:grid-cols-4">
-            <Dato k="Comprobantes" v={numero.format(t!.comprobantes)} />
-            <Dato k="Neto gravado" v={moneda.format(t!.neto)} />
-            <Dato k="IVA" v={moneda.format(t!.iva)} />
-            <Dato k="Total" v={moneda.format(t!.total)} />
-          </dl>
-          {t!.percepciones !== 0 && (
-            <p className="mt-2 text-xs text-piedra-500">
-              Incluye {moneda.format(t!.percepciones)} de percepciones de IIBB.
-            </p>
-          )}
-          <p className="mt-2 border-t border-borde pt-2 text-xs text-piedra-500">
-            Con las columnas de Mis Comprobantes Emitidos: una fila por comprobante y las notas de
-            crédito en negativo, así sumar la columna da el mes.
-          </p>
-        </div>
-      )}
 
       {/*
-        El segundo archivo del mes. Va en la misma pantalla y no en otra
-        porque se hacen juntos, el mismo día y para la misma persona.
+        Tres archivos del mismo mes, uno debajo del otro. Van en la misma
+        tarjeta porque se hacen juntos, el mismo día y para la misma persona.
       */}
-      <div className="mt-5 border-t border-borde pt-4">
-        <h3 className="text-sm font-medium text-tinta">Percepciones de IIBB — Misiones</h3>
-        <p className="mt-1 text-sm text-piedra-500">
-          El detalle de lo percibido en el mes, que es lo que se declara ante Rentas. Gross es
-          agente de <strong>percepción</strong>, no de retención: no emite comprobantes de
-          retención.
-        </p>
-
-        {percepciones.isPending ? (
-          <p className="mt-3 text-sm text-piedra-500">Buscando…</p>
-        ) : !percepciones.data?.length ? (
-          <p className="mt-3 rounded-lg bg-piedra-50 px-3 py-2.5 text-sm text-piedra-600 ring-1 ring-borde">
-            No se percibió nada en {MESES[mes - 1]} de {anio}.
-          </p>
-        ) : (
+      <Seccion
+        titulo="Ventas"
+        bajada="Los comprobantes emitidos en el mes."
+        cargando={filas.isPending}
+        vacio={`No hay comprobantes autorizados en ${periodo}.`}
+        hayDatos={!!filas.data?.length}
+        boton="Bajar las ventas"
+        onBajar={bajar}
+      >
+        {t && (
           <>
-            <div className="mt-3 rounded-lg bg-piedra-50 p-3 ring-1 ring-borde">
-              <dl className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm sm:grid-cols-4">
-                <Dato k="Percepciones" v={numero.format(p!.percepciones)} />
-                <Dato k="Clientes" v={numero.format(p!.clientes)} />
-                <Dato k="Base imponible" v={moneda.format(p!.base)} />
-                <Dato k="Percibido" v={moneda.format(p!.percibido)} />
-              </dl>
-              <p className="mt-2 border-t border-borde pt-2 text-xs text-piedra-500">
-                Una fila por percepción, con el CUIT del cliente, la base y la alícuota. Las notas
-                de crédito devuelven la percepción y por eso restan.
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm sm:grid-cols-4">
+              <Dato k="Comprobantes" v={numero.format(t.comprobantes)} />
+              <Dato k="Neto gravado" v={moneda.format(t.neto)} />
+              <Dato k="IVA" v={moneda.format(t.iva)} />
+              <Dato k="Total" v={moneda.format(t.total)} />
+            </dl>
+            {t.percepciones !== 0 && (
+              <p className="mt-2 text-xs text-piedra-500">
+                Incluye {moneda.format(t.percepciones)} de percepciones de IIBB.
               </p>
-            </div>
-
-            <button onClick={bajarPercepciones} className={`mt-3 ${boton.principal}`}>
-              Bajar las percepciones
-            </button>
+            )}
+            <p className="mt-2 border-t border-borde pt-2 text-xs text-piedra-500">
+              Con las columnas de Mis Comprobantes Emitidos: una fila por comprobante y las notas
+              de crédito en negativo, así sumar la columna da el mes.
+            </p>
           </>
         )}
-      </div>
+      </Seccion>
 
-      <div className="mt-5 border-t border-borde pt-4">
-        <h3 className="text-sm font-medium text-tinta">Compras — IVA crédito fiscal</h3>
-        <p className="mt-1 text-sm text-piedra-500">
-          Las facturas de compra cargadas en el mes. El contador también las tiene en ARCA: sirve para
-          controlar que no falte ninguna de un lado ni del otro.
-        </p>
-
-        {compras.isPending ? (
-          <p className="mt-3 text-sm text-piedra-500">Buscando…</p>
-        ) : !compras.data?.length ? (
-          <p className="mt-3 rounded-lg bg-piedra-50 px-3 py-2.5 text-sm text-piedra-600 ring-1 ring-borde">
-            No hay facturas de compra cargadas en {MESES[mes - 1]} de {anio}.
-          </p>
-        ) : (
+      <Seccion
+        titulo="Compras"
+        bajada="Las facturas de compra cargadas en el mes, para controlarlas contra las de ARCA."
+        cargando={compras.isPending}
+        vacio={`No hay facturas de compra cargadas en ${periodo}.`}
+        hayDatos={!!compras.data?.length}
+        boton="Bajar las compras"
+        onBajar={bajarCompras}
+      >
+        {k && (
           <>
-            <div className="mt-3 rounded-lg bg-piedra-50 p-3 ring-1 ring-borde">
-              <dl className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm sm:grid-cols-4">
-                <Dato k="Comprobantes" v={numero.format(k!.comprobantes)} />
-                <Dato k="Neto gravado" v={moneda.format(k!.neto)} />
-                <Dato k="IVA crédito fiscal" v={moneda.format(k!.iva)} />
-                <Dato k="Total" v={moneda.format(k!.total)} />
-              </dl>
-              {k!.percepciones !== 0 && (
-                <p className="mt-2 text-xs text-piedra-500">
-                  Incluye {moneda.format(k!.percepciones)} de percepciones que le cobraron a Gross,
-                  separadas por concepto en el archivo.
-                </p>
-              )}
-            </div>
-
-            <button onClick={bajarCompras} className={`mt-3 ${boton.principal}`}>
-              Bajar las compras
-            </button>
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm sm:grid-cols-4">
+              <Dato k="Comprobantes" v={numero.format(k.comprobantes)} />
+              <Dato k="Neto gravado" v={moneda.format(k.neto)} />
+              <Dato k="IVA crédito fiscal" v={moneda.format(k.iva)} />
+              <Dato k="Total" v={moneda.format(k.total)} />
+            </dl>
+            {k.percepciones !== 0 && (
+              <p className="mt-2 text-xs text-piedra-500">
+                Incluye {moneda.format(k.percepciones)} de percepciones que le cobraron a Gross,
+                separadas por concepto en el archivo.
+              </p>
+            )}
           </>
         )}
+      </Seccion>
+
+      <Seccion
+        titulo="Percepciones de IIBB — Misiones"
+        bajada="El detalle de lo percibido en el mes, para Rentas."
+        cargando={percepciones.isPending}
+        vacio={`No se percibió nada en ${periodo}.`}
+        hayDatos={!!percepciones.data?.length}
+        boton="Bajar las percepciones"
+        onBajar={bajarPercepciones}
+      >
+        {p && (
+          <>
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm sm:grid-cols-4">
+              <Dato k="Percepciones" v={numero.format(p.percepciones)} />
+              <Dato k="Clientes" v={numero.format(p.clientes)} />
+              <Dato k="Base imponible" v={moneda.format(p.base)} />
+              <Dato k="Percibido" v={moneda.format(p.percibido)} />
+            </dl>
+            <p className="mt-2 border-t border-borde pt-2 text-xs text-piedra-500">
+              Una fila por percepción, con el CUIT del cliente, la base y la alícuota. Las notas de
+              crédito devuelven la percepción y por eso restan.
+            </p>
+          </>
+        )}
+      </Seccion>
+    </div>
+  )
+}
+
+/** Un archivo del mes: título, lo que va adentro y el botón para bajarlo. */
+function Seccion({
+  titulo,
+  bajada,
+  cargando,
+  vacio,
+  hayDatos,
+  boton: textoBoton,
+  onBajar,
+  children,
+}: {
+  titulo: string
+  bajada: string
+  cargando: boolean
+  vacio: string
+  hayDatos: boolean
+  boton: string
+  onBajar: () => void
+  children: ReactNode
+}) {
+  return (
+    <div className="mt-5 border-t border-borde pt-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="text-sm font-medium text-tinta">{titulo}</h3>
+          <p className="mt-1 text-sm text-piedra-500">{bajada}</p>
+        </div>
+        {hayDatos && (
+          <button onClick={onBajar} className={boton.principal}>
+            {textoBoton}
+          </button>
+        )}
       </div>
+
+      {cargando ? (
+        <p className="mt-3 text-sm text-piedra-500">Buscando…</p>
+      ) : !hayDatos ? (
+        <p className="mt-3 rounded-lg bg-piedra-50 px-3 py-2.5 text-sm text-piedra-600 ring-1 ring-borde">
+          {vacio}
+        </p>
+      ) : (
+        <div className="mt-3 rounded-lg bg-piedra-50 p-3 ring-1 ring-borde">{children}</div>
+      )}
     </div>
   )
 }
