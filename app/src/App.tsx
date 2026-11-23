@@ -34,6 +34,7 @@ import Configuracion from '@/pages/Configuracion'
 import Facturacion from '@/pages/Facturacion'
 import ComprobanteImprimible from '@/pages/ComprobanteImprimible'
 import ComprobantesEmitidos from '@/pages/ComprobantesEmitidos'
+import NotasEmitidas from '@/pages/NotasEmitidas'
 import ListadoDeComprobantesImprimible from '@/pages/ListadoDeComprobantesImprimible'
 import Remitos from '@/pages/Remitos'
 import NoFiscales from '@/pages/NoFiscales'
@@ -184,6 +185,8 @@ function Rutas() {
         <Route path="facturacion" element={<Facturacion />} />
         <Route path="facturacion/emitidas" element={<ComprobantesEmitidos modo="facturas" />} />
         <Route path="facturacion/percepciones" element={<ComprobantesEmitidos modo="percepciones" />} />
+        <Route path="facturacion/notas-de-credito" element={<NotasEmitidas key="nc" familia="nota_credito" />} />
+        <Route path="facturacion/notas-de-debito" element={<NotasEmitidas key="nd" familia="nota_debito" />} />
         <Route path="remitos" element={<Remitos />} />
         <Route path="no-fiscales" element={<NoFiscales tipo="presupuesto" />} />
         <Route path="proformas" element={<NoFiscales tipo="comprobante_interno" />} />

@@ -378,19 +378,22 @@ export async function reciboEnPdf(r: ReciboCompleto): Promise<Uint8Array> {
   aLaDerecha(p, moneda.format(r.total), der - 10, y - 17, 11, true)
   y -= 40
 
-  const saldo = Math.round(r.saldo_despues * 100) / 100
-  escribir(
-    p,
-    saldo > 0
-      ? `Saldo de la cuenta después de este pago: ${moneda.format(saldo)}`
-      : saldo < 0
-        ? `La cuenta queda con ${moneda.format(-saldo)} a favor.`
-        : 'La cuenta queda al día.',
-    izq,
-    y,
-    9,
-  )
-  y -= 14
+  // El recibo libre no toca ninguna cuenta: no hay saldo que decir.
+  if (!r.libre) {
+    const saldo = Math.round((r.saldo_despues ?? 0) * 100) / 100
+    escribir(
+      p,
+      saldo > 0
+        ? `Saldo de la cuenta después de este pago: ${moneda.format(saldo)}`
+        : saldo < 0
+          ? `La cuenta queda con ${moneda.format(-saldo)} a favor.`
+          : 'La cuenta queda al día.',
+      izq,
+      y,
+      9,
+    )
+    y -= 14
+  }
   if (r.orden_numero) {
     escribir(p, `Cobrado por ${r.orden_vendedor ?? 'el vendedor'} · orden ${r.orden_numero}`, izq, y, 8)
     y -= 12

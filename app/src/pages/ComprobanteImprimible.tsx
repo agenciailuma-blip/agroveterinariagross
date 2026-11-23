@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Fragment, useEffect, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import DevolverFactura from '@/components/DevolverFactura'
+import NotaDeEstaFactura from '@/components/NotaDeEstaFactura'
 import QRCode from 'qrcode'
 import { lineasDelPie } from '@/lib/comprobante/escpos'
 import { obtenerComprobanteCompleto, registrarImpresion } from '@/lib/api/comprobante'
@@ -239,6 +240,18 @@ export default function ComprobanteImprimible() {
 
       {/* Devolverla desde acá, la encuentre quien la encuentre (integralidad, 3). */}
       {c.cae && <DevolverFactura comprobanteId={c.id} />}
+
+      {/* Reunión del 19/11: una nota a mano, asociada a esta factura. */}
+      {c.cae && !/nota/i.test(c.tipo_descripcion) && c.estado !== 'anulado' && (
+        <NotaDeEstaFactura
+          factura={{
+            id: c.id,
+            etiqueta: `${c.tipo_descripcion} ${String(c.punto_venta).padStart(5, '0')}-${String(c.numero).padStart(8, '0')}`,
+            receptor: c.receptor_nombre,
+            total: c.total,
+          }}
+        />
+      )}
 
       {errorImpresora && (
         <div className="mx-auto mb-4 max-w-[21cm] px-4 print:hidden">

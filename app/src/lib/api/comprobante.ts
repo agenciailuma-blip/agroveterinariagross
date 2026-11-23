@@ -164,7 +164,19 @@ async function desdeElServidor(id: string): Promise<ComprobanteCompleto> {
           .in('venta_id', ventas)
           .order('venta_id')
           .order('orden')
-      : Promise.resolve({ data: [] }),
+      : /*
+          Una nota de crédito o débito escrita a mano no tiene venta:
+          sus renglones están guardados con el comprobante.
+        */
+        supabase
+          .from('comprobante_linea')
+          .select('orden, descripcion, cantidad, precio_unitario, importe, alicuota_iva_id')
+          .eq('comprobante_id', id)
+          .order('orden')
+          .then((r) => ({
+            ...r,
+            data: (r.data ?? []).map((l) => ({ ...l, codigo_producto: '', alicuota_iva_id: l.alicuota_iva_id ?? 3 })),
+          })),
     supabase
       .from('comprobante_alicuota')
       .select('alicuota_iva_id, base_imponible, importe, alicuota:alicuota_iva_id(porcentaje)')

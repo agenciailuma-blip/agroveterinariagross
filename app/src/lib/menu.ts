@@ -187,6 +187,9 @@ export const SECCIONES: Seccion[] = [
       { a: '/facturacion', etiqueta: 'Facturación', permiso: 'facturacion.ver' },
       // Buscar, reimprimir y bajar: todas, por fecha, cliente o número.
       { a: '/facturacion/emitidas', etiqueta: 'Facturas emitidas', permiso: 'facturacion.ver' },
+      // Reunión del 19/11: verlas aparte, y hacerlas a mano, libres o de una factura.
+      { a: '/facturacion/notas-de-credito', etiqueta: 'Notas de crédito', permiso: 'facturacion.ver' },
+      { a: '/facturacion/notas-de-debito', etiqueta: 'Notas de débito', permiso: 'facturacion.ver' },
       /*
         Desde el 13/11 (propuesta aprobada por Lucas): la proforma en lugar
         del comprobante interno, un solo remito —el logístico— y el

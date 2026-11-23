@@ -69,6 +69,41 @@ export async function emitirRecibo(datos: {
   return data as ReciboEmitido
 }
 
+/*
+  El recibo libre (reunión del 19/11): un pago que no es cobranza de
+  cuenta corriente —una operación de urgencia que se paga en partes, por
+  ejemplo—. A un cliente de la lista o a un nombre escrito a mano. La
+  plata entra a la caja abierta y no toca ninguna cuenta.
+*/
+export async function emitirReciboLibre(datos: {
+  id: string
+  clienteId: string | null
+  nombre: string | null
+  documento: string | null
+  medioPagoId: string
+  importe: number
+  cajaId: string | null
+  concepto: string
+}): Promise<ReciboEmitido> {
+  const { data, error } = await supabase.rpc('emitir_recibo_libre', {
+    p_id: datos.id,
+    p_cliente_id: datos.clienteId,
+    p_nombre: datos.clienteId ? null : datos.nombre?.trim() || null,
+    p_documento: datos.clienteId ? null : datos.documento?.trim() || null,
+    p_medio_pago_id: datos.medioPagoId,
+    p_importe: Math.round(datos.importe * 100) / 100,
+    p_caja_id: datos.cajaId,
+    p_concepto: datos.concepto.trim(),
+  })
+  if (error) throw new Error(error.message)
+  return data as ReciboEmitido
+}
+
+/** Los medios con que se paga un recibo libre: ni cuenta corriente, ni fiado, ni cheque. */
+export function sirveParaReciboLibre(tipo: string): boolean {
+  return !['cuenta_corriente', 'fiado', 'cheque'].includes(tipo)
+}
+
 export interface PagoDelRecibo {
   medio: string
   importe: number
@@ -101,8 +136,10 @@ export interface ReciboCompleto {
   fiado_persona_id: string | null
   cliente_documento: string | null
   cliente_domicilio: string | null
-  /** El saldo de la cuenta apenas después de este recibo. */
-  saldo_despues: number
+  /** El saldo de la cuenta apenas después de este recibo. Nulo en el recibo libre, que no toca ninguna cuenta. */
+  saldo_despues: number | null
+  /** Recibo libre: un pago que no es cobranza de cuenta (reunión del 19/11). */
+  libre: boolean
   orden_numero: number | null
   orden_vendedor: string | null
   pagos: PagoDelRecibo[]
@@ -116,7 +153,8 @@ export async function reciboCompleto(id: string): Promise<ReciboCompleto> {
   return {
     ...d,
     total: Number(d.total),
-    saldo_despues: Number(d.saldo_despues),
+    saldo_despues: d.saldo_despues == null ? null : Number(d.saldo_despues),
+    libre: !!d.libre,
     pagos: (d.pagos ?? []).map((p) => ({ ...p, importe: Number(p.importe) })),
     emisor,
   }
@@ -128,13 +166,14 @@ export interface FilaRecibo {
   numero: number
   fecha: string
   total: number
-  cliente_id: string
+  cliente_id: string | null
   cliente_nombre: string
   medios: string | null
   orden_numero: number | null
   emitido_por_nombre: string | null
   mail_estado: 'enviado' | 'error' | null
   anulado_en: string | null
+  libre: boolean
 }
 
 export async function listarRecibos(texto: string): Promise<FilaRecibo[]> {

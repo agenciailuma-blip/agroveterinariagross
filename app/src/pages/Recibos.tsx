@@ -5,7 +5,8 @@ import { useAuth } from '@/auth/AuthProvider'
 import { listarRecibos, numeroRecibo, totalCobrado } from '@/lib/api/recibos'
 import { fechaCorta } from '@/lib/comprobante/presentacion'
 import { enCastellano } from '@/lib/errores'
-import { campoDeFiltro, tarjeta } from '@/estilos'
+import { boton, campoDeFiltro, tarjeta } from '@/estilos'
+import ReciboLibre from '@/components/ReciboLibre'
 import { moneda } from '@/lib/tipos'
 
 /*
@@ -16,6 +17,7 @@ import { moneda } from '@/lib/tipos'
 export default function Recibos() {
   const { tienePermiso } = useAuth()
   const [buscar, setBuscar] = useState('')
+  const [libre, setLibre] = useState(false)
   const puede =
     tienePermiso('cuentacorriente.ver') || tienePermiso('cuentacorriente.cobrar') || tienePermiso('fiados.ver')
 
@@ -42,15 +44,26 @@ export default function Recibos() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
           <h1 className="text-xl font-semibold tracking-tight text-tinta">Recibos</h1>
-          <p className="text-sm text-piedra-500">Las cobranzas de cuenta corriente y los pagos de fiados, cada uno con su número.</p>
+          <p className="text-sm text-piedra-500">
+            Las cobranzas de cuenta corriente, los pagos de fiados y los recibos libres, cada uno con su número.
+          </p>
         </div>
-        <input
-          value={buscar}
-          onChange={(e) => setBuscar(e.target.value)}
-          placeholder="Cliente o número"
-          className={`${campoDeFiltro} min-w-0 flex-1 basis-48 sm:max-w-xs`}
-        />
+        <div className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-2 sm:flex-none">
+          <input
+            value={buscar}
+            onChange={(e) => setBuscar(e.target.value)}
+            placeholder="Cliente o número"
+            className={`${campoDeFiltro} min-w-0 flex-1 basis-48 sm:max-w-xs`}
+          />
+          {/* Reunión del 19/11: un pago que no es de cuenta corriente, con su recibo. */}
+          {tienePermiso('cuentacorriente.cobrar') && (
+            <button onClick={() => setLibre(true)} className={boton.secundario}>
+              Recibo libre
+            </button>
+          )}
+        </div>
       </div>
+      {libre && <ReciboLibre onCerrar={() => setLibre(false)} />}
 
       {recibos.isPending ? (
         <p className="text-sm text-piedra-500">Cargando…</p>
@@ -82,6 +95,7 @@ export default function Recibos() {
                     <p className="truncate text-sm font-medium text-tinta">{r.cliente_nombre}</p>
                     <p className="text-xs text-piedra-500">
                       <span className="font-mono">{numeroRecibo(r.serie, r.numero)}</span> · {fechaCorta(r.fecha)}
+                      {r.libre && ' · libre'}
                       {r.medios && ` · ${r.medios}`}
                       {r.orden_numero && ` · orden ${r.orden_numero} del vendedor`}
                       {r.emitido_por_nombre && ` · ${r.emitido_por_nombre}`}
@@ -103,7 +117,7 @@ export default function Recibos() {
                   </div>
                 </Link>
                 {/* Auditoría de integralidad, punto 6: del recibo a cómo quedó la cuenta. */}
-                {r.cliente_id && (
+                {r.cliente_id && !r.libre && (
                   <Link
                     to={`/clientes?c=${r.cliente_id}`}
                     className="flex shrink-0 items-center border-l border-piedra-100 px-3 text-xs text-marca-700 hover:bg-marca-50"

@@ -88,7 +88,7 @@ function AnularRecibo({ r }: { r: ReciboCompleto }) {
 
   async function pedirMotivo() {
     const lineas = [
-      r.fiado_persona_id ? 'La deuda vuelve al fiado.' : 'La deuda vuelve a la cuenta corriente.',
+      r.libre ? null : r.fiado_persona_id ? 'La deuda vuelve al fiado.' : 'La deuda vuelve a la cuenta corriente.',
       r.paso_por_caja && `Salen ${moneda.format(r.total)} de la caja abierta.`,
       r.pagos.some((p) => p.cheque) && 'Los cheques pasan a devueltos.',
       r.orden_numero && `La orden ${r.orden_numero} del vendedor queda rechazada.`,
@@ -193,7 +193,7 @@ function MandarPorMail({ r }: { r: ReciboCompleto }) {
 }
 
 function Hoja({ r }: { r: ReciboCompleto }) {
-  const saldo = Math.round(r.saldo_despues * 100) / 100
+  const saldo = Math.round((r.saldo_despues ?? 0) * 100) / 100
   return (
     <div className="mx-auto max-w-[21cm] bg-white p-8 text-[11px] text-black shadow-sm ring-1 ring-borde print:p-0 print:shadow-none print:ring-0">
       <p className="mb-4 border-2 border-black py-1.5 text-center text-sm font-bold tracking-wide">{LEYENDA_NO_FISCAL}</p>
@@ -273,7 +273,7 @@ function Hoja({ r }: { r: ReciboCompleto }) {
         </div>
       </div>
 
-      {!r.anulado_en && (
+      {!r.anulado_en && !r.libre && (
         <p className="mt-4">
           {saldo > 0
             ? `Saldo de la cuenta después de este pago: ${moneda.format(saldo)}`

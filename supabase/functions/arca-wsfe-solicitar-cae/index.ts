@@ -349,6 +349,20 @@ function fecha8(iso: string): string {
   return iso.replaceAll("-", "");
 }
 
+/*
+  Una nota de crédito o débito que no sale de una factura (la «libre»).
+  ARCA pide que toda nota diga qué corrige: la factura asociada o, si no
+  hay una, el período que abarca. Se informa el mes de la nota, del día
+  1 a la fecha de emisión.
+*/
+const TIPOS_DE_NOTA = new Set([2, 3, 7, 8, 12, 13, 52, 53, 202, 203, 207, 208]);
+
+function periodoAsociado(comp: { tipo_comprobante_id: number; fecha: string }, asociados: unknown[]): string {
+  if (asociados.length || !TIPOS_DE_NOTA.has(Number(comp.tipo_comprobante_id))) return "";
+  const hasta = fecha8(comp.fecha);
+  return `<ar:PeriodoAsoc><ar:FchDesde>${hasta.slice(0, 6)}01</ar:FchDesde><ar:FchHasta>${hasta}</ar:FchHasta></ar:PeriodoAsoc>`;
+}
+
 interface Alicuota {
   alicuota_iva_id: number;
   base_imponible: number;
@@ -452,6 +466,8 @@ function armarDetalle(
     }
     xml += "</ar:Iva>";
   }
+  // Va después de Iva (y de Opcionales y Compradores, que no se usan): orden del XSD.
+  xml += periodoAsociado(comp, asociados);
   return xml;
 }
 

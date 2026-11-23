@@ -148,7 +148,7 @@ describe('el recibo por mail', () => {
     anulado_en: null, anulado_por_nombre: null, motivo_anulacion: null, paso_por_caja: false,
     mail_destinatario: null, mail_estado: null, mail_error: null, mail_en: null,
     cliente_id: 'c1', cliente_nombre: 'Agro San José 🌱', cliente_email: null, fiado_persona_id: null, cliente_documento: '30712345678',
-    cliente_domicilio: 'Sarmiento 120, Oberá', saldo_despues: saldo, orden_numero: 4, orden_vendedor: 'Facundo',
+    cliente_domicilio: 'Sarmiento 120, Oberá', saldo_despues: saldo, libre: false, orden_numero: 4, orden_vendedor: 'Facundo',
     pagos, emisor: { razon_social: 'Gross S.A.', nombre_fantasia: 'Agroveterinaria Gross', cuit: '30-00000000-0' },
   })
 
