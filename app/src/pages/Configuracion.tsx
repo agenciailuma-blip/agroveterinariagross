@@ -21,6 +21,8 @@ import {
   marcarRegimenCaea,
   obtenerConfiguracion,
 } from '@/lib/api/configuracion'
+import EncabezadoOrdenable from '@/components/EncabezadoOrdenable'
+import { useOrden } from '@/lib/useOrden'
 
 const CLAVE_ALICUOTA = 'arca.iibb_percepcion_alicuota'
 const CLAVE_MINIMO = 'arca.iibb_percepcion_minimo'
@@ -370,7 +372,12 @@ function PuntosDeVenta() {
     onError: (e) => setError(e instanceof Error ? e.message : 'No se pudo agregar.'),
   })
 
-  const filas = puntos.data ?? []
+  const orden = useOrden('puntos-de-venta', puntos.data, {
+    numero: (p) => p.numero,
+    nombre: (p) => p.nombre,
+    caea: (p) => p.regimen_caea,
+  })
+  const filas = orden.filas
   const puedeCrear =
     nuevo.numero !== '' && Number(nuevo.numero) > 0 && nuevo.nombre.trim().length > 2
 
@@ -385,9 +392,9 @@ function PuntosDeVenta() {
       <table className="mt-4 w-full text-sm">
         <thead className="border-b border-borde text-left text-xs tracking-wide text-piedra-500 uppercase">
           <tr>
-            <th className="py-2 font-medium">Número</th>
-            <th className="py-2 font-medium">Nombre</th>
-            <th className="py-2 font-medium">Régimen CAEA</th>
+            <EncabezadoOrdenable columna="numero" orden={orden} className="py-2 font-medium">Número</EncabezadoOrdenable>
+            <EncabezadoOrdenable columna="nombre" orden={orden} className="py-2 font-medium">Nombre</EncabezadoOrdenable>
+            <EncabezadoOrdenable columna="caea" orden={orden} className="py-2 font-medium">Régimen CAEA</EncabezadoOrdenable>
           </tr>
         </thead>
         <tbody className="divide-y divide-piedra-100">

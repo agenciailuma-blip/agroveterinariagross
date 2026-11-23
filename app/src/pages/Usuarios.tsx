@@ -17,6 +17,8 @@ import {
 } from '@/lib/api/usuarios'
 import type { AccionDeCuenta, UsuarioAdmin } from '@/lib/api/usuarios'
 import { avanzarConEnter } from '@/lib/teclado'
+import EncabezadoOrdenable from '@/components/EncabezadoOrdenable'
+import { useOrden } from '@/lib/useOrden'
 
 type Pestania = 'gente' | 'roles'
 
@@ -111,6 +113,11 @@ function Personas() {
   }
 
   const original = usuarios.data?.find((u) => u.id === editando) ?? null
+  const orden = useOrden('usuarios', usuarios.data, {
+    persona: (u) => u.nombre,
+    rol: (u) => u.rol?.nombre,
+    entra: (u) => (u.auth_user_id ? 'con correo' : u.opera_con_pin ? 'con PIN' : null),
+  })
   const conAcceso = !creando && !!original?.auth_user_id
   const conCorreo = !!form.email?.trim()
 
@@ -388,14 +395,14 @@ function Personas() {
               tabla medía 497 px en 343.
             */}
             <tr>
-              <th className="px-3 py-2.5 font-medium sm:px-4">Persona</th>
-              <th className="hidden px-4 py-2.5 font-medium sm:table-cell">Rol</th>
-              <th className="hidden px-4 py-2.5 font-medium md:table-cell">Cómo entra</th>
+              <EncabezadoOrdenable columna="persona" orden={orden} className="px-3 py-2.5 font-medium sm:px-4">Persona</EncabezadoOrdenable>
+              <EncabezadoOrdenable columna="rol" orden={orden} className="hidden px-4 py-2.5 font-medium sm:table-cell">Rol</EncabezadoOrdenable>
+              <EncabezadoOrdenable columna="entra" orden={orden} className="hidden px-4 py-2.5 font-medium md:table-cell">Cómo entra</EncabezadoOrdenable>
               <th className="px-3 py-2.5 sm:px-4" />
             </tr>
           </thead>
           <tbody className="divide-y divide-piedra-100">
-            {usuarios.data?.map((u) => (
+            {orden.filas.map((u) => (
               <tr key={u.id} className={u.activo ? '' : 'opacity-50'}>
                 <td className="px-3 py-2.5 align-top sm:px-4">
                   <p className="font-medium text-tinta">{u.nombre}</p>

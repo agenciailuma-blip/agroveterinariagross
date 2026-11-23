@@ -20,6 +20,12 @@ import { enCastellano } from '@/lib/errores'
 import { useTerminal } from '@/lib/terminal'
 import { numero } from '@/lib/tipos'
 import { boton, botonChico, campo, tarjeta } from '@/estilos'
+import EncabezadoOrdenable from '@/components/EncabezadoOrdenable'
+import { useOrden } from '@/lib/useOrden'
+import PanelDeFiltros from '@/components/PanelDeFiltros'
+import { FILTROS_VACIOS, hayFiltros } from '@/lib/filtros'
+import type { Filtros } from '@/lib/filtros'
+import { useDiferido } from '@/lib/useDiferido'
 
 /*
   ─────────────────────────────────────────────────────────────
@@ -485,7 +491,20 @@ function NuevaTransferencia({
 
 function Historial({ puedeAnular, onAviso }: { puedeAnular: boolean; onAviso: (aviso: string) => void }) {
   const qc = useQueryClient()
-  const transferencias = useQuery({ queryKey: ['transferencias'], queryFn: listarTransferencias })
+  // La búsqueda avanzada va a la base: la lista trae sólo las últimas 50.
+  const [filtros, setFiltros] = useState<Filtros>(FILTROS_VACIOS)
+  const filtrosDiferidos = useDiferido(filtros)
+  const transferencias = useQuery({
+    queryKey: ['transferencias', filtrosDiferidos],
+    queryFn: () => listarTransferencias(filtrosDiferidos),
+    placeholderData: (antes) => antes,
+  })
+  const orden = useOrden('transferencias', transferencias.data, {
+    numero: (t) => t.numero,
+    camino: (t) => `${t.origen} → ${t.destino}`,
+    productos: (t) => t.productos,
+    quien: (t) => t.usuario_nombre,
+  })
   const [abierta, setAbierta] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -515,11 +534,26 @@ function Historial({ puedeAnular, onAviso }: { puedeAnular: boolean; onAviso: (a
     if (motivo) anular.mutate({ t, motivo })
   }
 
-  const filas = transferencias.data ?? []
+  const filas = orden.filas
 
   return (
     <div className={`${tarjeta} overflow-hidden`}>
-      <h2 className="px-5 pt-4 font-medium text-tinta">Las últimas</h2>
+      <h2 className="px-5 pt-4 font-medium text-tinta">{hayFiltros(filtros) ? 'Las que cumplen la búsqueda' : 'Las últimas'}</h2>
+      <div className="px-5 pt-2">
+        <PanelDeFiltros
+          valor={filtros}
+          onCambio={setFiltros}
+          campos={{
+            fechas: true,
+            numero: 'Número',
+            ejemploNumero: '12',
+            estados: [
+              { valor: 'vigente', etiqueta: 'Vigentes' },
+              { valor: 'anulada', etiqueta: 'Anuladas' },
+            ],
+          }}
+        />
+      </div>
       {error && (
         <p role="alert" className="mx-5 mt-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 ring-1 ring-red-200">
           {error}
@@ -529,10 +563,10 @@ function Historial({ puedeAnular, onAviso }: { puedeAnular: boolean; onAviso: (a
         <table className="w-full text-sm">
           <thead className="border-y border-borde bg-piedra-50 text-left text-xs tracking-wide text-piedra-500 uppercase">
             <tr>
-              <th className="px-5 py-2.5 font-medium">N°</th>
-              <th className="py-2.5 pr-3 font-medium">De → a</th>
-              <th className="py-2.5 pr-3 text-right font-medium">Productos</th>
-              <th className="hidden py-2.5 pr-3 font-medium sm:table-cell">Quién</th>
+              <EncabezadoOrdenable columna="numero" orden={orden} className="px-5 py-2.5 font-medium">N°</EncabezadoOrdenable>
+              <EncabezadoOrdenable columna="camino" orden={orden} className="py-2.5 pr-3 font-medium">De → a</EncabezadoOrdenable>
+              <EncabezadoOrdenable columna="productos" orden={orden} derecha className="py-2.5 pr-3 text-right font-medium">Productos</EncabezadoOrdenable>
+              <EncabezadoOrdenable columna="quien" orden={orden} className="hidden py-2.5 pr-3 font-medium sm:table-cell">Quién</EncabezadoOrdenable>
               <th className="px-5 py-2.5" />
             </tr>
           </thead>
@@ -547,7 +581,7 @@ function Historial({ puedeAnular, onAviso }: { puedeAnular: boolean; onAviso: (a
             {!transferencias.isPending && filas.length === 0 && (
               <tr>
                 <td colSpan={5} className="px-5 py-8 text-center text-piedra-400">
-                  Todavía no se hizo ninguna transferencia.
+                  {hayFiltros(filtros) ? 'Ninguna cumple la búsqueda.' : 'Todavía no se hizo ninguna transferencia.'}
                 </td>
               </tr>
             )}

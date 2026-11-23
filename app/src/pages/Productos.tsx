@@ -34,6 +34,8 @@ import {
   normalizarColchon,
 } from '@/lib/api/ventaOnline'
 import type { EstadoEnTienda } from '@/lib/api/ventaOnline'
+import EncabezadoOrdenable from '@/components/EncabezadoOrdenable'
+import { useOrden } from '@/lib/useOrden'
 
 const FORM_VACIO: EstadoFormulario = {
   campos: {
@@ -144,6 +146,22 @@ export default function Productos() {
     queryFn: () => listarProductosDeBaja(debounced),
     enabled: verBajas,
   })
+
+  // Ordena los que se ven (la lista trae de a 100, con los filtros de arriba).
+  const ordenListado = useOrden('productos', listado.data?.filas, {
+    codigo: (p) => p.codigo,
+    producto: (p) => p.nombre_interno,
+    precio: (p) => Number(p.precio_venta),
+    stock: (p) => Number(p.cantidad),
+    estado: (p) => ESTADO_STOCK[p.estado].etiqueta,
+  })
+  const ordenBajas = useOrden('productos-dados-de-baja', bajas.data?.filas, {
+    codigo: (p) => p.codigo,
+    producto: (p) => p.nombre_interno,
+    precio: (p) => Number(p.precio_venta),
+    baja: (p) => p.eliminado_en,
+  })
+  const ordenVisto = verBajas ? ordenBajas : ordenListado
 
   function avisar(texto: string) {
     setAviso(texto)
@@ -845,15 +863,15 @@ export default function Productos() {
                       )}
                     </th>
                   )}
-                  <th className={`px-4 py-2.5 font-medium ${soloSinFicha}`}>Código</th>
-                  <th className="px-2.5 py-2.5 font-medium sm:px-4">Producto</th>
-                  <th className="px-2.5 py-2.5 text-right font-medium sm:px-4">Precio</th>
+                  <EncabezadoOrdenable columna="codigo" orden={ordenVisto} className={`px-4 py-2.5 font-medium ${soloSinFicha}`}>Código</EncabezadoOrdenable>
+                  <EncabezadoOrdenable columna="producto" orden={ordenVisto} className="px-2.5 py-2.5 font-medium sm:px-4">Producto</EncabezadoOrdenable>
+                  <EncabezadoOrdenable columna="precio" orden={ordenVisto} derecha className="px-2.5 py-2.5 text-right font-medium sm:px-4">Precio</EncabezadoOrdenable>
                   {verBajas ? (
-                    <th className="px-4 py-2.5 font-medium">Dado de baja</th>
+                    <EncabezadoOrdenable columna="baja" orden={ordenVisto} className="px-4 py-2.5 font-medium">Dado de baja</EncabezadoOrdenable>
                   ) : (
                     <>
-                      <th className="px-2.5 py-2.5 text-right font-medium sm:px-4">Stock</th>
-                      <th className={`px-4 py-2.5 font-medium ${soloSinFicha}`}>Estado</th>
+                      <EncabezadoOrdenable columna="stock" orden={ordenVisto} derecha className="px-2.5 py-2.5 text-right font-medium sm:px-4">Stock</EncabezadoOrdenable>
+                      <EncabezadoOrdenable columna="estado" orden={ordenVisto} className={`px-4 py-2.5 font-medium ${soloSinFicha}`}>Estado</EncabezadoOrdenable>
                     </>
                   )}
                 </tr>
@@ -888,7 +906,7 @@ export default function Productos() {
                 )}
 
                 {verBajas &&
-                  bajas.data?.filas.map((p) => (
+                  ordenBajas.filas.map((p) => (
                     <tr key={p.id} className="hover:bg-piedra-50">
                       {conCasillas && (
                         <td className={`px-4 py-2.5 ${soloSinFicha}`}>
@@ -915,7 +933,7 @@ export default function Productos() {
                   ))}
 
                 {!verBajas &&
-                  listado.data?.filas.map((p: FilaListado) => {
+                  ordenListado.filas.map((p: FilaListado) => {
                     const estado = ESTADO_STOCK[p.estado]
                     const activa = p.producto_id === seleccionado
                     return (

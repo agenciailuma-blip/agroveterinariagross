@@ -22,6 +22,8 @@ import {
 import { descargarCsv } from '@/lib/api/noFiscal'
 import { moneda, numero } from '@/lib/tipos'
 import { boton, botonChico, campoDeFiltro, tarjeta } from '@/estilos'
+import EncabezadoOrdenable from '@/components/EncabezadoOrdenable'
+import { useOrden } from '@/lib/useOrden'
 
 /*
   ─────────────────────────────────────────────────────────────
@@ -91,7 +93,17 @@ export default function BuscadorDeComprobantes({ modo }: { modo: Modo }) {
     placeholderData: (anterior) => anterior,
   })
 
-  const filas = consulta.data?.filas ?? []
+  // El orden elegido se aplica antes de agrupar: dentro de cada mes o día queda ordenado.
+  const orden = useOrden(conPercepcion ? 'percepciones' : 'facturas-emitidas', consulta.data?.filas, {
+    comprobante: (f) => `${f.tipo} ${String(f.punto_venta).padStart(5, '0')}-${String(f.numero).padStart(8, '0')}`,
+    fecha: (f) => f.fecha,
+    cliente: (f) => f.receptor_nombre,
+    neto: (f) => f.signo * (f.neto_gravado + f.neto_no_gravado + f.exento),
+    iva: (f) => f.signo * f.iva_total,
+    percepcion: (f) => f.signo * f.tributos_total,
+    total: (f) => f.signo * f.total,
+  })
+  const filas = orden.filas
   const grupos = agruparPor(filas, b.agrupar)
   const total = totalesDe(filas)
   const fechasAlReves = b.desde > b.hasta
@@ -264,20 +276,20 @@ export default function BuscadorDeComprobantes({ modo }: { modo: Modo }) {
         <table className="w-full text-sm">
           <thead className="border-b border-borde bg-piedra-50 text-left text-xs tracking-wide text-piedra-500 uppercase">
             <tr>
-              <th className="py-2.5 pr-3 pl-3 font-medium sm:pl-4">Comprobante</th>
-              <th className="hidden py-2.5 pr-3 font-medium lg:table-cell">Fecha</th>
-              <th className="hidden py-2.5 pr-3 font-medium sm:table-cell">Cliente</th>
-              <th className="hidden py-2.5 pr-3 text-right font-medium md:table-cell">Neto</th>
-              <th className="hidden py-2.5 pr-3 text-right font-medium md:table-cell">IVA</th>
+              <EncabezadoOrdenable columna="comprobante" orden={orden} className="py-2.5 pr-3 pl-3 font-medium sm:pl-4">Comprobante</EncabezadoOrdenable>
+              <EncabezadoOrdenable columna="fecha" orden={orden} className="hidden py-2.5 pr-3 font-medium lg:table-cell">Fecha</EncabezadoOrdenable>
+              <EncabezadoOrdenable columna="cliente" orden={orden} className="hidden py-2.5 pr-3 font-medium sm:table-cell">Cliente</EncabezadoOrdenable>
+              <EncabezadoOrdenable columna="neto" orden={orden} derecha className="hidden py-2.5 pr-3 text-right font-medium md:table-cell">Neto</EncabezadoOrdenable>
+              <EncabezadoOrdenable columna="iva" orden={orden} derecha className="hidden py-2.5 pr-3 text-right font-medium md:table-cell">IVA</EncabezadoOrdenable>
               {conPercepcion ? (
                 <>
-                  <th className="py-2.5 pr-3 text-right font-medium">Percepción</th>
-                  <th className="hidden py-2.5 pr-3 text-right font-medium xl:table-cell">Total</th>
+                  <EncabezadoOrdenable columna="percepcion" orden={orden} derecha className="py-2.5 pr-3 text-right font-medium">Percepción</EncabezadoOrdenable>
+                  <EncabezadoOrdenable columna="total" orden={orden} derecha className="hidden py-2.5 pr-3 text-right font-medium xl:table-cell">Total</EncabezadoOrdenable>
                 </>
               ) : (
                 <>
-                  <th className="hidden py-2.5 pr-3 text-right font-medium xl:table-cell">Percepción</th>
-                  <th className="py-2.5 pr-3 text-right font-medium">Total</th>
+                  <EncabezadoOrdenable columna="percepcion" orden={orden} derecha className="hidden py-2.5 pr-3 text-right font-medium xl:table-cell">Percepción</EncabezadoOrdenable>
+                  <EncabezadoOrdenable columna="total" orden={orden} derecha className="py-2.5 pr-3 text-right font-medium">Total</EncabezadoOrdenable>
                 </>
               )}
               <th className="py-2.5 pr-3 sm:pr-4" />

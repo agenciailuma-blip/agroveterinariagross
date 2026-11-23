@@ -1,4 +1,6 @@
 import { supabase } from '@/lib/supabase'
+import { aplicarFiltros } from '@/lib/api/filtrosConsulta'
+import type { Filtros } from '@/lib/filtros'
 import { leerPapel, mismaSerie } from '@/lib/api/buscarComprobantes'
 import { agruparPorConcepto } from '@/lib/conceptos'
 import { datosEmisor } from '@/lib/api/comprobante'
@@ -614,7 +616,11 @@ export interface FilaNoFiscal {
   venta_documentacion: string | null
 }
 
-export async function listarNoFiscales(tipo: TipoNoFiscal | 'todos'): Promise<FilaNoFiscal[]> {
+/**
+  Los últimos 200 del tipo. Con filtros de la búsqueda avanzada, la base
+  devuelve los que cumplen, de cualquier fecha (no sólo entre los últimos).
+*/
+export async function listarNoFiscales(tipo: TipoNoFiscal | 'todos', filtros?: Filtros): Promise<FilaNoFiscal[]> {
   let q = supabase
     .from('comprobante_no_fiscal')
     .select(
@@ -626,6 +632,15 @@ export async function listarNoFiscales(tipo: TipoNoFiscal | 'todos'): Promise<Fi
     .limit(200)
 
   if (tipo !== 'todos') q = q.eq('tipo_clave', tipo)
+  if (filtros) {
+    q = aplicarFiltros(q, filtros, {
+      fecha: 'fecha',
+      persona: 'receptor_nombre',
+      numero: 'numero',
+      serie: 'serie',
+      estado: 'estado',
+    })
+  }
 
   const { data, error } = await q
   if (error) throw new Error(error.message)

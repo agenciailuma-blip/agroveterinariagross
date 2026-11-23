@@ -16,6 +16,8 @@ import {
 } from '@/lib/api/deuda'
 import { moneda, numero } from '@/lib/tipos'
 import { tarjeta } from '@/estilos'
+import EncabezadoOrdenable from '@/components/EncabezadoOrdenable'
+import { useOrden } from '@/lib/useOrden'
 
 /*
   ─────────────────────────────────────────────────────────────
@@ -152,6 +154,13 @@ function Deuda() {
     queryKey: ['deuda-clientes'],
     queryFn: deudaDeClientes,
   })
+  const orden = useOrden('reporte-deuda', data, {
+    cliente: (f) => f.nombre,
+    debe: (f) => f.saldo,
+    vencido: (f) => f.vencido_30 + f.vencido_60 + f.vencido_mas_60,
+    atraso: (f) => diasDeAtraso(f.vencimiento_mas_antiguo),
+    telefono: (f) => f.telefono,
+  })
 
   if (isError) {
     return (
@@ -208,16 +217,16 @@ function Deuda() {
                 */}
                 <thead>
                   <tr className="border-b border-borde text-left text-xs text-piedra-500">
-                    <th className="px-4 py-2.5 font-medium">Cliente</th>
-                    <th className="hidden px-4 py-2.5 text-right font-medium sm:table-cell">Debe</th>
-                    <th className="px-4 py-2.5 text-right font-medium">Vencido</th>
-                    <th className="hidden px-4 py-2.5 text-right font-medium sm:table-cell">Atraso</th>
-                    <th className="px-4 py-2.5 font-medium">Teléfono</th>
+                    <EncabezadoOrdenable columna="cliente" orden={orden} className="px-4 py-2.5 font-medium">Cliente</EncabezadoOrdenable>
+                    <EncabezadoOrdenable columna="debe" orden={orden} derecha className="hidden px-4 py-2.5 text-right font-medium sm:table-cell">Debe</EncabezadoOrdenable>
+                    <EncabezadoOrdenable columna="vencido" orden={orden} derecha className="px-4 py-2.5 text-right font-medium">Vencido</EncabezadoOrdenable>
+                    <EncabezadoOrdenable columna="atraso" orden={orden} derecha className="hidden px-4 py-2.5 text-right font-medium sm:table-cell">Atraso</EncabezadoOrdenable>
+                    <EncabezadoOrdenable columna="telefono" orden={orden} className="px-4 py-2.5 font-medium">Teléfono</EncabezadoOrdenable>
                     <th className="hidden px-4 py-2.5 sm:table-cell" />
                   </tr>
                 </thead>
                 <tbody>
-                  {data.map((f) => (
+                  {orden.filas.map((f) => (
                     <Fila key={f.cliente_id} f={f} />
                   ))}
                 </tbody>

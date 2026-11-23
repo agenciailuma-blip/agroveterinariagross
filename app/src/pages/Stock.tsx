@@ -7,6 +7,9 @@ import { listarDepositos, stockPorDeposito } from '@/lib/api/depositos'
 import { comoTexto, listarStock, resumenStock } from '@/lib/api/stock'
 import type { FiltroStock } from '@/lib/api/stock'
 import { ESTADO_STOCK, moneda, numero } from '@/lib/tipos'
+import EncabezadoOrdenable from '@/components/EncabezadoOrdenable'
+import { useOrden } from '@/lib/useOrden'
+import type { Columnas } from '@/lib/orden'
 
 /*
   Stock — sugerencia 2 de Lucas.
@@ -77,6 +80,22 @@ export default function Stock() {
     enabled: puedeVer && variosDepositos && deposito === null && ids.length > 0,
   })
   const columnasPorDeposito = variosDepositos && deposito === null ? activos : []
+
+  // Una columna por depósito, más las fijas.
+  const columnasDeOrden: Columnas<NonNullable<typeof filas.data>[number]> = {
+    producto: (f) => f.nombre_interno,
+    quedan: (f) => Number(f.cantidad),
+    avisa: (f) => Number(f.umbral_bajo),
+    estado: (f) => ESTADO_STOCK[f.estado].etiqueta,
+    reponer: (f) => {
+      const faltan = Math.max(0, f.umbral_bajo - (f.envase_id ? Number(f.disponible) : f.cantidad))
+      return f.costo ? faltan * Number(f.costo) : null
+    },
+  }
+  for (const d of columnasPorDeposito) {
+    columnasDeOrden[`deposito-${d.id}`] = (f) => porDeposito.data?.get(f.producto_id)?.get(d.id) ?? 0
+  }
+  const orden = useOrden('stock', filas.data, columnasDeOrden, [porDeposito.data, columnasPorDeposito.length])
 
   if (!puedeVer) {
     return (
@@ -218,22 +237,22 @@ export default function Stock() {
           <table className="w-full text-sm">
             <thead className="border-b border-borde bg-piedra-50 text-left text-xs tracking-wide text-piedra-500 uppercase">
               <tr>
-                <th className="px-4 py-2.5 font-medium">Producto</th>
-                <th className="py-2.5 text-right font-medium">
+                <EncabezadoOrdenable columna="producto" orden={orden} className="px-4 py-2.5 font-medium">Producto</EncabezadoOrdenable>
+                <EncabezadoOrdenable columna="quedan" orden={orden} derecha className="py-2.5 text-right font-medium">
                   {columnasPorDeposito.length ? 'Total' : 'Quedan'}
-                </th>
+                </EncabezadoOrdenable>
                 {columnasPorDeposito.map((d) => (
-                  <th key={d.id} className="hidden py-2.5 pl-3 text-right font-medium md:table-cell">
+                  <EncabezadoOrdenable key={d.id} columna={`deposito-${d.id}`} orden={orden} derecha className="hidden py-2.5 pl-3 text-right font-medium md:table-cell">
                     {d.nombre}
-                  </th>
+                  </EncabezadoOrdenable>
                 ))}
-                <th className="hidden py-2.5 text-right font-medium sm:table-cell">Avisa en</th>
-                <th className="px-3 py-2.5 font-medium">Estado</th>
-                <th className="hidden px-4 py-2.5 text-right font-medium sm:table-cell">Reponer costaría</th>
+                <EncabezadoOrdenable columna="avisa" orden={orden} derecha className="hidden py-2.5 text-right font-medium sm:table-cell">Avisa en</EncabezadoOrdenable>
+                <EncabezadoOrdenable columna="estado" orden={orden} className="px-3 py-2.5 font-medium">Estado</EncabezadoOrdenable>
+                <EncabezadoOrdenable columna="reponer" orden={orden} derecha className="hidden px-4 py-2.5 text-right font-medium sm:table-cell">Reponer costaría</EncabezadoOrdenable>
               </tr>
             </thead>
             <tbody className="divide-y divide-piedra-100">
-              {filas.data.map((f) => {
+              {orden.filas.map((f) => {
                 const e = ESTADO_STOCK[f.estado]
                 /*
                   Cuánto costaría llevarlo al umbral bajo. Es una cuenta
@@ -262,12 +281,12 @@ export default function Stock() {
                         type="button"
                         onClick={() => setConMovimientos(abierto ? null : f.producto_id)}
                         aria-expanded={abierto}
-                        className="text-left font-medium text-tinta hover:text-marca-700 hover:underline"
+                        className="text-left font-medium [overflow-wrap:anywhere] text-tinta hover:text-marca-700 hover:underline"
                         title="Ver los movimientos"
                       >
                         {f.nombre_interno}
                       </button>
-                      <p className="font-mono text-xs text-piedra-400">{f.codigo}</p>
+                      <p className="font-mono text-xs break-all text-piedra-400">{f.codigo}</p>
                     </td>
                     <td className="py-2.5 text-right tabular-nums text-tinta">
                       {numero.format(f.cantidad)}

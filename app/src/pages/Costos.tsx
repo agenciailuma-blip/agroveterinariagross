@@ -7,6 +7,8 @@ import { Variacion } from '@/components/HistorialDeCostos'
 import { enCastellano } from '@/lib/errores'
 import { moneda } from '@/lib/tipos'
 import { campo, campoDeFiltro, tarjeta } from '@/estilos'
+import EncabezadoOrdenable from '@/components/EncabezadoOrdenable'
+import { useOrden } from '@/lib/useOrden'
 
 /*
   ─────────────────────────────────────────────────────────────
@@ -48,6 +50,15 @@ export default function Costos() {
     )
     return ordenarCostos(elegidas, orden)
   }, [todos.data, proveedorId, buscar, orden])
+
+  // Tocar un encabezado manda por sobre «Ordenar por»; el tercer toque vuelve a él.
+  const ordenTabla = useOrden('costos-por-proveedor', filas, {
+    producto: (f) => f.producto,
+    proveedor: (f) => f.proveedor,
+    anterior: (f) => f.costo_anterior,
+    ultimo: (f) => f.ultimo_costo,
+    otro: (f) => f.otro_costo,
+  })
 
   const subieron = filas.filter((f) => (f.variacion ?? 0) > 0.005).length
   const bajaron = filas.filter((f) => (f.variacion ?? 0) < -0.005).length
@@ -122,11 +133,13 @@ export default function Costos() {
         <table className="w-full text-sm">
           <thead className="border-b border-piedra-100 text-left text-xs text-piedra-500">
             <tr>
-              <th className="px-4 py-2.5 font-medium">Producto</th>
-              {!proveedorId && <th className="hidden px-4 py-2.5 font-medium lg:table-cell">Proveedor</th>}
-              <th className="hidden px-4 py-2.5 text-right font-medium md:table-cell">Anterior</th>
-              <th className="px-4 py-2.5 text-right font-medium">Último</th>
-              <th className="hidden px-4 py-2.5 font-medium sm:table-cell">Otro más barato</th>
+              <EncabezadoOrdenable columna="producto" orden={ordenTabla} className="px-4 py-2.5 font-medium">Producto</EncabezadoOrdenable>
+              {!proveedorId && (
+                <EncabezadoOrdenable columna="proveedor" orden={ordenTabla} className="hidden px-4 py-2.5 font-medium lg:table-cell">Proveedor</EncabezadoOrdenable>
+              )}
+              <EncabezadoOrdenable columna="anterior" orden={ordenTabla} derecha className="hidden px-4 py-2.5 text-right font-medium md:table-cell">Anterior</EncabezadoOrdenable>
+              <EncabezadoOrdenable columna="ultimo" orden={ordenTabla} derecha className="px-4 py-2.5 text-right font-medium">Último</EncabezadoOrdenable>
+              <EncabezadoOrdenable columna="otro" orden={ordenTabla} className="hidden px-4 py-2.5 font-medium sm:table-cell">Otro más barato</EncabezadoOrdenable>
             </tr>
           </thead>
           <tbody>
@@ -146,7 +159,7 @@ export default function Costos() {
                 </td>
               </tr>
             )}
-            {filas.map((f) => (
+            {ordenTabla.filas.map((f) => (
               <tr key={`${f.proveedor_id}-${f.producto_id}`} className="border-b border-piedra-50 last:border-0">
                 <td className="px-4 py-2.5 align-top">
                   <p className="text-tinta">{f.producto}</p>

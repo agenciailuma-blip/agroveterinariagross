@@ -26,6 +26,8 @@ import { enCastellano } from '@/lib/errores'
 import { moneda } from '@/lib/tipos'
 import { boton, campo, tarjeta } from '@/estilos'
 import { avanzarConEnter } from '@/lib/teclado'
+import EncabezadoOrdenable from '@/components/EncabezadoOrdenable'
+import { useOrden } from '@/lib/useOrden'
 
 /*
   ─────────────────────────────────────────────────────────────
@@ -68,6 +70,15 @@ export default function CuentaProveedores() {
   const sinMovimiento = (saldos.data ?? []).filter((s) => s.saldo === 0 && !s.ultimo_pago)
   const total = conMovimiento.reduce((t, s) => t + s.saldo, 0)
   const vencido = conMovimiento.reduce((t, s) => t + s.vencido, 0)
+  // Como vino: primero los que tienen movimiento. Al ordenar, todos juntos.
+  const todos = useMemo(() => [...conMovimiento, ...sinMovimiento], [saldos.data])
+  const orden = useOrden('cuentas-proveedores', todos, {
+    proveedor: (s) => s.nombre,
+    saldo: (s) => s.saldo,
+    vencido: (s) => s.vencido,
+    vencimiento: (s) => s.proximo_vencimiento,
+    pago: (s) => s.ultimo_pago,
+  })
 
   return (
     <div className="space-y-6">
@@ -112,11 +123,11 @@ export default function CuentaProveedores() {
             <table className="w-full text-sm">
               <thead className="border-b border-piedra-100 text-left text-xs text-piedra-500">
                 <tr>
-                  <th className="px-4 py-2.5 font-medium">Proveedor</th>
-                  <th className="px-4 py-2.5 text-right font-medium">Saldo</th>
-                  <th className="hidden px-4 py-2.5 text-right font-medium sm:table-cell">Vencido</th>
-                  <th className="hidden px-4 py-2.5 font-medium md:table-cell">Próximo vencimiento</th>
-                  <th className="hidden px-4 py-2.5 font-medium lg:table-cell">Último pago</th>
+                  <EncabezadoOrdenable columna="proveedor" orden={orden} className="px-4 py-2.5 font-medium">Proveedor</EncabezadoOrdenable>
+                  <EncabezadoOrdenable columna="saldo" orden={orden} derecha className="px-4 py-2.5 text-right font-medium">Saldo</EncabezadoOrdenable>
+                  <EncabezadoOrdenable columna="vencido" orden={orden} derecha className="hidden px-4 py-2.5 text-right font-medium sm:table-cell">Vencido</EncabezadoOrdenable>
+                  <EncabezadoOrdenable columna="vencimiento" orden={orden} className="hidden px-4 py-2.5 font-medium md:table-cell">Próximo vencimiento</EncabezadoOrdenable>
+                  <EncabezadoOrdenable columna="pago" orden={orden} className="hidden px-4 py-2.5 font-medium lg:table-cell">Último pago</EncabezadoOrdenable>
                 </tr>
               </thead>
               <tbody>
@@ -125,7 +136,7 @@ export default function CuentaProveedores() {
                     <td colSpan={5} className="px-4 py-6 text-center text-piedra-400">Cargando…</td>
                   </tr>
                 )}
-                {[...conMovimiento, ...sinMovimiento].map((s) => (
+                {orden.filas.map((s) => (
                   <tr
                     key={s.proveedor_id}
                     onClick={() => setParams({ p: s.proveedor_id })}
@@ -181,6 +192,13 @@ function Detalle({ proveedor, onVolver }: { proveedor: SaldoProveedor; onVolver:
   const id = proveedor.proveedor_id
   const pendientes = useQuery({ queryKey: ['pendientes-proveedor', id], queryFn: () => pendientesDe(id) })
   const movimientos = useQuery({ queryKey: ['movimientos-proveedor', id], queryFn: () => movimientosDe(id) })
+  const ordenPendientes = useOrden('pendientes-proveedor', pendientes.data, {
+    comprobante: (p) => p.descripcion,
+    fecha: (p) => p.fecha,
+    vence: (p) => p.vencimiento,
+    total: (p) => p.total,
+    pendiente: (p) => p.pendiente,
+  })
 
   const refrescar = () => {
     qc.invalidateQueries({ queryKey: ['saldos-proveedores'] })
@@ -292,11 +310,11 @@ function Detalle({ proveedor, onVolver }: { proveedor: SaldoProveedor; onVolver:
         <table className="mt-2 w-full text-sm">
           <thead className="border-b border-piedra-100 text-left text-xs text-piedra-500">
             <tr>
-              <th className="px-4 py-2 font-medium">Comprobante</th>
-              <th className="hidden px-4 py-2 font-medium md:table-cell">Fecha</th>
-              <th className="hidden px-4 py-2 font-medium sm:table-cell">Vence</th>
-              <th className="hidden px-4 py-2 text-right font-medium md:table-cell">Total</th>
-              <th className="px-4 py-2 text-right font-medium">Pendiente</th>
+              <EncabezadoOrdenable columna="comprobante" orden={ordenPendientes} className="px-4 py-2 font-medium">Comprobante</EncabezadoOrdenable>
+              <EncabezadoOrdenable columna="fecha" orden={ordenPendientes} className="hidden px-4 py-2 font-medium md:table-cell">Fecha</EncabezadoOrdenable>
+              <EncabezadoOrdenable columna="vence" orden={ordenPendientes} className="hidden px-4 py-2 font-medium sm:table-cell">Vence</EncabezadoOrdenable>
+              <EncabezadoOrdenable columna="total" orden={ordenPendientes} derecha className="hidden px-4 py-2 text-right font-medium md:table-cell">Total</EncabezadoOrdenable>
+              <EncabezadoOrdenable columna="pendiente" orden={ordenPendientes} derecha className="px-4 py-2 text-right font-medium">Pendiente</EncabezadoOrdenable>
             </tr>
           </thead>
           <tbody>
@@ -307,7 +325,7 @@ function Detalle({ proveedor, onVolver }: { proveedor: SaldoProveedor; onVolver:
                 </td>
               </tr>
             )}
-            {pendientes.data?.map((p) => (
+            {ordenPendientes.filas.map((p) => (
               <tr key={p.id} className="border-b border-piedra-50 last:border-0">
                 <td className="px-4 py-2 align-top text-tinta">
                   {p.descripcion}

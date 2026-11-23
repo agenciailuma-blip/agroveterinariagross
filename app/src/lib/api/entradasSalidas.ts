@@ -1,4 +1,6 @@
 import { supabase } from '@/lib/supabase'
+import { aplicarFiltros } from '@/lib/api/filtrosConsulta'
+import type { Filtros } from '@/lib/filtros'
 
 /*
   Entradas y salidas de stock: mercadería que aparece o desaparece sin
@@ -68,12 +70,16 @@ export interface LineaRegistrada {
   cantidad: number
 }
 
-export async function listarEntradasSalidas(): Promise<EntradaSalida[]> {
-  const { data, error } = await supabase
-    .from('vista_entrada_salida')
-    .select('*')
-    .order('numero', { ascending: false })
-    .limit(50)
+/** Las últimas 50; con la búsqueda avanzada, las que cumplen, de cualquier fecha. */
+export async function listarEntradasSalidas(filtros?: Filtros): Promise<EntradaSalida[]> {
+  let q = supabase.from('vista_entrada_salida').select('*')
+  if (filtros) {
+    q = aplicarFiltros(q, filtros, { fecha: 'ocurrido_en', fechaConHora: true, numero: 'numero' })
+    if (filtros.estado === 'vigente') q = q.is('anulada_en', null)
+    if (filtros.estado === 'anulada') q = q.not('anulada_en', 'is', null)
+    if (filtros.estado === 'entrada' || filtros.estado === 'salida') q = q.eq('sentido', filtros.estado)
+  }
+  const { data, error } = await q.order('numero', { ascending: false }).limit(50)
   if (error) throw new Error(error.message)
   return ((data ?? []) as EntradaSalida[]).map((e) => ({
     ...e,

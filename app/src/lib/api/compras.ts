@@ -1,4 +1,6 @@
 import { supabase } from '@/lib/supabase'
+import { aplicarFiltros } from '@/lib/api/filtrosConsulta'
+import type { Filtros } from '@/lib/filtros'
 
 /*
   Las facturas de compra.
@@ -80,11 +82,28 @@ const COLUMNAS =
   'tributos_total, total, observaciones, recibida_en, pedido_id, proveedor_id, proveedor:proveedor_id(nombre), ' +
   'tipo:tipo_comprobante_id(descripcion, clase, signo)'
 
-export async function listarCompras(limite = 100): Promise<FilaCompra[]> {
-  const { data, error } = await supabase
+/**
+  Las últimas compras. Con la búsqueda avanzada, la base devuelve las que
+  cumplen, de cualquier fecha. «Estado» es la mercadería: recibida o no.
+*/
+export async function listarCompras(limite = 100, filtros?: Filtros): Promise<FilaCompra[]> {
+  // Para buscar por proveedor, el proveedor tiene que estar sí o sí (inner).
+  const conProveedor = !!filtros?.persona.trim()
+  let q = supabase
     .from('compra')
-    .select(COLUMNAS)
+    .select(conProveedor ? COLUMNAS.replace('proveedor:proveedor_id(nombre)', 'proveedor:proveedor_id!inner(nombre)') : COLUMNAS)
     .is('eliminado_en', null)
+  if (filtros) {
+    q = aplicarFiltros(q, filtros, {
+      fecha: 'fecha',
+      persona: 'proveedor.nombre',
+      numero: 'numero',
+      puntoVenta: 'punto_venta',
+    })
+    if (filtros.estado === 'recibida') q = q.not('recibida_en', 'is', null)
+    if (filtros.estado === 'sin_recibir') q = q.is('recibida_en', null)
+  }
+  const { data, error } = await q
     .order('fecha', { ascending: false })
     .order('creado_en', { ascending: false })
     .limit(limite)

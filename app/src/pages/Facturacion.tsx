@@ -22,6 +22,12 @@ import PorFacturar from '@/components/PorFacturar'
 import PendientesDeFacturar from '@/components/PendientesDeFacturar'
 import { emitirConCaea, estadoContingencia } from '@/lib/api/contingencia'
 import { moneda } from '@/lib/tipos'
+import EncabezadoOrdenable from '@/components/EncabezadoOrdenable'
+import { useOrden } from '@/lib/useOrden'
+import PanelDeFiltros from '@/components/PanelDeFiltros'
+import { FILTROS_VACIOS, hayFiltros } from '@/lib/filtros'
+import type { Filtros } from '@/lib/filtros'
+import { useDiferido } from '@/lib/useDiferido'
 
 const COLOR_SEMAFORO: Record<Semaforo, string> = {
   verde: 'bg-verde-500',
@@ -61,10 +67,14 @@ export default function Facturacion() {
   })
   const hayCaea = !!contingencia.data?.vigente
 
+  // La búsqueda avanzada va a la base: la lista trae sólo los últimos 200.
+  const [filtros, setFiltros] = useState<Filtros>(FILTROS_VACIOS)
+  const filtrosDiferidos = useDiferido(filtros)
   const comprobantes = useQuery({
-    queryKey: ['comprobantes', filtro],
-    queryFn: () => listarComprobantes(filtro),
+    queryKey: ['comprobantes', filtro, filtrosDiferidos],
+    queryFn: () => listarComprobantes(filtro, filtrosDiferidos),
     enabled: puedeVer,
+    placeholderData: (antes) => antes,
   })
 
   const sinFacturar = useQuery({
@@ -177,7 +187,15 @@ export default function Facturacion() {
     )
   }
 
-  const filas = comprobantes.data ?? []
+  const orden = useOrden('facturacion', comprobantes.data, {
+    estado: (c) => c.estado,
+    comprobante: (c) => `${c.tipo} ${String(c.punto_venta).padStart(5, '0')}-${String(c.numero).padStart(8, '0')}`,
+    receptor: (c) => c.receptor_nombre,
+    fecha: (c) => c.fecha,
+    total: (c) => c.total,
+    cae: (c) => c.cae,
+  })
+  const filas = orden.filas
   const pendientes = sinFacturar.data ?? []
 
   return (
@@ -328,16 +346,32 @@ export default function Facturacion() {
         secundario —estado, receptor, fecha— pasa debajo del comprobante
         cuando no hay lugar.
       */}
+      <PanelDeFiltros
+        valor={filtros}
+        onCambio={setFiltros}
+        campos={{
+          fechas: true,
+          persona: 'Cliente',
+          numero: 'Número',
+          ejemploNumero: '16 o 1-16',
+          estados: [
+            { valor: 'autorizado', etiqueta: 'Autorizados' },
+            { valor: 'pendiente', etiqueta: 'Pendientes' },
+            { valor: 'rechazado', etiqueta: 'Rechazados' },
+            { valor: 'contingencia', etiqueta: 'Por contingencia' },
+          ],
+        }}
+      />
       <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-borde">
         <table className="w-full text-sm">
           <thead className="border-b border-borde bg-piedra-50 text-left text-xs tracking-wide text-piedra-500 uppercase">
             <tr>
-              <th className="hidden px-5 py-2.5 font-medium md:table-cell">Estado</th>
-              <th className="py-2.5 pr-3 pl-3 font-medium md:pl-0">Comprobante</th>
-              <th className="hidden py-2.5 pr-3 font-medium lg:table-cell">Receptor</th>
-              <th className="hidden py-2.5 pr-3 font-medium xl:table-cell">Fecha</th>
-              <th className="py-2.5 text-right font-medium">Total</th>
-              <th className="hidden py-2.5 pl-3 font-medium xl:table-cell">CAE</th>
+              <EncabezadoOrdenable columna="estado" orden={orden} className="hidden px-5 py-2.5 font-medium md:table-cell">Estado</EncabezadoOrdenable>
+              <EncabezadoOrdenable columna="comprobante" orden={orden} className="py-2.5 pr-3 pl-3 font-medium md:pl-0">Comprobante</EncabezadoOrdenable>
+              <EncabezadoOrdenable columna="receptor" orden={orden} className="hidden py-2.5 pr-3 font-medium lg:table-cell">Receptor</EncabezadoOrdenable>
+              <EncabezadoOrdenable columna="fecha" orden={orden} className="hidden py-2.5 pr-3 font-medium xl:table-cell">Fecha</EncabezadoOrdenable>
+              <EncabezadoOrdenable columna="total" orden={orden} derecha className="py-2.5 text-right font-medium">Total</EncabezadoOrdenable>
+              <EncabezadoOrdenable columna="cae" orden={orden} className="hidden py-2.5 pl-3 font-medium xl:table-cell">CAE</EncabezadoOrdenable>
               <th className="px-3 py-2.5 md:pr-5" />
             </tr>
           </thead>
@@ -352,7 +386,9 @@ export default function Facturacion() {
             {!comprobantes.isPending && filas.length === 0 && (
               <tr>
                 <td colSpan={7} className="px-5 py-10 text-center text-sm text-piedra-400">
-                  {filtro === 'pendientes'
+                  {hayFiltros(filtros)
+                    ? 'Ningún comprobante cumple la búsqueda.'
+                    : filtro === 'pendientes'
                     ? 'No hay comprobantes esperando resolución.'
                     : 'Todavía no se emitió ningún comprobante.'}
                 </td>

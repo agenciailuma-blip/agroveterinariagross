@@ -1,4 +1,6 @@
 import { supabase } from '@/lib/supabase'
+import { aplicarFiltros } from '@/lib/api/filtrosConsulta'
+import type { Filtros } from '@/lib/filtros'
 
 /*
   Los depósitos, y la mercadería que pasa de uno a otro.
@@ -137,12 +139,15 @@ export interface LineaTransferida {
   cantidad: number
 }
 
-export async function listarTransferencias(): Promise<Transferencia[]> {
-  const { data, error } = await supabase
-    .from('vista_transferencia')
-    .select('*')
-    .order('numero', { ascending: false })
-    .limit(50)
+/** Las últimas 50; con la búsqueda avanzada, las que cumplen, de cualquier fecha. */
+export async function listarTransferencias(filtros?: Filtros): Promise<Transferencia[]> {
+  let q = supabase.from('vista_transferencia').select('*')
+  if (filtros) {
+    q = aplicarFiltros(q, filtros, { fecha: 'ocurrido_en', fechaConHora: true, numero: 'numero' })
+    if (filtros.estado === 'vigente') q = q.is('anulada_en', null)
+    if (filtros.estado === 'anulada') q = q.not('anulada_en', 'is', null)
+  }
+  const { data, error } = await q.order('numero', { ascending: false }).limit(50)
   if (error) throw new Error(error.message)
   return ((data ?? []) as Transferencia[]).map((t) => ({
     ...t,

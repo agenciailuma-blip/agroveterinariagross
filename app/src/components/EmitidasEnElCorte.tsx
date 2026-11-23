@@ -6,6 +6,8 @@ import { abrirComprobante } from '@/lib/escritorio'
 import { useTerminal } from '@/lib/terminal'
 import { botonChico } from '@/estilos'
 import { moneda } from '@/lib/tipos'
+import EncabezadoOrdenable from '@/components/EncabezadoOrdenable'
+import { useOrden } from '@/lib/useOrden'
 
 /*
   Lo que esta computadora facturó mientras no había internet.
@@ -48,7 +50,18 @@ export default function EmitidasEnElCorte() {
     onError: (e) => setError(e instanceof Error ? e.message : 'No se pudo imprimir.'),
   })
 
-  const lista = datos.data?.comprobantes ?? []
+  const orden = useOrden(
+    'emitidas-en-el-corte',
+    datos.data?.comprobantes,
+    {
+      comprobante: (c) => `${String(c.punto_venta).padStart(4, '0')}-${String(c.numero).padStart(8, '0')}`,
+      cliente: (c) => c.receptor_nombre,
+      total: (c) => c.total,
+      servidor: (c) => (datos.data?.pendientes.has(c.id) ? 'Falta subir' : 'Llegó'),
+    },
+    [datos.data?.pendientes],
+  )
+  const lista = orden.filas
   if (!lista.length) return null
 
   const pendientes = datos.data?.pendientes ?? new Set<string>()
@@ -79,10 +92,10 @@ export default function EmitidasEnElCorte() {
       <table className="w-full text-sm">
         <thead className="border-b border-borde text-left text-xs tracking-wide text-piedra-500 uppercase">
           <tr>
-            <th className="px-5 py-2 font-medium">Comprobante</th>
-            <th className="py-2 font-medium">Cliente</th>
-            <th className="py-2 text-right font-medium">Total</th>
-            <th className="py-2 font-medium">En el servidor</th>
+            <EncabezadoOrdenable columna="comprobante" orden={orden} className="px-5 py-2 font-medium">Comprobante</EncabezadoOrdenable>
+            <EncabezadoOrdenable columna="cliente" orden={orden} className="py-2 font-medium">Cliente</EncabezadoOrdenable>
+            <EncabezadoOrdenable columna="total" orden={orden} derecha className="py-2 text-right font-medium">Total</EncabezadoOrdenable>
+            <EncabezadoOrdenable columna="servidor" orden={orden} className="py-2 font-medium">En el servidor</EncabezadoOrdenable>
             <th className="w-40 px-5 py-2" />
           </tr>
         </thead>

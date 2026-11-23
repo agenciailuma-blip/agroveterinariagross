@@ -35,6 +35,9 @@ import { useBotonConAtajo } from '@/lib/atajos'
 import { enCastellano } from '@/lib/errores'
 import { ESTADO_STOCK, moneda, numero } from '@/lib/tipos'
 import { boton } from '@/estilos'
+import PanelDeFiltros from '@/components/PanelDeFiltros'
+import { FILTROS_VACIOS, filtrarFilas, hayFiltros } from '@/lib/filtros'
+import type { Filtros } from '@/lib/filtros'
 
 /*
   ─────────────────────────────────────────────────────────────
@@ -88,6 +91,13 @@ export default function PedidosProveedor() {
   const [aviso, setAviso] = useState<string | null>(null)
 
   const lista = useQuery({ queryKey: ['pedidos-proveedor', filtro], queryFn: () => listarPedidos(filtro) })
+  // Los 200 últimos del estado elegido ya están en pantalla: se filtran acá.
+  const [filtros, setFiltros] = useState<Filtros>(FILTROS_VACIOS)
+  const visibles = filtrarFilas(lista.data ?? [], filtros, {
+    fecha: (p) => p.fecha,
+    persona: (p) => p.proveedor,
+    numero: (p) => numeroDePedido(p.numero),
+  })
 
   function avisar(texto: string) {
     setAviso(texto)
@@ -180,19 +190,29 @@ export default function PedidosProveedor() {
         ))}
       </div>
 
+      <PanelDeFiltros
+        valor={filtros}
+        onCambio={setFiltros}
+        campos={{ fechas: true, persona: 'Proveedor', numero: 'Número', ejemploNumero: '12' }}
+      />
+
       {lista.isPending ? (
         <p className="text-sm text-piedra-500">Cargando…</p>
       ) : lista.isError ? (
         <p className="text-sm text-red-700">{enCastellano(lista.error, 'No se pudieron traer los pedidos.')}</p>
-      ) : !lista.data?.length ? (
+      ) : !visibles.length ? (
         <div className="grid place-items-center rounded-xl border border-dashed border-borde bg-white/60 py-12 text-center">
           <p className="text-sm text-piedra-500">
-            {filtro === 'pedido' ? 'No hay pedidos esperando mercadería.' : 'No hay pedidos en este estado.'}
+            {hayFiltros(filtros)
+              ? 'Ningún pedido cumple la búsqueda.'
+              : filtro === 'pedido'
+                ? 'No hay pedidos esperando mercadería.'
+                : 'No hay pedidos en este estado.'}
           </p>
         </div>
       ) : (
         <ul className="divide-y divide-piedra-100 rounded-xl bg-white shadow-sm ring-1 ring-borde">
-          {lista.data.map((p) => (
+          {visibles.map((p) => (
             <li key={p.id}>
               <button
                 onClick={() => {

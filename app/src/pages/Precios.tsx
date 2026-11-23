@@ -17,6 +17,8 @@ import type { ListaPrecio, MedioPago } from '@/lib/api/precios'
 import { elegirListaDeLaTienda, listaDeLaTienda } from '@/lib/api/ventaOnline'
 import { moneda } from '@/lib/tipos'
 import { campoDeFiltro } from '@/estilos'
+import EncabezadoOrdenable from '@/components/EncabezadoOrdenable'
+import { useOrden } from '@/lib/useOrden'
 
 /*
   Precios y medios de pago.
@@ -49,6 +51,10 @@ export default function Precios() {
   // ver el efecto del cambio enseguida, no en la próxima sincronización.
   const datos = useQuery({ queryKey: ['precios-admin'], queryFn: cargarPreciosServidor })
   const listaTienda = useQuery({ queryKey: ['lista-tienda'], queryFn: listaDeLaTienda })
+  const ordenListas = useOrden('listas-de-precios', datos.data?.listas, {
+    lista: (l) => l.nombre,
+    ajuste: (l) => l.ajuste_porcentaje,
+  })
 
   function avisar(texto: string) {
     setAviso(texto)
@@ -210,17 +216,17 @@ export default function Precios() {
               tabla no entraba.
             */}
             <tr>
-              <th className="px-3 py-2 font-medium sm:px-5">Lista</th>
-              <th className="hidden py-2 text-right font-medium sm:table-cell">Ajuste</th>
-              <th className="py-2 pl-3 text-right font-medium">
+              <EncabezadoOrdenable columna="lista" orden={ordenListas} className="px-3 py-2 font-medium sm:px-5">Lista</EncabezadoOrdenable>
+              <EncabezadoOrdenable columna="ajuste" orden={ordenListas} derecha className="hidden py-2 text-right font-medium sm:table-cell">Ajuste</EncabezadoOrdenable>
+              <EncabezadoOrdenable columna="ajuste" orden={ordenListas} derecha className="py-2 pl-3 text-right font-medium">
                 <span className="hidden sm:inline">Un producto de {moneda.format(PRECIO_EJEMPLO)}</span>
                 <span className="sm:hidden">{moneda.format(PRECIO_EJEMPLO)} queda</span>
-              </th>
+              </EncabezadoOrdenable>
               <th className="px-3 py-2 sm:px-5" />
             </tr>
           </thead>
           <tbody className="divide-y divide-piedra-100">
-            {listas.map((l) => (
+            {ordenListas.filas.map((l) => (
               <tr key={l.id}>
                 <td className="px-3 py-2.5 sm:px-5">
                   <span className="font-medium text-tinta">{l.nombre}</span>

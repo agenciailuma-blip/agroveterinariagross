@@ -11,6 +11,8 @@ import {
 import { enCastellano } from '@/lib/errores'
 import { boton, botonChico, campo, tarjeta } from '@/estilos'
 import { avanzarConEnter } from '@/lib/teclado'
+import EncabezadoOrdenable from '@/components/EncabezadoOrdenable'
+import { useOrden } from '@/lib/useOrden'
 
 /*
   Dónde está la mercadería.
@@ -68,7 +70,11 @@ export default function Depositos() {
     onError: fallo,
   })
 
-  const filas = depositos.data ?? []
+  const orden = useOrden('depositos', depositos.data, {
+    nombre: (d) => d.nombre,
+    principal: (d) => d.es_principal,
+  })
+  const filas = orden.filas
 
   return (
     <div className={`${tarjeta} p-5`} onKeyDown={avanzarConEnter}>
@@ -81,8 +87,8 @@ export default function Depositos() {
       <table className="mt-4 w-full text-sm">
         <thead className="border-b border-borde text-left text-xs tracking-wide text-piedra-500 uppercase">
           <tr>
-            <th className="py-2 font-medium">Nombre</th>
-            <th className="py-2 font-medium">Principal</th>
+            <EncabezadoOrdenable columna="nombre" orden={orden} className="py-2 font-medium">Nombre</EncabezadoOrdenable>
+            <EncabezadoOrdenable columna="principal" orden={orden} className="py-2 font-medium">Principal</EncabezadoOrdenable>
             <th className="py-2" />
           </tr>
         </thead>

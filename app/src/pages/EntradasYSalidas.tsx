@@ -24,6 +24,12 @@ import { enCastellano } from '@/lib/errores'
 import { useTerminal } from '@/lib/terminal'
 import { numero } from '@/lib/tipos'
 import { boton, botonChico, campo, tarjeta } from '@/estilos'
+import EncabezadoOrdenable from '@/components/EncabezadoOrdenable'
+import { useOrden } from '@/lib/useOrden'
+import PanelDeFiltros from '@/components/PanelDeFiltros'
+import { FILTROS_VACIOS, hayFiltros } from '@/lib/filtros'
+import type { Filtros } from '@/lib/filtros'
+import { useDiferido } from '@/lib/useDiferido'
 
 /*
   ─────────────────────────────────────────────────────────────
@@ -451,7 +457,20 @@ function Historial({
   onAviso: (aviso: string) => void
 }) {
   const qc = useQueryClient()
-  const registros = useQuery({ queryKey: ['entradas-salidas'], queryFn: listarEntradasSalidas })
+  // La búsqueda avanzada va a la base: la lista trae sólo las últimas 50.
+  const [filtros, setFiltros] = useState<Filtros>(FILTROS_VACIOS)
+  const filtrosDiferidos = useDiferido(filtros)
+  const registros = useQuery({
+    queryKey: ['entradas-salidas', filtrosDiferidos],
+    queryFn: () => listarEntradasSalidas(filtrosDiferidos),
+    placeholderData: (antes) => antes,
+  })
+  const orden = useOrden('entradas-y-salidas', registros.data, {
+    numero: (e) => e.numero,
+    que: (e) => `${e.sentido === 'salida' ? 'Salida' : 'Entrada'} ${e.motivo_nombre}`,
+    productos: (e) => e.productos,
+    quien: (e) => e.usuario_nombre,
+  })
   const [abierta, setAbierta] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -487,11 +506,28 @@ function Historial({
     if (motivo) anular.mutate({ e, motivo })
   }
 
-  const filas = registros.data ?? []
+  const filas = orden.filas
 
   return (
     <div className={`${tarjeta} overflow-hidden`}>
-      <h2 className="px-5 pt-4 font-medium text-tinta">Las últimas</h2>
+      <h2 className="px-5 pt-4 font-medium text-tinta">{hayFiltros(filtros) ? 'Las que cumplen la búsqueda' : 'Las últimas'}</h2>
+      <div className="px-5 pt-2">
+        <PanelDeFiltros
+          valor={filtros}
+          onCambio={setFiltros}
+          campos={{
+            fechas: true,
+            numero: 'Número',
+            ejemploNumero: '12',
+            estados: [
+              { valor: 'salida', etiqueta: 'Salidas' },
+              { valor: 'entrada', etiqueta: 'Entradas' },
+              { valor: 'vigente', etiqueta: 'Vigentes' },
+              { valor: 'anulada', etiqueta: 'Anuladas' },
+            ],
+          }}
+        />
+      </div>
       {error && (
         <p role="alert" className="mx-5 mt-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 ring-1 ring-red-200">
           {error}
@@ -500,10 +536,10 @@ function Historial({
       <table className="mt-2 w-full text-sm">
         <thead className="border-y border-borde bg-piedra-50 text-left text-xs tracking-wide text-piedra-500 uppercase">
           <tr>
-            <th className="px-5 py-2.5 font-medium">N°</th>
-            <th className="py-2.5 pr-3 font-medium">Qué</th>
-            <th className="py-2.5 pr-3 text-right font-medium">Productos</th>
-            <th className="hidden py-2.5 pr-3 font-medium sm:table-cell">Quién</th>
+            <EncabezadoOrdenable columna="numero" orden={orden} className="px-5 py-2.5 font-medium">N°</EncabezadoOrdenable>
+            <EncabezadoOrdenable columna="que" orden={orden} className="py-2.5 pr-3 font-medium">Qué</EncabezadoOrdenable>
+            <EncabezadoOrdenable columna="productos" orden={orden} derecha className="py-2.5 pr-3 text-right font-medium">Productos</EncabezadoOrdenable>
+            <EncabezadoOrdenable columna="quien" orden={orden} className="hidden py-2.5 pr-3 font-medium sm:table-cell">Quién</EncabezadoOrdenable>
             <th className="px-5 py-2.5" />
           </tr>
         </thead>
@@ -518,7 +554,7 @@ function Historial({
           {!registros.isPending && filas.length === 0 && (
             <tr>
               <td colSpan={5} className="px-5 py-8 text-center text-piedra-400">
-                Todavía no se registró ninguna entrada ni salida.
+                {hayFiltros(filtros) ? 'Ninguna cumple la búsqueda.' : 'Todavía no se registró ninguna entrada ni salida.'}
               </td>
             </tr>
           )}

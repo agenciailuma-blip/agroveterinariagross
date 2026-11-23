@@ -20,6 +20,12 @@ import { moneda } from '@/lib/tipos'
 import { imprimirOAbrirComprobante } from '@/lib/comprobante/imprimirDirecto'
 import { useTerminal } from '@/lib/terminal'
 import PendientesDeFacturar from '@/components/PendientesDeFacturar'
+import EncabezadoOrdenable from '@/components/EncabezadoOrdenable'
+import { useOrden } from '@/lib/useOrden'
+import PanelDeFiltros from '@/components/PanelDeFiltros'
+import { FILTROS_VACIOS, hayFiltros } from '@/lib/filtros'
+import type { Filtros } from '@/lib/filtros'
+import { useDiferido } from '@/lib/useDiferido'
 
 /*
   El archivo de los comprobantes que numera Gross.
@@ -72,10 +78,22 @@ export default function NoFiscales({ tipo }: { tipo: TipoNoFiscal }) {
   const puedeAnular = tienePermiso('facturacion.no_fiscal_anular')
   const puedeFacturar = tienePermiso('facturacion.emitir')
 
+  // La búsqueda avanzada va a la base: la lista trae sólo los últimos 200.
+  const [filtros, setFiltros] = useState<Filtros>(FILTROS_VACIOS)
+  const filtrosDiferidos = useDiferido(filtros)
   const filas = useQuery({
-    queryKey: ['no-fiscales', filtro],
-    queryFn: () => listarNoFiscales(filtro),
+    queryKey: ['no-fiscales', filtro, filtrosDiferidos],
+    queryFn: () => listarNoFiscales(filtro, filtrosDiferidos),
     enabled: puedeVer,
+    placeholderData: (antes) => antes,
+  })
+  const orden = useOrden(`no-fiscales-${tipo}`, filas.data, {
+    tipo: (f) => ETIQUETA_NO_FISCAL[f.tipo_clave],
+    numero: (f) => numeroNoFiscal(f.tipo_clave, f.serie, f.numero),
+    fecha: (f) => f.fecha,
+    cliente: (f) => f.receptor_nombre,
+    total: (f) => f.total,
+    estado: (f) => f.estado,
   })
 
   /*
@@ -187,28 +205,43 @@ export default function NoFiscales({ tipo }: { tipo: TipoNoFiscal }) {
         />
       )}
 
+      <PanelDeFiltros
+        valor={filtros}
+        onCambio={setFiltros}
+        campos={{
+          fechas: true,
+          persona: 'Cliente',
+          numero: 'Número',
+          ejemploNumero: '12 o CAJA1-12',
+          estados: [
+            { valor: 'emitido', etiqueta: 'Vigentes' },
+            { valor: 'anulado', etiqueta: 'Anulados' },
+          ],
+        }}
+      />
+
       {filas.isPending ? (
         <p className="text-sm text-piedra-500">Cargando…</p>
       ) : (filas.data?.length ?? 0) === 0 ? (
         <div className="grid place-items-center rounded-xl border border-dashed border-borde bg-white/60 py-12">
-          <p className="text-sm text-piedra-400">{textos.vacio}</p>
+          <p className="text-sm text-piedra-400">{hayFiltros(filtros) ? 'Ninguno cumple la búsqueda.' : textos.vacio}</p>
         </div>
       ) : (
         <div className="overflow-hidden rounded-xl bg-white ring-1 ring-borde">
           <table className="w-full text-sm">
             <thead className="border-b border-borde text-left text-xs text-piedra-500">
               <tr>
-                <th className="hidden px-3 py-2 font-medium xl:table-cell">Tipo</th>
-                <th className="px-3 py-2 font-medium">Número</th>
-                <th className="hidden px-3 py-2 font-medium md:table-cell">Fecha</th>
-                <th className="hidden px-3 py-2 font-medium sm:table-cell">Cliente</th>
-                <th className="px-3 py-2 text-right font-medium">Total</th>
-                <th className="hidden px-3 py-2 font-medium sm:table-cell">Estado</th>
+                <EncabezadoOrdenable columna="tipo" orden={orden} className="hidden px-3 py-2 font-medium xl:table-cell">Tipo</EncabezadoOrdenable>
+                <EncabezadoOrdenable columna="numero" orden={orden} className="px-3 py-2 font-medium">Número</EncabezadoOrdenable>
+                <EncabezadoOrdenable columna="fecha" orden={orden} className="hidden px-3 py-2 font-medium md:table-cell">Fecha</EncabezadoOrdenable>
+                <EncabezadoOrdenable columna="cliente" orden={orden} className="hidden px-3 py-2 font-medium sm:table-cell">Cliente</EncabezadoOrdenable>
+                <EncabezadoOrdenable columna="total" orden={orden} derecha className="px-3 py-2 text-right font-medium">Total</EncabezadoOrdenable>
+                <EncabezadoOrdenable columna="estado" orden={orden} className="hidden px-3 py-2 font-medium sm:table-cell">Estado</EncabezadoOrdenable>
                 <th className="px-3 py-2" />
               </tr>
             </thead>
             <tbody>
-              {filas.data!.map((f) => (
+              {orden.filas.map((f) => (
                 <Fila
                   key={f.id}
                   f={f}

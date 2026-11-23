@@ -22,6 +22,12 @@ import { boton, campo } from '@/estilos'
 import { avanzarConEnter } from '@/lib/teclado'
 import { useBotonConAtajo } from '@/lib/atajos'
 import { TeclaAtajo } from '@/components/Atajos'
+import EncabezadoOrdenable from '@/components/EncabezadoOrdenable'
+import { useOrden } from '@/lib/useOrden'
+import PanelDeFiltros from '@/components/PanelDeFiltros'
+import { FILTROS_VACIOS, hayFiltros } from '@/lib/filtros'
+import type { Filtros } from '@/lib/filtros'
+import { useDiferido } from '@/lib/useDiferido'
 
 /*
   Las facturas de compra.
@@ -73,7 +79,24 @@ export default function Compras() {
   // De la factura a la cuenta del proveedor, para pagarla (auditoría de integralidad, 4).
   const puedeVerCuenta = tienePermiso('compras.ver')
 
-  const compras = useQuery({ queryKey: ['compras'], queryFn: () => listarCompras() })
+  // La búsqueda avanzada va a la base: la lista trae sólo las últimas 100.
+  const [filtros, setFiltros] = useState<Filtros>(FILTROS_VACIOS)
+  const filtrosDiferidos = useDiferido(filtros)
+  const compras = useQuery({
+    queryKey: ['compras', filtrosDiferidos],
+    queryFn: () => listarCompras(100, filtrosDiferidos),
+    placeholderData: (antes) => antes,
+  })
+  const orden = useOrden('compras', compras.data, {
+    fecha: (c) => c.fecha,
+    proveedor: (c) => c.proveedor?.nombre,
+    comprobante: (c) => `${c.tipo?.descripcion ?? ''} ${String(c.punto_venta).padStart(5, '0')}-${String(c.numero).padStart(8, '0')}`,
+    neto: (c) => Number(c.neto_gravado) + Number(c.neto_no_gravado) + Number(c.exento),
+    iva: (c) => Number(c.iva_total),
+    percepciones: (c) => Number(c.tributos_total),
+    total: (c) => Number(c.total),
+    mercaderia: (c) => (c.tipo?.signo === -1 ? null : c.recibida_en ?? ''),
+  })
 
   const baja = useMutation({
     mutationFn: ({ id, motivo }: { id: string; motivo: string }) => anularCompra(id, motivo),
@@ -191,18 +214,32 @@ export default function Compras() {
         desglose —neto, IVA, percepciones— recién con pantalla ancha: el
         total es lo que se compara con el papel.
       */}
+      <PanelDeFiltros
+        valor={filtros}
+        onCambio={setFiltros}
+        campos={{
+          fechas: true,
+          persona: 'Proveedor',
+          numero: 'Número',
+          ejemploNumero: '1234 o 3-1234',
+          estados: [
+            { valor: 'sin_recibir', etiqueta: 'Mercadería sin recibir' },
+            { valor: 'recibida', etiqueta: 'Mercadería recibida' },
+          ],
+        }}
+      />
       <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-borde">
         <table className="w-full text-sm">
           <thead className="border-b border-piedra-100 text-left text-xs text-piedra-500">
             <tr>
-              <th className="hidden px-4 py-2.5 font-medium md:table-cell">Fecha</th>
-              <th className="px-3 py-2.5 font-medium sm:px-4">Proveedor</th>
-              <th className="hidden px-4 py-2.5 font-medium lg:table-cell">Comprobante</th>
-              <th className="hidden px-4 py-2.5 text-right font-medium xl:table-cell">Neto</th>
-              <th className="hidden px-4 py-2.5 text-right font-medium xl:table-cell">IVA</th>
-              <th className="hidden px-4 py-2.5 text-right font-medium xl:table-cell">Percepciones</th>
-              <th className="px-3 py-2.5 text-right font-medium sm:px-4">Total</th>
-              <th className="hidden px-4 py-2.5 font-medium sm:table-cell">Mercadería</th>
+              <EncabezadoOrdenable columna="fecha" orden={orden} className="hidden px-4 py-2.5 font-medium md:table-cell">Fecha</EncabezadoOrdenable>
+              <EncabezadoOrdenable columna="proveedor" orden={orden} className="px-3 py-2.5 font-medium sm:px-4">Proveedor</EncabezadoOrdenable>
+              <EncabezadoOrdenable columna="comprobante" orden={orden} className="hidden px-4 py-2.5 font-medium lg:table-cell">Comprobante</EncabezadoOrdenable>
+              <EncabezadoOrdenable columna="neto" orden={orden} derecha className="hidden px-4 py-2.5 text-right font-medium xl:table-cell">Neto</EncabezadoOrdenable>
+              <EncabezadoOrdenable columna="iva" orden={orden} derecha className="hidden px-4 py-2.5 text-right font-medium xl:table-cell">IVA</EncabezadoOrdenable>
+              <EncabezadoOrdenable columna="percepciones" orden={orden} derecha className="hidden px-4 py-2.5 text-right font-medium xl:table-cell">Percepciones</EncabezadoOrdenable>
+              <EncabezadoOrdenable columna="total" orden={orden} derecha className="px-3 py-2.5 text-right font-medium sm:px-4">Total</EncabezadoOrdenable>
+              <EncabezadoOrdenable columna="mercaderia" orden={orden} className="hidden px-4 py-2.5 font-medium sm:table-cell">Mercadería</EncabezadoOrdenable>
               <th />
             </tr>
           </thead>
@@ -218,12 +255,12 @@ export default function Compras() {
             {compras.data?.length === 0 && (
               <tr>
                 <td colSpan={9} className="px-4 py-8 text-center text-sm text-piedra-400">
-                  Todavía no hay facturas de compra cargadas.
+                  {hayFiltros(filtros) ? 'Ninguna compra cumple la búsqueda.' : 'Todavía no hay facturas de compra cargadas.'}
                 </td>
               </tr>
             )}
 
-            {compras.data?.map((c) => (
+            {orden.filas.map((c) => (
               <tr key={c.id} className="border-b border-piedra-50 last:border-0">
                 <td className="whitespace-nowrap hidden px-4 py-2.5 tabular-nums text-piedra-600 md:table-cell">
                   {new Date(`${c.fecha}T00:00:00`).toLocaleDateString('es-AR')}

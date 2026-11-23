@@ -9,6 +9,12 @@ import { firmasDeRemitos } from '@/lib/api/remitoFirmado'
 import { abrirComprobante, abrirNoFiscal, abrirRemitoR } from '@/lib/escritorio'
 import { papelDeVenta } from '@/lib/api/papeles'
 import { enCastellano } from '@/lib/errores'
+import EncabezadoOrdenable from '@/components/EncabezadoOrdenable'
+import PanelDeFiltros from '@/components/PanelDeFiltros'
+import { FILTROS_VACIOS, hayFiltros } from '@/lib/filtros'
+import type { Filtros } from '@/lib/filtros'
+import { useOrden } from '@/lib/useOrden'
+import { useDiferido } from '@/lib/useDiferido'
 
 /*
   Los remitos del reparto.
@@ -43,11 +49,25 @@ export default function Remitos() {
   const puedeVer = tienePermiso('facturacion.no_fiscal_ver')
   const puedeEmitir = tienePermiso('facturacion.no_fiscal_emitir')
 
+  // La búsqueda avanzada va a la base: la lista trae sólo los últimos 200.
+  const [filtros, setFiltros] = useState<Filtros>(FILTROS_VACIOS)
+  const filtrosDiferidos = useDiferido(filtros)
   const remitos = useQuery({
-    queryKey: ['remitos'],
-    queryFn: () => listarNoFiscales('remito'),
+    queryKey: ['remitos', filtrosDiferidos],
+    queryFn: () => listarNoFiscales('remito', filtrosDiferidos),
     enabled: puedeVer,
+    placeholderData: (antes) => antes,
   })
+  const orden = useOrden('remitos-logisticos', remitos.data, {
+    numero: (r) => numeroNoFiscal('remito', r.serie, r.numero),
+    fecha: (r) => r.fecha,
+    cliente: (r) => r.receptor_nombre,
+    destino: (r) => r.entrega_localidad,
+    transporte: (r) => r.transportista,
+    stock: (r) => (r.descuenta_stock ? 'descontado' : 'sin descontar'),
+    venta: (r) => r.venta_codigo,
+  })
+  const filtrando = hayFiltros(filtros)
 
   // La foto del remito firmado de cada uno, si ya la subieron.
   const idsRemitos = (remitos.data ?? []).map((r) => r.id)
@@ -146,12 +166,32 @@ export default function Remitos() {
       )}
 
       <section>
-        <h2 className="mb-2 text-sm font-medium text-piedra-600">Últimos remitos logísticos</h2>
+        <div className="mb-3">
+          <PanelDeFiltros
+            valor={filtros}
+            onCambio={setFiltros}
+            campos={{
+              fechas: true,
+              persona: 'Cliente',
+              numero: 'Número',
+              ejemploNumero: '26 o CAJA1-26',
+              estados: [
+                { valor: 'emitido', etiqueta: 'Vigentes' },
+                { valor: 'anulado', etiqueta: 'Anulados' },
+              ],
+            }}
+          />
+        </div>
+        <h2 className="mb-2 text-sm font-medium text-piedra-600">
+          {filtrando ? `Remitos que cumplen la búsqueda (${remitos.data?.length ?? 0})` : 'Últimos remitos logísticos'}
+        </h2>
         {remitos.isPending ? (
           <p className="text-sm text-piedra-500">Cargando…</p>
         ) : (remitos.data?.length ?? 0) === 0 ? (
           <div className="grid place-items-center rounded-xl border border-dashed border-borde bg-white/60 py-12">
-            <p className="text-sm text-piedra-400">Todavía no se emitió ningún remito.</p>
+            <p className="text-sm text-piedra-400">
+              {filtrando ? 'Ningún remito cumple la búsqueda.' : 'Todavía no se emitió ningún remito.'}
+            </p>
           </div>
         ) : (
           /*
@@ -163,18 +203,18 @@ export default function Remitos() {
             <table className="w-full text-sm">
               <thead className="border-b border-borde text-left text-xs text-piedra-500">
                 <tr>
-                  <th className="px-3 py-2 font-medium">Número</th>
-                  <th className="hidden px-3 py-2 font-medium md:table-cell">Fecha</th>
-                  <th className="hidden px-3 py-2 font-medium sm:table-cell">Cliente</th>
-                  <th className="hidden px-3 py-2 font-medium lg:table-cell">Destino</th>
-                  <th className="hidden px-3 py-2 font-medium xl:table-cell">Transporte</th>
-                  <th className="hidden px-3 py-2 font-medium md:table-cell">Stock</th>
-                  <th className="hidden px-3 py-2 font-medium lg:table-cell">Venta</th>
+                  <EncabezadoOrdenable columna="numero" orden={orden} className="px-3 py-2 font-medium">Número</EncabezadoOrdenable>
+                  <EncabezadoOrdenable columna="fecha" orden={orden} className="hidden px-3 py-2 font-medium md:table-cell">Fecha</EncabezadoOrdenable>
+                  <EncabezadoOrdenable columna="cliente" orden={orden} className="hidden px-3 py-2 font-medium sm:table-cell">Cliente</EncabezadoOrdenable>
+                  <EncabezadoOrdenable columna="destino" orden={orden} className="hidden px-3 py-2 font-medium lg:table-cell">Destino</EncabezadoOrdenable>
+                  <EncabezadoOrdenable columna="transporte" orden={orden} className="hidden px-3 py-2 font-medium xl:table-cell">Transporte</EncabezadoOrdenable>
+                  <EncabezadoOrdenable columna="stock" orden={orden} className="hidden px-3 py-2 font-medium md:table-cell">Stock</EncabezadoOrdenable>
+                  <EncabezadoOrdenable columna="venta" orden={orden} className="hidden px-3 py-2 font-medium xl:table-cell">Venta</EncabezadoOrdenable>
                   <th className="px-3 py-2" />
                 </tr>
               </thead>
               <tbody>
-                {remitos.data!.map((r) => (
+                {orden.filas.map((r) => (
                   <tr key={r.id} className="border-b border-piedra-100 last:border-0">
                     <td className="px-3 py-2 align-top">
                       <p className="whitespace-nowrap font-medium tabular-nums text-tinta">
@@ -193,7 +233,7 @@ export default function Remitos() {
                         </p>
                       )}
                       {r.venta_codigo && (
-                        <p className="text-xs text-piedra-500 lg:hidden">
+                        <p className="text-xs text-piedra-500 xl:hidden">
                           Venta {r.venta_codigo}
                           {r.venta_estado && r.venta_estado !== 'cobrada' && (
                             <span className="ml-1 rounded bg-amber-100 px-1.5 py-0.5 text-amber-900">
@@ -227,7 +267,7 @@ export default function Remitos() {
                         </span>
                       )}
                     </td>
-                    <td className="hidden whitespace-nowrap px-3 py-2 align-top text-xs text-piedra-500 lg:table-cell">
+                    <td className="hidden whitespace-nowrap px-3 py-2 align-top text-xs text-piedra-500 xl:table-cell">
                       {/* Auditoría de integralidad, punto 5: del remito a la factura de su venta. */}
                       {r.venta_codigo && r.venta_id ? (
                         <button

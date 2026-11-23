@@ -1,4 +1,6 @@
 import { supabase } from '@/lib/supabase'
+import { aplicarFiltros } from '@/lib/api/filtrosConsulta'
+import type { Filtros } from '@/lib/filtros'
 
 export type Semaforo = 'verde' | 'amarillo' | 'naranja' | 'rojo' | 'violeta' | 'gris'
 export type VentanaCae = 'en_plazo' | 'atencion' | 'urgente' | 'vencido' | null
@@ -90,7 +92,8 @@ export const ETIQUETA_SEMAFORO: Record<Semaforo, string> = {
   gris: 'Anulado',
 }
 
-export async function listarComprobantes(filtro: 'pendientes' | 'todos'): Promise<FilaComprobante[]> {
+/** Los últimos 200; con la búsqueda avanzada, los que cumplen, de cualquier fecha. */
+export async function listarComprobantes(filtro: 'pendientes' | 'todos', filtros?: Filtros): Promise<FilaComprobante[]> {
   let q = supabase
     .from('vista_comprobante_estado')
     .select('*')
@@ -101,6 +104,15 @@ export async function listarComprobantes(filtro: 'pendientes' | 'todos'): Promis
   // Lo que necesita acción: sin CAE todavía, o rechazado, o con CAEA sin informar.
   if (filtro === 'pendientes') {
     q = q.in('estado', ['pendiente', 'rechazado', 'contingencia'])
+  }
+  if (filtros) {
+    q = aplicarFiltros(q, filtros, {
+      fecha: 'fecha',
+      persona: 'receptor_nombre',
+      numero: 'numero',
+      puntoVenta: 'punto_venta',
+      estado: 'estado',
+    })
   }
 
   const { data, error } = await q

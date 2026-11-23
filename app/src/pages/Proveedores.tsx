@@ -20,6 +20,8 @@ import BotonBajarPlanilla from '@/components/BotonBajarPlanilla'
 import { bajarPlanillaDeProveedores } from '@/lib/api/planillas'
 import { Link } from 'react-router-dom'
 import { boton } from '@/estilos'
+import EncabezadoOrdenable from '@/components/EncabezadoOrdenable'
+import { useOrden } from '@/lib/useOrden'
 
 /*
   Proveedores — puntos 5 y 4 de Lucas.
@@ -65,6 +67,18 @@ export default function Proveedores() {
     queryFn: productosPorProveedor,
     enabled: puedeVer,
   })
+
+  const orden = useOrden(
+    'proveedores',
+    proveedores.data,
+    {
+      proveedor: (p) => p.nombre,
+      cuit: (p) => p.numero_documento,
+      contacto: (p) => [p.contacto, p.telefono].filter(Boolean).join(' · '),
+      productos: (p) => cuenta.data?.get(p.id) ?? 0,
+    },
+    [cuenta.data],
+  )
 
   const baja = useMutation({
     mutationFn: darDeBajaProveedor,
@@ -178,15 +192,15 @@ export default function Proveedores() {
           <table className="w-full text-sm">
             <thead className="border-b border-borde bg-piedra-50 text-left text-xs tracking-wide text-piedra-500 uppercase">
               <tr>
-                <th className="px-3 py-2.5 font-medium sm:px-4">Proveedor</th>
-                <th className="hidden py-2.5 pr-3 font-medium md:table-cell">CUIT</th>
-                <th className="hidden py-2.5 pr-3 font-medium lg:table-cell">Contacto</th>
-                <th className="hidden py-2.5 text-right font-medium sm:table-cell">Productos</th>
+                <EncabezadoOrdenable columna="proveedor" orden={orden} className="px-3 py-2.5 font-medium sm:px-4">Proveedor</EncabezadoOrdenable>
+                <EncabezadoOrdenable columna="cuit" orden={orden} className="hidden py-2.5 pr-3 font-medium md:table-cell">CUIT</EncabezadoOrdenable>
+                <EncabezadoOrdenable columna="contacto" orden={orden} className="hidden py-2.5 pr-3 font-medium lg:table-cell">Contacto</EncabezadoOrdenable>
+                <EncabezadoOrdenable columna="productos" orden={orden} derecha className="hidden py-2.5 text-right font-medium sm:table-cell">Productos</EncabezadoOrdenable>
                 <th className="px-3 py-2.5 sm:px-4" />
               </tr>
             </thead>
             <tbody className="divide-y divide-piedra-100">
-              {proveedores.data.map((p) => (
+              {orden.filas.map((p) => (
                 <tr key={p.id} className={p.activo ? '' : 'opacity-50'}>
                   <td className="px-3 py-2.5 align-top sm:px-4">
                     <p className="font-medium text-tinta">{p.nombre}</p>

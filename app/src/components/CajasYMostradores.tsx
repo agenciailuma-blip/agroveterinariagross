@@ -17,6 +17,8 @@ import type { TerminalDelLocal, TipoTerminal } from '@/lib/api/terminales'
 import { enCastellano } from '@/lib/errores'
 import { boton, botonChico, campo, tarjeta } from '@/estilos'
 import { avanzarConEnter } from '@/lib/teclado'
+import EncabezadoOrdenable from '@/components/EncabezadoOrdenable'
+import { useOrden } from '@/lib/useOrden'
 
 /*
   ─────────────────────────────────────────────────────────────
@@ -56,6 +58,19 @@ export default function CajasYMostradores() {
   const terminales = useQuery({ queryKey: ['terminales-del-local'], queryFn: listarTerminales })
   const puntos = useQuery({ queryKey: ['puntos-venta'], queryFn: listarPuntosVenta })
   const depositos = useQuery({ queryKey: ['depositos'], queryFn: listarDepositos })
+  const orden = useOrden(
+    'cajas-y-mostradores',
+    terminales.data,
+    {
+      nombre: (t) => t.nombre,
+      tipo: (t) => ETIQUETA[t.tipo],
+      prefijo: (t) => t.prefijo,
+      puntoVenta: (t) => t.punto_venta?.numero,
+      deposito: (t) => depositos.data?.find((d) => d.id === t.deposito_id)?.nombre ?? (t.deposito_id ? null : 'principal'),
+      conexion: (t) => t.ultima_sincronizacion,
+    },
+    [depositos.data],
+  )
   const activos = (depositos.data ?? []).filter((d) => d.activo)
   const principal = activos.find((d) => d.es_principal)
   // Se muestra también si alguna máquina quedó apuntando a otro: que no
@@ -155,17 +170,19 @@ export default function CajasYMostradores() {
       <table className="mt-4 w-full text-sm">
         <thead className="border-b border-piedra-100 text-left text-xs text-piedra-500">
           <tr>
-            <th className="py-2 pr-3 font-medium">Nombre</th>
-            <th className="hidden py-2 pr-3 font-medium sm:table-cell">Tipo</th>
-            <th className="hidden py-2 pr-3 font-medium sm:table-cell">Prefijo</th>
-            <th className="hidden py-2 pr-3 font-medium md:table-cell">Punto de venta</th>
-            {conDeposito && <th className="hidden py-2 pr-3 font-medium md:table-cell">Depósito</th>}
-            <th className="hidden py-2 pr-3 font-medium lg:table-cell">Última conexión</th>
+            <EncabezadoOrdenable columna="nombre" orden={orden} className="py-2 pr-3 font-medium">Nombre</EncabezadoOrdenable>
+            <EncabezadoOrdenable columna="tipo" orden={orden} className="hidden py-2 pr-3 font-medium sm:table-cell">Tipo</EncabezadoOrdenable>
+            <EncabezadoOrdenable columna="prefijo" orden={orden} className="hidden py-2 pr-3 font-medium sm:table-cell">Prefijo</EncabezadoOrdenable>
+            <EncabezadoOrdenable columna="puntoVenta" orden={orden} className="hidden py-2 pr-3 font-medium md:table-cell">Punto de venta</EncabezadoOrdenable>
+            {conDeposito && (
+              <EncabezadoOrdenable columna="deposito" orden={orden} className="hidden py-2 pr-3 font-medium md:table-cell">Depósito</EncabezadoOrdenable>
+            )}
+            <EncabezadoOrdenable columna="conexion" orden={orden} className="hidden py-2 pr-3 font-medium lg:table-cell">Última conexión</EncabezadoOrdenable>
             <th />
           </tr>
         </thead>
         <tbody>
-          {terminales.data?.map((t) => (
+          {orden.filas.map((t) => (
             <Fragment key={t.id}>
               <tr className={editando === t.id ? 'bg-piedra-50/60' : 'border-b border-piedra-50 last:border-0'}>
                 <td className="py-2 pr-3 text-tinta">

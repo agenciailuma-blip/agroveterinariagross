@@ -16,6 +16,8 @@ import {
 import type { LineaConteo, ProductoParaContar, TomaInventario } from '@/lib/api/inventario'
 import { useTerminal } from '@/lib/terminal'
 import { moneda, numero } from '@/lib/tipos'
+import EncabezadoOrdenable from '@/components/EncabezadoOrdenable'
+import { useOrden } from '@/lib/useOrden'
 
 /*
   Toma de inventario por sectores.
@@ -67,6 +69,13 @@ function Listado({ onAbrir }: { onAbrir: (id: string) => void }) {
   const depositos = useQuery({ queryKey: ['depositos'], queryFn: listarDepositos })
   const activos = (depositos.data ?? []).filter((d) => d.activo)
   const variosDepositos = activos.length > 1
+  const orden = useOrden('tomas-inventario', tomas.data, {
+    toma: (t) => t.nombre,
+    estado: (t) => t.estado,
+    contados: (t) => t.contados,
+    diferencias: (t) => t.con_diferencia,
+    valor: (t) => t.diferencia_valorizada,
+  })
   const elegido = deposito ?? depositoPropuesto(activos, terminal?.deposito_id)
 
   const abrir = useMutation({
@@ -176,11 +185,11 @@ function Listado({ onAbrir }: { onAbrir: (id: string) => void }) {
               tarjeta cortaba lo que sobraba.
             */}
             <tr>
-              <th className="px-3 py-2.5 font-medium sm:px-5">Toma</th>
-              <th className="hidden py-2.5 font-medium sm:table-cell">Estado</th>
-              <th className="hidden py-2.5 text-right font-medium md:table-cell">Contados</th>
-              <th className="hidden py-2.5 text-right font-medium md:table-cell">Con diferencia</th>
-              <th className="py-2.5 text-right font-medium">Diferencia al costo</th>
+              <EncabezadoOrdenable columna="toma" orden={orden} className="px-3 py-2.5 font-medium sm:px-5">Toma</EncabezadoOrdenable>
+              <EncabezadoOrdenable columna="estado" orden={orden} className="hidden py-2.5 font-medium sm:table-cell">Estado</EncabezadoOrdenable>
+              <EncabezadoOrdenable columna="contados" orden={orden} derecha className="hidden py-2.5 text-right font-medium md:table-cell">Contados</EncabezadoOrdenable>
+              <EncabezadoOrdenable columna="diferencias" orden={orden} derecha className="hidden py-2.5 text-right font-medium md:table-cell">Con diferencia</EncabezadoOrdenable>
+              <EncabezadoOrdenable columna="valor" orden={orden} derecha className="py-2.5 text-right font-medium">Diferencia al costo</EncabezadoOrdenable>
               <th className="px-3 py-2.5 sm:px-5" />
             </tr>
           </thead>
@@ -199,7 +208,7 @@ function Listado({ onAbrir }: { onAbrir: (id: string) => void }) {
                 </td>
               </tr>
             )}
-            {tomas.data?.map((t) => (
+            {orden.filas.map((t) => (
               <FilaToma key={t.id} t={t} onAbrir={onAbrir} conDeposito={variosDepositos} />
             ))}
           </tbody>
@@ -291,6 +300,13 @@ function Contando({ id, onSalir }: { id: string; onSalir: () => void }) {
   const abiertaLaToma = toma?.estado === 'abierto'
 
   const lineas = useQuery({ queryKey: ['lineas-inventario', id], queryFn: () => lineasDeToma(id) })
+  const ordenLineas = useOrden('lineas-inventario', lineas.data, {
+    producto: (l) => l.nombre_interno,
+    sistema: (l) => l.cantidad_sistema,
+    contado: (l) => l.cantidad_contada,
+    diferencia: (l) => l.diferencia,
+    costo: (l) => l.diferencia_valorizada,
+  })
 
   const resultados = useQuery({
     queryKey: ['buscar-contar', texto, toma?.deposito_id],
@@ -531,11 +547,11 @@ function Contando({ id, onSalir }: { id: string; onSalir: () => void }) {
                 costo se ve en el total de la toma.
               */}
               <tr>
-                <th className="px-3 py-2.5 font-medium sm:px-5">Producto</th>
-                <th className="hidden py-2.5 pl-3 text-right font-medium sm:table-cell">Sistema</th>
-                <th className="py-2.5 pl-3 text-right font-medium">Contado</th>
-                <th className="py-2.5 pl-3 text-right font-medium">Diferencia</th>
-                <th className="hidden py-2.5 pl-3 text-right font-medium sm:table-cell">Al costo</th>
+                <EncabezadoOrdenable columna="producto" orden={ordenLineas} className="px-3 py-2.5 font-medium sm:px-5">Producto</EncabezadoOrdenable>
+                <EncabezadoOrdenable columna="sistema" orden={ordenLineas} derecha className="hidden py-2.5 pl-3 text-right font-medium sm:table-cell">Sistema</EncabezadoOrdenable>
+                <EncabezadoOrdenable columna="contado" orden={ordenLineas} derecha className="py-2.5 pl-3 text-right font-medium">Contado</EncabezadoOrdenable>
+                <EncabezadoOrdenable columna="diferencia" orden={ordenLineas} derecha className="py-2.5 pl-3 text-right font-medium">Diferencia</EncabezadoOrdenable>
+                <EncabezadoOrdenable columna="costo" orden={ordenLineas} derecha className="hidden py-2.5 pl-3 text-right font-medium sm:table-cell">Al costo</EncabezadoOrdenable>
                 <th className="px-3 py-2.5 sm:px-5" />
               </tr>
             </thead>
@@ -547,7 +563,7 @@ function Contando({ id, onSalir }: { id: string; onSalir: () => void }) {
                   </td>
                 </tr>
               )}
-              {lineas.data?.map((l) => (
+              {ordenLineas.filas.map((l) => (
                 <FilaConteo
                   key={l.id}
                   l={l}

@@ -20,6 +20,8 @@ import { useBotonConAtajo } from '@/lib/atajos'
 import { TeclaAtajo } from '@/components/Atajos'
 import BotonBajarPlanilla from '@/components/BotonBajarPlanilla'
 import { bajarPlanillaDeClientes } from '@/lib/api/planillas'
+import EncabezadoOrdenable from '@/components/EncabezadoOrdenable'
+import { useOrden } from '@/lib/useOrden'
 
 type Pestania = 'datos' | 'cuenta'
 /** Todos los clientes, o sólo los que deben algo vencido, con el detalle. */
@@ -59,6 +61,11 @@ export default function Clientes() {
   const listado = useQuery({
     queryKey: ['clientes', debounced, soloConDeuda],
     queryFn: () => listarClientes(debounced, soloConDeuda),
+  })
+  // Ordena los que se ven (la lista trae de a 100, según lo buscado).
+  const orden = useOrden('clientes', listado.data?.filas, {
+    cliente: (c) => c.nombre,
+    saldo: (c) => (c.cuenta_corriente ? c.saldo : null),
   })
 
   const vencidos = useQuery({
@@ -278,6 +285,12 @@ export default function Clientes() {
               )
             ) : (
               <table className="w-full text-sm">
+                <thead className="sticky top-0 border-b border-borde bg-piedra-50 text-left text-xs tracking-wide text-piedra-500 uppercase">
+                  <tr>
+                    <EncabezadoOrdenable columna="cliente" orden={orden} className="px-4 py-2 font-medium">Cliente</EncabezadoOrdenable>
+                    <EncabezadoOrdenable columna="saldo" orden={orden} derecha className="w-32 px-4 py-2 text-right font-medium">Saldo</EncabezadoOrdenable>
+                  </tr>
+                </thead>
                 <tbody className="divide-y divide-piedra-100">
                   {listado.isPending && (
                     <tr>
@@ -291,7 +304,7 @@ export default function Clientes() {
                       </td>
                     </tr>
                   )}
-                  {listado.data?.filas.map((c) => (
+                  {orden.filas.map((c) => (
                     <tr
                       key={c.id}
                       onClick={() => abrir(c.id)}

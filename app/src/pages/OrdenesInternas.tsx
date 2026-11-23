@@ -25,6 +25,9 @@ import { enCastellano } from '@/lib/errores'
 import { numero } from '@/lib/tipos'
 import { primeroElCodigoExacto, useListaConFlechas } from '@/lib/buscador'
 import { boton, botonChico } from '@/estilos'
+import PanelDeFiltros from '@/components/PanelDeFiltros'
+import { FILTROS_VACIOS, filtrarFilas, hayFiltros } from '@/lib/filtros'
+import type { Filtros } from '@/lib/filtros'
 
 /*
   Órdenes de compra internas — pedido de Lucas del 07/10, con su modelo
@@ -96,6 +99,13 @@ export default function OrdenesInternas() {
 
   const sectores = useQuery({ queryKey: ['sectores'], queryFn: listarSectores })
   const lista = useQuery({ queryKey: ['ordenes-internas', filtro], queryFn: () => listarOrdenes(filtro) })
+  // Las 200 últimas del estado elegido ya están en pantalla: se filtran acá.
+  const [filtros, setFiltros] = useState<Filtros>(FILTROS_VACIOS)
+  const visibles = filtrarFilas(lista.data ?? [], filtros, {
+    fecha: (o) => o.fecha,
+    persona: (o) => [o.cliente, o.emite, o.recibe].filter(Boolean).join(' '),
+    numero: (o) => numeroDeOrden(o.numero),
+  })
   const detalle = useQuery({
     queryKey: ['orden-interna', abierta],
     queryFn: () => obtenerOrden(abierta!),
@@ -347,19 +357,29 @@ export default function OrdenesInternas() {
         ))}
       </div>
 
+      <PanelDeFiltros
+        valor={filtros}
+        onCambio={setFiltros}
+        campos={{ fechas: true, persona: 'Cliente o sector', numero: 'Número', ejemploNumero: '12' }}
+      />
+
       {lista.isPending ? (
         <p className="text-sm text-piedra-500">Cargando…</p>
       ) : lista.isError ? (
         <p className="text-sm text-red-700">{enCastellano(lista.error, 'No se pudieron traer las órdenes.')}</p>
-      ) : !lista.data?.length ? (
+      ) : !visibles.length ? (
         <div className="grid place-items-center rounded-xl border border-dashed border-borde bg-white/60 py-12 text-center">
           <p className="text-sm text-piedra-500">
-            {filtro === 'pendiente' ? 'No hay órdenes esperando.' : 'No hay órdenes en este estado.'}
+            {hayFiltros(filtros)
+              ? 'Ninguna orden cumple la búsqueda.'
+              : filtro === 'pendiente'
+                ? 'No hay órdenes esperando.'
+                : 'No hay órdenes en este estado.'}
           </p>
         </div>
       ) : (
         <ul className="divide-y divide-piedra-100 rounded-xl bg-white shadow-sm ring-1 ring-borde">
-          {lista.data.map((o) => (
+          {visibles.map((o) => (
             <li key={o.id}>
               <button
                 onClick={() => {
