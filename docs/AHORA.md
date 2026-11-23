@@ -12,7 +12,9 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Para publicar: 0.26.2** (la última publicada es la 0.26.1, 23/11, 09:25; `latest.json` lo confirma). **La proforma a convenir sale sin precios** (pedido del 23/11, con la foto de PRO CAJA2-25).
+**Para publicar: 0.26.3** (la última publicada es la 0.26.2; `latest.json` lo confirma). **El aviso de «Precio a convenir · proforma» en el mostrador ya no dice que sale con precio:** ahora dice que sale sin precios, con su comprobante de entrega, y que a la cuenta corriente va por el importe a precio de lista hasta que se defina. Sólo cambia ese texto ([`PuntoDeVenta.tsx`](../app/src/pages/PuntoDeVenta.tsx)); tipos sin errores.
+
+**Publicada: 0.26.2. La proforma a convenir sale sin precios** (pedido del 23/11, con la foto de PRO CAJA2-25).
 - **Qué cambia:** mientras espera el precio, la proforma a convenir se imprime como el comprobante de entrega: productos y cantidades, total de unidades, sin precio unitario, importe ni total. Vale para el rollo en pantalla, la hoja A4 y la impresora directa.
 - **Cómo se reconoce:** por la leyenda «Los precios están sujetos a modificación» en las observaciones. La base la saca al definir el precio en *Proformas emitidas → A convenir*, y desde ahí se reimprime con precios. Anda sin conexión (la leyenda viaja en la copia local). El importe se sigue guardando y la cuenta corriente lo toma igual.
 - **Sin cambios en la base.** Pieza: `esProformaAConvenir()` en [`noFiscal.ts`](../app/src/lib/api/noFiscal.ts). Tipos sin errores, **968 pruebas verdes** (una nueva). No visto en pantalla.

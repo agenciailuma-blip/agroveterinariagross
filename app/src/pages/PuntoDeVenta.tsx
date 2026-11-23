@@ -133,7 +133,7 @@ export default function PuntoDeVenta() {
   })
   /*
     El precio a convenir (13/11; antes, remito interno): la mercadería
-    sale ahora con una proforma a precio de lista, y el precio se define
+    sale con una proforma sin precios (a la cuenta, a precio de lista) y el precio se define
     después en Comprobantes → Proformas emitidas → A convenir. Con deuda
     vencida lo autoriza un encargado con su PIN, igual que en la caja.
   */
@@ -973,7 +973,7 @@ export default function PuntoDeVenta() {
                 }
                 const sigue = await confirmar({
                   titulo: `¿Precio a convenir para ${cliente.nombre}?`,
-                  detalle: `Sale una proforma por ${moneda.format(lineas.reduce((s, l) => s + l.cantidad * l.precio_unitario, 0))} a precio de lista, con la leyenda «${LEYENDA_A_CONVENIR}», y va a la cuenta corriente. El precio se define después en Proformas emitidas → A convenir.`,
+                  detalle: `Sale la proforma sin precios, con su comprobante de entrega. A la cuenta corriente va por ${moneda.format(lineas.reduce((s, l) => s + l.cantidad * l.precio_unitario, 0))}, a precio de lista, hasta que se defina el precio en Proformas emitidas → A convenir.`,
                   aceptar: 'Sacar la proforma',
                 })
                 if (sigue) remitoInterno.mutate()
