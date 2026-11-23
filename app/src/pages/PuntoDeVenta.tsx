@@ -579,20 +579,21 @@ export default function PuntoDeVenta() {
 
   function cambiarCantidad(id: string, cantidad: number) {
     renovar()
-    if (cantidad <= 0) return setLineas((p) => p.filter((l) => l.id !== id))
-    setLineas((p) =>
-      p.map((l) =>
-        l.id === id
-          ? {
-              ...l,
-              // Un collar o un frasco no se venden por mitades. Se
-              // redondea acá y no sólo con el paso del campo, porque
-              // tipear a mano también tiene que respetarlo.
-              cantidad: esFraccionable(l.unidad_medida, decimalesEnTodos) ? cantidad : Math.round(cantidad),
-            }
-          : l,
-      ),
-    )
+    const linea = lineas.find((l) => l.id === id)
+    if (!linea) return
+    /*
+      Un collar o un frasco no se venden por mitades. Se redondea acá y
+      no sólo con el paso del campo, porque tipear a mano también tiene
+      que respetarlo. Y se mira la cantidad ya redondeada: 0,3 de algo
+      que va por unidad daba cero, el renglón quedaba y la base lo
+      rechazaba para siempre (CAJA1-000052, 3/11). La base guarda cuatro
+      decimales: menos que eso también es cero.
+    */
+    const redondeada = esFraccionable(linea.unidad_medida, decimalesEnTodos)
+      ? Math.round(cantidad * 10000) / 10000
+      : Math.round(cantidad)
+    if (!(redondeada > 0)) return setLineas((p) => p.filter((l) => l.id !== id))
+    setLineas((p) => p.map((l) => (l.id === id ? { ...l, cantidad: redondeada } : l)))
   }
 
   async function cambiarPrecio(id: string) {

@@ -68,7 +68,7 @@ export default function AvisoBaseBloqueada() {
         ) : (
           <li>
             Si sigue igual, <strong>no borres nada</strong>: hay {sinSubir}{' '}
-            {sinSubir === 1 ? 'operación que todavía no subió' : 'operaciones que todavía no subieron'}{' '}
+            {sinSubir === 1 ? 'venta o papel que todavía no subió' : 'ventas o papeles que todavía no subieron'}{' '}
             y sólo {sinSubir === 1 ? 'existe' : 'existen'} en esta computadora. Llamá a soporte.
           </li>
         )}

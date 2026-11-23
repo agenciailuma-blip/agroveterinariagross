@@ -106,7 +106,7 @@ export function IndicadorConexion() {
       ? `Última sincronización: ${ultimaSync.toLocaleTimeString('es-AR')}`
       : 'Todavía no se sincronizó',
     listo ? 'Copia local lista: se puede trabajar sin conexión' : 'Sin copia local todavía',
-    sinSubir > 0 ? `${sinSubir} operaciones de esta computadora esperando llegar al servidor` : null,
+    sinSubir > 0 ? `${sinSubir} ${sinSubir === 1 ? 'cosa hecha' : 'cosas hechas'} en esta computadora que todavía no llegaron al sistema central` : null,
     // El motivo completo, para poder leerlo sin ir a Configuración.
     cajaNoRecibe ? `La red del local: ${dice.detalle}` : null,
     cajaNoRecibe && dice.queHacer ? dice.queHacer : null,

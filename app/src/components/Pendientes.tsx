@@ -1,7 +1,8 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { descartarOperacion, listarPendientes } from '@/lib/local/sync'
+import { descartarLote, listarPendientes } from '@/lib/local/sync'
 import { useSync } from '@/lib/local/SyncProvider'
 import { confirmar } from '@/components/Dialogo'
+import { agruparSinEnviar, type CosaSinEnviar } from '@/lib/sinEnviar'
 
 const hora = new Intl.DateTimeFormat('es-AR', {
   day: '2-digit',
@@ -10,19 +11,18 @@ const hora = new Intl.DateTimeFormat('es-AR', {
   minute: '2-digit',
 })
 
-const ESTADO: Record<string, { texto: string; clase: string }> = {
-  pendiente: { texto: 'Esperando', clase: 'bg-piedra-100 text-piedra-600' },
+const ESTADO: Record<CosaSinEnviar['estado'], { texto: string; clase: string }> = {
+  trabada: { texto: 'Trabada', clase: 'bg-red-100 text-red-800' },
   enviando: { texto: 'Enviando', clase: 'bg-marca-100 text-marca-800' },
-  error: { texto: 'Falló', clase: 'bg-red-100 text-red-800' },
+  esperando: { texto: 'En camino', clase: 'bg-piedra-100 text-piedra-600' },
 }
 
 /*
-  Qué quedó sin subir.
+  Qué quedó sin enviar, en el idioma de quien atiende.
 
-  No es una pantalla de diagnóstico para el desarrollador: es lo que el
-  encargado necesita para poder responder "¿la venta de recién entró?".
-  Sin esto, una operación que falla desaparece en silencio y el sistema
-  pierde credibilidad de una forma que después no se recupera.
+  Una cosa por venta o papel, no una por renglón o pago. Cada una dice si
+  va a llegar sola o si alguien tiene que hacer algo, y qué. El mensaje
+  original de la base queda escondido en «Detalle para soporte».
 */
 export function Pendientes() {
   const { sinSubir, enLinea, sincronizando, sincronizar } = useSync()
@@ -36,95 +36,106 @@ export function Pendientes() {
 
   if (!sinSubir) return null
 
-  const conError = (lista.data ?? []).filter((o) => o.estado === 'error')
+  const cosas = agruparSinEnviar(lista.data ?? [])
+  const trabadas = cosas.filter((c) => c.estado === 'trabada').length
+
+  async function descartar(c: CosaSinEnviar) {
+    const sigue = await confirmar({
+      titulo: `¿Descartar ${c.titulo}?`,
+      detalle:
+        'Se borra de esta computadora lo que faltaba enviar' +
+        (c.detras > 0 ? ' (también el cobro y los pagos que esperaban detrás)' : '') +
+        '. No va a llegar nunca al sistema central y no se puede recuperar.\n\nAnotá antes qué era.',
+      aceptar: 'Descartar',
+      peligro: true,
+    })
+    if (!sigue) return
+    await descartarLote(c.lote)
+    qc.invalidateQueries({ queryKey: ['pendientes-sync'] })
+    void sincronizar()
+  }
 
   return (
-    <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-borde">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h2 className="font-medium text-tinta">
-            {sinSubir} {sinSubir === 1 ? 'operación sin enviar' : 'operaciones sin enviar'}
-          </h2>
-          <p className="text-xs text-piedra-500">
-            {enLinea
-              ? 'Se hicieron en esta computadora y todavía no llegaron al servidor: las demás PC no las ven. Se envían solas; si una falla, abajo dice por qué.'
-              : 'Se hicieron en esta computadora sin internet. Se envían solas cuando vuelva la conexión.'}
-          </p>
-        </div>
-        {enLinea && (
-          <button
-            onClick={() => void sincronizar()}
-            disabled={sincronizando}
-            className="rounded-lg bg-marca-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-marca-600 disabled:opacity-50"
-          >
-            {sincronizando ? 'Enviando…' : 'Enviar ahora'}
-          </button>
-        )}
-      </div>
+    <div className="max-h-[75vh] overflow-y-auto rounded-xl bg-white p-4 shadow-sm ring-1 ring-borde">
+      <h2 className="font-medium text-tinta">
+        {sinSubir === 1 ? '1 cosa sin enviar' : `${sinSubir} cosas sin enviar`}
+      </h2>
+      <p className="mt-1 text-sm text-piedra-600">
+        {enLinea
+          ? 'Se hicieron en esta computadora y todavía no llegaron al sistema central. Hasta que lleguen, las otras PC no las ven.'
+          : 'Se hicieron en esta computadora sin internet. Llegan solas cuando vuelva la conexión.'}
+      </p>
+      {trabadas > 0 && (
+        <p className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">
+          {trabadas === 1
+            ? 'Una no puede entrar sola: abajo dice qué hacer.'
+            : `${trabadas} no pueden entrar solas: abajo dice qué hacer con cada una.`}
+        </p>
+      )}
+      {enLinea && (
+        <button
+          onClick={() => void sincronizar()}
+          disabled={sincronizando}
+          className="mt-3 rounded-lg bg-marca-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-marca-600 disabled:opacity-50"
+        >
+          {sincronizando ? 'Enviando…' : 'Reintentar ahora'}
+        </button>
+      )}
 
       <ul className="mt-3 divide-y divide-piedra-100">
-        {(lista.data ?? []).slice(0, 12).map((op) => {
-          const e = ESTADO[op.estado] ?? ESTADO.pendiente
+        {cosas.map((c) => {
+          const e = ESTADO[c.estado]
           return (
-            <li key={op.id} className="flex items-start justify-between gap-3 py-2">
-              <div className="min-w-0">
-                <p className="truncate text-sm text-tinta">{op.descripcion}</p>
-                <p className="text-xs text-piedra-400">
-                  {hora.format(new Date(op.creado_en))}
-                  {op.intentos > 0 && ` · ${op.intentos} intento${op.intentos === 1 ? '' : 's'}`}
-                </p>
-                {op.ultimo_error && (
-                  <p className="mt-0.5 text-xs text-red-700">{op.ultimo_error}</p>
-                )}
+            <li key={c.lote} className="py-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium break-words text-tinta">{c.titulo}</p>
+                  <p className="text-xs text-piedra-400">Hecha el {hora.format(new Date(c.creado_en))}</p>
+                </div>
+                <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${e.clase}`}>
+                  {e.texto}
+                </span>
               </div>
-              <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${e.clase}`}>
-                {e.texto}
-              </span>
+
+              {c.motivo && (
+                <div className="mt-1.5 space-y-1 text-sm">
+                  <p className={c.estado === 'trabada' ? 'text-red-800' : 'text-piedra-600'}>
+                    {c.parteTrabada && c.estado === 'trabada' && (
+                      <span className="break-words">No entra {c.parteTrabada}. </span>
+                    )}
+                    {c.motivo.que}
+                  </p>
+                  <p className="text-piedra-600">
+                    <span className="font-medium">Qué hacer:</span> {c.motivo.hacer}
+                  </p>
+                  {c.detras > 0 && c.estado === 'trabada' && (
+                    <p className="text-xs text-piedra-500">
+                      {c.detras === 1 ? 'Una parte más espera' : `${c.detras} partes más esperan`} a que esto se
+                      resuelva (por ejemplo, el cobro).
+                    </p>
+                  )}
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-0.5">
+                    {c.estado === 'trabada' && (
+                      <button
+                        onClick={() => void descartar(c)}
+                        className="text-xs font-medium text-red-600 hover:underline"
+                      >
+                        Descartar
+                      </button>
+                    )}
+                    {c.trabada?.ultimo_error && (
+                      <details className="text-xs text-piedra-400">
+                        <summary className="cursor-pointer hover:text-piedra-600">Detalle para soporte</summary>
+                        <p className="mt-1 break-words">{c.trabada.ultimo_error}</p>
+                      </details>
+                    )}
+                  </div>
+                </div>
+              )}
             </li>
           )
         })}
       </ul>
-
-      {/*
-        Descartar sólo aparece para las que fallaron de verdad. Una
-        operación que todavía puede entrar no se ofrece borrar: sería
-        tirar una venta por impaciencia.
-      */}
-      {conError.length > 0 && (
-        <details className="mt-3 border-t border-borde pt-3">
-          <summary className="cursor-pointer text-xs text-piedra-500 hover:text-tinta">
-            {conError.length} con error · opciones
-          </summary>
-          <p className="mt-2 text-xs text-piedra-500">
-            Si una operación falla siempre por el mismo motivo, se puede descartar — pero eso
-            significa que ese dato no va a existir en el sistema. Anotá antes qué era.
-          </p>
-          <div className="mt-2 space-y-1">
-            {conError.map((op) => (
-              <div key={op.id} className="flex items-center justify-between gap-2 text-xs">
-                <span className="truncate text-piedra-600">{op.descripcion}</span>
-                <button
-                  onClick={async () => {
-                    const sigue = await confirmar({
-                      titulo: '¿Descartar esta operación?',
-                      detalle: `${op.descripcion}\n\nNo se va a poder recuperar.`,
-                      aceptar: 'Descartar',
-                      peligro: true,
-                    })
-                    if (!sigue) return
-                    await descartarOperacion(op.id)
-                    qc.invalidateQueries({ queryKey: ['pendientes-sync'] })
-                    void sincronizar()
-                  }}
-                  className="shrink-0 text-red-600 hover:underline"
-                >
-                  Descartar
-                </button>
-              </div>
-            ))}
-          </div>
-        </details>
-      )}
     </div>
   )
 }

@@ -747,8 +747,13 @@ export async function recuperarHuerfanas() {
   return huerfanas.length
 }
 
+/*
+  Cuántas cosas faltan enviar, contadas como las ve la gente: una venta
+  con sus renglones y su cobro es una sola, no cinco operaciones.
+*/
 export async function pendientes() {
-  return db.outbox.where('estado').anyOf('pendiente', 'error', 'enviando').count()
+  const ops = await db.outbox.where('estado').anyOf('pendiente', 'error', 'enviando').toArray()
+  return new Set(ops.map((o) => o.lote)).size
 }
 
 export async function listarPendientes() {
@@ -761,6 +766,11 @@ export async function conError() {
 
 export async function descartarOperacion(id: string) {
   await db.outbox.delete(id)
+}
+
+/** Descarta todo lo que faltaba enviar de una venta o un papel. */
+export async function descartarLote(lote: string) {
+  await db.outbox.where('lote').equals(lote).delete()
 }
 
 /*
