@@ -1,5 +1,5 @@
 import type { NoFiscalCompleto } from '@/lib/api/noFiscal'
-import { LEYENDA_NO_FISCAL, numeroNoFiscal } from '@/lib/api/noFiscal'
+import { esProformaAConvenir, LEYENDA_NO_FISCAL, numeroNoFiscal } from '@/lib/api/noFiscal'
 import { fechaCorta } from '@/lib/comprobante/presentacion'
 import { moneda, numero } from '@/lib/tipos'
 
@@ -44,7 +44,9 @@ export default function TicketNoFiscal({ c }: { c: NoFiscalCompleto }) {
     después lo que salió sin cobrarse —el panel de "entregado y sin
     cobrar" vive de eso—. Lo que no se hace es imprimirlos.
   */
-  const conPrecios = !esRemito && !esEntrega
+  // La proforma a convenir tampoco (23/11): el precio se define después.
+  const aConvenir = esProformaAConvenir(c)
+  const conPrecios = !esRemito && !esEntrega && !aConvenir
 
   return (
     <div className="mx-auto w-[72mm] bg-white px-2 py-3 font-mono text-[8.5px] leading-[1.35] text-black">
@@ -142,7 +144,7 @@ export default function TicketNoFiscal({ c }: { c: NoFiscalCompleto }) {
         Sin total en pesos el papel necesita algún número que permita
         verificar la entrega, y ese número es cuántas unidades salieron.
       */}
-      {(esRemito || esEntrega) && c.lineas.length > 0 && (
+      {(esRemito || esEntrega || aConvenir) && c.lineas.length > 0 && (
         <>
           <div className={LINEA} />
           <div className="flex justify-between text-[10px] font-bold">

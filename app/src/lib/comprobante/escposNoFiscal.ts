@@ -1,5 +1,5 @@
 import type { NoFiscalCompleto } from '@/lib/api/noFiscal'
-import { LEYENDA_NO_FISCAL, numeroNoFiscal } from '@/lib/api/noFiscal'
+import { esProformaAConvenir, LEYENDA_NO_FISCAL, numeroNoFiscal } from '@/lib/api/noFiscal'
 import { Cinta } from '@/lib/comprobante/escpos'
 import { fechaCorta } from '@/lib/comprobante/presentacion'
 import { moneda, numero } from '@/lib/tipos'
@@ -93,7 +93,9 @@ export function ticketNoFiscalEscPos(d: NoFiscalCompleto): Uint8Array {
     bytes. Los tres tienen que decir lo mismo, y por eso la condición
     está escrita igual en los tres.
   */
-  const conPrecios = !esRemito && !esEntrega
+  // La proforma a convenir tampoco (23/11): el precio se define después.
+  const aConvenir = esProformaAConvenir(d)
+  const conPrecios = !esRemito && !esEntrega && !aConvenir
 
   c.separador()
   for (const l of d.lineas) {
@@ -117,7 +119,7 @@ export function ticketNoFiscalEscPos(d: NoFiscalCompleto): Uint8Array {
     número para verificar la entrega, y ese número es cuántas unidades
     salieron — que además es lo que se cuenta al recibir.
   */
-  if ((esRemito || esEntrega) && d.lineas.length > 0) {
+  if ((esRemito || esEntrega || aConvenir) && d.lineas.length > 0) {
     c.separador()
     c.negrita(true)
       .columnas(

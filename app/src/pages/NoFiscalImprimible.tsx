@@ -2,7 +2,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import TicketNoFiscal from '@/components/TicketNoFiscal'
-import { LEYENDA_NO_FISCAL, numeroNoFiscal, obtenerNoFiscalCompleto } from '@/lib/api/noFiscal'
+import { esProformaAConvenir, LEYENDA_NO_FISCAL, numeroNoFiscal, obtenerNoFiscalCompleto } from '@/lib/api/noFiscal'
 import type { NoFiscalCompleto } from '@/lib/api/noFiscal'
 import { ticketNoFiscalEscPos } from '@/lib/comprobante/escposNoFiscal'
 import { destinoDeImpresion } from '@/lib/comprobante/destino'
@@ -193,7 +193,9 @@ function Hoja({ c }: { c: NoFiscalCompleto }) {
     Se siguen guardando en la base —son lo que permite valorizar lo que
     salió sin cobrarse—; lo que no se hace es imprimirlos.
   */
-  const conImportes = !esRemito && !esEntrega && c.total > 0
+  // La proforma a convenir tampoco (23/11): el precio se define después.
+  const aConvenir = esProformaAConvenir(c)
+  const conImportes = !esRemito && !esEntrega && !aConvenir && c.total > 0
   const unidades = c.lineas.reduce((s, l) => s + Number(l.cantidad), 0)
 
   return (
@@ -300,7 +302,7 @@ function Hoja({ c }: { c: NoFiscalCompleto }) {
         número con el que verificar la entrega, y ese número es cuántas
         unidades salieron — que además es lo que se cuenta al recibir.
       */}
-      {(esRemito || esEntrega) && c.lineas.length > 0 && (
+      {(esRemito || esEntrega || aConvenir) && c.lineas.length > 0 && (
         <div className="mt-3 flex justify-end border-t border-black pt-2">
           <div className="flex w-64 justify-between text-sm font-bold">
             <span>TOTAL DE UNIDADES</span>

@@ -52,6 +52,16 @@ export interface DatosEntrega {
 /** La leyenda de la proforma a convenir. La misma frase la saca la base al definir el precio. */
 export const LEYENDA_A_CONVENIR = 'Los precios están sujetos a modificación.'
 
+/*
+  La proforma a convenir se imprime sin precios (Lucas, 23/11), como el
+  comprobante de entrega. Se reconoce por la leyenda: la base la saca al
+  definir el precio, y desde ahí se reimprime con precios. Sirve también
+  sin conexión, porque la leyenda viaja en la copia local.
+*/
+export function esProformaAConvenir(c: { tipo_clave: string; observaciones: string | null }): boolean {
+  return c.tipo_clave === 'comprobante_interno' && !!c.observaciones?.includes(LEYENDA_A_CONVENIR)
+}
+
 export function numeroNoFiscal(tipo: TipoNoFiscal, serie: string, numero: number): string {
   return `${SIGLA_NO_FISCAL[tipo]} ${serie}-${String(numero).padStart(8, '0')}`
 }

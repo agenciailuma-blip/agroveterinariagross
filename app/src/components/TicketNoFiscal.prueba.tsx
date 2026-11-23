@@ -251,6 +251,21 @@ describe('el contenido', () => {
     expect(impreso).toContain('TOTAL DE UNIDADES')
   })
 
+  it('la proforma a convenir sale sin precios; con el precio definido, con precios', () => {
+    const aConvenir = doc({ observaciones: 'Los precios están sujetos a modificación.' })
+    for (const salida of [html(aConvenir), bytes(aConvenir)]) {
+      expect(salida).toContain('Alimento Perro Adulto 15 kg')
+      expect(salida).not.toContain('7.500')
+      expect(salida).not.toContain('15.000')
+      expect(salida).not.toContain('TOTAL:')
+      expect(salida).toContain('TOTAL DE UNIDADES')
+    }
+    // La base saca la leyenda al definir el precio.
+    const definida = doc({ observaciones: null })
+    expect(html(definida)).toContain('15.000')
+    expect(bytes(definida)).toContain('15.000')
+  })
+
   it('el presupuesto sigue mostrando los precios', () => {
     const p = doc({
       tipo_clave: 'presupuesto' as TipoNoFiscal,
