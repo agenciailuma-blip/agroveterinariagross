@@ -610,6 +610,8 @@ export interface FilaNoFiscal {
   convertido_en_comprobante_id: string | null
   venta_codigo: string | null
   venta_estado: string | null
+  /** La de la venta: una proforma cobrada «A cuenta corriente» espera su factura en Por facturar. */
+  venta_documentacion: string | null
 }
 
 export async function listarNoFiscales(tipo: TipoNoFiscal | 'todos'): Promise<FilaNoFiscal[]> {
@@ -618,7 +620,7 @@ export async function listarNoFiscales(tipo: TipoNoFiscal | 'todos'): Promise<Fi
     .select(
       `id, tipo_clave, serie, numero, fecha, receptor_nombre, total, estado, valido_hasta,
        entrega_localidad, transportista, descuenta_stock, facturar_despues, venta_id, convertido_en_comprobante_id,
-       venta:venta_id(codigo, estado)`,
+       venta:venta_id(codigo, estado, documentacion)`,
     )
     .order('creado_en', { ascending: false })
     .limit(200)
@@ -628,8 +630,9 @@ export async function listarNoFiscales(tipo: TipoNoFiscal | 'todos'): Promise<Fi
   const { data, error } = await q
   if (error) throw new Error(error.message)
 
-  return ((data ?? []) as unknown as (Omit<FilaNoFiscal, 'venta_codigo' | 'venta_estado'> & {
-    venta: { codigo: string; estado: string } | { codigo: string; estado: string }[] | null
+  type V = { codigo: string; estado: string; documentacion: string }
+  return ((data ?? []) as unknown as (Omit<FilaNoFiscal, 'venta_codigo' | 'venta_estado' | 'venta_documentacion'> & {
+    venta: V | V[] | null
   })[]).map((f) => {
     const v = Array.isArray(f.venta) ? f.venta[0] : f.venta
     return {
@@ -637,6 +640,7 @@ export async function listarNoFiscales(tipo: TipoNoFiscal | 'todos'): Promise<Fi
       total: Number(f.total),
       venta_codigo: v?.codigo ?? null,
       venta_estado: v?.estado ?? null,
+      venta_documentacion: v?.documentacion ?? null,
     }
   })
 }

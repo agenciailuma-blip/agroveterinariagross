@@ -274,9 +274,17 @@ function Fila({
   const puedeIrACaja =
     f.tipo_clave === 'presupuesto' && f.estado === 'emitido' && f.venta_estado === 'borrador'
 
-  // El comprobante interno de una venta ya cobrada se puede facturar.
+  // El comprobante interno de una venta ya cobrada se puede facturar,
+  // salvo que se haya cobrado «A cuenta corriente»: esa venta ya espera
+  // su factura en Por facturar, y la base no deja hacerle otra.
+  const enPorFacturar =
+    f.tipo_clave === 'comprobante_interno' && f.estado === 'emitido' && f.venta_documentacion === 'a_facturar'
   const sePuedeFacturar =
-    puedeFacturar && f.tipo_clave === 'comprobante_interno' && f.estado === 'emitido' && f.venta_estado === 'cobrada'
+    puedeFacturar &&
+    f.tipo_clave === 'comprobante_interno' &&
+    f.estado === 'emitido' &&
+    f.venta_estado === 'cobrada' &&
+    f.venta_documentacion === 'no_fiscal'
 
   const estado =
     f.estado === 'anulado' ? (
@@ -295,6 +303,10 @@ function Fila({
       )
     ) : f.tipo_clave === 'comprobante_interno' && f.facturar_despues && !f.venta_id ? (
       <span className="rounded bg-amber-100 px-1.5 py-0.5 text-amber-900">a convenir</span>
+    ) : enPorFacturar ? (
+      <span className="rounded bg-amber-100 px-1.5 py-0.5 text-amber-900" title="Se factura desde Por facturar">
+        por facturar
+      </span>
     ) : vencido ? (
       <span className="rounded bg-amber-100 px-1.5 py-0.5 text-amber-900">vencido</span>
     ) : f.valido_hasta ? (

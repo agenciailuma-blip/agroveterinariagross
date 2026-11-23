@@ -32,6 +32,7 @@ function fila(extra: Partial<FilaNoFiscal> = {}): FilaNoFiscal {
     convertido_en_comprobante_id: null,
     venta_codigo: 'CAJA1-000010',
     venta_estado: 'cobrada',
+    venta_documentacion: 'no_fiscal',
     ...extra,
   }
 }
