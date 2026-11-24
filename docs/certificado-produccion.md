@@ -1,6 +1,6 @@
 ---
 actualizado: 2026-11-24
-estado: certificado recibido; falta decidir el día del cambio
+estado: en producción desde el 24/11
 ---
 
 # El certificado de producción de ARCA
@@ -54,15 +54,15 @@ El CUIT está a nombre de **GROSS ERNESTO HUGO**. Lo puede hacer el titular, o q
 **Antes de cambiar:**
 
 - [x] Guardar el certificado como `secrets/gross_produccion.crt`, verificar que corresponde a la clave y anotar cuándo vence (22/11/2028).
-- [ ] **Cambiar el punto de venta de facturación del 1 al 6** (y el de las cajas que lo usen). El 1 queda con los comprobantes de prueba hasta que se limpien.
-- [ ] **Sacar los comprobantes de prueba.** Al 30/10 hay 57 en el punto de venta 1 (55 autorizados y 2 rechazados, numerados hasta el 51) y 2 en el 9. **ARCA real arranca en el 1 y el sistema no deja repetir un número**, así que tienen que salir antes del cambio, con sus ventas, pagos, stock y cuenta corriente. Es la limpieza pendiente de `AHORA.md`: respaldo antes, y `copia_local.generacion` al terminar. La tabla `comprobante` no guarda el ambiente: **una vez cambiado, ya no se distingue uno de prueba de uno real**.
+- [x] (24/11) **Cambiar el punto de venta de facturación del 1 al 6** (y el de las cajas que lo usen). El 1 queda con los comprobantes de prueba hasta que se limpien.
+- [x] (24/11, ver AHORA) **Sacar los comprobantes de prueba.** Al 30/10 hay 57 en el punto de venta 1 (55 autorizados y 2 rechazados, numerados hasta el 51) y 2 en el 9. **ARCA real arranca en el 1 y el sistema no deja repetir un número**, así que tienen que salir antes del cambio, con sus ventas, pagos, stock y cuenta corriente. Es la limpieza pendiente de `AHORA.md`: respaldo antes, y `copia_local.generacion` al terminar. La tabla `comprobante` no guarda el ambiente: **una vez cambiado, ya no se distingue uno de prueba de uno real**.
 - [x] Que el panel de contingencia filtre por ambiente: `vista_caea_estado` ya lo hace.
 
 **El día del cambio:**
 
-- [ ] Reemplazar los secretos `ARCA_CERT_PEM` y `ARCA_KEY_PEM` en Supabase por los de producción. Los usan las tres Edge Functions: `arca-wsfe-solicitar-cae`, `arca-wsfe-caea` y `arca-constancia`.
-- [ ] `configuracion` → `arca.ambiente` = `produccion`.
-- [ ] Llamar a `arca-wsfe-caea` con `accion: 'puntos_venta'`. **Tienen que aparecer dos:** el 9 como CAEA, y el del web service (RECE) con el que se va a facturar. Tiene que aparecer el **6** como RECE.
+- [x] (24/11) Reemplazar los secretos `ARCA_CERT_PEM` y `ARCA_KEY_PEM` en Supabase por los de producción. Los usan las tres Edge Functions: `arca-wsfe-solicitar-cae`, `arca-wsfe-caea` y `arca-constancia`.
+- [x] (24/11) `configuracion` → `arca.ambiente` = `produccion`.
+- [x] Llamar a `arca-wsfe-caea` con `accion: 'puntos_venta'`. **Tienen que aparecer dos:** el 9 como CAEA, y el del web service (RECE) con el que se va a facturar. Tiene que aparecer el **6** como RECE. ✅ 24/11: ARCA contestó el 6 «CAE - Ri Iva» y el 9 «CAEA - Ri Iva CONTINGENCIA», ninguno bloqueado. El certificado está autorizado a facturar, y la consulta de CUIT (padrón) también anda.
 - [ ] Pedir el CAEA de la quincena en curso desde el panel (o esperar a la tarea de las 9). A partir de ese pedido, **ARCA espera que se le informe al final de la quincena**, aunque no se use: la tarea diaria lo hace sola.
 
 **La verificación que falta, y que sólo se puede hacer ahí:**
