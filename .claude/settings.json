@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "deny": [
+      "mcp__3c63bbef-c973-43b0-a15a-b959f64f0ba9__*",
+      "mcp__82019225-088c-4295-a72d-198bb2233f08__*",
+      "mcp__e2325e33-2fd2-4e2c-b46d-3443d5f403b1__*",
+      "mcp__64382234-b2c5-4b21-af05-48b4e6e3533b__*",
+      "mcp__b001d31f-1fa1-47bc-a179-ccc5d8956054__*",
+      "mcp__ca2947f0-33b8-40aa-879a-812ccc90a62c__*",
+      "mcp__8515cc7f-bf8c-4696-ba66-e41bfcfa97dc__*"
+    ]
+  }
+}
