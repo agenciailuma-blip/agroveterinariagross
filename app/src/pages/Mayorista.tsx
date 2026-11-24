@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import PanelDeFiltros from '@/components/PanelDeFiltros'
+import { FILTROS_VACIOS, hayFiltros } from '@/lib/filtros'
+import type { Filtros } from '@/lib/filtros'
+import { useDiferido } from '@/lib/useDiferido'
 import { useAuth } from '@/auth/AuthProvider'
 import { useTerminal } from '@/lib/terminal'
 import { confirmar, pedirTexto } from '@/components/Dialogo'
@@ -121,6 +125,9 @@ export default function Mayorista() {
   const [elegidoId, setElegidoId] = useState<string | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  // La búsqueda avanzada va a la base: los facturados y cancelados traen sólo 60 días.
+  const [filtros, setFiltros] = useState<Filtros>(FILTROS_VACIOS)
+  const filtrosDiferidos = useDiferido(filtros)
 
   const vende = tienePermiso('mayorista.vender')
   const atiende = tienePermiso('mayorista.atender')
@@ -151,8 +158,9 @@ export default function Mayorista() {
   })
 
   const pedidos = useQuery({
-    queryKey: ['mayorista-pedidos', vista],
-    queryFn: () => listarPedidos(vista),
+    queryKey: ['mayorista-pedidos', vista, filtrosDiferidos],
+    queryFn: () => listarPedidos(vista, filtrosDiferidos),
+    placeholderData: (antes) => antes,
     enabled: vende || atiende,
     // El local se entera solo de lo que manda el vendedor.
     refetchInterval: atiende ? 60_000 : false,
@@ -235,6 +243,20 @@ export default function Mayorista() {
         ))}
       </div>
 
+      <PanelDeFiltros
+        valor={filtros}
+        onCambio={(f) => {
+          setFiltros(f)
+          setElegidoId(null)
+        }}
+        campos={{
+          fechas: true,
+          persona: 'Cliente',
+          numero: 'Número',
+          ejemploNumero: 'Pedido, factura o remito',
+        }}
+      />
+
       <div className="flex gap-5">
         {/* En pantallas angostas la ficha reemplaza a la lista: al lado no entra. */}
         <section className={elegido ? 'hidden min-w-0 flex-1 lg:block' : 'min-w-0 flex-1'}>
@@ -249,7 +271,11 @@ export default function Mayorista() {
           ) : filas.length === 0 ? (
             <div className="grid place-items-center rounded-xl border border-dashed border-borde bg-white/60 px-4 py-12">
               <p className="text-center text-sm text-piedra-400">
-                {vista === 'pendientes' ? 'No hay pedidos en curso.' : 'No hay pedidos acá.'}
+                {hayFiltros(filtros)
+                  ? 'No hay pedidos con esa búsqueda.'
+                  : vista === 'pendientes'
+                    ? 'No hay pedidos en curso.'
+                    : 'No hay pedidos acá.'}
               </p>
             </div>
           ) : (

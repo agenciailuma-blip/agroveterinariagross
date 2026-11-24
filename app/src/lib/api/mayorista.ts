@@ -1,4 +1,6 @@
 import { todos } from '@/lib/api/importacion'
+import { hayFiltros } from '@/lib/filtros'
+import type { Filtros } from '@/lib/filtros'
 import { aExcel, descargar, nombreDeArchivo } from '@/lib/importacion/exportar'
 import { ANCHOS_DE_LISTA, hojaDeLista, type ProductoDeLaPlanilla } from '@/lib/importacion/listaMayorista'
 import { supabase } from '@/lib/supabase'
@@ -383,8 +385,23 @@ export async function mandarPedidoPorMail(pedidoId: string, destinatario: string
   }
 }
 
-export async function listarPedidos(vista: VistaMayorista): Promise<PedidoMayorista[]> {
-  const { data, error } = await supabase.rpc('mayorista_pedidos', { p_vista: vista })
+/*
+  Con la búsqueda avanzada el filtro va a la base, y los facturados y
+  cancelados dejan de cortarse a los 60 días: manda el rango elegido.
+  El número busca el del pedido o el de su factura, proforma o remito.
+*/
+export async function listarPedidos(vista: VistaMayorista, filtros?: Filtros): Promise<PedidoMayorista[]> {
+  const { data, error } = await supabase.rpc('mayorista_pedidos', {
+    p_vista: vista,
+    ...(filtros && hayFiltros(filtros)
+      ? {
+          p_desde: filtros.desde || null,
+          p_hasta: filtros.hasta || null,
+          p_cliente: filtros.persona.trim() || null,
+          p_numero: filtros.numero.trim() || null,
+        }
+      : {}),
+  })
   if (error) throw new Error(error.message)
   return (data ?? []) as PedidoMayorista[]
 }

@@ -5,7 +5,7 @@ import type { Celda, ColumnaDeListado, Listado } from '@/lib/importacion/exporta
   ─────────────────────────────────────────────────────────────
   Buscar comprobantes: por número, por cliente y por fecha
 
-  Pedido de Lucas el 19/10, con la pantalla de Proformas de OBTech como
+  Pedido de Lucas el 19/10, con la pantalla de Proformas del sistema anterior como
   ejemplo —pestañas Clave, Fecha y Cliente—: ver todas las facturas,
   reimprimirlas y bajarlas. Y las percepciones igual, con el neto, el
   IVA y lo percibido de cada factura y el total al pie.

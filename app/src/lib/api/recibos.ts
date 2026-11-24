@@ -1,4 +1,6 @@
 import { supabase } from '@/lib/supabase'
+import { hayFiltros } from '@/lib/filtros'
+import type { Filtros } from '@/lib/filtros'
 import { datosEmisor } from '@/lib/api/comprobante'
 import { esFallaDeRed } from '@/lib/api/mayorista'
 
@@ -176,8 +178,24 @@ export interface FilaRecibo {
   libre: boolean
 }
 
-export async function listarRecibos(texto: string): Promise<FilaRecibo[]> {
-  const { data, error } = await supabase.rpc('listar_recibos', { p_texto: texto.trim() || null, p_limite: 300 })
+/*
+  Con la búsqueda avanzada (fechas, cliente, número, vigente o anulado)
+  el filtro va a la base: la lista trae sólo los últimos 300.
+*/
+export async function listarRecibos(texto: string, filtros?: Filtros): Promise<FilaRecibo[]> {
+  const { data, error } = await supabase.rpc('listar_recibos', {
+    p_texto: texto.trim() || null,
+    p_limite: 300,
+    ...(filtros && hayFiltros(filtros)
+      ? {
+          p_desde: filtros.desde || null,
+          p_hasta: filtros.hasta || null,
+          p_persona: filtros.persona.trim() || null,
+          p_numero: filtros.numero.trim() || null,
+          p_estado: filtros.estado || null,
+        }
+      : {}),
+  })
   if (error) throw new Error(error.message)
   return ((data ?? []) as FilaRecibo[]).map((f) => ({ ...f, total: Number(f.total) }))
 }

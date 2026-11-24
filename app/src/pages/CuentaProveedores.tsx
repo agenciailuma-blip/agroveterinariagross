@@ -33,7 +33,7 @@ import { useOrden } from '@/lib/useOrden'
   ─────────────────────────────────────────────────────────────
   Las cuentas de los proveedores
 
-  Lo que en OBTech eran tres entradas del menú Compras —consolidación de
+  Lo que en el sistema anterior eran tres entradas del menú Compras —consolidación de
   saldos, resumen de cuenta y órdenes de pago— en una sola pantalla:
   arriba cuánto se le debe a cada uno, y al elegir un proveedor, qué
   falta pagar, su resumen y el botón para pagarle.
@@ -89,7 +89,7 @@ export default function CuentaProveedores() {
             Cuánto se le debe a cada proveedor. Cada factura de compra suma y cada pago resta.
           </p>
         </div>
-        {/* Lo que se le debe a cada uno el día que se deja OBTech, de una vez. */}
+        {/* Lo que se le debe a cada uno el día que se deja el sistema anterior, de una vez. */}
         {!proveedor && tienePermiso('proveedores.gestionar') && tienePermiso('proveedores.pagar') && (
           <Link to="/proveedores/cuentas/importar" className={boton.secundario}>
             Importar saldos
@@ -805,8 +805,8 @@ function DatosParaTransferir({ proveedorId }: { proveedorId: string }) {
 }
 
 /*
-  Lo que se le debía el día que se dejó OBTech. Se carga una vez por
-  proveedor, mirando el saldo que muestra OBTech ese día.
+  Lo que se le debía el día que se dejó el sistema anterior. Se carga una vez por
+  proveedor, mirando el saldo que muestra el sistema anterior ese día.
 */
 function FormularioSaldoInicial({
   proveedorId,
@@ -820,7 +820,7 @@ function FormularioSaldoInicial({
   const [fecha, setFecha] = useState(hoy)
   const [importe, setImporte] = useState('')
   const [aFavor, setAFavor] = useState(false)
-  const [detalle, setDetalle] = useState('Saldo según OBTech')
+  const [detalle, setDetalle] = useState('Saldo según el sistema anterior')
   const [error, setError] = useState<string | null>(null)
 
   const guardar = useMutation({
@@ -839,7 +839,7 @@ function FormularioSaldoInicial({
     <div className={`${tarjeta} p-5`} onKeyDown={avanzarConEnter}>
       <h3 className="font-medium text-tinta">Saldo inicial</h3>
       <p className="mt-1 text-sm text-piedra-500">
-        Lo que se le debía a este proveedor el día que se dejó OBTech. Las facturas de antes de esa fecha no
+        Lo que se le debía a este proveedor el día que se dejó el sistema anterior. Las facturas de antes de esa fecha no
         se cargan: ya están adentro de este número. Se le pueden imputar pagos como a una factura.
       </p>
       <div className="mt-4 flex flex-wrap items-end gap-3">

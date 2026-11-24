@@ -49,7 +49,7 @@ const hoy = () => new Date().toISOString().slice(0, 10)
 /*
   Los conceptos que puede traer una factura de compra además del IVA.
 
-  Salen de la pantalla que usan hoy en OBTech, donde son columnas fijas:
+  Salen de la pantalla que usan hoy en el sistema anterior, donde son columnas fijas:
   Percep. IVA, Ing. Brutos, Ret. Ganancias e Impuestos Internos. Acá van
   como lista y no como columnas porque no todas las facturas traen todo
   —la mayoría no trae ninguna— y una fila por concepto se lee mejor que

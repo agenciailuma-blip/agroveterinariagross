@@ -5,7 +5,7 @@ import type { KeyboardEvent } from 'react'
   El Enter del teclado numérico pasa al campo siguiente
 
   En los formularios de carga, el Enter del teclado numérico hace lo que
-  hacía en OBTech: lleva al campo que sigue, sin tocar el mouse. Se
+  hacía en el sistema anterior: lleva al campo que sigue, sin tocar el mouse. Se
   cargan los números con la mano derecha y se avanza con la misma mano.
   Pedido así el 05/10: el del teclado numérico, no el grande. El grande
   queda como estaba, y Tab sigue andando como en cualquier pantalla.

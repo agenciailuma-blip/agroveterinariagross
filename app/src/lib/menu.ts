@@ -3,7 +3,7 @@
   El menú: secciones, y las pantallas de cada una como pestañas
 
   Hasta el 30/09 el menú tenía dieciocho entradas, una por pantalla.
-  Francisco lo marcó: demasiadas. La referencia fue OBTech —pocas
+  Francisco lo marcó: demasiadas. La referencia fue el sistema anterior —pocas
   secciones arriba y, adentro, varias opciones—, como ejemplo de orden y
   no para copiarlo.
 

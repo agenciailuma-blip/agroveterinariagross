@@ -99,7 +99,7 @@ describe('el IVA a partir del precio con y sin IVA', () => {
     expect(alicuotaDesdePrecios(115, 100)).toBeNaN()
   })
 
-  it('lee el listado de precios de OBTech sin que nadie mapee a mano', () => {
+  it('lee el listado de precios del sistema anterior sin que nadie mapee a mano', () => {
     const cabecera = ['Código', 'Descripción', 'Precio 1 S/IVA', 'Precio 1 C/IVA', 'Precio 2 S/IVA', 'Precio 2 C/IVA']
     const mapeo = proponerMapeo(cabecera)
     expect(Object.values(mapeo)).toEqual(['codigo', 'nombre_interno', 'precio_sin_iva', 'precio_venta', null, null])
@@ -117,7 +117,7 @@ describe('el IVA a partir del precio con y sin IVA', () => {
   })
 })
 
-describe('el listado de clientes de OBTech', () => {
+describe('el listado de clientes del sistema anterior', () => {
   const cabecera = [
     'Código', 'Nombre', 'Nombre Fantasia', 'Dirección', 'Tel/Fax', 'Localidad', 'Nombre Localidad', 'Zona',
     'Nombre Zona', 'Vendedor', 'Nombre Vendedor', 'Condición de Iva', 'Cuit',

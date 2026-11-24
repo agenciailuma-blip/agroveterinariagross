@@ -10,7 +10,7 @@ import type { Filtros } from '@/lib/filtros'
   —líneas, stock y costo— se recibe en un paso aparte, más abajo.
 
   El motivo de que esto exista antes del 26/10 es simple: ese día Gross
-  deja OBTech, que es donde hoy carga sus facturas de compra, y las
+  deja el sistema anterior, que es donde hoy carga sus facturas de compra, y las
   compras siguen entrando igual.
 */
 

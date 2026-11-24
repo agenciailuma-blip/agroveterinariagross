@@ -11,7 +11,7 @@ import { barraDeAvance, boton, tarjeta } from '@/estilos'
   ─────────────────────────────────────────────────────────────
   Verificar los clientes contra ARCA
 
-  Para el día del corte. Los clientes vienen de OBTech con la condición
+  Para el día del corte. Los clientes vienen del sistema anterior con la condición
   frente al IVA que alguien cargó a mano hace años, y una condición
   vieja es una factura con la letra equivocada: un monotributista que
   pasó a responsable inscripto sigue recibiendo B, y ARCA la autoriza

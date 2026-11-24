@@ -110,7 +110,7 @@ describe('empezar de nuevo cuando el servidor lo pide', () => {
 
 /*
   El 22/10 el mostrador no encontraba Credelio: los 2.281 productos de
-  OBTech entraron de a 200 con la misma hora, y las tandas de 500 que
+  el sistema anterior entraron de a 200 con la misma hora, y las tandas de 500 que
   cortaban un grupo por la mitad dejaban afuera el resto para siempre.
   Acá, un servidor de mentira con las mismas consultas que el de verdad.
 */
@@ -139,7 +139,7 @@ describe('bajar por fecha sin perder filas', () => {
     return { vistas, cursor: r.cursor }
   }
 
-  it('el catálogo de OBTech, de a 200 con la misma hora, baja entero', async () => {
+  it('el catálogo del sistema anterior, de a 200 con la misma hora, baja entero', async () => {
     const filas = enGrupos(2281, 200)
     const { vistas, cursor } = await bajar(filas)
     expect(vistas.size).toBe(2281)

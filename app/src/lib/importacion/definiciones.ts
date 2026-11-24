@@ -4,7 +4,7 @@ import type { DefinicionPlanilla } from '@/lib/importacion/planilla'
   ─────────────────────────────────────────────────────────────
   Las planillas del día del corte
 
-  Lo que se trae de OBTech además del catálogo: los clientes con lo que
+  Lo que se trae del sistema anterior además del catálogo: los clientes con lo que
   debe cada uno, y lo que Gross le debe a cada proveedor. Los nombres de
   columna salen de cómo lo escribiría una persona o lo exportaría un
   sistema de gestión; lo que no se reconozca, la pantalla lo pregunta.
@@ -35,7 +35,7 @@ export const CAMPOS_CLIENTE = {
 export type CampoCliente = keyof typeof CAMPOS_CLIENTE
 
 /*
-  Lo que el listado de OBTech usa para decir «no hay».
+  Lo que el listado del sistema anterior usa para decir «no hay».
 
   CUIT 0, teléfono «(00000) 00000000» y domicilio «n/n». Si entraran como
   datos, el CUIT 0 frenaría la fila —no es un CUIT ni un DNI— y el
@@ -78,7 +78,7 @@ export const CLIENTES: DefinicionPlanilla<CampoCliente> = {
       'nro doc', 'cuit cuil', 'cuil', 'doc', 'c u i t', 'd n i',
     ],
     domicilio: ['domicilio', 'direccion', 'calle', 'domicilio fiscal'],
-    // OBTech trae «Localidad» con un número y «Nombre Localidad» con el nombre.
+    // El sistema anterior trae «Localidad» con un número y «Nombre Localidad» con el nombre.
     localidad: ['nombre localidad', 'localidad', 'ciudad', 'pueblo'],
     provincia: ['provincia', 'prov'],
     codigo_postal: ['codigo postal', 'cp', 'c p', 'cod postal'],

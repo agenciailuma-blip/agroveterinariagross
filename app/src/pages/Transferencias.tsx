@@ -35,7 +35,7 @@ import { useDiferido } from '@/lib/useDiferido'
   al segundo local tiene que dejar de contar acá y empezar a contar
   allá, sin que el total se mueva.
 
-  Sale y entra en el mismo momento, como en OBTech. El ritmo es el de la
+  Sale y entra en el mismo momento, como en el sistema anterior. El ritmo es el de la
   toma de inventario: pasar el lector, tipear cuánto, Enter, y el foco
   vuelve solo al buscador. Se arma la lista entera y se confirma una vez.
   ─────────────────────────────────────────────────────────────

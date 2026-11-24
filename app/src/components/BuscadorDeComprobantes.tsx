@@ -30,7 +30,7 @@ import { useOrden } from '@/lib/useOrden'
   El buscador de comprobantes
 
   La misma pantalla sirve para Facturas emitidas y para Percepciones:
-  cambia el filtro de partida y qué columna manda. Lo de OBTech eran
+  cambia el filtro de partida y qué columna manda. Lo del sistema anterior eran
   tres pestañas —Clave, Fecha y Cliente—, una búsqueda por vez; acá los
   tres filtros están juntos y se combinan: las facturas de HIMPA de
   agosto se buscan de una.

@@ -36,7 +36,7 @@ import { useDiferido } from '@/lib/useDiferido'
   Entradas y salidas: mercadería que aparece o desaparece sin compra ni
   venta, con su motivo
 
-  Como en OBTech (Almacén → Stock → Entradas y Salidas): se elige si
+  Como en el sistema anterior (Almacén → Stock → Entradas y Salidas): se elige si
   entra o sale y por qué, se pasa el lector, cantidad, Enter, y se
   confirma la lista una vez. El ritmo es el de la transferencia.
   ─────────────────────────────────────────────────────────────

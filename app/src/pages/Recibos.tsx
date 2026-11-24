@@ -5,26 +5,33 @@ import { useAuth } from '@/auth/AuthProvider'
 import { listarRecibos, numeroRecibo, totalCobrado } from '@/lib/api/recibos'
 import { fechaCorta } from '@/lib/comprobante/presentacion'
 import { enCastellano } from '@/lib/errores'
-import { boton, campoDeFiltro, tarjeta } from '@/estilos'
+import { boton, tarjeta } from '@/estilos'
 import ReciboLibre from '@/components/ReciboLibre'
+import PanelDeFiltros from '@/components/PanelDeFiltros'
+import { FILTROS_VACIOS, hayFiltros } from '@/lib/filtros'
+import type { Filtros } from '@/lib/filtros'
+import { useDiferido } from '@/lib/useDiferido'
 import { moneda } from '@/lib/tipos'
 
 /*
   El registro de recibos: «¿le hicimos el recibo a fulano?», «¿qué es
-  el 0001-00000012?». Se busca por cliente o por número, en cualquiera
-  de sus formas —«12», «00000012», «0001-00000012»—.
+  el 0001-00000012?». Búsqueda avanzada por fechas, cliente, número
+  —«12», «00000012», «0001-00000012»— y vigentes o anulados. Va a la
+  base: la lista trae sólo los últimos 300.
 */
 export default function Recibos() {
   const { tienePermiso } = useAuth()
-  const [buscar, setBuscar] = useState('')
+  const [filtros, setFiltros] = useState<Filtros>(FILTROS_VACIOS)
+  const filtrosDiferidos = useDiferido(filtros)
   const [libre, setLibre] = useState(false)
   const puede =
     tienePermiso('cuentacorriente.ver') || tienePermiso('cuentacorriente.cobrar') || tienePermiso('fiados.ver')
 
   const recibos = useQuery({
-    queryKey: ['recibos', buscar.trim()],
-    queryFn: () => listarRecibos(buscar),
+    queryKey: ['recibos', filtrosDiferidos],
+    queryFn: () => listarRecibos('', filtrosDiferidos),
     enabled: puede,
+    placeholderData: (antes) => antes,
   })
 
   if (!puede) {
@@ -48,22 +55,29 @@ export default function Recibos() {
             Las cobranzas de cuenta corriente, los pagos de fiados y los recibos libres, cada uno con su número.
           </p>
         </div>
-        <div className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-2 sm:flex-none">
-          <input
-            value={buscar}
-            onChange={(e) => setBuscar(e.target.value)}
-            placeholder="Cliente o número"
-            className={`${campoDeFiltro} min-w-0 flex-1 basis-48 sm:max-w-xs`}
-          />
-          {/* Reunión del 19/11: un pago que no es de cuenta corriente, con su recibo. */}
-          {tienePermiso('cuentacorriente.cobrar') && (
-            <button onClick={() => setLibre(true)} className={boton.secundario}>
-              Recibo libre
-            </button>
-          )}
-        </div>
+        {/* Reunión del 19/11: un pago que no es de cuenta corriente, con su recibo. */}
+        {tienePermiso('cuentacorriente.cobrar') && (
+          <button onClick={() => setLibre(true)} className={boton.secundario}>
+            Recibo libre
+          </button>
+        )}
       </div>
       {libre && <ReciboLibre onCerrar={() => setLibre(false)} />}
+
+      <PanelDeFiltros
+        valor={filtros}
+        onCambio={setFiltros}
+        campos={{
+          fechas: true,
+          persona: 'Cliente',
+          numero: 'Número',
+          ejemploNumero: '12 o 1-12',
+          estados: [
+            { valor: 'vigente', etiqueta: 'Vigentes' },
+            { valor: 'anulado', etiqueta: 'Anulados' },
+          ],
+        }}
+      />
 
       {recibos.isPending ? (
         <p className="text-sm text-piedra-500">Cargando…</p>
@@ -74,7 +88,7 @@ export default function Recibos() {
       ) : filas.length === 0 ? (
         <div className="grid place-items-center rounded-xl border border-dashed border-borde bg-white/60 px-4 py-12">
           <p className="text-center text-sm text-piedra-400">
-            {buscar.trim() ? 'No hay recibos con esa búsqueda.' : 'Todavía no se emitió ningún recibo.'}
+            {hayFiltros(filtros) ? 'No hay recibos con esa búsqueda.' : 'Todavía no se emitió ningún recibo.'}
           </p>
         </div>
       ) : (
@@ -82,7 +96,7 @@ export default function Recibos() {
           <p className="text-xs text-piedra-500">
             {filas.length === 1 ? 'Un recibo' : `${filas.length} recibos`} · {moneda.format(total)}
             {anulados > 0 && ` · ${anulados === 1 ? '1 anulado' : `${anulados} anulados`}, sin sumar`}
-            {filas.length >= 300 && ' · se muestran los últimos 300; buscá para encontrar uno anterior'}
+            {filas.length >= 300 && ' · se muestran los últimos 300; usá la búsqueda avanzada para encontrar uno anterior'}
           </p>
           <ul className={`${tarjeta} divide-y divide-piedra-100`}>
             {filas.map((r) => (

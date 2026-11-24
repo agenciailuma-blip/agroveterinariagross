@@ -54,7 +54,7 @@ export const NUMERICOS: Campo[] = [
 /*
   Nombres con los que cada campo puede aparecer en el encabezado.
 
-  Salen de cómo lo escribiría alguien en OBTech o en una planilla propia.
+  Salen de cómo lo escribiría alguien en el sistema anterior o en una planilla propia.
   La lista no pretende ser completa: lo que no reconoce queda sin mapear
   y la pantalla se lo pregunta a la persona.
 */
@@ -68,7 +68,7 @@ const SINONIMOS: Record<Campo, string[]> = {
     // tarjeta lo calcula la lista de precios a partir de él.
     'precio contado', 'precio de contado', 'contado',
     /*
-      El listado de precios de OBTech trae tres listas, cada una con y
+      El listado de precios del sistema anterior trae tres listas, cada una con y
       sin IVA. La 1 es la de contado; la 2 es la de tarjeta, que acá la
       calcula la lista de precios. El precio de venta es el final, con IVA.
     */
@@ -77,7 +77,7 @@ const SINONIMOS: Record<Campo, string[]> = {
   /*
     No se guarda: sirve para saber el IVA de cada producto cuando la
     planilla no lo trae, comparándolo con el precio con IVA. Es el caso
-    del listado de OBTech.
+    del listado del sistema anterior.
   */
   precio_sin_iva: ['precio 1 s iva', 'precio 1 sin iva', 'precio s iva', 'precio sin iva', 'precio neto', 'neto'],
   costo: ['costo', 'precio costo', 'costo unitario', 'precio de costo', 'compra'],
@@ -158,7 +158,7 @@ export interface DefinicionPlanilla<C extends string = string> {
   /**
     Lo que se deduce de la fila antes de revisarla, o lo que se limpia
     porque la planilla lo usa para decir «no hay»: el IVA a partir del
-    precio con y sin IVA, el CUIT en cero de OBTech. Cambia `datos` y
+    precio con y sin IVA, el CUIT en cero del sistema anterior. Cambia `datos` y
     devuelve los errores; vacío si está bien.
   */
   completar?: (datos: Partial<Record<C, string>>) => string[]
@@ -262,7 +262,7 @@ export function proponerMapeo<C extends string = Campo>(
   /*
     Cada campo se queda con la columna que mejor lo nombra: los
     sinónimos van en orden de preferencia. El listado de clientes de
-    OBTech trae «Localidad» —un número— y «Nombre Localidad» —el
+    El sistema anterior trae «Localidad» —un número— y «Nombre Localidad» —el
     nombre—; quedarse con la primera que aparece cargaba la localidad
     «1». Entre dos columnas igual de buenas, gana la de la izquierda.
   */
@@ -271,7 +271,7 @@ export function proponerMapeo<C extends string = Campo>(
     /*
       El nombre del campo tal cual —el encabezado de la planilla que baja
       el sistema— también vale, pero último: en el listado de clientes de
-      OBTech «Localidad» es un número y el nombre está en «Nombre
+      el sistema anterior «Localidad» es un número y el nombre está en «Nombre
       Localidad», que es un sinónimo y tiene que ganar.
     */
     const propio = normalizar(def.campos[campo])

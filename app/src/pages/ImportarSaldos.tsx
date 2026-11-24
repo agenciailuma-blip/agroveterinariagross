@@ -39,11 +39,11 @@ import { barraDeAvance, boton, campo, tarjeta } from '@/estilos'
   Una sola pantalla para tres planillas: los clientes con lo que debe
   cada uno, lo que Gross le debe a cada proveedor y, desde el 21/10, la
   ficha de los proveedores —la que baja «Descargar planilla» en
-  Proveedores—. Las de saldos se traen de OBTech el día que se deja de
+  Proveedores—. Las de saldos se traen del sistema anterior el día que se deja de
   usar, y tienen lo mismo que cuidar: que entren completas y una sola vez.
 
   Por eso, antes de importar, la pantalla muestra LA SUMA de los saldos:
-  es el número que hay que comparar con el total que muestra OBTech. Si
+  es el número que hay que comparar con el total que muestra el sistema anterior. Si
   no coincide, falta una fila o sobra una, y es mejor verlo acá que
   cuando un cliente reclame.
   ─────────────────────────────────────────────────────────────
@@ -399,14 +399,14 @@ function Revision({
 
       {conSaldo && (
         <div className="rounded-lg bg-marca-50 px-4 py-3 text-sm text-marca-900 ring-1 ring-marca-100">
-          <p className="font-medium">Compará la suma con el total de OBTech antes de importar.</p>
+          <p className="font-medium">Compará la suma con el total del sistema anterior antes de importar.</p>
           <p className="mt-0.5 text-xs">
             Si no coincide, falta una fila o sobra una. {c.explicacionSaldo}
           </p>
           <label className="mt-3 flex flex-wrap items-center gap-2 text-sm">
             Saldos al día
             <input type="date" value={fecha} onChange={(e) => onFecha(e.target.value)} className={`${campo} w-44`} />
-            <span className="text-xs text-marca-800">normalmente, el día que se deja de usar OBTech</span>
+            <span className="text-xs text-marca-800">normalmente, el día que se deja de usar el sistema anterior</span>
           </label>
         </div>
       )}

@@ -195,7 +195,7 @@ async function guardarCursor(tabla: string, cursor: string) {
   cursor, y «después de» no las vuelve a traer nunca.
 
   Pasó de verdad: el 22/10 el mostrador no encontraba Credelio. Los
-  2.281 productos de OBTech entraron el 19/10 de a 200 con la misma
+  2.281 productos del sistema anterior entraron el 19/10 de a 200 con la misma
   hora, las tandas de 500 cortaban grupos por la mitad, y a las PC les
   faltaba buena parte del catálogo. Con internet no se notaba: busca en
   el servidor.
@@ -485,7 +485,7 @@ async function bajarColaCaja() {
   4 — 22/10: no cambian las columnas, cambia cómo se baja. Hasta la
       0.17.0 las filas que cambiaban en el mismo instante podían quedar
       afuera (ver recorrerPorFecha), y a las PC les faltaban productos
-      de OBTech. Se vuelve a bajar todo lo que viene por cursor.
+      del sistema anterior. Se vuelve a bajar todo lo que viene por cursor.
   5 — 29/10: el saldo de cuenta corriente suma los cargos impagos, para
       que la caja frene sin conexión al que debe vencido.
   6 — 05/11: el producto suma «precio en cada venta», y unos 90
