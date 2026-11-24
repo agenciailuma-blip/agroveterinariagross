@@ -12,6 +12,8 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
+**Se sumó a la fábrica de ILUMA (24/11)**, modo «la fábrica deja listo y Francisco publica desde la PC»: los pedidos de cambio siguen `fabrica/LEEME.md`; reglas y zonas delicadas en [`CLAUDE.md`](../CLAUDE.md) y [`Herramientas.md`](Herramientas.md).
+
 **Para publicar: 0.27.2** (24/11). **Crear roles desde la pantalla** y revisión del catálogo de permisos.
 - **Usuarios → Roles y permisos → + Nuevo rol:** nombre, descripción y «Arrancar con los permisos de» otro rol (o desde cero); después se tildan como siempre. Cada rol dice quiénes lo tienen y se puede **Editar** o **Borrar**. Mientras se arma uno nuevo no se muestran las casillas (serían las del rol de arriba). La solapa *Usuarios* del menú aparece también a quien sólo tiene «Administrar roles y permisos».
 - **Base aplicada el 24/11:** [`20261124150000_crear_roles_desde_la_pantalla.sql`](../supabase/migrations/20261124150000_crear_roles_desde_la_pantalla.sql). Los 5 roles de fábrica no se renombran ni se borran (la caja reconoce por nombre a Administrador y Encargado sin conexión); ningún rol se borra con gente asignada; nadie queda con un rol borrado. Probado como administrador real en transacción deshecha (los 7 casos) y que alguien sin el permiso no puede crear roles.
