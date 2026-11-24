@@ -5,10 +5,13 @@ import { confirmar, pedirTexto } from '@/components/Dialogo'
 import {
   administrarCuenta,
   cambiarPermiso,
+  borrarRol,
   cargarRolesYPermisos,
   CLAVE_MINIMA,
+  crearRol,
   definirPin,
   desbloquearPines,
+  editarRol,
   guardarUsuario,
   listarUsuarios,
   quitarPin,
@@ -27,10 +30,9 @@ const claseInput =
 
 export default function Usuarios() {
   const { tienePermiso } = useAuth()
-  const [pestania, setPestania] = useState<Pestania>('gente')
-
   const puedeUsuarios = tienePermiso('usuarios.gestionar')
   const puedeRoles = tienePermiso('roles.gestionar')
+  const [pestania, setPestania] = useState<Pestania>(puedeUsuarios ? 'gente' : 'roles')
 
   if (!puedeUsuarios && !puedeRoles) {
     return (
@@ -544,16 +546,74 @@ function ComoEntra({ u }: { u: UsuarioAdmin }) {
   )
 }
 
+/*
+  El formulario del rol: nuevo o para corregir nombre y descripción. A
+  uno de fábrica sólo se le cambia la descripción: la caja usa su nombre
+  sin conexión.
+*/
+interface FormRol {
+  id: string | null
+  nombre: string
+  descripcion: string
+  copiarDe: string
+  deFabrica: boolean
+}
+
 function RolesYPermisos() {
   const qc = useQueryClient()
   const [rolActivo, setRolActivo] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [formRol, setFormRol] = useState<FormRol | null>(null)
 
   const refs = useQuery({ queryKey: ['roles-permisos'], queryFn: cargarRolesYPermisos })
+  // Para decir cuántas personas tiene cada rol y no ofrecer borrar uno ocupado.
+  const usuarios = useQuery({ queryKey: ['usuarios'], queryFn: listarUsuarios })
 
   useEffect(() => {
-    if (!rolActivo && refs.data?.roles.length) setRolActivo(refs.data.roles[0].id)
+    const roles = refs.data?.roles ?? []
+    if (roles.length && !roles.some((r) => r.id === rolActivo)) setRolActivo(roles[0].id)
   }, [refs.data, rolActivo])
+
+  const gentePorRol = useMemo(() => {
+    const m = new Map<string, string[]>()
+    for (const u of usuarios.data ?? []) {
+      if (!m.has(u.rol_id)) m.set(u.rol_id, [])
+      m.get(u.rol_id)!.push(u.nombre)
+    }
+    return m
+  }, [usuarios.data])
+
+  const guardarRol = useMutation({
+    mutationFn: async (f: FormRol) => {
+      if (f.id) {
+        await editarRol(f.id, f.nombre, f.descripcion)
+        return f.id
+      }
+      return crearRol(f.nombre, f.descripcion, f.copiarDe || null)
+    },
+    // Se espera la lista nueva antes de elegir el rol: si no, todavía no
+    // está y la pantalla vuelve al primero.
+    onSuccess: async (id) => {
+      setError(null)
+      await qc.invalidateQueries({ queryKey: ['roles-permisos'] })
+      setFormRol(null)
+      setRolActivo(id)
+    },
+    onError: (e) => {
+      setError(e instanceof Error ? e.message : 'No se pudo guardar el rol.')
+      qc.invalidateQueries({ queryKey: ['roles-permisos'] })
+    },
+  })
+
+  const sacarRol = useMutation({
+    mutationFn: borrarRol,
+    onSuccess: () => {
+      setError(null)
+      setRolActivo(null)
+      qc.invalidateQueries({ queryKey: ['roles-permisos'] })
+    },
+    onError: (e) => setError(e instanceof Error ? e.message : 'No se pudo borrar el rol.'),
+  })
 
   const cambiar = useMutation({
     mutationFn: ({ clave, activo }: { clave: string; activo: boolean }) =>
@@ -580,6 +640,8 @@ function RolesYPermisos() {
   if (!refs.data) return <p className="text-sm text-piedra-500">Cargando…</p>
 
   const asignados = refs.data.porRol.get(rolActivo ?? '') ?? new Set<string>()
+  const rol = refs.data.roles.find((r) => r.id === rolActivo) ?? null
+  const gente = gentePorRol.get(rolActivo ?? '') ?? []
 
   return (
     <div className="space-y-4">
@@ -587,7 +649,11 @@ function RolesYPermisos() {
         {refs.data.roles.map((r) => (
           <button
             key={r.id}
-            onClick={() => setRolActivo(r.id)}
+            onClick={() => {
+              setRolActivo(r.id)
+              setFormRol(null)
+            }}
+            title={`${refs.data.porRol.get(r.id)?.size ?? 0} permisos`}
             className={`rounded-lg px-3.5 py-2 text-sm font-medium ring-1 transition-colors ${
               rolActivo === r.id
                 ? 'bg-marca-700 text-white ring-marca-700'
@@ -600,6 +666,15 @@ function RolesYPermisos() {
             </span>
           </button>
         ))}
+        <button
+          onClick={() => {
+            setError(null)
+            setFormRol({ id: null, nombre: '', descripcion: '', copiarDe: '', deFabrica: false })
+          }}
+          className="rounded-lg border border-dashed border-marca-500 px-3.5 py-2 text-sm font-medium text-marca-700 hover:bg-marca-50"
+        >
+          + Nuevo rol
+        </button>
       </div>
 
       {error && (
@@ -608,6 +683,140 @@ function RolesYPermisos() {
         </p>
       )}
 
+      {formRol && (
+        <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-borde" onKeyDown={avanzarConEnter}>
+          <h2 className="mb-3 font-medium text-tinta">
+            {formRol.id ? `Editando ${rol?.nombre ?? 'el rol'}` : 'Nuevo rol'}
+          </h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="block">
+              <span className="mb-1 block text-xs font-medium text-piedra-600">Nombre</span>
+              <input
+                autoFocus={!formRol.deFabrica}
+                value={formRol.nombre}
+                disabled={formRol.deFabrica}
+                onChange={(e) => setFormRol({ ...formRol, nombre: e.target.value })}
+                placeholder="Repositor"
+                className={`${claseInput} disabled:bg-piedra-50 disabled:text-piedra-500`}
+              />
+              {formRol.deFabrica && (
+                <span className="mt-1 block text-xs text-piedra-400">Es de fábrica: el nombre no se cambia.</span>
+              )}
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-xs font-medium text-piedra-600">
+                Descripción <span className="font-normal text-piedra-400">(opcional)</span>
+              </span>
+              <input
+                autoFocus={formRol.deFabrica}
+                value={formRol.descripcion}
+                onChange={(e) => setFormRol({ ...formRol, descripcion: e.target.value })}
+                placeholder="Repone góndolas y cuenta stock"
+                className={claseInput}
+              />
+            </label>
+            {!formRol.id && (
+              <label className="block sm:col-span-2">
+                <span className="mb-1 block text-xs font-medium text-piedra-600">Arrancar con los permisos de</span>
+                <select
+                  value={formRol.copiarDe}
+                  onChange={(e) => setFormRol({ ...formRol, copiarDe: e.target.value })}
+                  className={claseInput}
+                >
+                  <option value="">Ninguno: lo armo desde cero</option>
+                  {refs.data.roles.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.nombre} ({refs.data.porRol.get(r.id)?.size ?? 0} permisos)
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+          </div>
+          <div className="mt-4 flex gap-2">
+            <button
+              onClick={() => guardarRol.mutate(formRol)}
+              disabled={!formRol.nombre.trim() || guardarRol.isPending}
+              className="rounded-lg bg-marca-700 px-4 py-2 text-sm font-medium text-white hover:bg-marca-600 disabled:opacity-40"
+            >
+              {guardarRol.isPending ? 'Guardando…' : formRol.id ? 'Guardar' : 'Crear el rol'}
+            </button>
+            <button
+              onClick={() => {
+                setFormRol(null)
+                setError(null)
+              }}
+              className="rounded-lg px-4 py-2 text-sm font-medium text-piedra-500 hover:bg-piedra-100"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {rol && !formRol && (
+        <div className="flex flex-wrap items-start justify-between gap-3 rounded-xl bg-white px-4 py-3 shadow-sm ring-1 ring-borde">
+          <div className="min-w-0">
+            <p className="font-medium text-tinta">
+              {rol.nombre}
+              {rol.es_sistema && (
+                <span className="ml-2 rounded-full bg-piedra-100 px-2 py-0.5 text-xs font-normal text-piedra-600">
+                  de fábrica
+                </span>
+              )}
+            </p>
+            {rol.descripcion && <p className="text-sm text-piedra-500">{rol.descripcion}</p>}
+            <p className="mt-1 text-xs text-piedra-400">
+              {gente.length === 0
+                ? 'Nadie tiene este rol todavía.'
+                : `${gente.length} persona${gente.length === 1 ? '' : 's'}: ${gente.join(', ')}`}
+            </p>
+          </div>
+          <div className="flex gap-3 text-xs">
+            <button
+              onClick={() => {
+                setError(null)
+                setFormRol({
+                  id: rol.id,
+                  nombre: rol.nombre,
+                  descripcion: rol.descripcion ?? '',
+                  copiarDe: '',
+                  deFabrica: rol.es_sistema,
+                })
+              }}
+              className="text-marca-700 hover:underline"
+            >
+              Editar
+            </button>
+            {!rol.es_sistema && (
+              <button
+                onClick={async () => {
+                  if (gente.length > 0) {
+                    setError(
+                      `${rol.nombre} tiene ${gente.length} persona${gente.length === 1 ? '' : 's'} asignada${gente.length === 1 ? '' : 's'}. Pasalas a otro rol desde Personas antes de borrarlo.`,
+                    )
+                    return
+                  }
+                  const sigue = await confirmar({
+                    titulo: `¿Borrar el rol ${rol.nombre}?`,
+                    detalle: 'Sale de la lista. Lo que se hizo con él queda en el registro de auditoría.',
+                    aceptar: 'Borrar',
+                    peligro: true,
+                  })
+                  if (sigue) sacarRol.mutate(rol.id)
+                }}
+                disabled={sacarRol.isPending}
+                className="text-red-600 hover:underline disabled:opacity-40"
+              >
+                Borrar
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Armando uno nuevo no se muestran las casillas: serían las del rol de arriba. */}
+      {!(formRol && !formRol.id) && (
       <div className="grid gap-4 md:grid-cols-2">
         {grupos.map(([grupo, permisos]) => (
           <div key={grupo} className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-borde">
@@ -634,6 +843,7 @@ function RolesYPermisos() {
           </div>
         ))}
       </div>
+      )}
     </div>
   )
 }

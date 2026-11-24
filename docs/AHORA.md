@@ -1,5 +1,5 @@
 ---
-actualizado: 2026-11-23
+actualizado: 2026-11-24
 estado: en curso
 ---
 
@@ -12,7 +12,14 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
-**Para publicar: 0.27.1** (24/11). **Búsqueda avanzada en Recibos y en los pedidos del Mayorista**, lo que había quedado de la 0.26.0, y **la app sin menciones a OBTech**.
+**Para publicar: 0.27.2** (24/11). **Crear roles desde la pantalla** y revisión del catálogo de permisos.
+- **Usuarios → Roles y permisos → + Nuevo rol:** nombre, descripción y «Arrancar con los permisos de» otro rol (o desde cero); después se tildan como siempre. Cada rol dice quiénes lo tienen y se puede **Editar** o **Borrar**. Mientras se arma uno nuevo no se muestran las casillas (serían las del rol de arriba). La solapa *Usuarios* del menú aparece también a quien sólo tiene «Administrar roles y permisos».
+- **Base aplicada el 24/11:** [`20261124150000_crear_roles_desde_la_pantalla.sql`](../supabase/migrations/20261124150000_crear_roles_desde_la_pantalla.sql). Los 5 roles de fábrica no se renombran ni se borran (la caja reconoce por nombre a Administrador y Encargado sin conexión); ningún rol se borra con gente asignada; nadie queda con un rol borrado. Probado como administrador real en transacción deshecha (los 7 casos) y que alguien sin el permiso no puede crear roles.
+- **Catálogo revisado contra todo el sistema:** las 60 claves que usan la base, las pantallas y las funciones están en el catálogo. Se corrigió el grupo de los permisos de proveedores y de «Aumentar precios en masa» (estaban en minúscula y salían en cajas sueltas).
+- ⚠️ **Para Lucas:** «Modificar el precio final en la venta» **no controla nada**: en el mostrador cualquiera cambia el precio o hace un descuento en % (pide motivo y queda registrado). Activarlo cambia cómo trabajan hoy los vendedores. Y un rol propio con «Autorizar la venta a cuenta corriente con deuda vencida» anda con conexión pero no sin ella (la caja reconoce sólo Administrador y Encargado por nombre).
+- **Visto en el navegador contra la base real:** crear con permisos copiados, renombrar, crear desde cero y borrar (los roles de prueba quedaron borrados y en la auditoría); a 375 px sin scroll horizontal. Durante la prueba se le destildó por error al Administrador «Anular comprobantes no fiscales y remitos» y se devolvió al minuto (queda en la auditoría). Tipos sin errores.
+
+**Publicada: 0.27.1** (24/11; `latest.json` lo confirma). **Búsqueda avanzada en Recibos y en los pedidos del Mayorista**, lo que había quedado de la 0.26.0, y **la app sin menciones a OBTech**.
 - **Recibos:** el buscador de un campo pasa a ser el panel de siempre: fechas, cliente, número («12», «1-12», «0001-00000012») y vigentes o anulados. Va a la base, no sólo entre los últimos 300.
 - **Mayorista → Pedidos:** fechas, cliente y número, que busca el del pedido o el de su factura, proforma o remito. Con un filtro puesto, Facturados y Cancelados dejan de cortarse a los 60 días.
 - **Base aplicada el 24/11:** [`20261124120000_busqueda_avanzada_recibos_y_mayorista.sql`](../supabase/migrations/20261124120000_busqueda_avanzada_recibos_y_mayorista.sql). `listar_recibos` y `mayorista_pedidos` suman parámetros con valor por defecto: las PC con la versión anterior siguen andando igual. Probado contra la base real copiando los 5 recibos del respaldo en una transacción deshecha (número, número con serie, estado, fechas y nombre).

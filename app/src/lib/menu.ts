@@ -214,7 +214,8 @@ export const SECCIONES: Seccion[] = [
     icono:
       'M10.3 4.3a2 2 0 013.4 0l.4.7a2 2 0 002 1l.8-.1a2 2 0 011.7 3l-.4.7a2 2 0 000 2.2l.4.7a2 2 0 01-1.7 3l-.8-.1a2 2 0 00-2 1l-.4.7a2 2 0 01-3.4 0l-.4-.7a2 2 0 00-2-1l-.8.1a2 2 0 01-1.7-3l.4-.7a2 2 0 000-2.2l-.4-.7a2 2 0 011.7-3l.8.1a2 2 0 002-1l.4-.7zM14 12a2 2 0 11-4 0 2 2 0 014 0z',
     pestanas: [
-      { a: '/usuarios', etiqueta: 'Usuarios', permiso: 'usuarios.gestionar' },
+      // Quien sólo administra roles también entra: la pantalla le muestra esa solapa.
+      { a: '/usuarios', etiqueta: 'Usuarios', permiso: ['usuarios.gestionar', 'roles.gestionar'] },
       { a: '/configuracion', etiqueta: 'Configuración', permiso: 'configuracion.gestionar' },
       { a: '/auditoria', etiqueta: 'Registro de auditoría', permiso: 'auditoria.ver' },
     ],

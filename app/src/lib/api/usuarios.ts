@@ -128,6 +128,47 @@ export async function cambiarPermiso(rolId: string, clave: string, activo: boole
 }
 
 /*
+  Roles propios (24/11). Los de fábrica no se renombran ni se borran, y
+  ninguno se borra con gente asignada: lo controla la base
+  (20261124150000_crear_roles_desde_la_pantalla.sql), acá sólo se arma.
+*/
+export async function crearRol(nombre: string, descripcion: string | null, copiarDe: string | null): Promise<string> {
+  const { data, error } = await supabase
+    .from('rol')
+    .insert({ nombre: nombre.trim(), descripcion: descripcion?.trim() || null })
+    .select('id')
+    .single<{ id: string }>()
+  if (error) throw new Error(traducir(error.message))
+  if (copiarDe) {
+    const { data: origen, error: e1 } = await supabase
+      .from('rol_permiso')
+      .select('permiso_clave')
+      .eq('rol_id', copiarDe)
+    if (e1) throw new Error(e1.message)
+    if (origen?.length) {
+      const { error: e2 } = await supabase
+        .from('rol_permiso')
+        .insert(origen.map((o) => ({ rol_id: data.id, permiso_clave: o.permiso_clave as string })))
+      if (e2) throw new Error(`Se creó el rol, pero no se copiaron los permisos: ${traducir(e2.message)}`)
+    }
+  }
+  return data.id
+}
+
+export async function editarRol(id: string, nombre: string, descripcion: string | null) {
+  const { error } = await supabase
+    .from('rol')
+    .update({ nombre: nombre.trim(), descripcion: descripcion?.trim() || null })
+    .eq('id', id)
+  if (error) throw new Error(traducir(error.message))
+}
+
+export async function borrarRol(id: string) {
+  const { error } = await supabase.from('rol').update({ eliminado_en: new Date().toISOString() }).eq('id', id)
+  if (error) throw new Error(traducir(error.message))
+}
+
+/*
   ─────────────────────────────────────────────────────────────
   Las cuentas de acceso (12/11)
 
@@ -162,5 +203,6 @@ function traducir(mensaje: string) {
   if (mensaje.includes('sin nadie que pueda administrar'))
     return 'Ese cambio dejaría al sistema sin nadie que pueda administrar permisos. Asigná primero a otra persona.'
   if (mensaje.includes('usuario_email_unico')) return 'Ya hay otro usuario con ese correo.'
+  if (mensaje.includes('rol_nombre_unico')) return 'Ya hay un rol con ese nombre.'
   return mensaje
 }
