@@ -263,7 +263,7 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 - ~~**El historial de movimientos de stock de un producto — no hay pantalla.**~~ ✅ **En Stock —tocando el nombre— y en la ficha, en la 0.15.0.** Cada movimiento se guarda con quién y cuándo, pero no se ve en ningún lado. El punto 2 de terminado («el movimiento queda con usuario y hora») y el punto 4 del alcance («con historial de cómo llegó a ese número») lo piden.
 - ~~**La venta fraccionada — la caja y la unidad suelta.**~~ ✅ **Hecha el 08/10 y publicada en la 0.14.0.**
 
-🔴 **Pasar a producción con ARCA:** el trámite y el orden del cambio están en [`certificado-produccion.md`](certificado-produccion.md), revisado el 30/10. El pedido del certificado sigue siendo válido: corresponde a su clave y al CUIT. **Antes de cambiar hay que sacar los 59 comprobantes de prueba**, porque ocupan números y la tabla no guarda de qué ambiente son. Falta que nos pasen el número del punto de venta RECE.
+🔴 **Pasar a producción con ARCA:** el trámite y el orden del cambio están en [`certificado-produccion.md`](certificado-produccion.md), revisado el 30/10. **El certificado llegó el 23/11** (`secrets/gross_produccion.crt`, corresponde a la clave, vence el 22/11/2028) y **el punto de venta RECE es el 6** (el sistema tiene el 1). **Los datos de práctica ya se sacaron el 24/11** (ver abajo): la numeración está en cero. Falta cargar el certificado en Supabase, pasar el punto de venta del 1 al 6 y cambiar `arca.ambiente`.
 
 📌 **Al hacer el traspaso definitivo:** eliminar de la app las menciones a OBTech (33 en 15 archivos de `app/src`, entre pantallas, importación y pruebas), para que quede como documentación neta. Decisión del 30/10: hasta entonces se quedan.
 
@@ -272,6 +272,15 @@ Antes, la 0.12.0 (30/09), con **el menú en nueve secciones**, Configuración en
 🟡 **Lo que la venta tardaba en llegar a la caja sin internet** — arreglado el 05/10 y publicado en la 0.13.4, **sin probar en el local**. El mostrador le pasaba las ventas a la caja una vez por minuto, y la caja miraba su cola cada ocho segundos: hasta 68 segundos con el cliente esperando. Y llegaba de a partes porque, mientras la cabecera intentaba subir al servidor —hasta doce segundos sin internet—, salían los renglones solos. Ahora la venta sale al segundo y medio de apretar *Enviar a caja* (y otra vez a los catorce, por si el intento de subir tardó), viaja entera o espera entera, y la caja la muestra apenas llega. Se comprueba en el próximo corte: la venta tiene que aparecer en la caja en un par de segundos y completa.
 
 ---
+
+## Lo último que pasó — 24 de noviembre: la base limpia para producción y las listas nuevas
+
+**Limpieza.** Todo lo movido hasta ahora era práctica: unas 30 ventas por semana, 10 unidades de stock por producto cargadas el 17 y 18/11, y pedidos web de prueba del equipo. Antes, **respaldo de 72 tablas** en el esquema `respaldo_20261124`, que la app no ve. Se vaciaron ventas, comprobantes fiscales y no fiscales, intentos de ARCA, CAEA de homologación, stock y movimientos, inventarios, cuentas corrientes, cajas, recibos, cheques, fiados, compras, pagos y saldos de proveedores, pedidos (a proveedores, mayoristas y web), órdenes internas, devoluciones, entradas y salidas, transferencias, traslados, remitos R impresos, aumentos de precio y el historial de sincronización. **Secuencias de comprobantes en 0**; los números de pedidos, órdenes, recibos, transferencias y traslados vuelven a 1. Quedan productos, clientes, fotos, catálogo web, avisos de stock, usuarios, puestos, configuración y auditoría; los costos de los tres Credelio no se tocaron. Se desactivaron los usuarios de ejemplo del arranque y se borraron los proveedores de prueba sin productos. `copia_local.generacion = "20261124"`: cada PC vacía su copia y la baja entera (ninguna tenía nada sin subir). El aviso del Inicio «terminales sin sincronizar» se va cuando cada PC vuelva a sincronizar.
+
+**Listas del 23/11, con el importador de la app:**
+- **Productos:** 24 nuevos y 322 actualizados (313 precios, 33 nombres), con el Precio 1 con IVA. **El sistema viejo reusó 13 códigos para otros productos** (el 261 era SPINOGEN y ahora es D-ARTROFLEX); ninguno tenía fotos, categoría ni publicación web. 41 siguen en $0 por no tener Precio 1.
+- **Clientes:** 31 nuevos. Las **41 frenadas son las de octubre** (CUIT compartido; esperan respuesta de Lucas). **Los 15 que cambiaban no se tocaron**: fichas corregidas acá después de octubre, varias desde ARCA, que el sistema viejo pisaba con datos más pobres.
+- **Proveedores:** 218 nuevos, transcriptos del PDF escaneado, con todos los CUIT verificados. Dos pares comparten CUIT en el sistema viejo (CREDIFIN / SPEED BUSINESS y CENTRO GRÁFICO / MIELINCZUK): el segundo quedó sin CUIT, con una observación. Laboratorios Bagó queda, sin código.
 
 ## Lo último que pasó — 11 de noviembre: vender y cobrar en el mismo puesto, con una sola caja
 
