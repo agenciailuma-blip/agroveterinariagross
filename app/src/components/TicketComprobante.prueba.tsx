@@ -154,6 +154,23 @@ describe('ticket de 80 mm', () => {
     expect(Math.abs(suma - c.neto_gravado)).toBeLessThan(0.02)
   })
 
+  it('en la Factura A el pie dice «Importe neto gravado» y el no gravado va aparte', () => {
+    // Un solo «Subtotal» con todo sumado confundía: parecía con IVA.
+    const c = comprobante({
+      clase: 'A',
+      tipo_comprobante_id: 1,
+      tipo_descripcion: 'Factura A',
+      neto_no_gravado: 500,
+      total: 21500,
+    })
+    const html = renderToStaticMarkup(<TicketComprobante c={c} qr={null} />)
+    expect(html).toContain('Importe neto gravado')
+    expect(html).toContain('Importe no gravado')
+    expect(html).not.toContain('>Subtotal<')
+    expect(importes(html)).toContain(17355.37)
+    expect(importes(html)).toContain(500)
+  })
+
   it('suma la percepción de IIBB al pie, después del IVA', () => {
     const c = comprobante({
       clase: 'A',

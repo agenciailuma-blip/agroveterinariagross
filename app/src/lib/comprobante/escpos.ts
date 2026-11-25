@@ -262,7 +262,8 @@ export function ticketEscPos(comp: ComprobanteCompleto, urlQr: string | null): U
   // ── Impuestos ──
   c.separador()
   if (esA) {
-    c.columnas('Subtotal', moneda.format(comp.neto_gravado + comp.exento + comp.neto_no_gravado))
+    c.columnas('Importe neto gravado', moneda.format(comp.neto_gravado))
+    if (comp.neto_no_gravado > 0) c.columnas('Importe no gravado', moneda.format(comp.neto_no_gravado))
     if (comp.exento > 0) c.columnas('Importe exento', moneda.format(comp.exento))
     for (const a of comp.alicuotas) {
       c.columnas(`IVA ${a.porcentaje}%`, moneda.format(a.importe))

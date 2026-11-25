@@ -304,14 +304,14 @@ function Hoja({ c, qr }: { c: ComprobanteCompleto; qr: string | null }) {
   const { esA, porcentajeDe, sinIva, codigo, identificado } = presentacionDe(c)
 
   return (
-    <div className="mx-auto max-w-[21cm] bg-white p-8 text-[11px] leading-snug text-tinta shadow-sm ring-1 ring-borde print:max-w-none print:p-0 print:shadow-none print:ring-0">
+    <div className="mx-auto max-w-[21cm] bg-white p-2 text-[8px] leading-snug sm:p-8 sm:text-[11px] text-tinta shadow-sm ring-1 ring-borde print:max-w-none print:p-0 print:shadow-none print:ring-0">
       {/* ── Encabezado con la letra al medio, como toda factura argentina ── */}
       <div className="relative grid grid-cols-2 border-2 border-tinta">
-        <div className="border-r-2 border-tinta p-4 pr-10">
+        <div className="border-r-2 border-tinta p-2 pr-8 pt-12 sm:p-4 sm:pr-10">
           {c.emisor.logo ? (
             <img src={c.emisor.logo} alt="" className="mb-2 max-h-16 max-w-[55mm] object-contain" />
           ) : (
-            <p className="text-lg font-bold">{c.emisor.nombre_fantasia || c.emisor.razon_social}</p>
+            <p className="text-sm font-bold sm:text-lg">{c.emisor.nombre_fantasia || c.emisor.razon_social}</p>
           )}
           <dl className="mt-3 space-y-0.5">
             <Dato k="Razón social" v={c.emisor.razon_social} />
@@ -321,8 +321,8 @@ function Hoja({ c, qr }: { c: ComprobanteCompleto; qr: string | null }) {
           </dl>
         </div>
 
-        <div className="p-4 pl-10">
-          <p className="text-lg font-bold">{c.tipo_descripcion}</p>
+        <div className="p-2 pl-8 pt-12 sm:p-4 sm:pl-10">
+          <p className="text-sm font-bold sm:text-lg">{c.tipo_descripcion}</p>
           <dl className="mt-3 space-y-0.5">
             <Dato
               k="Punto de Venta"
@@ -336,7 +336,7 @@ function Hoja({ c, qr }: { c: ComprobanteCompleto; qr: string | null }) {
         </div>
 
         {/* La letra, en su recuadro, montada sobre la división */}
-        <div className="absolute left-1/2 top-0 -translate-x-1/2 border-2 border-tinta bg-white px-4 pb-1 pt-0.5 text-center">
+        <div className="absolute left-1/2 top-0 -translate-x-1/2 border-2 border-tinta bg-white px-2 pb-1 pt-0.5 sm:px-4 text-center">
           <p className="text-3xl font-bold leading-none">{esA ? 'A' : c.clase}</p>
           <p className="text-[9px] leading-tight">COD. {codigo}</p>
         </div>
@@ -360,34 +360,56 @@ function Hoja({ c, qr }: { c: ComprobanteCompleto; qr: string | null }) {
       <table className="mt-2 w-full border-2 border-tinta">
         <thead>
           <tr className="border-b-2 border-tinta text-left">
-            <th className="px-2 py-1 font-semibold">Código</th>
-            <th className="px-2 py-1 font-semibold">Producto / Servicio</th>
-            <th className="px-2 py-1 text-right font-semibold">Cantidad</th>
-            <th className="px-2 py-1 text-right font-semibold">
-              Precio Unit.{esA && <span className="font-normal"> (sin IVA)</span>}
-            </th>
-            {esA && <th className="px-2 py-1 text-right font-semibold">% IVA</th>}
-            <th className="px-2 py-1 text-right font-semibold">Subtotal</th>
+            <th className="px-0.5 sm:px-2 py-1 font-semibold">Código</th>
+            <th className="px-0.5 sm:px-2 py-1 font-semibold">Producto / Servicio</th>
+            <th className="px-0.5 sm:px-2 py-1 text-right font-semibold">Cantidad</th>
+            {/*
+              En la A van las columnas del modelo de ARCA: el subtotal sin
+              IVA, la alícuota y el subtotal con IVA. Con un solo «Subtotal»
+              al final, al lado del % de IVA, se leía como si ya lo tuviera.
+            */}
+            {esA ? (
+              <>
+                <th className="px-0.5 sm:px-2 py-1 text-right font-semibold">
+                  Precio Unit.<br /><span className="font-normal">(sin IVA)</span>
+                </th>
+                <th className="px-0.5 sm:px-2 py-1 text-right font-semibold">
+                  Subtotal<br /><span className="font-normal">(sin IVA)</span>
+                </th>
+                <th className="px-0.5 sm:px-2 py-1 text-right font-semibold">Alícuota</th>
+                <th className="px-0.5 sm:px-2 py-1 text-right font-semibold">
+                  Subtotal<br /><span className="font-normal">c/IVA</span>
+                </th>
+              </>
+            ) : (
+              <>
+                <th className="px-0.5 sm:px-2 py-1 text-right font-semibold">Precio Unit.</th>
+                <th className="px-0.5 sm:px-2 py-1 text-right font-semibold">Subtotal</th>
+              </>
+            )}
           </tr>
         </thead>
         <tbody>
           {c.lineas.map((l) => (
             <Fragment key={l.orden}>
             <tr className="align-top">
-              <td className="px-2 py-0.5 font-mono">{l.codigo_producto}</td>
-              <td className="px-2 py-0.5">{l.descripcion}</td>
-              <td className="px-2 py-0.5 text-right tabular-nums">{numero.format(l.cantidad)}</td>
-              <td className="px-2 py-0.5 text-right tabular-nums">
+              <td className="px-0.5 sm:px-2 py-0.5 font-mono">{l.codigo_producto}</td>
+              <td className="px-0.5 sm:px-2 py-0.5">{l.descripcion}</td>
+              <td className="px-0.5 sm:px-2 py-0.5 text-right tabular-nums">{numero.format(l.cantidad)}</td>
+              <td className="px-0.5 sm:px-2 py-0.5 text-right tabular-nums">
                 {moneda.format(sinIva(l.precio_unitario, l.alicuota_iva_id))}
               </td>
-              {esA && (
-                <td className="px-2 py-0.5 text-right tabular-nums">
-                  {porcentajeDe(l.alicuota_iva_id)}%
-                </td>
-              )}
-              <td className="px-2 py-0.5 text-right tabular-nums">
+              <td className="px-0.5 sm:px-2 py-0.5 text-right tabular-nums">
                 {moneda.format(sinIva(l.importe, l.alicuota_iva_id))}
               </td>
+              {esA && (
+                <>
+                  <td className="px-0.5 sm:px-2 py-0.5 text-right tabular-nums">
+                    {porcentajeDe(l.alicuota_iva_id)}%
+                  </td>
+                  <td className="px-0.5 sm:px-2 py-0.5 text-right tabular-nums">{moneda.format(l.importe)}</td>
+                </>
+              )}
             </tr>
             {/*
               Productos asociados: lo que se llevó de verdad bajo el
@@ -396,7 +418,7 @@ function Hoja({ c, qr }: { c: ComprobanteCompleto; qr: string | null }) {
             {l.asociados && (
               <tr className="print:hidden">
                 <td />
-                <td colSpan={esA ? 5 : 4} className="px-2 pb-1.5">
+                <td colSpan={esA ? 6 : 4} className="px-1 pb-1.5 sm:px-2">
                   <ul className="rounded bg-piedra-50 px-2 py-1 text-xs text-piedra-600">
                     {l.asociados.map((a) => (
                       <li key={a.orden} className="flex justify-between gap-3">
@@ -414,7 +436,7 @@ function Hoja({ c, qr }: { c: ComprobanteCompleto; qr: string | null }) {
           ))}
           {c.lineas.length === 0 && (
             <tr>
-              <td colSpan={esA ? 6 : 5} className="px-2 py-3 text-center text-piedra-400">
+              <td colSpan={esA ? 7 : 5} className="px-0.5 sm:px-2 py-3 text-center text-piedra-400">
                 Sin detalle de líneas.
               </td>
             </tr>
@@ -431,7 +453,8 @@ function Hoja({ c, qr }: { c: ComprobanteCompleto; qr: string | null }) {
           <dl className="space-y-0.5">
             {esA ? (
               <>
-                <Total k="Subtotal" v={c.neto_gravado + c.exento + c.neto_no_gravado} />
+                <Total k="Importe neto gravado" v={c.neto_gravado} />
+                {c.neto_no_gravado > 0 && <Total k="Importe no gravado" v={c.neto_no_gravado} />}
                 {c.exento > 0 && <Total k="Importe exento" v={c.exento} />}
                 {c.alicuotas.map((a) => (
                   <Total key={a.alicuota_iva_id} k={`IVA ${a.porcentaje}%`} v={a.importe} />
@@ -502,7 +525,7 @@ function Hoja({ c, qr }: { c: ComprobanteCompleto; qr: string | null }) {
 function Dato({ k, v }: { k: string; v: string }) {
   return (
     <div className="flex gap-1">
-      <dt className="shrink-0 font-semibold">{k}:</dt>
+      <dt className="font-semibold sm:shrink-0">{k}:</dt>
       <dd className="min-w-0">{v}</dd>
     </div>
   )

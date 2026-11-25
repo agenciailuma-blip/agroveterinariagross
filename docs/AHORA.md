@@ -1,5 +1,5 @@
 ---
-actualizado: 2026-11-24
+actualizado: 2026-11-25
 estado: en curso
 ---
 
@@ -14,7 +14,13 @@ estado: en curso
 
 **Se sumó a la fábrica de ILUMA (24/11)**, modo «la fábrica deja listo y Francisco publica desde la PC»: los pedidos de cambio siguen `fabrica/LEEME.md`; reglas y zonas delicadas en [`CLAUDE.md`](../CLAUDE.md) y [`Herramientas.md`](Herramientas.md).
 
-**Para publicar: 0.27.2** (24/11). **Crear roles desde la pantalla** y revisión del catálogo de permisos.
+**Para publicar: 0.27.3** (25/11). **Factura A con las columnas del modelo de ARCA.** Lucas se confundió con la primera factura real: el único «Subtotal» del renglón, al lado del % de IVA, parecía con IVA y era el neto.
+- **Factura A y notas A (hoja A4, impresión y PDF del mail):** Código, Producto, Cantidad, Precio unit. (sin IVA), **Subtotal (sin IVA)**, **Alícuota**, **Subtotal c/IVA**. En los totales, «Subtotal» pasa a **«Importe neto gravado»** (sólo el neto gravado; no gravado y exento aparte, si hay), después el IVA por alícuota y el total. En el ticket A cambia sólo esa etiqueta. **La B queda igual.**
+- La hoja A4 en pantalla se achica en celular (letra y márgenes) para entrar en 375 px; ya se salía un poco antes del cambio. En computadora y al imprimir, igual que antes.
+- **Numeración:** que la A siguiera en 0006-00004489 y la B en 0006-00055045 es lo correcto (ARCA numera por punto de venta y tipo, y el 6 venía del sistema anterior). ⚠️ El sistema anterior no tiene que seguir emitiendo en el punto de venta 6.
+- Tipos sin errores y **984 pruebas verdes** (dos nuevas para «Importe neto gravado» en el ticket A). El lint marca un error que ya estaba antes (`useOrden` condicional en `Facturacion.tsx`). Revisores de código, seguridad y diseño aprobaron en una vuelta; por lo que marcó diseño se ensancharon las columnas de plata del PDF y se probó con importes de ocho cifras. PDF de muestra con datos inventados en [`evidencia/2026-11-25-factura-A-columnas.pdf`](evidencia/2026-11-25-factura-A-columnas.pdf); la hoja vista en el navegador en computadora y a 375 px. No toca ARCA, importes ni base.
+
+**Publicada: 0.27.2** (24/11; `latest.json` lo confirma). **Crear roles desde la pantalla** y revisión del catálogo de permisos.
 - **Usuarios → Roles y permisos → + Nuevo rol:** nombre, descripción y «Arrancar con los permisos de» otro rol (o desde cero); después se tildan como siempre. Cada rol dice quiénes lo tienen y se puede **Editar** o **Borrar**. Mientras se arma uno nuevo no se muestran las casillas (serían las del rol de arriba). La solapa *Usuarios* del menú aparece también a quien sólo tiene «Administrar roles y permisos».
 - **Base aplicada el 24/11:** [`20261124150000_crear_roles_desde_la_pantalla.sql`](../supabase/migrations/20261124150000_crear_roles_desde_la_pantalla.sql). Los 5 roles de fábrica no se renombran ni se borran (la caja reconoce por nombre a Administrador y Encargado sin conexión); ningún rol se borra con gente asignada; nadie queda con un rol borrado. Probado como administrador real en transacción deshecha (los 7 casos) y que alguien sin el permiso no puede crear roles.
 - **Catálogo revisado contra todo el sistema:** las 60 claves que usan la base, las pantallas y las funciones están en el catálogo. Se corrigió el grupo de los permisos de proveedores y de «Aumentar precios en masa» (estaban en minúscula y salían en cajas sueltas).

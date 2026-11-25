@@ -164,22 +164,28 @@ export async function facturaEnPdf(c: ComprobanteCompleto, urlQr: string | null)
   y -= altoRec + 6
 
   /* ── Detalle ── */
-  const cols = esA
+  // En la A, las columnas del modelo de ARCA (subtotal sin IVA, alícuota y
+  // subtotal con IVA), con el encabezado en dos renglones para que la
+  // descripción no pierda ancho. Con un solo «Subtotal» al final, al lado
+  // del % de IVA, se leía como si ya lo tuviera.
+  const cols: { t: string[]; a: number; d: boolean }[] = esA
     ? [
-        { t: 'Código', a: 62, d: false },
-        { t: 'Producto / Servicio', a: 0, d: false },
-        { t: 'Cantidad', a: 48, d: true },
-        { t: 'Precio Unit. (sin IVA)', a: 92, d: true },
-        { t: '% IVA', a: 38, d: true },
-        { t: 'Subtotal', a: 72, d: true },
+        { t: ['Código'], a: 38, d: false },
+        { t: ['Producto / Servicio'], a: 0, d: false },
+        { t: ['Cantidad'], a: 40, d: true },
+        { t: ['Precio Unit.', '(sin IVA)'], a: 80, d: true },
+        { t: ['Subtotal', '(sin IVA)'], a: 80, d: true },
+        { t: ['Alícuota'], a: 40, d: true },
+        { t: ['Subtotal', 'c/IVA'], a: 80, d: true },
       ]
     : [
-        { t: 'Código', a: 62, d: false },
-        { t: 'Producto / Servicio', a: 0, d: false },
-        { t: 'Cantidad', a: 48, d: true },
-        { t: 'Precio Unit.', a: 80, d: true },
-        { t: 'Subtotal', a: 80, d: true },
+        { t: ['Código'], a: 62, d: false },
+        { t: ['Producto / Servicio'], a: 0, d: false },
+        { t: ['Cantidad'], a: 48, d: true },
+        { t: ['Precio Unit.'], a: 80, d: true },
+        { t: ['Subtotal'], a: 80, d: true },
       ]
+  const renglonesEnc = Math.max(...cols.map((col) => col.t.length))
   const fijo = cols.reduce((s, x) => s + x.a, 0)
   cols[1].a = ancho - fijo
   const xs: number[] = []
@@ -193,10 +199,13 @@ export async function facturaEnPdf(c: ComprobanteCompleto, urlQr: string | null)
 
   const encabezadoTabla = () => {
     cols.forEach((col, i) => {
-      if (col.d) aLaDerecha(p, col.t, xs[i] + col.a - 5, y - 12, 8, true)
-      else escribir(p, col.t, xs[i] + 5, y - 12, 8, true)
+      col.t.forEach((renglon, j) => {
+        const yt = y - 12 - j * 9
+        if (col.d) aLaDerecha(p, renglon, xs[i] + col.a - 5, yt, 8, j === 0)
+        else escribir(p, renglon, xs[i] + 5, yt, 8, j === 0)
+      })
     })
-    y -= 17
+    y -= 17 + (renglonesEnc - 1) * 9
     p.pagina.drawLine({ start: { x: izq, y: y + 1 }, end: { x: der, y: y + 1 }, thickness: 1.2, color: NEGRO })
   }
   const cerrarTabla = () => caja(p, izq, y - 4, ancho, inicioTabla - y + 4, 1.6)
@@ -217,9 +226,11 @@ export async function facturaEnPdf(c: ComprobanteCompleto, urlQr: string | null)
     escribir(p, recortar(l.descripcion, normal, 8, cols[1].a - 10), xs[1] + 5, y + 2, 8)
     aLaDerecha(p, numero.format(l.cantidad), xs[2] + cols[2].a - 5, y + 2, 8)
     aLaDerecha(p, moneda.format(sinIva(l.precio_unitario, l.alicuota_iva_id)), xs[3] + cols[3].a - 5, y + 2, 8)
-    if (esA) aLaDerecha(p, `${porcentajeDe(l.alicuota_iva_id)}%`, xs[4] + cols[4].a - 5, y + 2, 8)
-    const ultima = cols.length - 1
-    aLaDerecha(p, moneda.format(sinIva(l.importe, l.alicuota_iva_id)), xs[ultima] + cols[ultima].a - 5, y + 2, 8)
+    aLaDerecha(p, moneda.format(sinIva(l.importe, l.alicuota_iva_id)), xs[4] + cols[4].a - 5, y + 2, 8)
+    if (esA) {
+      aLaDerecha(p, `${porcentajeDe(l.alicuota_iva_id)}%`, xs[5] + cols[5].a - 5, y + 2, 8)
+      aLaDerecha(p, moneda.format(l.importe), xs[6] + cols[6].a - 5, y + 2, 8)
+    }
   }
   if (!lineas) {
     y -= FILA
@@ -236,7 +247,8 @@ export async function facturaEnPdf(c: ComprobanteCompleto, urlQr: string | null)
   /* ── Totales ── */
   const filasTot: [string, number][] = []
   if (esA) {
-    filasTot.push(['Subtotal', c.neto_gravado + c.exento + c.neto_no_gravado])
+    filasTot.push(['Importe neto gravado', c.neto_gravado])
+    if (c.neto_no_gravado > 0) filasTot.push(['Importe no gravado', c.neto_no_gravado])
     if (c.exento > 0) filasTot.push(['Importe exento', c.exento])
     for (const a of c.alicuotas) filasTot.push([`IVA ${a.porcentaje}%`, a.importe])
   } else {

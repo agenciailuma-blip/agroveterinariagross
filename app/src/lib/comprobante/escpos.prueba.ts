@@ -170,6 +170,15 @@ describe('el ticket que sale por la impresora', () => {
 
     La impresora leía los códigos de latin1 con su tabla, la 437.
   */
+  it('en la Factura A el pie dice «Importe neto gravado» y el no gravado va aparte', () => {
+    const c = comprobante({ clase: 'A', tipo_comprobante_id: 1, tipo_descripcion: 'Factura A', neto_no_gravado: 500, total: 21500 })
+    const t = comoTexto(ticketEscPos(c, null))
+    expect(t).toContain('Importe neto gravado')
+    expect(t).toContain('Importe no gravado')
+    expect(t).not.toMatch(/^Subtotal/m)
+    expect(importes(t)).toContain(17355.37)
+  })
+
   it('los acentos salen en el alfabeto de la impresora, no en el de Windows', () => {
     const bytes = ticketEscPos(comprobante(), null)
     expect(comoTexto(bytes)).toContain('Oberá, Misiones')

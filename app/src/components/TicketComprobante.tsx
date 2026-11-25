@@ -99,7 +99,8 @@ export default function TicketComprobante({
       <div className={LINEA} />
       {esA ? (
         <>
-          <Renglon k="Subtotal" v={c.neto_gravado + c.exento + c.neto_no_gravado} />
+          <Renglon k="Importe neto gravado" v={c.neto_gravado} />
+          {c.neto_no_gravado > 0 && <Renglon k="Importe no gravado" v={c.neto_no_gravado} />}
           {c.exento > 0 && <Renglon k="Importe exento" v={c.exento} />}
           {c.alicuotas.map((a) => (
             <Renglon key={a.alicuota_iva_id} k={`IVA ${a.porcentaje}%`} v={a.importe} />
