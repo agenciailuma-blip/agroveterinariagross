@@ -29,10 +29,10 @@ en `supabase/`.
 - Lo que se entrega a un tercero (manual, API) va sin estado del proyecto ni nombres de
   proveedores.
 - **Modo de la fábrica: la fábrica deja listo y el usuario publica desde la PC** (decidido el
-  2026-11-24). Una versión nueva para el local se firma con una clave que está sólo en la PC y se
-  sube a mano a Cloudflare, así que la fábrica programa, prueba, sube el código a `main` (eso no
-  publica nada) y deja en el informe el bloque para publicar. Zonas delicadas en
-  `docs/Herramientas.md`.
+  2026-11-24). Una versión nueva para el local se firma con una clave que está sólo en la PC, así
+  que la fábrica programa, prueba, sube el código a `main` (eso no publica nada) y deja en el
+  informe el bloque de PowerShell para publicar: el usuario lo corre con el botón de la terminal y
+  `escritorio:publicar` firma y sube solo a Cloudflare. Zonas delicadas en `docs/Herramientas.md`.
 - **Todo pedido de cambio en la app va por la fábrica**, aunque el mensaje sea una sola frase:
   antes de empezar, leé y seguí `fabrica/LEEME.md` del repo `agenciailuma-blip/fabrica-iluma` (en
   la sesión, la carpeta `fabrica-iluma`; en la PC, `D:\00 ILUMA\Dev Code\Mi Fábrica de Desarrollo`).
