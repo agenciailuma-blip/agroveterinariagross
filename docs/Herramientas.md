@@ -32,10 +32,12 @@ la dirección (`https://ywggnhoifhtoncnxrodh.supabase.co`) y la clave publicable
 - **Una versión nueva la publica el usuario desde la PC**, porque se firma con la clave de
   `secrets/` (no está en el repositorio):
   1. subir el número de versión en `app/src-tauri/tauri.conf.json`;
-  2. `npm run escritorio:publicar` en `app/` (arma la app web y las actualizaciones firmadas);
-  3. arrastrar `app/dist` a Cloudflare Pages, proyecto `gross-sistema`.
+  2. `npm run escritorio:publicar` en `app/`: arma la app web y las actualizaciones firmadas y
+     **las sube sola a Cloudflare** (`wrangler pages deploy`, proyecto `gross-sistema`). No hay que
+     arrastrar nada. Sólo si `wrangler` no está autenticado queda `app/dist` para subir a mano, y el
+     comando lo avisa.
 - **La fábrica** programa, prueba y sube el código a `main`, sube el número de versión y deja en el
-  informe el bloque de PowerShell para publicar (`cd` a `app` y `npm.cmd run escritorio:publicar`).
+  informe el bloque de PowerShell para publicar (`cd` a `app` y `npm.cmd run escritorio:publicar`, que ya sube a Cloudflare).
   Nunca corre `escritorio:publicar` ni sube a Cloudflare.
 - **Cambios en la base o en las funciones** (zona delicada): la migración va en
   `supabase/migrations/` y se aplica en producción sólo con OK del usuario. Si la versión nueva la

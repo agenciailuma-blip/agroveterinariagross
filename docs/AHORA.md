@@ -14,7 +14,7 @@ estado: en curso
 
 **Se sumó a la fábrica de ILUMA (24/11)**, modo «la fábrica deja listo y Francisco publica desde la PC»: los pedidos de cambio siguen `fabrica/LEEME.md`; reglas y zonas delicadas en [`CLAUDE.md`](../CLAUDE.md) y [`Herramientas.md`](Herramientas.md).
 
-**Para publicar: 0.27.3** (25/11). **Factura A con las columnas del modelo de ARCA.** Lucas se confundió con la primera factura real: el único «Subtotal» del renglón, al lado del % de IVA, parecía con IVA y era el neto.
+**Publicada: 0.27.3** (25/11; `latest.json` lo confirma). **Factura A con las columnas del modelo de ARCA.** Lucas se confundió con la primera factura real: el único «Subtotal» del renglón, al lado del % de IVA, parecía con IVA y era el neto.
 - **Factura A y notas A (hoja A4, impresión y PDF del mail):** Código, Producto, Cantidad, Precio unit. (sin IVA), **Subtotal (sin IVA)**, **Alícuota**, **Subtotal c/IVA**. En los totales, «Subtotal» pasa a **«Importe neto gravado»** (sólo el neto gravado; no gravado y exento aparte, si hay), después el IVA por alícuota y el total. En el ticket A cambia sólo esa etiqueta. **La B queda igual.**
 - La hoja A4 en pantalla se achica en celular (letra y márgenes) para entrar en 375 px; ya se salía un poco antes del cambio. En computadora y al imprimir, igual que antes.
 - **Numeración:** que la A siguiera en 0006-00004489 y la B en 0006-00055045 es lo correcto (ARCA numera por punto de venta y tipo, y el 6 venía del sistema anterior). ⚠️ El sistema anterior no tiene que seguir emitiendo en el punto de venta 6.
