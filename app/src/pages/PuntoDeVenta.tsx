@@ -677,6 +677,8 @@ export default function PuntoDeVenta() {
     onSuccess: ({ codigo, id }) => {
       setPasoEnvio(null)
       setLineas([])
+      // La próxima venta arranca otra vez en Consumidor Final.
+      setCliente(null)
       setMedioAnticipado(null)
       setCuotasAnticipadas(1)
       setError(null)
@@ -720,6 +722,7 @@ export default function PuntoDeVenta() {
     },
     onSuccess: ({ id, serie, numero, entregaId }) => {
       setLineas([])
+      setCliente(null)
       setMedioAnticipado(null)
       setCuotasAnticipadas(1)
       setQuiereRemito(false)
@@ -761,6 +764,7 @@ export default function PuntoDeVenta() {
     onSuccess: (v) => {
       setPasoEnvio(null)
       setLineas([])
+      setCliente(null)
       setMedioAnticipado(null)
       setCuotasAnticipadas(1)
       setError(null)
@@ -821,6 +825,7 @@ export default function PuntoDeVenta() {
     onSuccess: ({ venta, caja }) => {
       setPasoEnvio(null)
       setLineas([])
+      setCliente(null)
       setMedioAnticipado(null)
       setCuotasAnticipadas(1)
       setError(null)
@@ -1705,7 +1710,10 @@ Se muestra en la cola del cajero. Si no hace falta, dejalo vacío.`,
                 aceptar: 'Descartar',
                 peligro: true,
               })
-              if (sigue) setLineas([])
+              if (sigue) {
+                setLineas([])
+                setCliente(null)
+              }
             }}
             className="text-sm text-piedra-500 hover:text-red-600 hover:underline"
           >
