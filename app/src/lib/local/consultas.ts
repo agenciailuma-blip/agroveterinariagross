@@ -1,5 +1,6 @@
 import { db, normalizar } from '@/lib/local/db'
-import type { ClienteLocal } from '@/lib/local/db'
+import { ordenarPorParecido, palabrasDeBusqueda } from '@/lib/busquedaProductos'
+import type { ClienteLocal, UmbralLocal } from '@/lib/local/db'
 import { abrirCliente } from '@/lib/local/cifrado'
 import type { EstadoStock } from '@/lib/tipos'
 import type { ClienteVenta, ProductoVenta } from '@/lib/api/ventas'
@@ -33,23 +34,35 @@ export async function listaConfig(clave: string, defecto: string[]): Promise<str
   Está duplicado a propósito y hay que mantener los dos lados iguales;
   la versión del servidor es la que manda.
 */
+type Umbrales = { lista: UmbralLocal[]; bajo: number; critico: number }
+
+/** Los umbrales y los valores generales, leídos una vez para toda una lista de resultados. */
+async function leerUmbrales(): Promise<Umbrales> {
+  // Un aviso quitado no cuenta, igual que en vista_stock.
+  const [lista, bajo, critico] = await Promise.all([
+    db.umbral.toArray().then((us) => us.filter((u) => !u.eliminado_en)),
+    valorConfig('stock.umbral_bajo_general', 10),
+    valorConfig('stock.umbral_critico_general', 3),
+  ])
+  return { lista, bajo, critico }
+}
+
 export async function estadoDeStock(
   cantidad: number,
   productoId: string,
   categoriaId: string | null,
+  leidos?: Umbrales,
 ): Promise<EstadoStock> {
   if (cantidad < 0) return 'sobrevendido'
 
-  // Un aviso quitado no cuenta, igual que en vista_stock.
-  const umbrales = (await db.umbral.toArray()).filter((u) => !u.eliminado_en)
+  const { lista: umbrales, bajo: bajoGeneral, critico: criticoGeneral } = leidos ?? (await leerUmbrales())
   const porProducto = umbrales.find((u) => u.ambito === 'producto' && u.producto_id === productoId)
   const porCategoria = categoriaId
     ? umbrales.find((u) => u.ambito === 'categoria' && u.categoria_id === categoriaId)
     : undefined
 
-  const bajo = porProducto?.bajo ?? porCategoria?.bajo ?? (await valorConfig('stock.umbral_bajo_general', 10))
-  const critico =
-    porProducto?.critico ?? porCategoria?.critico ?? (await valorConfig('stock.umbral_critico_general', 3))
+  const bajo = porProducto?.bajo ?? porCategoria?.bajo ?? bajoGeneral
+  const critico = porProducto?.critico ?? porCategoria?.critico ?? criticoGeneral
 
   if (cantidad <= critico) return 'critico'
   if (cantidad <= bajo) return 'bajo'
@@ -72,16 +85,21 @@ export async function buscarProductosLocal(texto: string): Promise<ProductoVenta
     : undefined
 
   if (!productos) {
-    const patron = normalizar(limpio)
-    // Con 2.261 productos recorrer todo y filtrar en memoria tarda unos
-    // pocos milisegundos. Un índice de subcadenas no compensa acá.
-    productos = await db.producto
-      .filter((p) => !p.eliminado_en && p.activo && p.busqueda.includes(patron))
-      .limit(20)
+    // Por palabras, en cualquier orden, y ordenado por parecido antes de
+    // cortar (ver lib/busquedaProductos.ts). Con ~2.300 productos recorrer
+    // todo y filtrar en memoria tarda unos pocos milisegundos.
+    const palabras = palabrasDeBusqueda(limpio)
+    const candidatos = await db.producto
+      .filter((p) => !p.eliminado_en && p.activo && palabras.every((w) => p.busqueda.includes(w)))
       .toArray()
+    productos = ordenarPorParecido(candidatos, limpio, (p) => ({
+      busqueda: p.busqueda,
+      codigo: p.codigo ?? '',
+      nombre: p.nombre_interno ?? '',
+    }))
   }
 
-  const saldos = await db.saldo.bulkGet(productos.map((p) => p!.id))
+  const [saldos, umbrales] = await Promise.all([db.saldo.bulkGet(productos.map((p) => p!.id)), leerUmbrales()])
 
   return Promise.all(
     productos.map(async (p, i) => {
@@ -99,7 +117,7 @@ export async function buscarProductosLocal(texto: string): Promise<ProductoVenta
         cantidad,
         ...(p!.envase_id ? { sueltas } : {}),
         precio_en_cada_venta: p!.precio_en_cada_venta === true,
-        estado: await estadoDeStock(cantidad, p!.id, p!.categoria_id),
+        estado: await estadoDeStock(cantidad, p!.id, p!.categoria_id, umbrales),
       }
     }),
   )

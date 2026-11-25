@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import type { EstadoStock } from '@/lib/tipos'
+import { ordenarPorParecido, textoDeBusqueda } from '@/lib/busquedaProductos'
 import {
   buscarClientesLocal,
   buscarProductosLocal,
@@ -183,8 +184,6 @@ export async function buscarProductosVenta(texto: string): Promise<ProductoVenta
 }
 
 async function buscarProductosServidor(texto: string): Promise<ProductoVenta[]> {
-  const patron = `%${texto.replace(/[%_]/g, '')}%`
-
   // Primero por código de barra exacto: es el caso del lector, y tiene
   // que ganar siempre. Un escaneo no puede devolver una lista.
   const { data: porBarra } = await supabase
@@ -197,21 +196,39 @@ async function buscarProductosServidor(texto: string): Promise<ProductoVenta[]> 
   let q = supabase
     .from('vista_stock')
     .select(
-      'producto_id, codigo, nombre_interno, precio_venta, unidad_medida, alicuota_iva_id, cantidad, estado, envase_id, disponible',
+      'producto_id, codigo, nombre_interno, nombre_publico, precio_venta, unidad_medida, alicuota_iva_id, cantidad, estado, envase_id, disponible',
     )
     .eq('activo', true)
-    .limit(20)
 
-  if (porBarra && porBarra.length) {
-    q = q.eq('producto_id', porBarra[0].producto_id)
+  const porNombre = !(porBarra && porBarra.length)
+  if (!porNombre) {
+    q = q.eq('producto_id', porBarra![0].producto_id).limit(1)
   } else {
-    q = q
-      .or(`codigo.ilike.${patron},nombre_interno.ilike.${patron},nombre_publico.ilike.${patron}`)
-      .order('nombre_interno')
+    // Cada palabra tiene que estar en el código o en algún nombre, en
+    // cualquier orden; el orden por parecido se hace acá, igual que en la
+    // búsqueda local (ver lib/busquedaProductos.ts). Se traen de más para
+    // poder ordenar antes de cortar.
+    // Cada valor va entre comillas para que una coma («7,5») o un
+    // paréntesis no rompan el filtro; adentro sólo se escapan \ y ".
+    const palabras = texto.split(/\s+/).filter(Boolean)
+    if (!palabras.length) return []
+    for (const w of palabras) {
+      const v = `"%${w.replace(/[\\"]/g, (c) => `\\${c}`)}%"`
+      q = q.or(`codigo.ilike.${v},nombre_interno.ilike.${v},nombre_publico.ilike.${v}`)
+    }
+    q = q.order('nombre_interno').limit(300)
   }
 
-  const { data, error } = await q
+  const { data: crudos, error } = await q
   if (error) throw new Error(error.message)
+  type ConPublico = { codigo: string | null; nombre_interno: string | null; nombre_publico: string | null }
+  const data = porNombre
+    ? ordenarPorParecido((crudos ?? []) as ConPublico[], texto, (f) => ({
+        busqueda: textoDeBusqueda(f.codigo, f.nombre_interno, f.nombre_publico),
+        codigo: f.codigo ?? '',
+        nombre: f.nombre_interno ?? '',
+      })).map(({ nombre_publico: _np, ...f }) => f)
+    : (crudos ?? []).map(({ nombre_publico: _np, ...f }) => f)
 
   // La vista no expone condicion_iva; se completa desde producto.
   type FilaVista = Omit<ProductoVenta, 'condicion_iva' | 'sueltas' | 'precio_en_cada_venta'> & {
