@@ -1,5 +1,5 @@
 ---
-actualizado: 2026-11-25
+actualizado: 2026-11-27
 estado: en curso
 ---
 
@@ -14,7 +14,13 @@ estado: en curso
 
 **Se sumó a la fábrica de ILUMA (24/11)**, modo «la fábrica deja listo y Francisco publica desde la PC»: los pedidos de cambio siguen `fabrica/LEEME.md`; reglas y zonas delicadas en [`CLAUDE.md`](../CLAUDE.md) y [`Herramientas.md`](Herramientas.md).
 
-**Para publicar: 0.27.5** (25/11). **Cada venta nueva arranca en Consumidor Final** (aviso de Lucas del 25/11: Santa Mónica, Hulk y San Miguel vinieron una vez y quedaron con 4 a 15 facturas). En el punto de venta, al enviar a caja, cobrar en el puesto, armar presupuesto o proforma, o descartar la venta, se vaciaban los productos pero el cliente elegido quedaba para la venta siguiente. Ahora se suelta y vuelve a Consumidor Final (`PuntoDeVenta.tsx`). Las facturas ya hechas a nombre equivocado no se tocaron.
+**Para publicar: 0.27.6** (27/11). **El cobro repetido ya no queda trabado** (foto de Lucas: MOS1-000228 «sin enviar», «La venta esta cobrada y no se puede cobrar»). La venta estaba bien. Spec: [`specs/2026-11-27 El cobro repetido.md`](specs/2026-11-27%20El%20cobro%20repetido.md).
+- **Por qué:** cada PC subía su cola desde varios lados a la vez y mandaba todo dos veces; una copia del cobro pasó a la Caja 1, que la reintentaba cada minuto.
+- **Ahora:** una sola subida a la vez; lo repetido de una venta ya cobrada sale de la cola solo. Un pago que no está en el sistema central (cobro doble de verdad) sigue avisando. De paso se corrigió el `useOrden` condicional de `Facturacion.tsx`: el lint ya no marca errores.
+- **Base aplicada el 27/11:** [`20261127120000_el_cobro_repetido_se_da_por_recibido.sql`](../supabase/migrations/20261127120000_el_cobro_repetido_se_da_por_recibido.sql). La prueba [`cobro-repetido.sql`](../supabase/pruebas/cobro-repetido.sql) **no se corrió** (Francisco eligió aplicar sin ella): mirar que no aparezcan más «La venta esta cobrada» en los registros.
+- Tipos sin errores, **1004 pruebas verdes**, revisores de código (dos vueltas) y seguridad aprobaron.
+
+**Publicada: 0.27.5** (25/11; `latest.json` lo confirma). **Cada venta nueva arranca en Consumidor Final** (aviso de Lucas del 25/11: Santa Mónica, Hulk y San Miguel vinieron una vez y quedaron con 4 a 15 facturas). En el punto de venta, al enviar a caja, cobrar en el puesto, armar presupuesto o proforma, o descartar la venta, se vaciaban los productos pero el cliente elegido quedaba para la venta siguiente. Ahora se suelta y vuelve a Consumidor Final (`PuntoDeVenta.tsx`). Las facturas ya hechas a nombre equivocado no se tocaron.
 
 **Publicada: 0.27.4** (25/11, según `latest.json`). **Búsqueda de productos por palabras, ordenada y hasta 40** (pedido de Lucas del 25/11, con la captura buscando «trad»). Spec: [`specs/2026-11-25 Búsqueda de productos en el mostrador.md`](specs/2026-11-25%20Búsqueda%20de%20productos%20en%20el%20mostrador.md).
 - **Por qué no aparecía:** buscaba la frase pegada (un doble espacio en el nombre la rompía; hay **370 productos activos** con espacios dobles), cortaba a los 20 primeros en el orden interno de la base y no prefería la palabra que empieza con lo escrito («trad» traía CASTRADOS antes que TRADIC).

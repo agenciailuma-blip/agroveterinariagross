@@ -641,12 +641,15 @@ export async function encolar(
   avisosDeLaCola.dispatchEvent(new Event('encolada'))
 }
 
-async function enviarOperacion(op: OperacionPendiente) {
+async function enviarOperacion(op: OperacionPendiente, detras: OperacionPendiente[]) {
   const datos = await descifrarObjeto(op.datos)
 
   if (op.tipo === 'rpc') {
     const { error } = await supabase.rpc(op.tabla, datos)
-    if (error) throw new Error(error.message)
+    if (error) {
+      if (await yaHabiaLlegado(op, datos, detras)) return
+      throw new Error(error.message)
+    }
 
     /*
       Una factura emitida durante un corte deja de estar "esperando
@@ -671,11 +674,89 @@ async function enviarOperacion(op: OperacionPendiente) {
   // anterior que no alcanzamos a confirmar. Es exactamente el caso que
   // los id generados en la terminal vienen a resolver.
   if (error.code === '23505') return
+  if (await yaHabiaLlegado(op, datos, detras)) return
 
   throw new Error(error.message)
 }
 
-export async function subirPendientes() {
+/*
+  Lo que rebota porque la venta ya está cobrada, y no hace falta que entre.
+
+  Una venta que pasó por la caja la suben las dos computadoras. La que
+  llega segunda encuentra la venta cerrada, y la base le rechaza hasta lo
+  que ya tiene, antes de ver que es lo mismo.
+
+  · Los renglones y la lista de precios son de antes del cobro: con la
+    venta cobrada ya no pueden cambiar nada.
+  · Una corrección de la caja se suelta sólo si detrás viene su cobro.
+  · Un pago se suelta sólo si ese mismo ya está. Es lo que delata que a
+    la venta la cobraron dos veces: ahí sigue el aviso.
+
+  Sin respuesta del servidor no se da nada por llegado.
+*/
+async function yaHabiaLlegado(
+  op: OperacionPendiente,
+  datos: Record<string, unknown>,
+  detras: OperacionPendiente[],
+) {
+  if (op.tipo === 'insert' && op.tabla === 'venta_pago') {
+    const { data } = await supabase.from('venta_pago').select('id').eq('id', String(datos.id)).maybeSingle()
+    return !!data
+  }
+
+  const esRenglon = op.tipo === 'insert' && op.tabla === 'venta_linea'
+  const esLista = op.tipo === 'rpc' && op.tabla === 'aplicar_lista_a_venta'
+  const esCorreccion =
+    op.tipo === 'rpc' &&
+    op.tabla === 'editar_venta_en_caja' &&
+    detras.some((o) => o.tipo === 'rpc' && o.tabla === 'cobrar_venta')
+  if (!esRenglon && !esLista && !esCorreccion) return false
+
+  const { data } = await supabase
+    .from('venta')
+    .select('estado')
+    .eq('id', String(esRenglon ? datos.venta_id : datos.p_venta_id))
+    .maybeSingle()
+  return data?.estado === 'cobrada'
+}
+
+type Subida = { enviadas: number; fallidas: number }
+
+let subiendo: Promise<Subida> | null = null
+let siguiente: Promise<Subida> | null = null
+
+/*
+  Una sola subida a la vez en el programa de cada computadora.
+
+  La piden varios a la vez: quien vende, quien cobra y el ciclo de cada
+  minuto. Dos recorriendo la cola juntas mandan cada operación dos veces,
+  y la segunda de un cobro vuelve rechazada porque la venta ya está
+  cobrada (pasó en el local el 26/11).
+
+  Quien llega con una subida en curso espera a la que viene después, que
+  es una para todos los que están esperando: la que está corriendo ya
+  leyó la cola y puede no incluir lo recién encolado.
+*/
+export function subirPendientes(): Promise<Subida> {
+  if (siguiente) return siguiente
+
+  if (!subiendo) {
+    subiendo = subirLaCola().finally(() => {
+      subiendo = null
+    })
+    return subiendo
+  }
+
+  siguiente = subiendo
+    .catch(() => {})
+    .then(() => {
+      siguiente = null
+      return subirPendientes()
+    })
+  return siguiente
+}
+
+async function subirLaCola(): Promise<Subida> {
   const pendientes = await db.outbox
     .where('estado')
     .anyOf('pendiente', 'error')
@@ -696,11 +777,20 @@ export async function subirPendientes() {
 
   for (const [, operaciones] of lotes) {
     operaciones.sort((a, b) => a.orden - b.orden)
-    for (const op of operaciones) {
+    for (const [i, op] of operaciones.entries()) {
       try {
         await db.outbox.update(op.id, { estado: 'enviando' })
-        await enviarOperacion(op)
-        await db.outbox.delete(op.id)
+        await enviarOperacion(op, operaciones.slice(i + 1))
+        /*
+          Se borra la que entró y se marca la que sigue en un mismo paso.
+          Si quedara un instante sin ninguna «enviando», la entrega a la
+          caja se llevaría el resto de una venta que está subiendo.
+        */
+        const sigue = operaciones[i + 1]
+        await db.transaction('rw', db.outbox, async () => {
+          await db.outbox.delete(op.id)
+          if (sigue) await db.outbox.update(sigue.id, { estado: 'enviando' })
+        })
         enviadas++
       } catch (e) {
         /*

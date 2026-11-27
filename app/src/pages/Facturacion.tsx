@@ -184,14 +184,6 @@ export default function Facturacion() {
   const trabajando =
     reintentar.isPending || facturar.isPending || devolver.isPending || porContingencia.isPending
 
-  if (!puedeVer) {
-    return (
-      <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800 ring-1 ring-amber-200">
-        No tenés permiso para ver la facturación.
-      </p>
-    )
-  }
-
   const orden = useOrden('facturacion', comprobantes.data, {
     estado: (c) => c.estado,
     comprobante: (c) => `${c.tipo} ${String(c.punto_venta).padStart(5, '0')}-${String(c.numero).padStart(8, '0')}`,
@@ -200,6 +192,15 @@ export default function Facturacion() {
     total: (c) => c.total,
     cae: (c) => c.cae,
   })
+
+  if (!puedeVer) {
+    return (
+      <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800 ring-1 ring-amber-200">
+        No tenés permiso para ver la facturación.
+      </p>
+    )
+  }
+
   const filas = orden.filas
   const pendientes = sinFacturar.data ?? []
 
