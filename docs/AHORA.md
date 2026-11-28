@@ -14,6 +14,8 @@ estado: en curso
 
 **Se sumó a la fábrica de ILUMA (24/11)**, modo «la fábrica deja listo y Francisco publica desde la PC»: los pedidos de cambio siguen `fabrica/LEEME.md`; reglas y zonas delicadas en [`CLAUDE.md`](../CLAUDE.md) y [`Herramientas.md`](Herramientas.md).
 
+**0.27.7: lista en `main`, falta publicar (28/11). «Cerrar sesión» cierra sólo esa computadora.** A las 08:16 se tocó el botón en una PC con la cuenta de Lucas y la cuenta se cerró en todas (a Lucas, cargando una venta): `signOut()` usaba el alcance global. Para dejar a alguien afuera de todas queda quitarle el acceso desde Usuarios. Hasta que cada PC tenga la versión, el botón sigue cerrando todas. Spec: [`specs/2026-11-28 Cerrar sesión sólo en esta computadora.md`](specs/2026-11-28%20Cerrar%20sesión%20sólo%20en%20esta%20computadora.md).
+
 **Publicada: 0.27.6** (27/11; `latest.json` lo confirma). Al publicarla las PC seguían en 0.27.5 y desde las 11:53 no había cobros: **falta ver en los registros** que los cobros nuevos no vuelvan rechazados. **El cobro repetido ya no queda trabado** (foto de Lucas: MOS1-000228 «sin enviar», «La venta esta cobrada y no se puede cobrar»). La venta estaba bien. Spec: [`specs/2026-11-27 El cobro repetido.md`](specs/2026-11-27%20El%20cobro%20repetido.md).
 - **Por qué:** cada PC subía su cola desde varios lados a la vez y mandaba todo dos veces; una copia del cobro pasó a la Caja 1, que la reintentaba cada minuto.
 - **Ahora:** una sola subida a la vez; lo repetido de una venta ya cobrada sale de la cola solo. Un pago que no está en el sistema central (cobro doble de verdad) sigue avisando. De paso se corrigió el `useOrden` condicional de `Facturacion.tsx`: el lint ya no marca errores.

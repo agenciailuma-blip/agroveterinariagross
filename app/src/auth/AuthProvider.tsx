@@ -266,7 +266,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const salir = useCallback(async () => {
     localStorage.removeItem(CLAVE_CACHE)
-    await supabase.auth.signOut()
+    // Sólo esta computadora. Sin aclararlo, Supabase cierra la cuenta en
+    // todas: el 28/11 un «Cerrar sesión» sacó a Lucas en medio de una venta.
+    // Para dejar a alguien afuera de todas está «quitar acceso» en Usuarios.
+    await supabase.auth.signOut({ scope: 'local' })
     setPerfil(null)
     setError(null)
     setPerfilEnCache(false)
