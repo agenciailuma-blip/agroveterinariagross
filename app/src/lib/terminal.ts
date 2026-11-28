@@ -128,6 +128,11 @@ function suscribir(avisar: () => void) {
   }
 }
 
+/** El puesto que tiene guardado esta PC, sin preguntarle nada al servidor. */
+export function puestoGuardado(): Terminal | null {
+  return actual
+}
+
 /*
   Qué queda guardado después de preguntarle al servidor.
 

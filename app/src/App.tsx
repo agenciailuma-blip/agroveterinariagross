@@ -1,6 +1,9 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { BrowserRouter, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider, useAuth } from '@/auth/AuthProvider'
+import { pantallaInicial } from '@/lib/pantallaInicial'
+import { puestoGuardado } from '@/lib/terminal'
 import { SyncProvider } from '@/lib/local/SyncProvider'
 import { servidorCaido } from '@/lib/supabase'
 import { Dialogos } from '@/components/Dialogo'
@@ -98,6 +101,14 @@ const queryClient = new QueryClient({
 function Ruteo() {
   const { session, perfil, cargando, error, salir } = useAuth()
   const sinConexion = !navigator.onLine
+  const navegar = useNavigate()
+
+  // Quien ingresa arranca desde el principio, no en la pantalla donde
+  // quedó el que cerró sesión antes en esta PC.
+  const sinSesion = !cargando && !session
+  useEffect(() => {
+    if (sinSesion) navegar('/', { replace: true })
+  }, [sinSesion, navegar])
 
   if (cargando) {
     return (
@@ -143,10 +154,21 @@ function Ruteo() {
 }
 
 function Rutas() {
+  const { perfil, tienePermiso } = useAuth()
+  /*
+    Sólo al abrir el sistema o al ingresar: después, tocar «Inicio» en el
+    menú muestra el Inicio como siempre.
+  */
+  const [recienAbierto, setRecienAbierto] = useState(true)
+  useEffect(() => setRecienAbierto(false), [])
+  const destino = recienAbierto
+    ? pantallaInicial(perfil?.rol ?? '', puestoGuardado()?.tipo, tienePermiso)
+    : null
+
   return (
     <Routes>
       <Route element={<Layout />}>
-        <Route index element={<Inicio />} />
+        <Route index element={destino ? <Navigate to={destino} replace /> : <Inicio />} />
         <Route path="productos" element={<Productos />} />
         <Route path="productos/importar" element={<ImportarProductos />} />
         <Route path="stock" element={<Stock />} />
