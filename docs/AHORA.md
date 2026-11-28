@@ -12,6 +12,8 @@ estado: en curso
 
 ## Dónde está todo, hoy
 
+**0.27.9: lista en `main`, falta publicar (28/11). Quien vende abre en el Mostrador y quien cobra en la Caja.** Al abrir el sistema o ingresar: rol Cajero, a la Caja; rol Vendedor, al Mostrador, salvo en una PC configurada como Caja (la cuenta «Caja 1 (Servidor)» es Vendedor; Francisco eligió que mande el puesto). El resto no cambia (el Encargado, que no tiene permiso de vender y sí de mayorista, ya abría en Mayorista), y el Inicio sigue en el menú. Al cerrar sesión, quien ingrese después arranca desde el principio ([`pantallaInicial.ts`](../app/src/lib/pantallaInicial.ts)). Probado en el navegador con usuarios inventados, sin base. Incluye la 0.27.8 si todavía no se publicó. Sin cambios en la base.
+
 **0.27.8: lista en `main`, falta publicar (28/11). Menos consultas al servidor y la factura web por mail.** Spec: [`specs/2026-11-28 Menos consultas y la factura web por mail.md`](specs/2026-11-28%20Menos%20consultas%20y%20la%20factura%20web%20por%20mail.md).
 - **Factura web (ya andando en todas las PC, sólo base):** la de un pedido de la tienda sale sola al mail del comprador aunque se cobre en la caja ([`20261128120000`](../supabase/migrations/20261128120000_la_factura_web_sale_sola.sql)). Una factura que junta ventas sale sólo si todas son pedidos web del mismo mail.
 - **Menos consultas (con la 0.27.8):** cada PC pregunta una vez qué cambió (`que_cambio`) y baja sólo eso; los tres números del menú van juntos; los catálogos de ARCA, al abrir y cada 6 horas; «¿hay conexión?» cada 30 segundos. De unas 38 consultas por minuto a unas 7. Si `que_cambio` falla, se baja todo como antes ([`20261128130000`](../supabase/migrations/20261128130000_preguntar_una_sola_vez_que_cambio.sql), aplicada).

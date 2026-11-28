@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { startTransition, useEffect, useState } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider, useAuth } from '@/auth/AuthProvider'
@@ -160,7 +160,9 @@ function Rutas() {
     menú muestra el Inicio como siempre.
   */
   const [recienAbierto, setRecienAbierto] = useState(true)
-  useEffect(() => setRecienAbierto(false), [])
+  // En transición, como el salto del <Navigate>: si no, React apaga la marca
+  // antes de cambiar de pantalla y el Inicio alcanza a montarse y a consultar.
+  useEffect(() => startTransition(() => setRecienAbierto(false)), [])
   const destino = recienAbierto
     ? pantallaInicial(perfil?.rol ?? '', puestoGuardado()?.tipo, tienePermiso)
     : null

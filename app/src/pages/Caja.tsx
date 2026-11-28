@@ -57,7 +57,11 @@ export default function Caja() {
   if (!terminal)
     return (
       <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800 ring-1 ring-amber-200">
-        Esta máquina todavía no tiene terminal asignada. Entrá a Ventas para elegirla.
+        Esta máquina todavía no tiene terminal asignada.{' '}
+        {/* El Cajero abre directo acá: sin el enlace, «Ventas» lo devuelve a la Caja. */}
+        <Link to="/ventas" className="font-medium underline">
+          Elegirla en el Mostrador
+        </Link>
       </p>
     )
 
