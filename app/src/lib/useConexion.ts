@@ -11,11 +11,12 @@ export type EstadoConexion = 'en_linea' | 'sin_conexion' | 'verificando'
   eso es justamente el caso frecuente. Por eso además se consulta el
   servidor cada tanto.
 
-  Cada quince segundos y no treinta: la primera consulta que falla
-  después de un corte es la que espera los doce segundos, y conviene que
-  sea ésta, que no la espera nadie, y no la de alguien cobrando.
+  Cada treinta segundos (28/11; antes quince): cada pregunta cuenta para
+  los cupos del servidor. Un corte sin nadie usando el sistema puede
+  tardar hasta quince segundos más en mostrarse; si alguien está
+  cobrando, su consulta lo descubre igual que antes.
 */
-export function useConexion(intervaloMs = 15_000) {
+export function useConexion(intervaloMs = 30_000) {
   const [estado, setEstado] = useState<EstadoConexion>(
     navigator.onLine ? 'verificando' : 'sin_conexion',
   )

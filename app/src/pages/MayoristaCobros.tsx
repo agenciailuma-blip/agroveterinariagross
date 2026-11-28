@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/auth/AuthProvider'
 import { useTerminal } from '@/lib/terminal'
+import { CLAVE_DE_LOS_CONTADORES } from '@/lib/api/contadoresDelMenu'
 import { cajaAbierta } from '@/lib/api/caja'
 import { confirmar, pedirTexto } from '@/components/Dialogo'
 import ModalCobranza from '@/components/ModalCobranza'
@@ -99,7 +100,7 @@ export default function MayoristaCobros() {
 
   function refrescar() {
     qc.invalidateQueries({ queryKey: ['ordenes-recibo'] })
-    qc.invalidateQueries({ queryKey: ['ordenes-recibo-pendientes'] })
+    qc.invalidateQueries({ queryKey: CLAVE_DE_LOS_CONTADORES })
     qc.invalidateQueries({ queryKey: ['mayorista-clientes'] })
   }
 

@@ -204,12 +204,6 @@ export async function reintegrosDe(pedidoId: string): Promise<Reintegro[]> {
   return (data ?? []) as Reintegro[]
 }
 
-export async function contarPedidosPendientes(): Promise<number> {
-  const { data, error } = await supabase.rpc('pedidos_web_pendientes')
-  if (error) throw new Error(error.message)
-  return (data as number) ?? 0
-}
-
 // ─── Lo que se hace ───
 
 export async function marcar(pedidoId: string, estado: 'preparado' | 'entregado'): Promise<void> {

@@ -1,5 +1,5 @@
 ---
-actualizado: 2026-11-27
+actualizado: 2026-11-28
 estado: en curso
 ---
 
@@ -11,6 +11,19 @@ estado: en curso
 ---
 
 ## Dónde está todo, hoy
+
+**0.27.8: lista en `main`, falta publicar (28/11). Menos consultas al servidor y la factura web por mail.** Spec: [`specs/2026-11-28 Menos consultas y la factura web por mail.md`](specs/2026-11-28%20Menos%20consultas%20y%20la%20factura%20web%20por%20mail.md).
+- **Factura web (ya andando en todas las PC, sólo base):** la de un pedido de la tienda sale sola al mail del comprador aunque se cobre en la caja ([`20261128120000`](../supabase/migrations/20261128120000_la_factura_web_sale_sola.sql)). Una factura que junta ventas sale sólo si todas son pedidos web del mismo mail.
+- **Menos consultas (con la 0.27.8):** cada PC pregunta una vez qué cambió (`que_cambio`) y baja sólo eso; los tres números del menú van juntos; los catálogos de ARCA, al abrir y cada 6 horas; «¿hay conexión?» cada 30 segundos. De unas 38 consultas por minuto a unas 7. Si `que_cambio` falla, se baja todo como antes ([`20261128130000`](../supabase/migrations/20261128130000_preguntar_una_sola_vez_que_cambio.sql), aplicada).
+- **1023 pruebas verdes**, tipos sin errores; revisores de código (dos vueltas: encontró que una venta podía quedar en la pantalla de la caja, corregido) y de seguridad (un caso menor de la factura, corregido). Las dos pruebas SQL dieron bien en transacción deshecha. **No visto funcionando en la app** (pide iniciar sesión): falta mirar que sin novedades la cola de la caja no se vuelva a pedir.
+- **Después de publicar:** contar en los registros las consultas por PC y mirar el panel de Supabase al otro día.
+
+**⚠️ Cupos de Supabase, mails y un comprobante trabado (revisado el 28/11).**
+- **Transferencia pasada:** 5,58 de 5 GB en el ciclo 12/11–12/12 (ERP 1,83; el resto, la tienda). **Registros:** 2,01 de 1 GB (ERP 1,93). Ni con la 0.27.8 alcanza seguro el plan gratis: el plan Pro lo decide Lucas.
+- **Comprobante trabado:** un navegador (gross-sistema.pages.dev, usuario de Lucas, Caja 1) reintentó 977 veces `emitir_remito_directo` el 27/11 de 15:15 a 22:51: el número ya existe. Ese papel puede no estar en el sistema; hay que mirar los pendientes en ese navegador. La cola no resuelve sola un número repetido.
+- **Mails:** llegan (Resend, 28/11). La dirección de un cliente rebota y la A 0006-00004524 no le llegó (verlo en Resend y corregir su ficha). Los avisos del pedido web son de la tienda (`api-tienda.md`) y tiene que volver a activarlos. A mano: GR-MWZBZN03210 (mandar la factura) y GR-MWW366XC434 (pagado el 25/11, sin facturar).
+- **Tienda:** consulta cada 4 minutos cuatro pedidos que no existen acá (GR-MWJWNRTV187, GR-MWPGBEDT193, GR-MWNNFS2V688, GR-MWP1QXTT185): 1.460 errores por día.
+- **0.27.6:** «La venta esta cobrada» no volvió a aparecer en los registros desde el 27/11 a las 11:53.
 
 **Se sumó a la fábrica de ILUMA (24/11)**, modo «la fábrica deja listo y Francisco publica desde la PC»: los pedidos de cambio siguen `fabrica/LEEME.md`; reglas y zonas delicadas en [`CLAUDE.md`](../CLAUDE.md) y [`Herramientas.md`](Herramientas.md).
 

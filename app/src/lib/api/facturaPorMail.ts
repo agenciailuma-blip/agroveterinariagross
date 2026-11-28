@@ -80,10 +80,11 @@ export async function correoSugerido(ventaId: string | null): Promise<string> {
 }
 
 /*
-  La factura a cuenta corriente sale sola (fase-03, punto 1, ④).
+  La factura que sale sola: a cuenta corriente (fase-03, punto 1, ④) y,
+  desde el 28/11, la de un pedido web.
 
-  Si le toca lo decide la base: autorizada, a cuenta corriente, el
-  cliente con mail, y todavía no enviada. Por eso se puede llamar desde
+  Si le toca y a quién lo decide la base: autorizada, de un pedido web o
+  a cuenta corriente, con mail, y todavía no enviada. Por eso se puede llamar desde
   cualquier lugar donde se factura —la caja, Facturación, Por facturar—
   sin que salga dos veces.
 

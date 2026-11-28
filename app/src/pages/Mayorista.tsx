@@ -8,6 +8,7 @@ import { useDiferido } from '@/lib/useDiferido'
 import { useAuth } from '@/auth/AuthProvider'
 import { useTerminal } from '@/lib/terminal'
 import { confirmar, pedirTexto } from '@/components/Dialogo'
+import { CLAVE_DE_LOS_CONTADORES } from '@/lib/api/contadoresDelMenu'
 import { emitirEnServidor } from '@/lib/api/noFiscal'
 import { enviarFacturaPorMail } from '@/lib/api/facturaPorMail'
 import { obtenerComprobanteCompleto } from '@/lib/api/comprobante'
@@ -138,7 +139,7 @@ export default function Mayorista() {
 
   function refrescar() {
     qc.invalidateQueries({ queryKey: ['mayorista-pedidos'] })
-    qc.invalidateQueries({ queryKey: ['mayorista-pendientes'] })
+    qc.invalidateQueries({ queryKey: CLAVE_DE_LOS_CONTADORES })
     qc.invalidateQueries({ queryKey: ['mayorista-clientes'] })
   }
 

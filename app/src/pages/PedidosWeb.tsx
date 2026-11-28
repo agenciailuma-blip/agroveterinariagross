@@ -4,6 +4,7 @@ import { useAuth } from '@/auth/AuthProvider'
 import { useTerminal } from '@/lib/terminal'
 import { confirmar, pedirTexto } from '@/components/Dialogo'
 import DevolucionParcial from '@/components/DevolucionParcial'
+import { CLAVE_DE_LOS_CONTADORES } from '@/lib/api/contadoresDelMenu'
 import { emitirRemitoDePedido } from '@/lib/api/noFiscal'
 import { abrirComprobante, abrirNoFiscal } from '@/lib/escritorio'
 import { enCastellano } from '@/lib/errores'
@@ -103,7 +104,7 @@ export default function PedidosWeb() {
 
   function refrescar() {
     qc.invalidateQueries({ queryKey: ['pedidos-web'] })
-    qc.invalidateQueries({ queryKey: ['pedidos-pendientes'] })
+    qc.invalidateQueries({ queryKey: CLAVE_DE_LOS_CONTADORES })
     qc.invalidateQueries({ queryKey: ['reintegros'] })
   }
 

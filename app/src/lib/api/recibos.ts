@@ -292,12 +292,6 @@ export async function listarOrdenes(vista: VistaOrdenes): Promise<OrdenRecibo[]>
   }))
 }
 
-export async function contarOrdenesPendientes(): Promise<number> {
-  const { data, error } = await supabase.rpc('mayorista_ordenes_recibo_pendientes')
-  if (error) throw new Error(error.message)
-  return (data as number) ?? 0
-}
-
 export async function rechazarOrden(id: string, motivo: string): Promise<void> {
   const { error } = await supabase.rpc('mayorista_rechazar_orden_recibo', { p_id: id, p_motivo: motivo })
   if (error) throw new Error(error.message)

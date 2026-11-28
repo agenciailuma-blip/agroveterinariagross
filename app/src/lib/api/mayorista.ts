@@ -406,12 +406,6 @@ export async function listarPedidos(vista: VistaMayorista, filtros?: Filtros): P
   return (data ?? []) as PedidoMayorista[]
 }
 
-export async function contarPedidosPendientes(): Promise<number> {
-  const { data, error } = await supabase.rpc('mayorista_pedidos_pendientes')
-  if (error) throw new Error(error.message)
-  return (data as number) ?? 0
-}
-
 /* Las cantidades que cambió el depósito. Las que quedan igual no se mandan. */
 export function cantidadesCorregidas(
   lineas: LineaPedidoMayorista[],

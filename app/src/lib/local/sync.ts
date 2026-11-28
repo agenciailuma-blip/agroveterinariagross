@@ -8,6 +8,14 @@ import {
   sellarCliente,
   sellarVenta,
 } from '@/lib/local/cifrado'
+import {
+  hayQueBajar,
+  leerNovedades,
+  marcaDeLaCola,
+  quedoComoSeDescribio,
+  tocanLosCatalogos,
+  type Novedades,
+} from '@/lib/local/novedades'
 
 /*
   ─────────────────────────────────────────────────────────────
@@ -318,9 +326,9 @@ async function bajarCatalogosFiscales() {
   return total
 }
 
-async function bajarReferencias() {
+async function bajarReferencias(tipos: string[]) {
   let total = 0
-  for (const tipo of REFERENCIAS) {
+  for (const tipo of tipos) {
     const clave = `referencia:${tipo}`
     const desde = await leerCursor(clave)
     const despuesDe = async (cursor: string) => {
@@ -442,6 +450,7 @@ async function bajarColaCaja() {
   // que todavía no las tienen: no cambian una vez enviada la venta,
   // salvo por el precio, que se recalcula al aplicar la lista.
   const vigentes = aGuardar.map((v) => v.id)
+  let bajadas: { id: string; actualizado_en?: string }[] = []
   if (vigentes.length) {
     const { data: lineas, error: errorLineas } = await supabase
       .from('venta_linea')
@@ -454,11 +463,12 @@ async function bajarColaCaja() {
 
     if (errorLineas) throw new Error(`líneas de la cola: ${errorLineas.message}`)
     if (lineas?.length) {
-      await db.venta_linea.bulkPut(lineas as unknown as import('@/lib/local/db').VentaLineaLocal[])
+      bajadas = lineas as unknown as import('@/lib/local/db').VentaLineaLocal[]
+      await db.venta_linea.bulkPut(bajadas as import('@/lib/local/db').VentaLineaLocal[])
     }
   }
 
-  return enServidor.length
+  return { ventas: enServidor, lineas: bajadas }
 }
 
 /*
@@ -552,17 +562,21 @@ export function queHacerConLaGeneracion(
   return pendientes > 0 ? 'esperar' : 'empezar_de_nuevo'
 }
 
-async function empezarDeNuevoSiHaceFalta() {
+async function preguntarLaGeneracion() {
   const { data, error } = await supabase
     .from('configuracion')
     .select('valor')
     .eq('clave', 'copia_local.generacion')
     .maybeSingle()
   if (error) throw new Error(`generación de la copia local: ${error.message}`)
+  return data ? String(data.valor) : '0'
+}
 
-  const servidor = data ? String(data.valor) : '0'
+/** Devuelve si vació la copia local. */
+async function empezarDeNuevoSiHaceFalta(deLasNovedades?: string) {
+  const servidor = deLasNovedades ?? (await preguntarLaGeneracion())
   const local = (await db.cursor.get('generacion'))?.cursor ?? '0'
-  if (queHacerConLaGeneracion(servidor, local, await db.outbox.count()) !== 'empezar_de_nuevo') return
+  if (queHacerConLaGeneracion(servidor, local, await db.outbox.count()) !== 'empezar_de_nuevo') return false
 
   await db.transaction('rw', [db.cursor, ...TABLAS_DEL_SERVIDOR.map((t) => db.table(t))], async () => {
     for (const t of TABLAS_DEL_SERVIDOR) await db.table(t).clear()
@@ -572,17 +586,82 @@ async function empezarDeNuevoSiHaceFalta() {
     await db.cursor.bulkDelete(cursores)
     await db.cursor.put({ tabla: 'generacion', cursor: servidor, sincronizado_en: new Date().toISOString() })
   })
+  return true
 }
 
-export async function bajarCambios() {
-  let total = 0
-  await empezarDeNuevoSiHaceFalta()
-  await rebajarLoQueCambio()
-  for (const def of MAESTROS) total += await bajarTabla(def)
-  total += await bajarReferencias()
-  total += await bajarCatalogosFiscales()
-  total += await bajarColaCaja()
+/*
+  Una sola pregunta por vuelta: qué cambió desde los cursores de esta PC.
+  Si falla, se devuelve nulo y la vuelta baja todo como antes.
+*/
+async function preguntarQueCambio(prefijo?: string | null): Promise<Novedades | null> {
+  const cursores: Record<string, string> = {}
+  for (const def of MAESTROS) cursores[def.origen] = await leerCursor(def.tabla)
+  for (const tipo of REFERENCIAS) cursores[tipo] = await leerCursor(`referencia:${tipo}`)
+
+  const { data, error } = await supabase.rpc('que_cambio', { p_cursores: cursores, p_prefijo: prefijo ?? null })
+  return error ? null : leerNovedades(data)
+}
+
+/** Las tablas por las que se pregunta. Una prueba las compara con las de la función. */
+export const ORIGENES_QUE_SE_PREGUNTAN = [...MAESTROS.map((m) => m.origen), ...REFERENCIAS]
+
+let catalogosBajadosEn = 0
+
+async function bajarCatalogosSiToca(aLaFuerza: boolean) {
+  // Sin la marca, la copia local es nueva: se piden aunque se hayan bajado recién.
+  const marca = await db.cursor.get('catalogos_fiscales')
+  if (!aLaFuerza && marca && !tocanLosCatalogos(catalogosBajadosEn, Date.now())) return 0
+  const total = await bajarCatalogosFiscales()
+  catalogosBajadosEn = Date.now()
+  await guardarCursor('catalogos_fiscales', String(total))
   return total
+}
+
+/** La cola de esta PC, leída de una vez para comparar y marcar sobre lo mismo. */
+async function leerColaLocal(huella: string) {
+  const [ventas, lineas, subida] = await Promise.all([
+    db.venta.toArray(),
+    db.venta_linea.toArray(),
+    db.outbox.toArray(),
+  ])
+  return { ventas, marca: marcaDeLaCola(huella, ventas, lineas, new Set(subida.map((o) => o.lote))) }
+}
+
+/*
+  La cola se vuelve a bajar si cambió en el servidor o en esta PC. La
+  marca se guarda después de bajar, y sólo si lo bajado es lo que
+  describía la respuesta (quedoComoSeDescribio): si la bajada se corta o
+  algo se movió en el medio, la próxima vuelta la baja de nuevo.
+*/
+async function bajarColaSiCambio(novedades: Novedades | null) {
+  if (novedades) {
+    const guardada = (await db.cursor.get('cola_caja'))?.cursor
+    if (guardada === (await leerColaLocal(novedades.cola)).marca) return 0
+  }
+  const bajada = await bajarColaCaja()
+  const local = novedades ? await leerColaLocal(novedades.cola) : null
+  if (novedades && local && quedoComoSeDescribio(novedades.cola, bajada, local.ventas)) {
+    await guardarCursor('cola_caja', local.marca)
+  } else {
+    await db.cursor.delete('cola_caja')
+  }
+  return bajada.ventas.length
+}
+
+export async function bajarCambios(prefijoTerminal?: string | null) {
+  let total = 0
+  await rebajarLoQueCambio()
+  let novedades = await preguntarQueCambio(prefijoTerminal)
+  // Recién vaciada la copia, lo que se preguntó ya no vale: se baja todo.
+  if (await empezarDeNuevoSiHaceFalta(novedades?.generacion)) novedades = null
+
+  for (const def of MAESTROS) {
+    if (hayQueBajar(novedades, def.origen)) total += await bajarTabla(def)
+  }
+  total += await bajarReferencias(REFERENCIAS.filter((tipo) => hayQueBajar(novedades, tipo)))
+  total += await bajarCatalogosSiToca(!novedades)
+  total += await bajarColaSiCambio(novedades)
+  return { total, novedades }
 }
 
 /*
@@ -870,16 +949,19 @@ export async function descartarLote(lote: string) {
   la numeración anterior. Se consulta el mayor número ya emitido con ese
   prefijo y se sube el contador local si hace falta.
 */
-async function alinearNumeracion(prefijo: string) {
-  const { alinearContador } = await import('@/lib/local/consultas')
+async function ultimoCodigoDeVenta(prefijo: string) {
   const { data } = await supabase
     .from('venta')
     .select('codigo')
     .like('codigo', `${prefijo}-%`)
     .order('codigo', { ascending: false })
     .limit(1)
+  return data?.[0]?.codigo as string | undefined
+}
 
-  const ultimo = data?.[0]?.codigo
+async function alinearNumeracion(prefijo: string, novedades: Novedades | null) {
+  const { alinearContador } = await import('@/lib/local/consultas')
+  const ultimo = novedades ? novedades.venta : await ultimoCodigoDeVenta(prefijo)
   if (!ultimo) return
   await alinearContador(prefijo, Number(String(ultimo).split('-').pop()) || 0)
 }
@@ -892,19 +974,22 @@ async function alinearNumeracion(prefijo: string) {
   que no se puede repetir: se le pregunta al servidor cuál es el mayor
   de esa serie y se sube el contador local si hace falta.
 */
-async function alinearNumeracionNoFiscal(prefijo: string) {
+async function ultimoNumeroNoFiscal(tipo: string, prefijo: string) {
+  const { data } = await supabase
+    .from('comprobante_no_fiscal')
+    .select('numero')
+    .eq('tipo_clave', tipo)
+    .ilike('serie', prefijo)
+    .order('numero', { ascending: false })
+    .limit(1)
+  return Number(data?.[0]?.numero ?? 0)
+}
+
+async function alinearNumeracionNoFiscal(prefijo: string, novedades: Novedades | null) {
   const { alinearNumeroNoFiscal } = await import('@/lib/local/consultas')
 
   for (const tipo of ['presupuesto', 'remito', 'comprobante_interno', 'comprobante_entrega']) {
-    const { data } = await supabase
-      .from('comprobante_no_fiscal')
-      .select('numero')
-      .eq('tipo_clave', tipo)
-      .ilike('serie', prefijo)
-      .order('numero', { ascending: false })
-      .limit(1)
-
-    const ultimo = Number(data?.[0]?.numero ?? 0)
+    const ultimo = novedades ? Number(novedades.noFiscal[tipo] ?? 0) : await ultimoNumeroNoFiscal(tipo, prefijo)
     if (ultimo > 0) await alinearNumeroNoFiscal(tipo, prefijo, ultimo)
   }
 }
@@ -912,10 +997,10 @@ async function alinearNumeracionNoFiscal(prefijo: string) {
 export async function sincronizar(prefijoTerminal?: string | null) {
   const inicio = performance.now()
   const subida = await subirPendientes()
-  const bajados = await bajarCambios()
+  const { total: bajados, novedades } = await bajarCambios(prefijoTerminal)
   if (prefijoTerminal) {
-    await alinearNumeracion(prefijoTerminal)
-    await alinearNumeracionNoFiscal(prefijoTerminal)
+    await alinearNumeracion(prefijoTerminal, novedades)
+    await alinearNumeracionNoFiscal(prefijoTerminal, novedades)
   }
   return {
     ...subida,

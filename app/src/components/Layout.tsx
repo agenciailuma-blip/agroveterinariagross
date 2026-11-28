@@ -2,9 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { listarDepositos } from '@/lib/api/depositos'
-import { contarPedidosPendientes } from '@/lib/api/pedidos'
-import { contarPedidosPendientes as contarMayoristasPendientes } from '@/lib/api/mayorista'
-import { contarOrdenesPendientes } from '@/lib/api/recibos'
+import { CLAVE_DE_LOS_CONTADORES, contarPendientesDelMenu } from '@/lib/api/contadoresDelMenu'
 import AvisoDeActualizacion from '@/components/AvisoDeActualizacion'
 import BuscarPapel from '@/components/BuscarPapel'
 import AvisoBaseBloqueada from '@/components/AvisoBaseBloqueada'
@@ -43,31 +41,26 @@ function useContextoMenu(): Contexto {
 
 function useContadores(): Record<NonNullable<Pestana['contador']>, number> {
   const { tienePermiso } = useAuth()
-  const pedidosPendientes = useQuery({
-    queryKey: ['pedidos-pendientes'],
-    queryFn: contarPedidosPendientes,
-    enabled: tienePermiso('tienda.pedidos') && navigator.onLine,
+  const ve = {
+    pedidos: tienePermiso('tienda.pedidos'),
+    // Lo que mandó el vendedor de calle y el depósito todavía no corroboró.
+    mayorista: tienePermiso('mayorista.atender'),
+    // Las órdenes de recibo que mandó el vendedor y nadie aceptó todavía.
+    cobros: tienePermiso('cuentacorriente.cobrar'),
+  }
+  const avisos = useQuery({
+    queryKey: CLAVE_DE_LOS_CONTADORES,
+    queryFn: contarPendientesDelMenu,
+    enabled: (ve.pedidos || ve.mayorista || ve.cobros) && navigator.onLine,
     refetchInterval: 60_000,
     // Sin conexión no hay número: mejor nada que uno viejo.
     retry: false,
   })
-  // Lo que mandó el vendedor de calle y el depósito todavía no corroboró.
-  const mayoristas = useQuery({
-    queryKey: ['mayorista-pendientes'],
-    queryFn: contarMayoristasPendientes,
-    enabled: tienePermiso('mayorista.atender') && navigator.onLine,
-    refetchInterval: 60_000,
-    retry: false,
-  })
-  // Las órdenes de recibo que mandó el vendedor y nadie aceptó todavía.
-  const cobros = useQuery({
-    queryKey: ['ordenes-recibo-pendientes'],
-    queryFn: contarOrdenesPendientes,
-    enabled: tienePermiso('cuentacorriente.cobrar') && navigator.onLine,
-    refetchInterval: 60_000,
-    retry: false,
-  })
-  return { pedidos: pedidosPendientes.data ?? 0, mayorista: mayoristas.data ?? 0, cobros: cobros.data ?? 0 }
+  return {
+    pedidos: ve.pedidos ? (avisos.data?.pedidos ?? 0) : 0,
+    mayorista: ve.mayorista ? (avisos.data?.mayorista ?? 0) : 0,
+    cobros: ve.cobros ? (avisos.data?.cobros ?? 0) : 0,
+  }
 }
 
 /*
